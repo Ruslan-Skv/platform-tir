@@ -558,3 +558,53 @@
     line-height: 1.2;
   }
 }
+
+/* Блок «Выдать аванс» (вкладка «Авансы»): поля в одну строку, кнопка ниже —
+   как «Провести оплату» в модалке оплат (бланк + paymentsHubConduct*). */
+.advancesFormSheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-md, 0.75rem);
+}
+
+.advancesFormRow {
+  align-items: start;
+  display: grid;
+  gap: var(--admin-space-md, 0.75rem);
+  grid-template-columns:
+    minmax(0, 1.15fr)
+    minmax(8.25rem, 9.5rem)
+    minmax(7.5rem, 8.75rem)
+    minmax(0, 1.5fr);
+}
+
+.advancesFormActions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-md, 0.75rem);
+}
+
+@media (max-width: 900px) {
+  .advancesFormRow {
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(8.25rem, 9.5rem)
+      minmax(7.5rem, 8.75rem);
+  }
+
+  /* Комментарий переносится на отдельную строку. */
+  .advancesFormRow > .advancesFormNoteField {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 620px) {
+  .advancesFormRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .advancesFormRow > .advancesFormNoteField {
+    grid-column: auto;
+  }
+}

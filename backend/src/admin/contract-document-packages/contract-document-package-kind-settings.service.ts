@@ -5,9 +5,9 @@ import { PrismaService } from '../../database/prisma.service';
 import {
   ApplyRepairWorkPeriodToAllDto,
   SetRepairContractSettingsDto,
-} from './dto/set-repair-settings.dto';
-import { SetRepairWorkOrderSettingsDto } from './dto/set-repair-work-order-settings.dto';
-import { SetWindowsWorkOrderMarkupDto } from './dto/set-windows-work-order-markup.dto';
+} from './dto/settings/set-repair-settings.dto';
+import { SetRepairWorkOrderSettingsDto } from './dto/settings/set-repair-work-order-settings.dto';
+import { SetWindowsWorkOrderMarkupDto } from './dto/settings/set-windows-work-order-markup.dto';
 import {
   DEFAULT_REPAIR_CONTRACT_WORK_PERIOD_DAYS,
   DEFAULT_WINDOWS_CONTRACT_WORK_PERIOD_DAYS,

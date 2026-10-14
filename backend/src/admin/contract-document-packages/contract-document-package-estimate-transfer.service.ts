@@ -6,7 +6,7 @@ import { PrismaService } from '../../database/prisma.service';
 import {
   ContractEstimateGroupDto,
   ContractEstimatePresetDto,
-} from './dto/set-global-estimate-presets.dto';
+} from './dto/settings/set-global-estimate-presets.dto';
 import { ContractDocumentPackageEstimatePresetsService } from './contract-document-package-estimate-presets.service';
 
 /** Формат файла переноса: `tir-estimate-presets-export`. */

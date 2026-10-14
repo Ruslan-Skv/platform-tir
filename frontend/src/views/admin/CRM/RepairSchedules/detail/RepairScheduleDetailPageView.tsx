@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import type {
   RepairContractTimelineEvent,
@@ -26,6 +26,7 @@ import {
   REPAIR_STATUS_LABELS,
   formatDate,
   formatMoney,
+  repairStatusChangeTexts,
 } from '../shared/repair-schedules';
 import type { RepairScheduleDetailPageModel } from './hooks/useRepairScheduleDetailPage';
 
@@ -74,6 +75,9 @@ export function RepairScheduleDetailPageView({ model }: { model: RepairScheduleD
     moveStatus,
     back,
   } = model;
+
+  /** Запрошенная смена статуса — ждёт подтверждения в модалке. */
+  const [pendingStatus, setPendingStatus] = useState<'NEW' | 'IN_PROGRESS' | 'CLOSED' | null>(null);
 
   const timelineRows = useMemo((): TimelineRow[] => {
     if (!project) return [];
@@ -167,35 +171,36 @@ export function RepairScheduleDetailPageView({ model }: { model: RepairScheduleD
           >
             Редактировать
           </button>
-          {project.status === 'NEW' ? (
+          {/* Статус пакетных договоров меняется автоматически из пакета документов. */}
+          {!project.packageId && project.status === 'NEW' ? (
             <button
               data-admin-mutation
               type="button"
               className={cdChrome.contractsListHeaderAddBtn}
               disabled={submitting}
-              onClick={() => void moveStatus('IN_PROGRESS')}
+              onClick={() => setPendingStatus('IN_PROGRESS')}
             >
               В работу
             </button>
           ) : null}
-          {project.status === 'IN_PROGRESS' ? (
+          {!project.packageId && project.status === 'IN_PROGRESS' ? (
             <button
               data-admin-mutation
               type="button"
               className={cdChrome.contractsListHeaderAddBtn}
               disabled={submitting}
-              onClick={() => void moveStatus('CLOSED')}
+              onClick={() => setPendingStatus('CLOSED')}
             >
               Закрыть
             </button>
           ) : null}
-          {project.status === 'CLOSED' ? (
+          {!project.packageId && project.status === 'CLOSED' ? (
             <button
               data-admin-mutation
               type="button"
               className={cdChrome.contractsListHeaderAddBtn}
               disabled={submitting}
-              onClick={() => void moveStatus('IN_PROGRESS')}
+              onClick={() => setPendingStatus('IN_PROGRESS')}
             >
               Вернуть в работу
             </button>
@@ -475,6 +480,7 @@ export function RepairScheduleDetailPageView({ model }: { model: RepairScheduleD
               onChange={setEditValues}
               installers={repairInstallers}
               error={editError}
+              hideStatus={Boolean(project.packageId)}
             />
             <div data-modal-form-actions>
               <button type="button" data-modal-btn="secondary" onClick={closeEdit}>
@@ -511,6 +517,31 @@ export function RepairScheduleDetailPageView({ model }: { model: RepairScheduleD
         confirmLoading={submitting}
         onConfirm={() => {
           void confirmConflictSave();
+        }}
+      />
+
+      <ConfirmModal
+        isOpen={pendingStatus != null}
+        onClose={() => setPendingStatus(null)}
+        title={
+          pendingStatus ? repairStatusChangeTexts(pendingStatus, project.contractNumber).title : ''
+        }
+        message={
+          pendingStatus
+            ? repairStatusChangeTexts(pendingStatus, project.contractNumber).message
+            : ''
+        }
+        confirmText={
+          pendingStatus
+            ? repairStatusChangeTexts(pendingStatus, project.contractNumber).confirmText
+            : 'Подтвердить'
+        }
+        cancelText="Отмена"
+        onConfirm={() => {
+          const target = pendingStatus;
+          setPendingStatus(null);
+          if (!target) return;
+          void moveStatus(target);
         }}
       />
     </div>

@@ -9,7 +9,8 @@ import { MoneyMovementsModule } from '../money-movements/money-movements.module'
 import { SalaryModule } from '../salary/salary.module';
 import { ContractDocumentPaymentInvoicesService } from './invoices/contract-document-payment-invoices.service';
 import { ContractDocumentPaymentInvoiceEpService } from './invoices/contract-document-payment-invoice-ep.service';
-import { ContractDocumentPackagePaymentsService } from './contract-document-package-payments.service';
+import { ContractDocumentPackagePaymentsService } from './payments/contract-document-package-payments.service';
+import { ContractDocumentPackageInstallerAdvancesService } from './payments/contract-document-package-installer-advances.service';
 import { ContractDocumentPackagesController } from './contract-document-packages.controller';
 import { ContractDocumentPackagesService } from './contract-document-packages.service';
 import { ContractDocumentPackageCrudService } from './contract-document-package-crud.service';
@@ -41,6 +42,7 @@ import { ContractDocumentPackageCeilingsPriceListService } from './contract-docu
     ContractDocumentPackageKindSettingsService,
     ContractDocumentPackageCeilingsPriceListService,
     ContractDocumentPackagePaymentsService,
+    ContractDocumentPackageInstallerAdvancesService,
     ContractDocumentPaymentInvoicesService,
     ContractDocumentPaymentInvoiceEpService,
   ],

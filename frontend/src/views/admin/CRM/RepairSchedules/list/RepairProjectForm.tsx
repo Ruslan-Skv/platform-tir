@@ -20,9 +20,11 @@ type Props = {
   onChange: (values: RepairProjectFormValues) => void;
   installers: InstallerMaster[];
   error: string | null;
+  /** Скрыть выбор статуса: у пакетных проектов статус меняется автоматически. */
+  hideStatus?: boolean;
 };
 
-export function RepairProjectForm({ values, onChange, installers, error }: Props) {
+export function RepairProjectForm({ values, onChange, installers, error, hideStatus }: Props) {
   const [hits, setHits] = useState<ContractDocumentPackage[]>([]);
   const [searching, setSearching] = useState(false);
 
@@ -51,22 +53,26 @@ export function RepairProjectForm({ values, onChange, installers, error }: Props
 
   return (
     <div data-modal-form-grid>
-      <div data-modal-form-group>
-        <label htmlFor="rs-status">Статус</label>
-        <select
-          id="rs-status"
-          value={values.status}
-          onChange={(e) => update({ status: e.target.value as RepairProjectFormValues['status'] })}
-        >
-          {(Object.keys(REPAIR_STATUS_LABELS) as Array<keyof typeof REPAIR_STATUS_LABELS>).map(
-            (key) => (
-              <option key={key} value={key}>
-                {REPAIR_STATUS_LABELS[key]}
-              </option>
-            )
-          )}
-        </select>
-      </div>
+      {hideStatus ? null : (
+        <div data-modal-form-group>
+          <label htmlFor="rs-status">Статус</label>
+          <select
+            id="rs-status"
+            value={values.status}
+            onChange={(e) =>
+              update({ status: e.target.value as RepairProjectFormValues['status'] })
+            }
+          >
+            {(Object.keys(REPAIR_STATUS_LABELS) as Array<keyof typeof REPAIR_STATUS_LABELS>).map(
+              (key) => (
+                <option key={key} value={key}>
+                  {REPAIR_STATUS_LABELS[key]}
+                </option>
+              )
+            )}
+          </select>
+        </div>
+      )}
 
       <div data-modal-form-group>
         <label htmlFor="rs-number">№ договора</label>

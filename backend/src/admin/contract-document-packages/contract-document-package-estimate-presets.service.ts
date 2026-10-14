@@ -7,7 +7,7 @@ import {
   ContractEstimateGroupDto,
   ContractEstimatePresetDto,
   SetGlobalEstimatePresetsDto,
-} from './dto/set-global-estimate-presets.dto';
+} from './dto/settings/set-global-estimate-presets.dto';
 
 const ESTIMATE_PRESETS_TAB = 'estimate_presets';
 const ESTIMATE_PRESET_TRASH_RETENTION_DAYS = 30;

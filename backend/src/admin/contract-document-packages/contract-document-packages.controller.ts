@@ -27,34 +27,37 @@ import { decodeMultipartFilename } from '../../common/utils/upload-filename.util
 import type { RequestWithUser } from '../../common/types/request-with-user.types';
 import { ContractDocumentPaymentInvoicesService } from './invoices/contract-document-payment-invoices.service';
 import { ContractDocumentPaymentInvoiceEpService } from './invoices/contract-document-payment-invoice-ep.service';
-import { ContractDocumentPackagePaymentsService } from './contract-document-package-payments.service';
+import { ContractDocumentPackagePaymentsService } from './payments/contract-document-package-payments.service';
+import { ContractDocumentPackageInstallerAdvancesService } from './payments/contract-document-package-installer-advances.service';
 import { ContractDocumentPackagesService } from './contract-document-packages.service';
 import { ContractDocumentNumberingService } from '../../contract-document-numbering/contract-document-numbering.service';
-import { CreateContractDocumentPaymentInvoiceDto } from './dto/create-contract-document-payment-invoice.dto';
-import { CreateFreePaymentInvoiceDto } from './dto/create-free-payment-invoice.dto';
+import { CreateContractDocumentPaymentInvoiceDto } from './dto/invoices/create-contract-document-payment-invoice.dto';
+import { CreateFreePaymentInvoiceDto } from './dto/invoices/create-free-payment-invoice.dto';
 import { PreviewContractNumberDto } from './dto/preview-contract-number.dto';
 import { CreateContractDocumentPackageDto } from './dto/create-contract-document-package.dto';
-import { SetGlobalExecutorProfilesDto } from './dto/set-global-executor-profiles.dto';
-import { SetGlobalContractTemplatesDto } from './dto/set-global-contract-templates.dto';
-import { SetGlobalSignatoryProfilesDto } from './dto/set-global-signatory-profiles.dto';
-import { SetGlobalEstimatePresetsDto } from './dto/set-global-estimate-presets.dto';
-import { SetGlobalContractTemplateDto } from './dto/set-global-contract-template.dto';
-import { CreateContractDocumentPackagePaymentDto } from './dto/create-contract-document-package-payment.dto';
+import { SetGlobalExecutorProfilesDto } from './dto/settings/set-global-executor-profiles.dto';
+import { SetGlobalContractTemplatesDto } from './dto/settings/set-global-contract-templates.dto';
+import { SetGlobalSignatoryProfilesDto } from './dto/settings/set-global-signatory-profiles.dto';
+import { SetGlobalEstimatePresetsDto } from './dto/settings/set-global-estimate-presets.dto';
+import { SetGlobalContractTemplateDto } from './dto/settings/set-global-contract-template.dto';
+import { CreateContractDocumentPackagePaymentDto } from './dto/payments/create-contract-document-package-payment.dto';
+import { CreateContractDocumentPackageInstallerAdvanceDto } from './dto/payments/create-contract-document-package-installer-advance.dto';
+import { UpdateContractDocumentPackageInstallerAdvanceDto } from './dto/payments/update-contract-document-package-installer-advance.dto';
 import { UpdateContractDocumentPackageDto } from './dto/update-contract-document-package.dto';
-import { UpdateContractDocumentPackagePaymentDto } from './dto/update-contract-document-package-payment.dto';
+import { UpdateContractDocumentPackagePaymentDto } from './dto/payments/update-contract-document-package-payment.dto';
 import {
   ApplyRepairWorkPeriodToAllDto,
   SetRepairContractSettingsDto,
-} from './dto/set-repair-settings.dto';
+} from './dto/settings/set-repair-settings.dto';
 import {
   ApplyWorkPeriodToAllByKindDto,
   SetWorkPeriodSettingsByKindDto,
-} from './dto/set-work-period-settings-by-kind.dto';
-import { SetRepairWorkOrderSettingsDto } from './dto/set-repair-work-order-settings.dto';
-import { SetWindowsWorkOrderMarkupDto } from './dto/set-windows-work-order-markup.dto';
-import { SetWorkOrderMarkupByKindDto } from './dto/set-work-order-markup-by-kind.dto';
-import { SetWindowsContractSettingsDto } from './dto/set-windows-settings.dto';
-import { SetCeilingsPriceListDto } from './dto/set-ceilings-price-list.dto';
+} from './dto/settings/set-work-period-settings-by-kind.dto';
+import { SetRepairWorkOrderSettingsDto } from './dto/settings/set-repair-work-order-settings.dto';
+import { SetWindowsWorkOrderMarkupDto } from './dto/settings/set-windows-work-order-markup.dto';
+import { SetWorkOrderMarkupByKindDto } from './dto/settings/set-work-order-markup-by-kind.dto';
+import { SetWindowsContractSettingsDto } from './dto/settings/set-windows-settings.dto';
+import { SetCeilingsPriceListDto } from './dto/settings/set-ceilings-price-list.dto';
 
 const CRM_ROLES = [
   'SUPER_ADMIN',
@@ -217,6 +220,7 @@ export class ContractDocumentPackagesController {
   constructor(
     private readonly service: ContractDocumentPackagesService,
     private readonly packagePayments: ContractDocumentPackagePaymentsService,
+    private readonly packageInstallerAdvances: ContractDocumentPackageInstallerAdvancesService,
     private readonly paymentInvoices: ContractDocumentPaymentInvoicesService,
     private readonly paymentInvoiceEp: ContractDocumentPaymentInvoiceEpService,
     private readonly contractNumbering: ContractDocumentNumberingService,
@@ -850,6 +854,40 @@ export class ContractDocumentPackagesController {
   @Roles('SUPER_ADMIN')
   removePackagePayment(@Param('id') id: string, @Param('paymentId') paymentId: string) {
     return this.packagePayments.remove(id, paymentId);
+  }
+
+  @Get(':id/installer-advances')
+  listPackageInstallerAdvances(@Param('id') id: string) {
+    return this.packageInstallerAdvances.list(id);
+  }
+
+  /** Выдача аванса — только супер-админ; остальные только просматривают журнал. */
+  @Post(':id/installer-advances')
+  @Roles('SUPER_ADMIN')
+  createPackageInstallerAdvance(
+    @Param('id') id: string,
+    @Body() dto: CreateContractDocumentPackageInstallerAdvanceDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.packageInstallerAdvances.create(id, dto, req.user?.id);
+  }
+
+  /** Изменение аванса — только супер-админ (исправление ошибок). */
+  @Patch(':id/installer-advances/:advanceId')
+  @Roles('SUPER_ADMIN')
+  updatePackageInstallerAdvance(
+    @Param('id') id: string,
+    @Param('advanceId') advanceId: string,
+    @Body() dto: UpdateContractDocumentPackageInstallerAdvanceDto,
+  ) {
+    return this.packageInstallerAdvances.update(id, advanceId, dto);
+  }
+
+  /** Удаление аванса — только супер-админ (исправление ошибок). */
+  @Delete(':id/installer-advances/:advanceId')
+  @Roles('SUPER_ADMIN')
+  removePackageInstallerAdvance(@Param('id') id: string, @Param('advanceId') advanceId: string) {
+    return this.packageInstallerAdvances.remove(id, advanceId);
   }
 
   @Get(':id/payment-invoices')

@@ -5,17 +5,22 @@ import { useEffect, useMemo, useState } from 'react';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { Modal } from '@/shared/ui/Modal';
 import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';
-import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
+import {
+  AdminListRefreshButton,
+  AdminToolbarTrashButton,
+} from '@/shared/ui/admin/AdminToolbarIconButton';
+import { PackageWorkOrdersHubListModal } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/PackageWorkOrdersHubListModal';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
 import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.module.css';
 import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
 
 import styles from '../shared/RepairSchedules.module.css';
-import { REPAIR_STATUS_LABELS } from '../shared/repair-schedules';
+import { REPAIR_STATUS_LABELS, repairStatusChangeTexts } from '../shared/repair-schedules';
 import { buildRepairObjectGroups } from '../shared/repairObjectGroups';
 import { RepairProjectForm } from './RepairProjectForm';
 import { RepairScheduleImportModal } from './RepairScheduleImportModal';
+import { RepairScheduleTrashModal } from './RepairScheduleTrashModal';
 import { RepairSchedulesGanttTimeline } from './RepairSchedulesGanttTimeline';
 import { RepairSchedulesGroupedList } from './RepairSchedulesGroupedList';
 import { RepairSchedulesRulesInfoTip } from './RepairSchedulesRulesInfoTip';
@@ -74,11 +79,22 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
     saveCreate,
     moveStatus,
     remove,
+    canDeleteProject,
+    trashOpen,
+    setTrashOpen,
+    trashCount,
+    refreshTrashCount,
     openProject,
   } = model;
 
   const [successVisible, setSuccessVisible] = useState(false);
   const [successText, setSuccessText] = useState('');
+  const [workOrdersHubPackageId, setWorkOrdersHubPackageId] = useState<string | null>(null);
+  /** Запрошенная смена статуса — ждёт подтверждения в модалке. */
+  const [statusChange, setStatusChange] = useState<{
+    item: RepairSchedulesPageModel['items'][number];
+    status: 'NEW' | 'IN_PROGRESS' | 'CLOSED';
+  } | null>(null);
 
   useEffect(() => {
     if (!message) return;
@@ -120,6 +136,13 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
               </AdminSaveNotice>
             </div>
             <div className={cdHub.contractsHeaderIconActionsMobile}>
+              <AdminToolbarTrashButton
+                trashCount={trashCount}
+                disabled={iconsDisabled}
+                title="Корзина"
+                aria-label="Корзина"
+                onClick={() => setTrashOpen(true)}
+              />
               <AdminListRefreshButton
                 disabled={iconsDisabled}
                 busy={loading}
@@ -150,6 +173,13 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
             + Проект
           </button>
           <div className={cdHub.contractsHeaderIconActionsDesktop}>
+            <AdminToolbarTrashButton
+              trashCount={trashCount}
+              disabled={iconsDisabled}
+              title="Корзина"
+              aria-label="Корзина"
+              onClick={() => setTrashOpen(true)}
+            />
             <AdminListRefreshButton
               disabled={iconsDisabled}
               busy={loading}
@@ -274,15 +304,26 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
         >
           <RepairSchedulesGroupedList
             items={items}
+            statusFilter={statusFilter}
             loading={loading}
             submitting={submitting}
             openProject={openProject}
-            moveStatus={moveStatus}
+            onOpenWorkOrdersHub={setWorkOrdersHubPackageId}
+            moveStatus={(item, status) => setStatusChange({ item, status })}
             onDelete={setDeleteItem}
-            flashSuccess={flashSuccess}
+            canDeleteProject={canDeleteProject}
           />
         </div>
       </div>
+
+      {workOrdersHubPackageId ? (
+        <PackageWorkOrdersHubListModal
+          packageId={workOrdersHubPackageId}
+          isOpen
+          onClose={() => setWorkOrdersHubPackageId(null)}
+          onUpdated={() => void refresh()}
+        />
+      ) : null}
 
       <RepairScheduleImportModal
         isOpen={importOpen}
@@ -333,17 +374,61 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
       </Modal>
 
       <ConfirmModal
+        isOpen={Boolean(statusChange)}
+        onClose={() => setStatusChange(null)}
+        title={
+          statusChange
+            ? repairStatusChangeTexts(statusChange.status, statusChange.item.contractNumber).title
+            : ''
+        }
+        message={
+          statusChange
+            ? repairStatusChangeTexts(statusChange.status, statusChange.item.contractNumber).message
+            : ''
+        }
+        confirmText={
+          statusChange
+            ? repairStatusChangeTexts(statusChange.status, statusChange.item.contractNumber)
+                .confirmText
+            : 'Подтвердить'
+        }
+        cancelText="Отмена"
+        onConfirm={() => {
+          const pending = statusChange;
+          setStatusChange(null);
+          if (!pending) return;
+          void moveStatus(pending.item, pending.status).then((ok) => {
+            if (ok) {
+              flashSuccess(
+                repairStatusChangeTexts(pending.status, pending.item.contractNumber).successText
+              );
+            }
+          });
+        }}
+      />
+
+      <ConfirmModal
         isOpen={Boolean(deleteItem)}
         onClose={() => setDeleteItem(null)}
-        title="Удалить проект"
-        message={`Удалить проект ${deleteItem?.contractNumber ?? ''}? Таймлайн тоже будет удалён.`}
-        confirmText={submitting ? 'Удаление…' : 'Удалить'}
+        title="Переместить в корзину?"
+        message={`Договор ${deleteItem?.contractNumber ?? ''} будет скрыт из план-графика. Восстановить его можно из корзины. Через 30 дней — безвозвратное удаление.`}
+        confirmText="В корзину"
         cancelText="Отмена"
         variant="danger"
         onConfirm={() => {
           void remove().then((ok) => {
-            if (ok) flashSuccess('Проект удалён');
+            if (ok) flashSuccess('Договор перемещён в корзину');
           });
+        }}
+      />
+
+      <RepairScheduleTrashModal
+        isOpen={trashOpen}
+        onClose={() => setTrashOpen(false)}
+        onRestored={() => {
+          flashSuccess('Договор восстановлен из корзины');
+          void refresh();
+          void refreshTrashCount();
         }}
       />
     </div>

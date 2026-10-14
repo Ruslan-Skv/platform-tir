@@ -1,5 +1,6 @@
 import {
   defaultPackageWorkOrderHubTab,
+  packageWorkOrderHubTabLabel,
   packageWorkOrderHubTabsForPackage,
 } from './packageWorkOrderHubTabs';
 
@@ -17,5 +18,15 @@ describe('packageWorkOrderHubTabsForPackage WINDOWS', () => {
     expect(defaultPackageWorkOrderHubTab('workOrderAddendum1', 2, 'WINDOWS')).toBe(
       'workOrderAddendum1'
     );
+  });
+});
+
+describe('installerAdvances hub tab', () => {
+  it('is available for every package kind with hub-only labels', () => {
+    for (const packageKind of ['REPAIR', 'WINDOWS', 'FURNITURE'] as const) {
+      expect(packageWorkOrderHubTabsForPackage(0, packageKind)).toContain('installerAdvances');
+    }
+    expect(packageWorkOrderHubTabLabel('installerAdvances', true)).toBe('Авансы');
+    expect(packageWorkOrderHubTabLabel('installerAdvances', false)).toBe('Авансы мастерам');
   });
 });

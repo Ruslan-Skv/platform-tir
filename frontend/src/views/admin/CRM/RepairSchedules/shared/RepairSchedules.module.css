@@ -110,8 +110,68 @@
   position: relative;
 }
 
-.objectGroupRow td {
+/* Карточки объектов: раздельные границы — работают скругления ячеек. */
+.groupedTable table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.statusSectionRow td {
   background: var(--admin-surface-soft, #f8fafc);
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--admin-text-secondary);
+  border-bottom: 1px solid var(--admin-border);
+}
+
+/* Отступ между карточками — строка-разделитель без границ (как в списке расчётов). */
+.cardGapRow td {
+  padding: 4px 0 !important;
+  height: auto;
+  line-height: 0;
+  font-size: 0;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/*
+ * Левая полоса карточек — спокойный синий (--admin-info), а не акцент темы
+ * раздела (у ремонта он красный и выглядит как тревожная обводка).
+ */
+.objectGroupRow td:first-child {
+  box-shadow: inset 3px 0 0 var(--admin-info, #0ea5e9);
+}
+
+/*
+ * Мягкий голубой вместо серого: карточки объектов не должны сливаться
+ * с фоном строк-секций (--admin-surface-soft) и рябью белых строк таблицы.
+ * Оттенок согласован с info-полосой слева.
+ */
+.objectGroupRow td {
+  background: var(--admin-info-bg-soft, #eff6ff);
+}
+
+/* Свёрнутая карточка объекта скруглена целиком, развёрнутая — по верхним углам. */
+.objectGroupRowCollapsed td:first-child {
+  border-top-left-radius: var(--admin-radius-md, 8px);
+  border-bottom-left-radius: var(--admin-radius-md, 8px);
+}
+
+.objectGroupRowCollapsed td:last-child {
+  border-top-right-radius: var(--admin-radius-md, 8px);
+  border-bottom-right-radius: var(--admin-radius-md, 8px);
+}
+
+.objectGroupRowExpanded td:first-child {
+  border-top-left-radius: var(--admin-radius-md, 8px);
+}
+
+.objectGroupRowExpanded td:last-child {
+  border-top-right-radius: var(--admin-radius-md, 8px);
 }
 
 .objectGroupCell {
@@ -127,7 +187,28 @@
 }
 
 .objectChildRow td:first-child {
-  box-shadow: inset 3px 0 0 var(--admin-accent, #2563eb);
+  box-shadow: inset 3px 0 0 var(--admin-info, #0ea5e9);
+}
+
+/* Нижняя строка детей закрывает карточку нижними скруглениями. */
+.objectChildRowLast td:first-child {
+  border-bottom-left-radius: var(--admin-radius-md, 8px);
+}
+
+.objectChildRowLast td:last-child {
+  border-bottom-right-radius: var(--admin-radius-md, 8px);
+}
+
+/* Одиночный договор — самостоятельная карточка. */
+.standaloneCardRow td:first-child {
+  border-top-left-radius: var(--admin-radius-md, 8px);
+  border-bottom-left-radius: var(--admin-radius-md, 8px);
+  box-shadow: inset 3px 0 0 var(--admin-info, #0ea5e9);
+}
+
+.standaloneCardRow td:last-child {
+  border-top-right-radius: var(--admin-radius-md, 8px);
+  border-bottom-right-radius: var(--admin-radius-md, 8px);
 }
 
 .tableBusyHint {
@@ -140,6 +221,16 @@
   border: 1px solid var(--admin-border);
   font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
+}
+
+.mobileStatusSectionTitle {
+  margin-top: var(--admin-space-md);
+  padding: 0.15rem 0.4rem;
+  font-size: var(--admin-font-size-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--admin-text-secondary);
 }
 
 .mobileObjectGroup {
@@ -156,7 +247,7 @@
   padding: var(--admin-space-lg) var(--admin-space-xl);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-lg);
-  background: var(--admin-surface-soft, #f8fafc);
+  background: var(--admin-info-bg-soft, #eff6ff);
   text-align: left;
   color: inherit;
   font: inherit;
@@ -880,6 +971,12 @@ button.cellMain:focus-visible {
 :where(html[data-theme='dark'], [data-app-theme='dark']) .badgeCLOSED {
   background: rgb(22 101 52 / 0.35);
   color: #bbf7d0;
+}
+
+/* --admin-info-bg-soft в тёмной теме не переопределяется — считаем голубой вручную. */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .objectGroupRow td,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileObjectHeader {
+  background: rgb(37 99 235 / 0.22);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .passportRows dd,

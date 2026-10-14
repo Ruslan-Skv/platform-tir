@@ -1,6 +1,12 @@
-import type { RepairScheduleProject } from '@/shared/api/crm/admin-repair-schedules';
+import type {
+  RepairScheduleProject,
+  RepairScheduleProjectStatus,
+} from '@/shared/api/crm/admin-repair-schedules';
 
 import { formatMoney } from './repair-schedules';
+
+/** Максимальный разрыв между датами подписания договоров одного объекта, чтобы держать их одним блоком. */
+export const REPAIR_OBJECT_BLOCK_MONTHS = 2;
 
 export type RepairObjectGroup = {
   id: string;
@@ -15,6 +21,68 @@ export type RepairObjectGroup = {
 
 export function normalizeRepairGroupKey(value: string | null | undefined): string {
   return (value ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+/** Дата подписания договора проекта; без пакета — дата создания как приближение. */
+export function repairProjectSignDateIso(project: RepairScheduleProject): string {
+  return project.contractDate || project.createdAt;
+}
+
+function parseDayUtc(iso: string): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso.trim());
+  return m ? new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]))) : null;
+}
+
+/** Помещается ли дата b в пределы N календарных месяцев от даты a. */
+function withinMonths(aIso: string, bIso: string, months: number): boolean {
+  const a = parseDayUtc(aIso);
+  const b = parseDayUtc(bIso);
+  if (!a || !b) return true;
+  const limit = new Date(Date.UTC(a.getUTCFullYear(), a.getUTCMonth() + months, a.getUTCDate()));
+  return b.getTime() <= limit.getTime();
+}
+
+/**
+ * Разбивает договоры объекта на блоки по датам подписания: договоры, подписанные
+ * в пределах REPAIR_OBJECT_BLOCK_MONTHS месяцев друг от друга, держим вместе
+ * (одновременный ремонт); поэтапные ремонты с бОльшим разрывом идут отдельными блоками.
+ */
+function splitBySignDate(members: RepairScheduleProject[]): RepairScheduleProject[][] {
+  const sorted = [...members].sort(
+    (a, b) => Date.parse(repairProjectSignDateIso(a)) - Date.parse(repairProjectSignDateIso(b))
+  );
+  const blocks: RepairScheduleProject[][] = [];
+  let current: RepairScheduleProject[] = [];
+  for (const member of sorted) {
+    const prev = current[current.length - 1];
+    if (
+      !prev ||
+      withinMonths(
+        repairProjectSignDateIso(prev),
+        repairProjectSignDateIso(member),
+        REPAIR_OBJECT_BLOCK_MONTHS
+      )
+    ) {
+      current.push(member);
+    } else {
+      blocks.push(current);
+      current = [member];
+    }
+  }
+  if (current.length > 0) blocks.push(current);
+  return blocks;
+}
+
+/**
+ * Статус блока объекта: любой договор «в работе» → весь блок «в работе»
+ * (закрытие — по последнему: блок закрыт, когда закрыты все его договоры).
+ */
+export function repairObjectGroupStatus(
+  projects: RepairScheduleProject[]
+): RepairScheduleProjectStatus {
+  if (projects.some((p) => p.status === 'IN_PROGRESS')) return 'IN_PROGRESS';
+  if (projects.some((p) => p.status === 'NEW')) return 'NEW';
+  return 'CLOSED';
 }
 
 function uniqueDisplay(values: Array<string | null | undefined>): string[] {
@@ -83,24 +151,30 @@ export function buildRepairObjectGroups(projects: RepairScheduleProject[]): Repa
   const groups: RepairObjectGroup[] = [];
   for (const indices of buckets.values()) {
     const members = indices.map((i) => projects[i]);
-    const addresses = uniqueDisplay(members.map((m) => m.customerAddress));
-    const customerNames = uniqueDisplay(members.map((m) => m.customerName));
-    const label =
-      addresses[0] || customerNames[0] || members[0]?.contractNumber || members[0]?.id || 'Объект';
-    const idSeed = [
-      ...addresses.map((a) => `a:${normalizeRepairGroupKey(a)}`),
-      ...customerNames.map((c) => `c:${normalizeRepairGroupKey(c)}`),
-      ...members.map((m) => m.id),
-    ].join('|');
+    for (const blockMembers of splitBySignDate(members)) {
+      const addresses = uniqueDisplay(blockMembers.map((m) => m.customerAddress));
+      const customerNames = uniqueDisplay(blockMembers.map((m) => m.customerName));
+      const label =
+        addresses[0] ||
+        customerNames[0] ||
+        blockMembers[0]?.contractNumber ||
+        blockMembers[0]?.id ||
+        'Объект';
+      const idSeed = [
+        ...addresses.map((a) => `a:${normalizeRepairGroupKey(a)}`),
+        ...customerNames.map((c) => `c:${normalizeRepairGroupKey(c)}`),
+        ...blockMembers.map((m) => m.id),
+      ].join('|');
 
-    groups.push({
-      id: idSeed,
-      label,
-      customerNames,
-      addresses,
-      projects: members,
-      isCluster: members.length > 1,
-    });
+      groups.push({
+        id: idSeed,
+        label,
+        customerNames,
+        addresses,
+        projects: blockMembers,
+        isCluster: blockMembers.length > 1,
+      });
+    }
   }
 
   // Стабильный порядок групп: по первому появлению проекта в исходном списке

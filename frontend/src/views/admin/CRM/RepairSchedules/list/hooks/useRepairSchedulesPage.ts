@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
+import { useAuth } from '@/features/auth';
 import { type InstallerMaster, getInstallers } from '@/shared/api/admin-crm';
 import {
   type RepairScheduleProject,
@@ -12,6 +13,7 @@ import {
   createRepairScheduleProject,
   deleteRepairScheduleProject,
   getRepairScheduleProjects,
+  getRepairScheduleTrashCount,
   setRepairScheduleProjectStatus,
 } from '@/shared/api/crm/admin-repair-schedules';
 
@@ -21,15 +23,48 @@ import {
   matchesDeadlineFilter,
 } from '../../shared/repair-schedules';
 import {
+  buildRepairObjectGroups,
   compareRepairProjectsByAge,
   compareRepairProjectsByClosedAt,
+  repairObjectGroupStatus,
 } from '../../shared/repairObjectGroups';
 
 export type RepairDeadlineFilter = 'ALL' | 'LE20' | 'LE10' | 'LE3' | 'OVERDUE';
 
 export type RepairSchedulesViewMode = 'list' | 'timeline';
 
+/** Роли, которым разрешено перемещать договоры в корзину (зеркало PLANNER_ROLES backend). */
+const TRASH_PLANNER_ROLES = new Set([
+  'SUPER_ADMIN',
+  'ADMIN',
+  'MODERATOR',
+  'SUPPORT',
+  'MANAGER',
+  'TECHNOLOGIST',
+  'BRIGADIER',
+  'LEAD_SPECIALIST_FURNITURE',
+  'LEAD_SPECIALIST_WINDOWS_DOORS',
+]);
+
 const VIEW_MODE_STORAGE_KEY = 'admin_repair_schedules_view_mode';
+const FILTERS_STORAGE_KEY = 'admin_repair_schedules_filters';
+
+type StoredFilters = {
+  statusFilter: RepairScheduleProjectStatus | 'ALL';
+  deadlineFilter: RepairDeadlineFilter;
+  staleOnly: boolean;
+  search: string;
+};
+
+function readStoredFilters(): Partial<StoredFilters> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = window.localStorage.getItem(FILTERS_STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as Partial<StoredFilters>) : {};
+  } catch {
+    return {};
+  }
+}
 
 function readStoredViewMode(): RepairSchedulesViewMode {
   if (typeof window === 'undefined') return 'list';
@@ -42,15 +77,24 @@ function readStoredViewMode(): RepairSchedulesViewMode {
 
 export function useRepairSchedulesPage() {
   const router = useRouter();
-  const [statusFilter, setStatusFilter] = useState<RepairScheduleProjectStatus | 'ALL'>(
-    'IN_PROGRESS'
+  const { user } = useAuth();
+  /** В корзину — только планировщики и только вручную созданные проекты (без пакета). */
+  const canDeleteProject = useCallback(
+    (item: RepairScheduleProject) => TRASH_PLANNER_ROLES.has(user?.role ?? '') && !item.packageId,
+    [user?.role]
   );
-  const [deadlineFilter, setDeadlineFilter] = useState<RepairDeadlineFilter>('ALL');
+  const [stored] = useState(readStoredFilters);
+  const [statusFilter, setStatusFilter] = useState<RepairScheduleProjectStatus | 'ALL'>(
+    stored.statusFilter ?? 'IN_PROGRESS'
+  );
+  const [deadlineFilter, setDeadlineFilter] = useState<RepairDeadlineFilter>(
+    stored.deadlineFilter ?? 'ALL'
+  );
   const [viewMode, setViewModeState] = useState<RepairSchedulesViewMode>(() =>
     readStoredViewMode()
   );
-  const [staleOnly, setStaleOnly] = useState(false);
-  const [search, setSearch] = useState('');
+  const [staleOnly, setStaleOnly] = useState(stored.staleOnly ?? false);
+  const [search, setSearch] = useState(stored.search ?? '');
   const [items, setItems] = useState<RepairScheduleProject[]>([]);
   const [installers, setInstallers] = useState<InstallerMaster[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,6 +105,20 @@ export function useRepairSchedulesPage() {
   const [formValues, setFormValues] = useState<RepairProjectFormValues>(emptyRepairProjectForm);
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [trashOpen, setTrashOpen] = useState(false);
+  const [trashCount, setTrashCount] = useState(0);
+
+  const refreshTrashCount = useCallback(async () => {
+    try {
+      setTrashCount(await getRepairScheduleTrashCount());
+    } catch {
+      setTrashCount(0);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshTrashCount();
+  }, [refreshTrashCount]);
 
   const repairInstallers = useMemo(
     () => installers.filter((i) => i.directions?.includes('REPAIR')),
@@ -99,21 +157,52 @@ export function useRepairSchedulesPage() {
       .catch(() => setInstallers([]));
   }, []);
 
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        FILTERS_STORAGE_KEY,
+        JSON.stringify({ statusFilter, deadlineFilter, staleOnly, search })
+      );
+    } catch {
+      /* ignore */
+    }
+  }, [statusFilter, deadlineFilter, staleOnly, search]);
+
+  /** Блоки объектов: договоры одного объекта с датами подписания в пределах 2 месяцев. */
+  const objectGroups = useMemo(() => buildRepairObjectGroups(items), [items]);
+  /** Раздел блока для каждого договора — вкладка показывает блок целиком. */
+  const blockStatusById = useMemo(() => {
+    const map = new Map<string, RepairScheduleProjectStatus>();
+    for (const group of objectGroups) {
+      const status = repairObjectGroupStatus(group.projects);
+      for (const p of group.projects) map.set(p.id, status);
+    }
+    return map;
+  }, [objectGroups]);
+
   const statusScopedItems = useMemo(() => {
     if (statusFilter === 'ALL') return items;
-    return items.filter((i) => i.status === statusFilter);
-  }, [items, statusFilter]);
+    return items.filter((i) => blockStatusById.get(i.id) === statusFilter);
+  }, [items, statusFilter, blockStatusById]);
 
-  const statusCounts = useMemo(
-    () => ({
+  const statusCounts = useMemo(() => {
+    let NEW = 0;
+    let IN_PROGRESS = 0;
+    let CLOSED = 0;
+    for (const i of items) {
+      const blockStatus = blockStatusById.get(i.id);
+      if (blockStatus === 'NEW') NEW++;
+      else if (blockStatus === 'IN_PROGRESS') IN_PROGRESS++;
+      else CLOSED++;
+    }
+    return {
       ALL: items.length,
-      NEW: items.filter((i) => i.status === 'NEW').length,
-      IN_PROGRESS: items.filter((i) => i.status === 'IN_PROGRESS').length,
-      CLOSED: items.filter((i) => i.status === 'CLOSED').length,
+      NEW,
+      IN_PROGRESS,
+      CLOSED,
       STALE: items.filter((i) => i.stale).length,
-    }),
-    [items]
-  );
+    };
+  }, [items, blockStatusById]);
 
   const deadlineCounts = useMemo(
     () => ({
@@ -218,16 +307,17 @@ export function useRepairSchedulesPage() {
     }
   };
 
+  /** Удаление договора — только через корзину (мягкое удаление на backend). */
   const remove = async () => {
     if (!deleteItem) return false;
     setSubmitting(true);
     try {
       await deleteRepairScheduleProject(deleteItem.id);
       setDeleteItem(null);
-      await refresh();
+      await Promise.all([refresh(), refreshTrashCount()]);
       return true;
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Не удалось удалить');
+      setMessage(err instanceof Error ? err.message : 'Не удалось переместить в корзину');
       return false;
     } finally {
       setSubmitting(false);
@@ -267,6 +357,11 @@ export function useRepairSchedulesPage() {
     saveCreate,
     moveStatus,
     remove,
+    canDeleteProject,
+    trashOpen,
+    setTrashOpen,
+    trashCount,
+    refreshTrashCount,
     openProject: (id: string) => router.push(`/admin/crm/repair-schedules/${id}`),
   };
 }

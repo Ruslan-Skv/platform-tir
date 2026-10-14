@@ -89,6 +89,8 @@ export type RepairScheduleProject = {
   calculatedEndDateBase?: string | null;
   calculatedEndDate?: string | null;
   effectiveWorkPeriodDays?: number | null;
+  /** Дата подписания договора (из пакета); у проектов без пакета — нет. */
+  contractDate?: string | null;
   syncedFromPackage?: boolean;
   /** Календарных дней до расчётного окончания; < 0 — просрочен. */
   deadlineDaysLeft?: number | null;
@@ -104,6 +106,8 @@ export type RepairScheduleProject = {
     grade: string;
     userId: string | null;
   } | null;
+  /** Мастера, прикреплённые к договору в модалке «Заказ-наряды» пакета. */
+  attachedInstallers?: Array<{ id: string; fullName: string; grade: string }> | null;
   package?: {
     id: string;
     kind?: string;
@@ -203,7 +207,63 @@ export async function deleteRepairScheduleProject(id: string): Promise<void> {
     method: 'DELETE',
     headers: getAdminAuthHeaders(),
   });
-  if (!res.ok) await throwApiError(res, 'Не удалось удалить проект');
+  if (!res.ok) await throwApiError(res, 'Не удалось переместить договор в корзину');
+}
+
+/** Строка корзины: проект + кто и когда удалил + дата безвозвратного удаления. */
+export type RepairScheduleProjectTrashRow = RepairScheduleProject & {
+  deletedAt: string;
+  deletedById: string | null;
+  deletedBy: {
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+    role: string;
+  } | null;
+  permanentDeleteAt: string | null;
+};
+
+export async function getRepairScheduleTrashCount(): Promise<number> {
+  const res = await apiFetch(`${API_URL}/admin/repair-schedules/trash/count`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) await throwApiError(res, 'Не удалось загрузить счётчик корзины');
+  const data = (await res.json()) as { count: number };
+  return data.count;
+}
+
+export async function getRepairScheduleTrash(params?: {
+  search?: string;
+  page?: number;
+  limit?: number;
+}): Promise<{
+  data: RepairScheduleProjectTrashRow[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  trashRetentionDays?: number;
+}> {
+  const search = new URLSearchParams();
+  if (params?.search?.trim()) search.set('search', params.search.trim());
+  search.set('page', String(params?.page ?? 1));
+  search.set('limit', String(Math.min(params?.limit ?? 20, 100)));
+  const q = search.toString();
+  const res = await apiFetch(`${API_URL}/admin/repair-schedules/trash${q ? `?${q}` : ''}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) await throwApiError(res, 'Не удалось загрузить корзину');
+  return res.json();
+}
+
+export async function restoreRepairScheduleProject(id: string): Promise<RepairScheduleProject> {
+  const res = await apiFetch(`${API_URL}/admin/repair-schedules/${id}/restore`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) await throwApiError(res, 'Не удалось восстановить договор');
+  return res.json();
 }
 
 export async function addRepairScheduleEntry(

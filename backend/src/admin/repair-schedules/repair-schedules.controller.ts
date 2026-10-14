@@ -130,6 +130,27 @@ export class RepairSchedulesController {
     return this.fromPackage.autoSyncFromConcludedRepairPackages(req.user.id);
   }
 
+  @Get('trash/count')
+  trashCount(@Req() req: RequestWithUser) {
+    this.assertPlanner(req.user.role);
+    return this.service.trashCount().then((count) => ({ count }));
+  }
+
+  @Get('trash')
+  findTrash(
+    @Req() req: RequestWithUser,
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    this.assertPlanner(req.user.role);
+    return this.service.findTrash({
+      search,
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+    });
+  }
+
   @Get(':id')
   async findOne(@Req() req: RequestWithUser, @Param('id') id: string) {
     await this.service.assertCanAccessProject(id, req.user.id, req.user.role);
@@ -137,29 +158,41 @@ export class RepairSchedulesController {
   }
 
   @Patch(':id')
-  update(
+  async update(
     @Req() req: RequestWithUser,
     @Param('id') id: string,
     @Body() dto: UpdateRepairScheduleProjectDto,
   ) {
     this.assertPlanner(req.user.role);
+    // Статус пакетных проектов меняется только автосинхронизацией.
+    if (dto.status !== undefined) {
+      await this.service.assertManualStatusAllowed(id);
+    }
     return this.service.update(id, dto, req.user.id);
   }
 
   @Post(':id/status')
-  setStatus(
+  async setStatus(
     @Req() req: RequestWithUser,
     @Param('id') id: string,
     @Body() dto: SetRepairScheduleProjectStatusDto,
   ) {
     this.assertPlanner(req.user.role);
+    await this.service.assertManualStatusAllowed(id);
     return this.service.setStatus(id, dto.status, req.user.id);
   }
 
   @Delete(':id')
   remove(@Req() req: RequestWithUser, @Param('id') id: string) {
+    // Удаление — мягкое (проект уходит в корзину); правила кто может — как у мутаций планировщика.
     this.assertPlanner(req.user.role);
-    return this.service.remove(id);
+    return this.service.remove(id, req.user.id);
+  }
+
+  @Post(':id/restore')
+  restore(@Req() req: RequestWithUser, @Param('id') id: string) {
+    this.assertPlanner(req.user.role);
+    return this.service.restore(id);
   }
 
   @Post(':id/entries')

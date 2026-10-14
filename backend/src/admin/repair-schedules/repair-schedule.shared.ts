@@ -44,6 +44,21 @@ export const PROJECT_DETAIL_INCLUDE: Prisma.RepairScheduleProjectInclude = {
   },
 };
 
+/** Для списка корзины — как PROJECT_INCLUDE, плюс кто удалил. */
+export const PROJECT_TRASH_INCLUDE: Prisma.RepairScheduleProjectInclude = {
+  ...PROJECT_INCLUDE,
+  deletedBy: { select: USER_SELECT },
+};
+
+/** Срок хранения договора в корзине до безвозвратного удаления. */
+export const REPAIR_SCHEDULE_TRASH_RETENTION_DAYS = 30;
+export const REPAIR_SCHEDULE_TRASH_RETENTION_MS =
+  REPAIR_SCHEDULE_TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+
+export function repairScheduleTrashPermanentDeleteAtIso(deletedAt: Date): string {
+  return new Date(deletedAt.getTime() + REPAIR_SCHEDULE_TRASH_RETENTION_MS).toISOString();
+}
+
 export function emptyToNull(value?: string | null): string | null | undefined {
   if (value === undefined) return undefined;
   if (value === null) return null;
@@ -198,6 +213,8 @@ export type RepairContractTimelineEvent = {
 };
 
 export type RepairContractMeta = {
+  /** Дата подписания договора (из пакета: момент заключения либо дата блока «Договор»). */
+  contractDate: string | null;
   workPeriodDays: number | null;
   workStartActDate: string | null;
   workCloseActDate: string | null;
@@ -215,6 +232,15 @@ function parseIsoDateOnly(value: unknown): string | null {
   if (!t) return null;
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(t);
   return m ? `${m[1]}-${m[2]}-${m[3]}` : null;
+}
+
+/** Гибкий разбор даты: ISO (YYYY-MM-DD…) или DD.MM.YYYY (поле «Дата» в блоке договора). */
+function parseFlexibleDateOnly(value: unknown): string | null {
+  const iso = parseIsoDateOnly(value);
+  if (iso) return iso;
+  if (typeof value !== 'string') return null;
+  const m = /^(\d{2})\.(\d{2})\.(\d{4})/.exec(value.trim());
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : null;
 }
 
 function dateToIso(value: Date | null | undefined): string | null {
@@ -348,6 +374,11 @@ export function buildRepairContractMeta(input: {
   crmContractDurationDays?: number | null;
 }): RepairContractMeta {
   const fromPkg = input.packageFormData ? extractPackageContractTerms(input.packageFormData) : null;
+  const pkgForm = input.packageFormData ? asFormDataRecord(input.packageFormData) : null;
+  const contractDate = pkgForm
+    ? (parseIsoDateOnly(pkgForm.contractConcludedAt) ??
+      parseFlexibleDateOnly(asFormDataRecord(pkgForm.contract).date))
+    : null;
 
   const storedWorkPeriodDays =
     typeof input.workPeriodDays === 'number' ? input.workPeriodDays : null;
@@ -474,6 +505,7 @@ export function buildRepairContractMeta(input: {
   });
 
   return {
+    contractDate,
     workPeriodDays: workPeriodDays ?? null,
     workStartActDate,
     workCloseActDate,
@@ -536,6 +568,28 @@ export function buildDeadlineWarning(input: {
     return { deadlineDaysLeft: daysLeft, deadlineWarning: 'D20' };
   }
   return { deadlineDaysLeft: daysLeft, deadlineWarning: null };
+}
+
+/** Мастер, прикреплённый к договору в модалке «Заказ-наряды» пакета. */
+export type RepairScheduleAttachedInstaller = {
+  id: string;
+  fullName: string;
+  grade: string;
+};
+
+/**
+ * ID мастеров, прикреплённых к договору в модалке «Заказ-наряды»
+ * (поле selectedRepairInstallerIds в formData пакета документов).
+ */
+export function extractAttachedInstallerIds(packageFormData: unknown): string[] {
+  const form = asFormDataRecord(packageFormData);
+  const raw = form.selectedRepairInstallerIds;
+  if (!Array.isArray(raw)) return [];
+  const ids: string[] = [];
+  for (const value of raw) {
+    if (typeof value === 'string' && value.trim()) ids.push(value.trim());
+  }
+  return ids;
 }
 
 export function withDerived<

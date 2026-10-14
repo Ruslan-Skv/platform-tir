@@ -1,20 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { ContractDocumentPackageKind } from '@prisma/client';
 
-import { SetGlobalExecutorProfilesDto } from './dto/set-global-executor-profiles.dto';
-import { SetGlobalContractTemplatesDto } from './dto/set-global-contract-templates.dto';
-import { SetGlobalSignatoryProfilesDto } from './dto/set-global-signatory-profiles.dto';
-import { SetGlobalEstimatePresetsDto } from './dto/set-global-estimate-presets.dto';
-import { SetGlobalContractTemplateDto } from './dto/set-global-contract-template.dto';
+import { SetGlobalExecutorProfilesDto } from './dto/settings/set-global-executor-profiles.dto';
+import { SetGlobalContractTemplatesDto } from './dto/settings/set-global-contract-templates.dto';
+import { SetGlobalSignatoryProfilesDto } from './dto/settings/set-global-signatory-profiles.dto';
+import { SetGlobalEstimatePresetsDto } from './dto/settings/set-global-estimate-presets.dto';
+import { SetGlobalContractTemplateDto } from './dto/settings/set-global-contract-template.dto';
 import { CreateContractDocumentPackageDto } from './dto/create-contract-document-package.dto';
 import { UpdateContractDocumentPackageDto } from './dto/update-contract-document-package.dto';
 import {
   ApplyRepairWorkPeriodToAllDto,
   SetRepairContractSettingsDto,
-} from './dto/set-repair-settings.dto';
-import { SetRepairWorkOrderSettingsDto } from './dto/set-repair-work-order-settings.dto';
-import { SetWindowsWorkOrderMarkupDto } from './dto/set-windows-work-order-markup.dto';
-import { SetWindowsContractSettingsDto } from './dto/set-windows-settings.dto';
+} from './dto/settings/set-repair-settings.dto';
+import { SetRepairWorkOrderSettingsDto } from './dto/settings/set-repair-work-order-settings.dto';
+import { SetWindowsWorkOrderMarkupDto } from './dto/settings/set-windows-work-order-markup.dto';
+import { SetWindowsContractSettingsDto } from './dto/settings/set-windows-settings.dto';
 import { ContractDocumentPackageGlobalLibraryService } from './contract-document-package-global-library.service';
 import { ContractDocumentPackageEstimatePresetsService } from './contract-document-package-estimate-presets.service';
 import {
@@ -28,7 +28,7 @@ import {
   type ContractDocumentPackageFindAllFilters,
 } from './list-pipeline/contract-document-package-list.service';
 import { ContractDocumentPackageCeilingsPriceListService } from './contract-document-package-ceilings-price-list.service';
-import { SetCeilingsPriceListDto } from './dto/set-ceilings-price-list.dto';
+import { SetCeilingsPriceListDto } from './dto/settings/set-ceilings-price-list.dto';
 
 @Injectable()
 export class ContractDocumentPackagesService {

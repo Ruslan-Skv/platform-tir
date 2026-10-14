@@ -5,16 +5,16 @@ import { PrismaService } from '../../database/prisma.service';
 import {
   ExecutorProfileDto,
   SetGlobalExecutorProfilesDto,
-} from './dto/set-global-executor-profiles.dto';
+} from './dto/settings/set-global-executor-profiles.dto';
 import {
   ContractTemplatePresetDto,
   SetGlobalContractTemplatesDto,
-} from './dto/set-global-contract-templates.dto';
+} from './dto/settings/set-global-contract-templates.dto';
 import {
   SetGlobalSignatoryProfilesDto,
   SignatoryProfileDto,
-} from './dto/set-global-signatory-profiles.dto';
-import { SetGlobalContractTemplateDto } from './dto/set-global-contract-template.dto';
+} from './dto/settings/set-global-signatory-profiles.dto';
+import { SetGlobalContractTemplateDto } from './dto/settings/set-global-contract-template.dto';
 
 const CONTRACT_TEMPLATES_TAB = 'contract_templates';
 const EXECUTOR_PROFILES_TAB = 'executor_profiles';

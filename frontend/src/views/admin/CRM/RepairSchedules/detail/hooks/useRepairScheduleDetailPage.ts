@@ -84,7 +84,8 @@ export function useRepairScheduleDetailPage(projectId: string) {
     setEditError(null);
     try {
       const updated = await updateRepairScheduleProject(projectId, {
-        status: values.status,
+        // Статус пакетных проектов меняет автосинхронизация — вручную не отправляем.
+        ...(project?.packageId ? {} : { status: values.status }),
         contractNumber: values.contractNumber.trim() || null,
         workScope: values.workScope.trim() || null,
         installerId: values.manualInstaller ? null : values.installerId.trim() || null,

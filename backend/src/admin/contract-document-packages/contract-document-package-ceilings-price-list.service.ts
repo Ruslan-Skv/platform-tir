@@ -6,7 +6,7 @@ import {
   CeilingsPriceItemDto,
   CeilingsPriceListSettingsDto,
   SetCeilingsPriceListDto,
-} from './dto/set-ceilings-price-list.dto';
+} from './dto/settings/set-ceilings-price-list.dto';
 
 export const CEILINGS_PRICE_LIST_TAB = 'ceilings_price_list';
 

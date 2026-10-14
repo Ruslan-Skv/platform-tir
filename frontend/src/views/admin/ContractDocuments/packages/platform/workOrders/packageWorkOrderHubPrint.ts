@@ -11,10 +11,11 @@ import type {
 import {
   PACKAGE_WORK_ORDER_HUB_MODAL_TITLE,
   type PackageWorkOrderHubTabId,
+  type PackageWorkOrderTemplateHubTab,
+  isPackageWorkOrderTemplateHubTab,
   packageWorkOrderHubTabLabel,
   packageWorkOrderHubTabsForPackage,
 } from '../hub/workOrders/packageWorkOrderHubTabs';
-import { isPackageWorkOrderAddendumTab } from '../tabs/packageDocumentTabs';
 import {
   type FinalWorkOrderPrintEmbedInput,
   buildAllFinalWorkOrdersPrintHtml,
@@ -38,21 +39,18 @@ const HUB_PRINT_PAGE_BREAK_CSS = `<style>
 }
 </style>`;
 
-function isPackageWorkOrderTemplateHubTab(tab: PackageWorkOrderHubTabId): boolean {
-  return tab === 'workOrder' || isPackageWorkOrderAddendumTab(tab);
-}
-
 export function isPackageWorkOrderShareableHubTab(tab: PackageWorkOrderHubTabId): boolean {
   return isPackageWorkOrderTemplateHubTab(tab) || tab === 'finalWorkOrder';
 }
 
-/** Вкладки заказ-нарядов для пакетной печати (без интерактивной сметы). */
+/** Вкладки заказ-нарядов для пакетной печати (без интерактивной сметы и авансов). */
 export function packageWorkOrderHubTabsForBatchPrint(
   addendumSlotCount: number,
   packageKind: PackageWorkOrderHubContextValue['packageKind'] = 'REPAIR'
-): PackageWorkOrderHubTabId[] {
+): Array<PackageWorkOrderTemplateHubTab | 'finalWorkOrder'> {
   return packageWorkOrderHubTabsForPackage(addendumSlotCount, packageKind).filter(
-    (id) => isPackageWorkOrderTemplateHubTab(id) || id === 'finalWorkOrder'
+    (id): id is PackageWorkOrderTemplateHubTab | 'finalWorkOrder' =>
+      isPackageWorkOrderTemplateHubTab(id) || id === 'finalWorkOrder'
   );
 }
 
@@ -262,7 +260,7 @@ export async function buildPackageWorkOrderHubTabPdfFile(
 }
 
 function printTemplateWorkOrderTab(
-  tab: PackageWorkOrderHubTabId,
+  tab: PackageWorkOrderTemplateHubTab,
   ctx: PackageWorkOrderHubContextValue
 ): void {
   const html = ctx.getTemplatePreviewHtml(tab);
@@ -320,6 +318,10 @@ export function printPackageWorkOrderHubTab(
         ? 'Печать интерактивного счёт-заказа из этого окна недоступна.'
         : 'Печать интерактивной итоговой сметы из этого окна недоступна.'
     );
+    return;
+  }
+  if (panelTab === 'installerAdvances') {
+    window.alert('Печать журнала авансов из этого окна недоступна.');
     return;
   }
   if (isPackageWorkOrderTemplateHubTab(panelTab)) {

@@ -15,16 +15,19 @@ import {
 import {
   PROJECT_DETAIL_INCLUDE,
   PROJECT_INCLUDE,
+  type RepairScheduleAttachedInstaller,
   asFormDataRecord,
   customerFromFormData,
   decimalOrNull,
   emptyToNull,
+  extractAttachedInstallerIds,
   extractPackageContractTerms,
   moneyFromFormContract,
   parseDateOnly,
   withDerived,
 } from './repair-schedule.shared';
 import { RepairSchedulesImportService } from './repair-schedules-import.service';
+import { RepairSchedulesTrashService } from './repair-schedules-trash.service';
 import { UpdateRepairScheduleEntryDto } from './dto/update-repair-schedule-entry.dto';
 import { UpdateRepairScheduleProjectDto } from './dto/update-repair-schedule-project.dto';
 
@@ -36,6 +39,7 @@ export class RepairSchedulesService {
     private readonly prisma: PrismaService,
     private readonly notify: RepairScheduleNotifyService,
     private readonly importService: RepairSchedulesImportService,
+    private readonly trash: RepairSchedulesTrashService,
   ) {}
 
   private toNotifyPayload(
@@ -84,6 +88,34 @@ export class RepairSchedulesService {
       if (!name) name = installer.fullName;
     }
     return { installerId: id, installerName: name };
+  }
+
+  /** Дополняет проекты мастерами, прикреплёнными в модалке «Заказ-наряды» пакета. */
+  private async withContractInstallers<T extends { package?: { formData?: unknown } | null }>(
+    rows: T[],
+  ): Promise<Array<T & { attachedInstallers: RepairScheduleAttachedInstaller[] }>> {
+    const idsByRow = rows.map((row) => extractAttachedInstallerIds(row.package?.formData));
+    const allIds = [...new Set(idsByRow.flat())];
+    const byId = new Map<string, RepairScheduleAttachedInstaller>();
+    if (allIds.length > 0) {
+      const installers = await this.prisma.installerMaster.findMany({
+        where: { id: { in: allIds } },
+        select: { id: true, fullName: true, grade: true },
+      });
+      for (const installer of installers) byId.set(installer.id, installer);
+    }
+    return rows.map((row, index) => ({
+      ...row,
+      attachedInstallers: idsByRow[index]
+        .map((id) => byId.get(id))
+        .filter((installer): installer is RepairScheduleAttachedInstaller => Boolean(installer)),
+    }));
+  }
+
+  private async withContractInstaller<T extends { package?: { formData?: unknown } | null }>(
+    row: T,
+  ): Promise<T & { attachedInstallers: RepairScheduleAttachedInstaller[] }> {
+    return (await this.withContractInstallers([row]))[0];
   }
 
   private async enrichFromPackage(packageId: string) {
@@ -201,7 +233,7 @@ export class RepairSchedulesService {
     if (actorId && options?.notify !== false) {
       this.notify.onCreated(this.toNotifyPayload(project), actorId);
     }
-    return withDerived(project);
+    return this.withContractInstaller(withDerived(project));
   }
 
   async findAll(params: {
@@ -213,6 +245,7 @@ export class RepairSchedulesService {
     const status = params.status;
     const search = params.search?.trim();
     const where: Prisma.RepairScheduleProjectWhereInput = {
+      deletedAt: null,
       ...(status ? { status } : {}),
       ...(params.installerId?.trim() ? { installerId: params.installerId.trim() } : {}),
       ...(search
@@ -238,13 +271,14 @@ export class RepairSchedulesService {
     if (params.staleOnly) {
       result = result.filter((row) => row.stale);
     }
-    return result;
+    return this.withContractInstallers(result);
   }
 
   async findMy(userId: string, params?: { status?: RepairScheduleProjectStatus; search?: string }) {
     const search = params?.search?.trim();
     const rows = await this.prisma.repairScheduleProject.findMany({
       where: {
+        deletedAt: null,
         installer: { userId },
         ...(params?.status ? { status: params.status } : {}),
         ...(search
@@ -261,7 +295,7 @@ export class RepairSchedulesService {
       include: PROJECT_INCLUDE,
       orderBy: [{ status: 'asc' }, { updatedAt: 'desc' }],
     });
-    return rows.map((row) => withDerived(row));
+    return this.withContractInstallers(rows.map((row) => withDerived(row)));
   }
 
   async assertCanAccessProject(projectId: string, userId: string, role: string) {
@@ -282,7 +316,7 @@ export class RepairSchedulesService {
       include: PROJECT_DETAIL_INCLUDE,
     });
     if (!project) throw new NotFoundException(`Repair schedule project ${id} not found`);
-    return withDerived(project);
+    return this.withContractInstaller(withDerived(project));
   }
 
   async update(
@@ -400,7 +434,7 @@ export class RepairSchedulesService {
       data,
       include: PROJECT_DETAIL_INCLUDE,
     });
-    const derived = withDerived(updated);
+    const derived = await this.withContractInstaller(withDerived(updated));
     const skipNotify = options?.notify === false || !actorId;
     if (dto.status !== undefined) {
       if (!skipNotify) this.notify.onStatusChanged(this.toNotifyPayload(updated), actorId);
@@ -419,10 +453,55 @@ export class RepairSchedulesService {
     return this.update(id, { status }, actorUserId, options);
   }
 
-  async remove(id: string) {
-    await this.findOne(id);
-    await this.prisma.repairScheduleProject.delete({ where: { id } });
-    return { ok: true };
+  /**
+   * Ручная смена статуса разрешена только у проектов, созданных вручную:
+   * статус пакетных проектов двигает автосинхронизация из пакета документов.
+   */
+  async assertManualStatusAllowed(id: string) {
+    const project = await this.prisma.repairScheduleProject.findUnique({
+      where: { id },
+      select: { packageId: true },
+    });
+    if (!project) throw new NotFoundException('Проект план-графика не найден');
+    if (project.packageId) {
+      throw new ForbiddenException(
+        'Договор добавлен в план-график из пакета документов — статус меняется автоматически',
+      );
+    }
+  }
+
+  /** Удаление договора — только мягкое: проект уходит в корзину (восстановление — из корзины). */
+  async remove(id: string, actorUserId?: string | null) {
+    const project = await this.prisma.repairScheduleProject.findFirst({
+      where: { id },
+      select: { packageId: true, deletedAt: true },
+    });
+    if (!project) throw new NotFoundException('Проект план-графика не найден');
+    if (project.deletedAt) throw new BadRequestException('Договор уже в корзине');
+    if (project.packageId) {
+      // Автосозданные из пакета проектов не удаляются — только закрытие через договор.
+      throw new ForbiddenException(
+        'Договор добавлен в план-график автоматически из пакета документов — удалить нельзя',
+      );
+    }
+    const trashed = await this.prisma.repairScheduleProject.update({
+      where: { id },
+      data: { deletedAt: new Date(), deletedById: emptyToNull(actorUserId) ?? null },
+      include: PROJECT_INCLUDE,
+    });
+    return withDerived(trashed);
+  }
+
+  async trashCount() {
+    return this.trash.trashCount();
+  }
+
+  async findTrash(params: { search?: string; page?: number; limit?: number }) {
+    return this.trash.findTrash(params);
+  }
+
+  async restore(id: string) {
+    return this.trash.restore(id);
   }
 
   async addEntry(projectId: string, dto: CreateRepairScheduleEntryDto, createdById: string) {

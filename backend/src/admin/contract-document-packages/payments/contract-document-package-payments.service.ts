@@ -1,11 +1,11 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PaymentForm, PaymentType, Prisma } from '@prisma/client';
 
-import { PrismaService } from '../../database/prisma.service';
-import { MoneyMovementsService } from '../money-movements/money-movements.service';
-import { RepairScheduleFromPackageService } from '../repair-schedules/repair-schedule-from-package.service';
-import { CreateContractDocumentPackagePaymentDto } from './dto/create-contract-document-package-payment.dto';
-import { UpdateContractDocumentPackagePaymentDto } from './dto/update-contract-document-package-payment.dto';
+import { PrismaService } from '../../../database/prisma.service';
+import { MoneyMovementsService } from '../../money-movements/money-movements.service';
+import { RepairScheduleFromPackageService } from '../../repair-schedules/repair-schedule-from-package.service';
+import { CreateContractDocumentPackagePaymentDto } from '../dto/payments/create-contract-document-package-payment.dto';
+import { UpdateContractDocumentPackagePaymentDto } from '../dto/payments/update-contract-document-package-payment.dto';
 
 const MAX_PAYMENTS_PER_PACKAGE = 120;
 

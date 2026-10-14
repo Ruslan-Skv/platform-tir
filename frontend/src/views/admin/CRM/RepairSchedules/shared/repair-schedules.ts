@@ -6,6 +6,43 @@ export const REPAIR_STATUS_LABELS = {
   CLOSED: 'Закрытые',
 } as const;
 
+export type RepairStatusChangeTexts = {
+  title: string;
+  message: string;
+  confirmText: string;
+  successText: string;
+};
+
+/** Тексты подтверждения смены статуса договора (target — целевой статус). */
+export function repairStatusChangeTexts(
+  target: RepairProjectFormValues['status'],
+  contractNumber: string | null | undefined
+): RepairStatusChangeTexts {
+  const name = contractNumber?.trim() || 'Без номера';
+  if (target === 'IN_PROGRESS') {
+    return {
+      title: 'Перевести в работу?',
+      message: `Договор «${name}» будет переведён в статус «В работе».`,
+      confirmText: 'В работу',
+      successText: 'Проект в работе',
+    };
+  }
+  if (target === 'CLOSED') {
+    return {
+      title: 'Закрыть договор?',
+      message: `Договор «${name}» будет переведён в статус «Закрытые».`,
+      confirmText: 'Закрыть',
+      successText: 'Договор закрыт',
+    };
+  }
+  return {
+    title: 'Вернуть в работу?',
+    message: `Договор «${name}» будет возвращён в работу из «Закрытых».`,
+    confirmText: 'Вернуть в работу',
+    successText: 'Проект снова в работе',
+  };
+}
+
 export const ENTRY_KIND_LABELS = {
   WEEKLY: 'Неделя',
   MILESTONE: 'Веха',

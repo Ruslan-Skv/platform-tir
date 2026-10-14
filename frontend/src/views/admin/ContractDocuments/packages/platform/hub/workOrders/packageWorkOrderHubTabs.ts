@@ -19,9 +19,22 @@ export const PACKAGE_WORK_ORDER_HUB_TAB_IDS = [
   'workOrderAddendum5',
   'interactiveFinalEstimate',
   'finalWorkOrder',
+  'installerAdvances',
 ] as const;
 
 export type PackageWorkOrderHubTabId = (typeof PACKAGE_WORK_ORDER_HUB_TAB_IDS)[number];
+
+/** Шаблонные вкладки заказ-нарядов (общий + к Д/с) — у них есть шаблон предпросмотра. */
+export type PackageWorkOrderTemplateHubTab = Exclude<
+  PackageWorkOrderHubTabId,
+  'interactiveFinalEstimate' | 'finalWorkOrder' | 'installerAdvances'
+>;
+
+export function isPackageWorkOrderTemplateHubTab(
+  tab: PackageWorkOrderHubTabId
+): tab is PackageWorkOrderTemplateHubTab {
+  return tab === 'workOrder' || isPackageWorkOrderAddendumTab(tab);
+}
 
 export const PACKAGE_WORK_ORDER_HUB_MODAL_TITLE = 'Заказ-наряды';
 
@@ -52,6 +65,15 @@ const WINDOWS_WORK_ORDER_HUB_TAB_LABELS: Partial<Record<PackageWorkOrderHubTabId
   interactiveFinalEstimate: 'Интерактивный счёт-заказ',
 };
 
+/** Вкладка есть только в модалке заказ-нарядов — подписи храним здесь, а не в табах редактора. */
+const HUB_ONLY_TAB_LABELS_SHORT: Partial<Record<PackageWorkOrderHubTabId, string>> = {
+  installerAdvances: 'Авансы',
+};
+
+const HUB_ONLY_TAB_LABELS: Partial<Record<PackageWorkOrderHubTabId, string>> = {
+  installerAdvances: 'Авансы мастерам',
+};
+
 export function packageWorkOrderHubTabsForPackage(
   addendumSlotCount: number,
   _packageKind: ContractDocumentPackageKind = 'REPAIR'
@@ -75,7 +97,12 @@ export function packageWorkOrderHubTabLabel(
       : WINDOWS_WORK_ORDER_HUB_TAB_LABELS[id];
     if (override) return override;
   }
-  return short ? PACKAGE_DOCUMENT_TAB_LABELS_SHORT[id] : PACKAGE_DOCUMENT_TAB_LABELS[id];
+  const hubOnlyOverride = short ? HUB_ONLY_TAB_LABELS_SHORT[id] : HUB_ONLY_TAB_LABELS[id];
+  if (hubOnlyOverride) return hubOnlyOverride;
+  const documentTabId = id as PackageDocumentTabId;
+  return short
+    ? PACKAGE_DOCUMENT_TAB_LABELS_SHORT[documentTabId]
+    : PACKAGE_DOCUMENT_TAB_LABELS[documentTabId];
 }
 
 export function defaultPackageWorkOrderHubTab(

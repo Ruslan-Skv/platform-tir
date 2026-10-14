@@ -1,10 +1,13 @@
 'use client';
 
-import { isPackageWorkOrderAddendumTab } from '../../tabs/packageDocumentTabs';
 import { PackageWorkOrdersHubFinalWorkOrderPanel } from './PackageWorkOrdersHubFinalWorkOrderPanel';
+import { PackageWorkOrdersHubInstallerAdvancesPanel } from './PackageWorkOrdersHubInstallerAdvancesPanel';
 import { PackageWorkOrdersHubInteractiveEstimatePanel } from './PackageWorkOrdersHubInteractiveEstimatePanel';
 import { PackageWorkOrdersHubTemplatePreviewPanel } from './PackageWorkOrdersHubTemplatePreviewPanel';
-import type { PackageWorkOrderHubTabId } from './packageWorkOrderHubTabs';
+import {
+  type PackageWorkOrderHubTabId,
+  isPackageWorkOrderTemplateHubTab,
+} from './packageWorkOrderHubTabs';
 
 export type PackageWorkOrdersHubPanelsProps = {
   panelTab: PackageWorkOrderHubTabId;
@@ -19,7 +22,11 @@ export function PackageWorkOrdersHubPanels({ panelTab }: PackageWorkOrdersHubPan
     return <PackageWorkOrdersHubFinalWorkOrderPanel />;
   }
 
-  if (panelTab === 'workOrder' || isPackageWorkOrderAddendumTab(panelTab)) {
+  if (panelTab === 'installerAdvances') {
+    return <PackageWorkOrdersHubInstallerAdvancesPanel />;
+  }
+
+  if (isPackageWorkOrderTemplateHubTab(panelTab)) {
     return <PackageWorkOrdersHubTemplatePreviewPanel panelTab={panelTab} />;
   }
 

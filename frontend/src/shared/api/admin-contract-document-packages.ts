@@ -162,6 +162,38 @@ export type ContractDocumentPackagePaymentPatch = Partial<{
   notes: string | null;
 }>;
 
+/** Запись журнала авансов мастеров по договору (вкладка «Авансы» в заказ-нарядах). */
+export interface ContractDocumentPackageInstallerAdvance {
+  id: string;
+  packageId: string;
+  installerId: string | null;
+  /** Живое имя из справочника либо снимок, если мастер удалён. */
+  installerName: string | null;
+  installerGrade: string | null;
+  paidAt: string;
+  amount: string;
+  note: string | null;
+  createdById: string | null;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: ContractDocumentPackagePaymentUserRef | null;
+}
+
+export interface ContractDocumentPackageInstallerAdvanceInput {
+  installerId: string;
+  paidAt: string;
+  amount: number;
+  note?: string;
+}
+
+/** PATCH аванса: допускается null для сброса комментария. */
+export type ContractDocumentPackageInstallerAdvancePatch = Partial<{
+  installerId: string;
+  paidAt: string;
+  amount: number;
+  note: string | null;
+}>;
+
 /** Запись журнала событий пакета (снимок метаданных без тела formData в списке). */
 export interface ContractDocumentPackageVersionListItem {
   id: string;
@@ -575,6 +607,63 @@ export async function deleteContractDocumentPackagePayment(
 ): Promise<void> {
   const res = await apiFetch(
     `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/payments/${paymentId}`,
+    { method: 'DELETE', headers: getAdminAuthHeaders() }
+  );
+  if (!res.ok) throw new Error(await readAdminContractPackagesError(res));
+}
+
+export async function getContractDocumentPackageInstallerAdvances(
+  packageId: string
+): Promise<ContractDocumentPackageInstallerAdvance[]> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/installer-advances`,
+    {
+      headers: getAdminAuthHeaders(),
+    }
+  );
+  if (!res.ok) throw new Error(await readAdminContractPackagesError(res));
+  return res.json();
+}
+
+export async function createContractDocumentPackageInstallerAdvance(
+  packageId: string,
+  body: ContractDocumentPackageInstallerAdvanceInput
+): Promise<ContractDocumentPackageInstallerAdvance> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/installer-advances`,
+    {
+      method: 'POST',
+      headers: getAdminAuthHeaders(),
+      body: JSON.stringify(body),
+    }
+  );
+  if (!res.ok) throw new Error(await readAdminContractPackagesError(res));
+  return res.json();
+}
+
+export async function updateContractDocumentPackageInstallerAdvance(
+  packageId: string,
+  advanceId: string,
+  body: ContractDocumentPackageInstallerAdvancePatch
+): Promise<ContractDocumentPackageInstallerAdvance> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/installer-advances/${advanceId}`,
+    {
+      method: 'PATCH',
+      headers: getAdminAuthHeaders(),
+      body: JSON.stringify(body),
+    }
+  );
+  if (!res.ok) throw new Error(await readAdminContractPackagesError(res));
+  return res.json();
+}
+
+export async function deleteContractDocumentPackageInstallerAdvance(
+  packageId: string,
+  advanceId: string
+): Promise<void> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/installer-advances/${advanceId}`,
     { method: 'DELETE', headers: getAdminAuthHeaders() }
   );
   if (!res.ok) throw new Error(await readAdminContractPackagesError(res));

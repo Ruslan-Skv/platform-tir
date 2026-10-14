@@ -7,8 +7,8 @@ import {
   type StoredPaymentInvoiceLineItem,
   serializeInvoice,
 } from './contract-document-payment-invoice-serialize';
-import { CreateContractDocumentPaymentInvoiceDto } from '../dto/create-contract-document-payment-invoice.dto';
-import { CreateFreePaymentInvoiceDto } from '../dto/create-free-payment-invoice.dto';
+import { CreateContractDocumentPaymentInvoiceDto } from '../dto/invoices/create-contract-document-payment-invoice.dto';
+import { CreateFreePaymentInvoiceDto } from '../dto/invoices/create-free-payment-invoice.dto';
 
 const COUNTER_ID = 'global';
 const MAX_INVOICES_PER_PACKAGE = 200;

@@ -5,11 +5,11 @@ import cdEstimatesList from '../../../../styles/estimates-list.module.css';
 import cdProduct from '../../../../styles/product-package.module.css';
 import { PackageWorkOrderGradeButtons } from './PackageWorkOrderGradeButtons';
 import { usePackageWorkOrderHub } from './PackageWorkOrderHubContext';
-import type { PackageWorkOrderHubTabId } from './packageWorkOrderHubTabs';
+import type { PackageWorkOrderTemplateHubTab } from './packageWorkOrderHubTabs';
 import { WO_A4_WRAP, WO_FORM_GRID, woPanelRootClass } from './packageWorkOrdersHubPanelStyles';
 
 export type PackageWorkOrdersHubTemplatePreviewPanelProps = {
-  panelTab: PackageWorkOrderHubTabId;
+  panelTab: PackageWorkOrderTemplateHubTab;
 };
 
 export function PackageWorkOrdersHubTemplatePreviewPanel({
