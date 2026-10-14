@@ -360,7 +360,9 @@ export function RepairSchedulesGroupedList({
         {sections.map((section) => (
           <Fragment key={section.id}>
             {section.label ? (
-              <p className={styles.mobileStatusSectionTitle}>
+              <p
+                className={`${styles.mobileStatusSectionTitle} ${styles[`mobileStatusSectionTitle${section.id}`]}`}
+              >
                 {section.label} ({section.count})
               </p>
             ) : null}
@@ -429,7 +431,9 @@ export function RepairSchedulesGroupedList({
                 {sections.map((section) => (
                   <Fragment key={section.id}>
                     {section.label ? (
-                      <tr className={styles.statusSectionRow}>
+                      <tr
+                        className={`${styles.statusSectionRow} ${styles[`statusSectionRow${section.id}`]}`}
+                      >
                         <td colSpan={COL_SPAN}>
                           {section.label} ({section.count})
                         </td>

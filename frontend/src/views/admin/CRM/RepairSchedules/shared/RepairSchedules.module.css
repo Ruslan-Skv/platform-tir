@@ -127,6 +127,28 @@
   border-bottom: 1px solid var(--admin-border);
 }
 
+/*
+ * Свой цвет заголовка у каждого раздела (и в таблице, и в мобильном списке).
+ * Двойной класс нужен, чтобы перекрыть цвет .table td из общего DataTable —
+ * при равной специфичности тот побеждает порядком загрузки CSS-чанков.
+ */
+.statusSectionRow.statusSectionRowIN_PROGRESS td,
+.mobileStatusSectionTitleIN_PROGRESS {
+  color: var(--admin-info, #2563eb);
+}
+
+/* Фиолетовый — прямым значением: --admin-chart-violet-strong в лейауте
+ * переопределён на красный акцент темы (legacy-алиас). */
+.statusSectionRow.statusSectionRowNEW td,
+.mobileStatusSectionTitleNEW {
+  color: #7c3aed;
+}
+
+.statusSectionRow.statusSectionRowCLOSED td,
+.mobileStatusSectionTitleCLOSED {
+  color: var(--admin-success-deep, #15803d);
+}
+
 /* Отступ между карточками — строка-разделитель без границ (как в списке расчётов). */
 .cardGapRow td {
   padding: 4px 0 !important;
@@ -139,17 +161,16 @@
 }
 
 /*
- * Левая полоса карточек — спокойный синий (--admin-info), а не акцент темы
- * раздела (у ремонта он красный и выглядит как тревожная обводка).
+ * Карточка объекта из нескольких договоров — серая полоса вместо синей,
+ * чтобы отличать её от карточек одиночных договоров (синяя --admin-info).
  */
 .objectGroupRow td:first-child {
-  box-shadow: inset 3px 0 0 var(--admin-info, #0ea5e9);
+  box-shadow: inset 3px 0 0 var(--admin-text-muted, #94a3b8);
 }
 
 /*
  * Мягкий голубой вместо серого: карточки объектов не должны сливаться
  * с фоном строк-секций (--admin-surface-soft) и рябью белых строк таблицы.
- * Оттенок согласован с info-полосой слева.
  */
 .objectGroupRow td {
   background: var(--admin-info-bg-soft, #eff6ff);
@@ -186,8 +207,13 @@
   white-space: nowrap;
 }
 
+/*
+ * Договоры внутри объекта (≥2 договоров) — серая полоса вместо синей,
+ * чтобы отличать их от карточек одиночных договоров (как child-строки
+ * в списке договоров /admin/contract-documents/contracts).
+ */
 .objectChildRow td:first-child {
-  box-shadow: inset 3px 0 0 var(--admin-info, #0ea5e9);
+  box-shadow: inset 3px 0 0 var(--admin-text-muted, #94a3b8);
 }
 
 /* Нижняя строка детей закрывает карточку нижними скруглениями. */
@@ -971,6 +997,26 @@ button.cellMain:focus-visible {
 :where(html[data-theme='dark'], [data-app-theme='dark']) .badgeCLOSED {
   background: rgb(22 101 52 / 0.35);
   color: #bbf7d0;
+}
+
+/* Осветлённые цвета заголовков разделов для тёмной темы. */
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .statusSectionRow.statusSectionRowIN_PROGRESS
+  td,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileStatusSectionTitleIN_PROGRESS {
+  color: #60a5fa;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .statusSectionRow.statusSectionRowNEW td,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileStatusSectionTitleNEW {
+  color: #a78bfa;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .statusSectionRow.statusSectionRowCLOSED
+  td,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileStatusSectionTitleCLOSED {
+  color: #4ade80;
 }
 
 /* --admin-info-bg-soft в тёмной теме не переопределяется — считаем голубой вручную. */

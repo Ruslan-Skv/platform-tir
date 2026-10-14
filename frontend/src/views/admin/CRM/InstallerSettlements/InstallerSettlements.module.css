@@ -1,0 +1,303 @@
+/* Страница — на всю ширину контента (см. комментарий в MoneyMovements.module.css:
+   в прод-сборке важен порядок чанков, этот модуль грузится последним). */
+.pageFull {
+  max-width: none;
+  width: 100%;
+}
+
+.pageMessage {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-sm, 6px);
+  padding: var(--admin-space-sm, 6px) var(--admin-space-md, 12px);
+  border: 1px solid var(--admin-error-border, #fca5a5);
+  border-radius: var(--admin-radius-sm, 6px);
+  background: var(--admin-error-bg, #fef2f2);
+  color: var(--admin-error, #b91c1c);
+  font-size: var(--admin-font-size-sm, 13px);
+  margin-bottom: var(--admin-space-md, 12px);
+}
+
+.pageMessage button {
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 4px;
+}
+
+/* --- Плитки итогов: выдано за период + разбивка по направлениям --- */
+
+.totalsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm, 8px);
+  margin: 0 0 var(--admin-space-md, 12px);
+}
+
+.totalsRowLoading {
+  opacity: 0.6;
+}
+
+.totalsTile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 7.5rem;
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-md, 8px);
+  background: var(--admin-surface, #fff);
+  padding: var(--admin-space-sm, 8px) var(--admin-space-lg, 14px);
+}
+
+.totalsTileLabel {
+  font-size: var(--admin-font-size-xs, 12px);
+  color: var(--admin-text-muted, #6b7280);
+}
+
+.totalsTileValue {
+  font-size: var(--admin-font-size-md, 14px);
+  font-weight: 600;
+  color: var(--admin-text, #111827);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.totalsTileTotal {
+  background: var(--admin-info-bg-soft, #eff6ff);
+  border-color: var(--admin-info-border, #93c5fd);
+}
+
+.totalsTileTotal .totalsTileValue {
+  color: var(--admin-info-strong, #1d4ed8);
+}
+
+/* --- Сводка по мастерам --- */
+
+.mastersCard {
+  margin: 0 0 var(--admin-space-md, 12px);
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-md, 8px);
+  background: var(--admin-surface, #fff);
+  padding: var(--admin-space-md, 12px) var(--admin-space-lg, 16px);
+}
+
+.mastersTitle {
+  margin: 0 0 var(--admin-space-2xs, 4px);
+  font-size: var(--admin-font-size-md, 15px);
+  font-weight: 600;
+  color: var(--admin-text, #111827);
+}
+
+.mastersHint {
+  margin: 0 0 var(--admin-space-sm, 8px);
+  font-size: var(--admin-font-size-xs, 12px);
+  color: var(--admin-text-muted, #6b7280);
+}
+
+.mastersTableWrap {
+  overflow-x: auto;
+}
+
+.mastersTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--admin-font-size-sm, 13px);
+}
+
+.mastersTable th,
+.mastersTable td {
+  text-align: left;
+  padding: 6px 10px 6px 0;
+  border-bottom: 1px solid var(--admin-border, #e5e7eb);
+  white-space: nowrap;
+}
+
+.mastersTable th {
+  font-size: var(--admin-font-size-xs, 12px);
+  font-weight: 600;
+  color: var(--admin-text-muted, #6b7280);
+  text-transform: none;
+}
+
+.mastersTable th:last-child,
+.mastersTable td:last-child {
+  padding-right: 0;
+}
+
+.mastersTable td.num,
+.mastersTable th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.mastersTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.mastersTable tfoot td {
+  border-top: 2px solid var(--admin-border-strong, #d1d5db);
+  border-bottom: none;
+  font-weight: 600;
+}
+
+.mastersTableSubline {
+  display: block;
+  font-size: var(--admin-font-size-xs, 12px);
+  color: var(--admin-text-muted, #9ca3af);
+}
+
+/* Остаток к выплате: недоплата — обычная, переплата — красная. */
+.balanceDue {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.balanceOverpaid {
+  font-weight: 700;
+  color: var(--admin-error, #b91c1c);
+  font-variant-numeric: tabular-nums;
+}
+
+.balanceUnknown {
+  color: var(--admin-text-muted, #9ca3af);
+  cursor: help;
+}
+
+/* --- Журнал выплат --- */
+
+.amountCell {
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.contractCell {
+  white-space: nowrap;
+}
+
+.customerCell {
+  max-width: 260px;
+}
+
+.cellSubline {
+  display: block;
+  font-size: var(--admin-font-size-xs, 12px);
+  color: var(--admin-text-muted, #9ca3af);
+}
+
+.noteCell {
+  max-width: 320px;
+  overflow-wrap: anywhere;
+}
+
+.muted {
+  color: var(--admin-text-muted, #9ca3af);
+}
+
+.resetBtn {
+  border: 1px solid var(--admin-border, #e5e7eb);
+  background: var(--admin-surface, #fff);
+  color: var(--admin-text-muted, #6b7280);
+  border-radius: var(--admin-radius-sm, 6px);
+  padding: 0 var(--admin-space-md, 12px);
+  height: 38px;
+  cursor: pointer;
+  font-size: var(--admin-font-size-sm, 13px);
+  white-space: nowrap;
+}
+
+.resetBtn:hover {
+  color: var(--admin-text, #111827);
+  border-color: var(--admin-info, #3b82f6);
+}
+
+/* --- Модалка «Выплата мастеру»: выбор договора --- */
+
+.advancePackageBox {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid var(--admin-info-border, #93c5fd);
+  border-radius: var(--admin-radius-md, 8px);
+  background: var(--admin-info-bg-soft, #eff6ff);
+  padding: var(--admin-space-sm, 8px) var(--admin-space-lg, 12px);
+  padding-right: 8.5rem;
+}
+
+.advancePackageMain {
+  font-size: var(--admin-font-size-sm, 13px);
+  font-weight: 600;
+  color: var(--admin-text, #111827);
+}
+
+.advancePackageSubline {
+  font-size: var(--admin-font-size-xs, 12px);
+  color: var(--admin-text-muted, #6b7280);
+}
+
+.advancePackageChangeBtn {
+  position: absolute;
+  top: var(--admin-space-sm, 8px);
+  right: var(--admin-space-sm, 8px);
+  border: 1px solid var(--admin-border-strong, #d1d5db);
+  border-radius: var(--admin-radius-sm, 6px);
+  background: var(--admin-surface, #fff);
+  color: var(--admin-text-muted, #6b7280);
+  font-size: var(--admin-font-size-xs, 12px);
+  padding: 3px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.advancePackageChangeBtn:hover:not(:disabled) {
+  color: var(--admin-text, #111827);
+  border-color: var(--admin-info, #3b82f6);
+}
+
+.advancePackageList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 14rem;
+  overflow-y: auto;
+  margin-top: 4px;
+}
+
+.advancePackageOption {
+  text-align: left;
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-sm, 6px);
+  background: var(--admin-surface, #fff);
+  color: var(--admin-text, #111827);
+  font-size: var(--admin-font-size-sm, 13px);
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.advancePackageOption:hover:not(:disabled) {
+  border-color: var(--admin-info, #3b82f6);
+  background: var(--admin-info-bg-soft, #eff6ff);
+}
+
+/* Мобильная версия */
+@media (max-width: 900px) {
+  .totalsRow {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(8.75rem, 1fr));
+    gap: var(--admin-space-xs, 4px) var(--admin-space-sm, 8px);
+  }
+
+  .totalsTile {
+    min-width: 0;
+    padding: var(--admin-space-xs, 4px) var(--admin-space-sm, 8px);
+  }
+
+  .totalsTileValue {
+    font-size: var(--admin-font-size-sm, 13px);
+  }
+}

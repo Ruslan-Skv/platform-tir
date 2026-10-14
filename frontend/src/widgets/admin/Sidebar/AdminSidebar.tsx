@@ -169,6 +169,12 @@ const baseNavItems: NavItem[] = [
     resourceId: 'admin.crm.dp',
   },
   {
+    label: 'Расчёт мастеров',
+    href: '/admin/installer-settlements',
+    icon: '🧾',
+    resourceId: 'admin.crm.installer-settlements',
+  },
+  {
     label: 'Мастера (монтажники)',
     href: '/admin/crm/installers',
     icon: '🛠️',

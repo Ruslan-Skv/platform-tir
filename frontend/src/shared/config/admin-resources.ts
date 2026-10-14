@@ -19,6 +19,11 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
   },
   { id: 'admin.crm.dp', label: 'ДП', path: '/admin/dp' },
   {
+    id: 'admin.crm.installer-settlements',
+    label: 'Расчёт мастеров',
+    path: '/admin/installer-settlements',
+  },
+  {
     id: 'admin.crm.supplier-settlements',
     label: 'Расчёты с поставщиками',
     path: '/admin/crm/supplier-settlements',
