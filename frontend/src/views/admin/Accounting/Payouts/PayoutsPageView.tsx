@@ -21,6 +21,7 @@ import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.modul
 import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
 
 import { formatDateRu } from '../accounting-invoices-page.utils';
+import { PayoutsRulesInfoTip } from './PayoutsRulesInfoTip';
 import {
   PAYOUTS_PAGE_LIMIT_OPTIONS,
   type PayoutsPageLimit,
@@ -272,6 +273,7 @@ export function PayoutsPageView({ model }: PayoutsPageViewProps) {
             <div className={cdHub.contractsHeaderTitleCluster}>
               <div className={cdHub.contractsListHeaderTitleGroup}>
                 <h1 className={cdHub.title}>Выплаты з/п</h1>
+                <PayoutsRulesInfoTip />
               </div>
               <span className={cdHub.contractsListCount} title={countTitle}>
                 <span className={cdHub.contractsListCountDesktop}>{countTitle}</span>

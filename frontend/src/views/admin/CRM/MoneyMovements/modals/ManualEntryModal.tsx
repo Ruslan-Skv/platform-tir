@@ -485,9 +485,6 @@ export function ManualEntryModal({
                 </option>
               ))}
             </select>
-            <p data-modal-form-hint>
-              Выплата попадает в журнал «Выплаты з/п»; в кассе — после сверки супер-админом.
-            </p>
           </div>
         ) : null}
 
