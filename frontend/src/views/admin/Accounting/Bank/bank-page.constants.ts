@@ -9,11 +9,13 @@ export const BANK_LABELS: Record<BankCode, string> = {
 
 /** Способы оплаты в разделе «Банк» — соответствуют способам оплаты журнала ДП.
  * «Терминал + QR + банк прил.» объединяет эквайринг, СБП, QR-оплаты и оплаты
- * через банковское приложение: из банковской выписки не всегда видно, как именно платил клиент. */
-export const BANK_ENTRY_TYPE_LABELS: Record<BankEntryType, string> = {
+ * через банковское приложение: из банковской выписки не всегда видно, как именно платил клиент.
+ * SALARY_PAYOUT — строки-проекции безналичных выплат з/п (не способ оплаты клиента). */
+export const BANK_ENTRY_TYPE_LABELS: Record<string, string> = {
   TERMINAL_QR: 'Терминал + QR + банк прил.',
   INVOICE_PAYMENT: 'По счёту',
   LC_TRANSFER: 'Перевод на ЛК',
+  SALARY_PAYOUT: 'Выплата з/п',
 };
 
 export const BANK_OPTIONS = (Object.keys(BANK_LABELS) as BankCode[]).map((value) => ({
@@ -21,9 +23,10 @@ export const BANK_OPTIONS = (Object.keys(BANK_LABELS) as BankCode[]).map((value)
   label: BANK_LABELS[value],
 }));
 
-export const BANK_ENTRY_TYPE_OPTIONS = (Object.keys(BANK_ENTRY_TYPE_LABELS) as BankEntryType[]).map(
-  (value) => ({ value, label: BANK_ENTRY_TYPE_LABELS[value] })
-);
+/** Фильтр способов — только способы клиентов; строки-проекции выплат не фильтруются. */
+export const BANK_ENTRY_TYPE_OPTIONS = (
+  ['TERMINAL_QR', 'INVOICE_PAYMENT', 'LC_TRANSFER'] as BankEntryType[]
+).map((value) => ({ value, label: BANK_ENTRY_TYPE_LABELS[value] }));
 
 /** Первый день текущего месяца (YYYY-MM-DD) — период по умолчанию. */
 export function currentMonthStartIso(): string {

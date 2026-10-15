@@ -25,6 +25,7 @@ export const ADMIN_RESOURCE_PARENT: Readonly<Record<string, string>> = {
   'admin.accounting.invoices': 'admin.accounting',
   'admin.accounting.bank': 'admin.accounting',
   'admin.accounting.cash': 'admin.accounting',
+  'admin.accounting.payouts': 'admin.accounting',
 
   // Настройки → Оформление договоров (не путать с топ-«Договора» / «Расчёты»)
   'admin.contract-documents': 'admin.settings',

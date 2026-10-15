@@ -133,6 +133,10 @@ model User {
   bankEntriesCreated                      BankEntry[]                               @relation("BankEntryCreatedBy")
   cashBookEntriesConducted                CashBookEntry[]                           @relation("CashBookEntryManager")
   cashBookEntriesCreated                  CashBookEntry[]                           @relation("CashBookEntryCreatedBy")
+  salaryPayoutsReceived                   SalaryPayout[]                            @relation("SalaryPayoutRecipient")
+  salaryPayoutsConducted                  SalaryPayout[]                            @relation("SalaryPayoutManager")
+  salaryPayoutsCreated                    SalaryPayout[]                            @relation("SalaryPayoutCreatedBy")
+  moneyMovementsSalaryPaid                MoneyMovement[]                           @relation("MoneyMovementSalaryRecipient")
   bankReconciliationLinksCreated          BankReconciliationLink[]                  @relation("BankReconciliationLinkCreatedBy")
   contractDocumentPaymentInvoicesIssued   ContractDocumentPaymentInvoice[]          @relation("ContractDocumentPaymentInvoiceIssuedBy")
   contractDocumentPaymentInvoicesSigned   ContractDocumentPaymentInvoice[]          @relation("ContractDocumentPaymentInvoiceSignedBy")
@@ -3700,48 +3704,54 @@ model ContractDocumentPackageInstallerAdvance {
 /// при каждой операции оплаты в «Оплаты и Управление договором» (пакеты документов).
 /// Поля договора — снимок на момент оплаты: журнал хранит историю даже после удаления договора.
 model MoneyMovement {
-  id                  String      @id @default(cuid())
+  id                    String      @id @default(cuid())
   /// Id записи оплаты (ContractDocumentPackagePayment), породившей движение.
-  sourceId            String?     @unique
-  packageId           String?
-  paymentDate         DateTime    @db.Date
+  sourceId              String?     @unique
+  packageId             String?
+  paymentDate           DateTime    @db.Date
   /// Момент проведения операции оплаты (время в записи журнала).
-  performedAt         DateTime
-  amount              Decimal     @db.Decimal(12, 2)
-  paymentForm         PaymentForm
-  paymentType         PaymentType
-  addendumNumber      Int?
-  basis               String?     @db.Text
-  notes               String?     @db.Text
-  managerId           String?
-  contractNumber      String?
-  customerName        String?
+  performedAt           DateTime
+  amount                Decimal     @db.Decimal(12, 2)
+  paymentForm           PaymentForm
+  paymentType           PaymentType
+  addendumNumber        Int?
+  basis                 String?     @db.Text
+  notes                 String?     @db.Text
+  managerId             String?
+  contractNumber        String?
+  customerName          String?
   /// Направление на момент оплаты («Ремонт», «Окна», «Двери», …).
-  direction           String?
+  direction             String?
   /// Исполнитель ручной записи направления «Мебель» — название набора из справочника реквизитов.
-  executorName        String?
+  executorName          String?
+  /// Сотрудник, получивший зар/плату ручной записи с основанием «Зар/плата»
+  /// (снимок ФИО на момент записи — как installerName у авансов мастерам).
+  salaryRecipientName   String?
+  /// Id сотрудника-получателя зар/платы (справочник пользователей), для выборок.
+  salaryRecipientUserId String?
   /// Офис заключения договора на момент оплаты («Офис закл.» — название офиса).
-  office              String?
+  office                String?
   /// Первоначальные значения полей, правленных супер-админом: поле → значение до правки.
   /// Пусто/отсутствует — запись не правилась. Показ значком «было …» в журнале ДП.
-  originalValues      Json?
+  originalValues        Json?
   /// Примечание супер-админа к записи (замечание/вопрос менеджеру); null — нет.
-  adminNote           String?
+  adminNote             String?
   /// Момент, когда примечание отмечено решённым (заливка строки снимается).
-  adminNoteResolvedAt DateTime?
+  adminNoteResolvedAt   DateTime?
   /// Ручная сверка способов, не сверяемых с банком (наличные, переводы на ЛК):
   /// момент, когда супер-админ отметил оплату сверенной (золотая галочка у суммы).
-  manualReconciledAt  DateTime?
+  manualReconciledAt    DateTime?
   /// Кем создана ручная запись (свои записи сотрудники могут удалять в корзину).
-  createdById         String?
+  createdById           String?
   /// Мягкое удаление: момент перемещения записи в корзину ДП (null — не удалена).
-  deletedAt           DateTime?   @map("deleted_at")
+  deletedAt             DateTime?   @map("deleted_at")
   /// Кем запись удалена в корзину.
-  deletedById         String?     @map("deleted_by_id")
-  createdAt           DateTime    @default(now())
-  updatedAt           DateTime    @updatedAt
+  deletedById           String?     @map("deleted_by_id")
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
 
   manager                 User?                    @relation("MoneyMovementManager", fields: [managerId], references: [id], onDelete: SetNull)
+  salaryRecipient         User?                    @relation("MoneyMovementSalaryRecipient", fields: [salaryRecipientUserId], references: [id], onDelete: SetNull)
   createdBy               User?                    @relation("MoneyMovementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   deletedBy               User?                    @relation("MoneyMovementDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
   bankReconciliationLinks BankReconciliationLink[] @relation("BankReconciliationLinkMoneyMovement")
@@ -3791,6 +3801,47 @@ model CashBookEntry {
   @@index([managerId])
   @@index([createdById])
   @@map("cash_book_entries")
+}
+
+/// Выплата з/п вне заказ-нарядов: сотрудникам (в т.ч. менеджерам по банку) и
+/// сторонним лицам. Единый журнал раздела «Бухгалтерия → Выплаты з/п»; записи
+/// с способом «Наличные» попадают в кассу проекцией (как выплаты мастерам),
+/// с способом «Банк» — в раздел «Банк». Выплаты мастерам живут отдельно —
+/// в ContractDocumentPackageInstallerAdvance (привязаны к договорам).
+model SalaryPayout {
+  id              String               @id @default(cuid())
+  /// Дата выплаты.
+  paidAt          DateTime             @db.Date
+  /// Сумма выплаты (всегда положительная).
+  amount          Decimal              @db.Decimal(12, 2)
+  /// Способ выплаты: наличными из кассы или переводом по банку.
+  paymentMethod   SalaryPayoutMethod
+  /// Категория выплаты: зар/плата, аванс, премия, прочее.
+  category        SalaryPayoutCategory @default(SALARY)
+  /// Сотрудник-получатель (если есть в справочнике пользователей).
+  recipientUserId String?
+  /// ФИО получателя — снимок на момент выплаты (для сторонних лиц и истории).
+  recipientName   String
+  /// Менеджер, по кассе которого проведена наличная выплата (кто выдал).
+  managerId       String?
+  note            String?              @db.Text
+  /// Кем создана запись выплаты.
+  createdById     String?
+  /// Мягкое удаление: выплата исключается из журнала, кассы и банка.
+  deletedAt       DateTime?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  recipientUser User? @relation("SalaryPayoutRecipient", fields: [recipientUserId], references: [id], onDelete: SetNull)
+  manager       User? @relation("SalaryPayoutManager", fields: [managerId], references: [id], onDelete: SetNull)
+  createdBy     User? @relation("SalaryPayoutCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([paidAt])
+  @@index([paymentMethod])
+  @@index([recipientUserId])
+  @@index([managerId])
+  @@index([deletedAt])
+  @@map("salary_payouts")
 }
 
 /// Инкассация наличных менеджером (сдача выручки по журналу ДП).
@@ -4214,6 +4265,21 @@ enum PaymentForm {
 enum InstallerAdvancePaymentMethod {
   CASH // Наличные
   BANK // Перевод по банку
+}
+
+/// Способ выплаты з/п (раздел «Бухгалтерия → Выплаты з/п» и ручная запись ДП
+/// с основанием «Зар/плата»): наличными или переводом по банку.
+enum SalaryPayoutMethod {
+  CASH // Наличные
+  BANK // Перевод по банку
+}
+
+/// Категория выплаты з/п (раздел «Бухгалтерия → Выплаты з/п»).
+enum SalaryPayoutCategory {
+  SALARY // Зар/плата
+  ADVANCE // Аванс
+  BONUS // Премия
+  OTHER // Прочее
 }
 
 enum PaymentType {

@@ -8,6 +8,7 @@ import {
   type BankEntriesTotals,
   type BankEntry,
   type BankEntryInput,
+  type SalaryPayoutsTotals,
   createBankEntry,
   deleteBankEntry,
   listBankEntries,
@@ -73,6 +74,8 @@ export function useBankPage() {
   const [rows, setRows] = useState<BankEntry[]>([]);
   const [totals, setTotals] = useState<BankEntriesTotals | null>(null);
   const [byBank, setByBank] = useState<Record<string, BankEntriesTotals>>({});
+  /** Безналичные выплаты з/п за период (строки-проекции, вне итогов поступлений). */
+  const [payouts, setPayouts] = useState<SalaryPayoutsTotals | null>(null);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [limit, setLimitState] = useState<BankPageLimit>(DEFAULT_LIMIT);
@@ -145,6 +148,7 @@ export function useBankPage() {
       setRows(res.data);
       setTotals(res.totals);
       setByBank(res.byBank);
+      setPayouts(res.payouts ?? null);
       setTotal(res.total);
       if (res.total === 0) {
         setPage(1);
@@ -156,6 +160,7 @@ export function useBankPage() {
       setRows([]);
       setTotals(null);
       setByBank({});
+      setPayouts(null);
       setTotal(0);
     } finally {
       setLoading(false);
@@ -271,6 +276,7 @@ export function useBankPage() {
     rows,
     totals,
     byBank,
+    payouts,
     total,
     page,
     setPage,

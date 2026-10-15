@@ -29,8 +29,17 @@ function getAdminAuthHeaders(): HeadersInit {
 
 export type BankCode = 'SBER' | 'ALFA' | 'OTHER';
 
-/** Способы оплаты в разделе «Банк» — соответствуют способам оплаты ДП. */
+/** Способы оплаты в разделе «Банк» — соответствуют способам оплаты журнала ДП. */
 export type BankEntryType = 'TERMINAL_QR' | 'INVOICE_PAYMENT' | 'LC_TRANSFER';
+
+/**
+ * Строки-проекции безналичных выплат з/п: SALARY_PAYOUT — не запись банка,
+ * а выплата (раздел «Выплаты з/п», запись ДП «Зар/плата» или аванс мастера по банку).
+ */
+export type BankRowEntryType = BankEntryType | 'SALARY_PAYOUT';
+
+/** Источник строки-проекции выплаты з/п. */
+export type SalaryPayoutBankSource = 'PAYOUT' | 'DP' | 'INSTALLER_ADVANCE';
 
 export interface BankEntryUserRef {
   id: string;
@@ -40,14 +49,20 @@ export interface BankEntryUserRef {
 export interface BankEntry {
   id: string;
   entryDate: string;
-  bank: BankCode;
-  entryType: BankEntryType;
+  /** Банк счёта; null — строка-проекция выплаты з/п (вне счетов поступлений). */
+  bank: BankCode | null;
+  entryType: BankRowEntryType;
+  /** Сумма со знаком: поступление > 0, выплата з/п < 0 (строкой, как Decimal). */
   amount: string;
   fee: string;
   refund: string;
   total: string;
   counterparty: string | null;
   notes: string | null;
+  /** Строка-проекция безналичной выплаты з/п (не редактируется в разделе «Банк»). */
+  isPayout: boolean;
+  /** Источник строки-проекции выплаты (isPayout=true). */
+  payoutSource?: SalaryPayoutBankSource;
   createdBy: BankEntryUserRef | null;
   createdAt: string;
   updatedAt: string;
@@ -62,6 +77,12 @@ export interface BankEntriesTotals {
   total: string;
 }
 
+/** Итог безналичных выплат з/п за период (строки-проекции, в итоги поступлений не входят). */
+export interface SalaryPayoutsTotals {
+  count: number;
+  sum: string;
+}
+
 export interface BankEntriesListResponse {
   data: BankEntry[];
   total: number;
@@ -69,6 +90,7 @@ export interface BankEntriesListResponse {
   limit: number;
   totals: BankEntriesTotals;
   byBank: Record<string, BankEntriesTotals>;
+  payouts: SalaryPayoutsTotals;
 }
 
 export interface BankEntryInput {

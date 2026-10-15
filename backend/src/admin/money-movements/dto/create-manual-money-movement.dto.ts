@@ -69,6 +69,15 @@ export class CreateManualMoneyMovementDto {
   @MaxLength(500)
   basis: string;
 
+  /**
+   * Сотрудник, получивший зар/плату (id из справочника): задаётся, когда основание —
+   * «Зар/плата». Имя снимается со справочника и хранится снимком в записи.
+   */
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  salaryRecipientUserId?: string;
+
   @IsOptional()
   @IsString()
   @MaxLength(1000)

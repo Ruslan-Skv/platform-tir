@@ -409,10 +409,15 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
         if (basisOriginal !== null) parts.push(`основание — ${basisOriginal}`);
         const notesOriginal = editedOriginal(item, 'notes');
         if (notesOriginal !== null) parts.push(`примечание — ${notesOriginal}`);
+        const salaryRecipientOriginal = editedOriginal(item, 'salaryRecipientName');
+        if (salaryRecipientOriginal !== null) parts.push(`получатель — ${salaryRecipientOriginal}`);
         return (
           <div className={styles.basisCell}>
             {item.basis || DP_PAYMENT_TYPE_LABELS[item.paymentType] || item.paymentType}
             <EditedFieldMark original={parts.length > 0 ? parts.join(', ') : null} />
+            {item.salaryRecipientName ? (
+              <span className={styles.basisSubline}>Получил: {item.salaryRecipientName}</span>
+            ) : null}
             {item.notes ? <span className={styles.basisSubline}>{item.notes}</span> : null}
           </div>
         );

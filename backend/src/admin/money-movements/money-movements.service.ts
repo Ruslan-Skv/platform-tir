@@ -146,6 +146,7 @@ export class MoneyMovementsService {
         { customerName: { contains: q, mode: 'insensitive' } },
         { basis: { contains: q, mode: 'insensitive' } },
         { notes: { contains: q, mode: 'insensitive' } },
+        { salaryRecipientName: { contains: q, mode: 'insensitive' } },
       ];
     }
     if (reconciliation) {

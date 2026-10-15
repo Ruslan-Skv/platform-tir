@@ -12,10 +12,14 @@ import modalStyles from '@/views/admin/Catalog/Components/shared/ComponentCatalo
 
 import styles from '../MoneyMovements.module.css';
 import {
+  DP_BASIS_CUSTOM_VALUE,
   DP_FURNITURE_DIRECTION,
+  DP_MANUAL_BASIS_PRESET_OPTIONS,
   DP_MANUAL_DIRECTION_OPTIONS,
   DP_OTHER_DIRECTION,
   DP_PAYMENT_FORM_OPTIONS,
+  DP_SALARY_PAYMENT_FORM_OPTIONS,
+  DP_SALARY_PAYOUT_BASIS,
 } from '../money-movements-page.constants';
 import formStyles from './MoneyMovementModalForm.module.css';
 
@@ -42,6 +46,11 @@ type ManualEntryModalProps = {
   fixedPaymentForm?: string;
   /** Свой заголовок модалки (по умолчанию — заголовок журнала ДП). */
   heading?: string;
+  /**
+   * Скрыть пункт «Зар/плата» (раздел «Касса»: записи кассы живут только в кассе
+   * и не хранят получателя з/п — выплаты заводят в разделе «Выплаты з/п» или ДП).
+   */
+  hideSalaryPayoutBasis?: boolean;
 };
 
 export function ManualEntryModal({
@@ -55,6 +64,7 @@ export function ManualEntryModal({
   editing = null,
   fixedPaymentForm,
   heading,
+  hideSalaryPayoutBasis = false,
 }: ManualEntryModalProps) {
   /** Тип операции не выбран по умолчанию — менеджер осознанно выбирает режим записи. */
   const [kind, setKind] = useState<ManualEntryKind | null>(null);
@@ -65,9 +75,16 @@ export function ManualEntryModal({
   const [customerName, setCustomerName] = useState('');
   const [amount, setAmount] = useState('');
   const [paymentForm, setPaymentForm] = useState('CASH');
-  const [basis, setBasis] = useState('');
+  /** Основание: пресет из селекта или «ввести вручную» с текстом ниже. */
+  const [basisPreset, setBasisPreset] = useState<string>(DP_BASIS_CUSTOM_VALUE);
+  const [basisCustom, setBasisCustom] = useState('');
+  const [salaryRecipientId, setSalaryRecipientId] = useState('');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  const basis = basisPreset === DP_BASIS_CUSTOM_VALUE ? basisCustom.trim() : basisPreset;
+  /** Запись «Зар/плата» — изъятие из кассы с получателем (может отличаться от менеджера кассы). */
+  const isSalaryEntry = basisPreset === DP_SALARY_PAYOUT_BASIS;
 
   // № договора и заказчик — только для направлений и «Материалов»; «Прочее» — вне договоров.
   const showContractFields = Boolean(direction) && direction !== DP_OTHER_DIRECTION;
@@ -85,6 +102,26 @@ export function ManualEntryModal({
     }
   };
 
+  /** Запись «Зар/плата» — всегда изъятие из кассы вне договоров («Прочее»). */
+  const selectBasisPreset = (value: string) => {
+    setBasisPreset(value);
+    if (value === DP_BASIS_CUSTOM_VALUE) {
+      setBasisCustom('');
+      return;
+    }
+    if (value === DP_SALARY_PAYOUT_BASIS) {
+      setKind('withdrawal');
+      setDirection(DP_OTHER_DIRECTION);
+      setExecutor('');
+      setContractNumber('');
+      setCustomerName('');
+      // Выплата зар/платы — наличными или безналом; терминал/QR/счёт не имеют смысла.
+      if (!DP_SALARY_PAYMENT_FORM_OPTIONS.some((option) => option.value === paymentForm)) {
+        setPaymentForm('CASH');
+      }
+    }
+  };
+
   // Новая проводка — чистая форма: сегодня, тип операции не выбран, наличные.
   // Правка — форма предзаполнена данными редактируемой записи.
   useEffect(() => {
@@ -99,7 +136,12 @@ export function ManualEntryModal({
       setCustomerName(editing.customerName ?? '');
       setAmount(Number.isFinite(editingAmount) ? String(Math.abs(editingAmount)) : '');
       setPaymentForm(editing.paymentForm);
-      setBasis(editing.basis ?? '');
+      const editingPreset = DP_MANUAL_BASIS_PRESET_OPTIONS.find(
+        (option) => option.value === (editing.basis ?? '')
+      );
+      setBasisPreset(editingPreset?.value ?? DP_BASIS_CUSTOM_VALUE);
+      setBasisCustom(editingPreset ? '' : (editing.basis ?? ''));
+      setSalaryRecipientId(editing.salaryRecipientUserId ?? '');
       setNotes(editing.notes ?? '');
     } else {
       setKind(null);
@@ -110,7 +152,9 @@ export function ManualEntryModal({
       setCustomerName('');
       setAmount('');
       setPaymentForm('CASH');
-      setBasis('');
+      setBasisPreset(DP_BASIS_CUSTOM_VALUE);
+      setBasisCustom('');
+      setSalaryRecipientId('');
       setNotes('');
     }
     setError(null);
@@ -136,6 +180,13 @@ export function ManualEntryModal({
       <option value={managerId}>{fallbackManagerName}</option>
     ) : null;
 
+  // Получатель зар/платы правимой записи мог исчезнуть из справочника — держим видимым.
+  const salaryRecipientInList = managers.some((m) => m.id === salaryRecipientId);
+  const fallbackSalaryRecipientOption =
+    editing && isSalaryEntry && salaryRecipientId && !salaryRecipientInList ? (
+      <option value={salaryRecipientId}>{editing.salaryRecipientName ?? salaryRecipientId}</option>
+    ) : null;
+
   // Исполнитель записи мог исчезнуть из справочника реквизитов — держим его видимой опцией селекта.
   const executorInList = executors.some((name) => name === executor);
   const fallbackExecutorOption =
@@ -150,7 +201,8 @@ export function ManualEntryModal({
     amountNumber > 0 &&
     Boolean(managerId) &&
     Boolean(direction) &&
-    basis.trim().length >= 2;
+    basis.length >= 2 &&
+    (!isSalaryEntry || Boolean(salaryRecipientId));
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -170,8 +222,12 @@ export function ManualEntryModal({
       setError('Выберите направление (для движений вне продаж — «Прочее»)');
       return;
     }
-    if (basis.trim().length < 2) {
+    if (basis.length < 2) {
       setError('Укажите основание (например: Бытовые нужды)');
+      return;
+    }
+    if (isSalaryEntry && !salaryRecipientId) {
+      setError('Выберите, кто получает зар/плату');
       return;
     }
     setError(null);
@@ -180,7 +236,7 @@ export function ManualEntryModal({
         managerId,
         amount: kind === 'withdrawal' ? -amountNumber : amountNumber,
         paymentForm: fixedPaymentForm ?? paymentForm,
-        direction,
+        direction: isSalaryEntry ? DP_OTHER_DIRECTION : direction,
         // № договора, заказчик и исполнитель — поля не всех направлений.
         ...(showContractFields
           ? {
@@ -189,13 +245,18 @@ export function ManualEntryModal({
             }
           : {}),
         ...(showExecutorField ? { executorName: executor.trim() || undefined } : {}),
-        basis: basis.trim(),
+        basis,
+        ...(isSalaryEntry ? { salaryRecipientUserId: salaryRecipientId } : {}),
         notes: notes.trim() || undefined,
       });
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Не удалось записать проводку');
     }
   };
+
+  const paymentFormOptions = isSalaryEntry
+    ? DP_SALARY_PAYMENT_FORM_OPTIONS
+    : DP_PAYMENT_FORM_OPTIONS;
 
   return (
     <Modal
@@ -226,10 +287,11 @@ export function ManualEntryModal({
           <div className={styles.manualEntryKindRow} role="group" aria-label="Тип операции">
             <button
               type="button"
-              disabled={submitting}
+              disabled={submitting || isSalaryEntry}
               className={
                 kind === 'deposit' ? styles.manualEntryKindActiveDeposit : styles.manualEntryKindBtn
               }
+              title={isSalaryEntry ? 'Выплата зар/платы — всегда изъятие из кассы' : undefined}
               onClick={() => setKind('deposit')}
             >
               + Внесение в кассу
@@ -274,7 +336,8 @@ export function ManualEntryModal({
             id="manual-entry-direction"
             value={direction}
             onChange={(e) => changeDirection(e.target.value)}
-            disabled={submitting}
+            disabled={submitting || isSalaryEntry}
+            title={isSalaryEntry ? 'Запись «Зар/плата» — движение вне договоров' : undefined}
             required
           >
             <option value="">— выбрать направление —</option>
@@ -360,7 +423,7 @@ export function ManualEntryModal({
               disabled={submitting}
               required
             >
-              {DP_PAYMENT_FORM_OPTIONS.map((option) => (
+              {paymentFormOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -371,17 +434,62 @@ export function ManualEntryModal({
 
         <div data-modal-form-group>
           <label htmlFor="manual-entry-basis">Основание *</label>
-          <input
+          <select
             id="manual-entry-basis"
-            type="text"
-            value={basis}
-            onChange={(e) => setBasis(e.target.value)}
+            value={basisPreset}
+            onChange={(e) => selectBasisPreset(e.target.value)}
             disabled={submitting}
-            placeholder="Например: Бытовые нужды"
-            maxLength={500}
             required
-          />
+          >
+            {DP_MANUAL_BASIS_PRESET_OPTIONS.filter(
+              (option) => !hideSalaryPayoutBasis || option.value !== DP_SALARY_PAYOUT_BASIS
+            ).map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+            <option value={DP_BASIS_CUSTOM_VALUE}>— ввести вручную —</option>
+          </select>
         </div>
+
+        {basisPreset === DP_BASIS_CUSTOM_VALUE ? (
+          <div data-modal-form-group>
+            <label htmlFor="manual-entry-basis-custom">Основание (вручную) *</label>
+            <input
+              id="manual-entry-basis-custom"
+              type="text"
+              value={basisCustom}
+              onChange={(e) => setBasisCustom(e.target.value)}
+              disabled={submitting}
+              placeholder="Например: Бытовые нужды"
+              maxLength={500}
+            />
+          </div>
+        ) : null}
+
+        {isSalaryEntry ? (
+          <div data-modal-form-group>
+            <label htmlFor="manual-entry-salary-recipient">Кто получает з/п *</label>
+            <select
+              id="manual-entry-salary-recipient"
+              value={salaryRecipientId}
+              onChange={(e) => setSalaryRecipientId(e.target.value)}
+              disabled={submitting}
+              required
+            >
+              <option value="">— выбрать сотрудника —</option>
+              {fallbackSalaryRecipientOption}
+              {managers.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
+              ))}
+            </select>
+            <p data-modal-form-hint>
+              Выплата попадает в журнал «Выплаты з/п»; в кассе — после сверки супер-админом.
+            </p>
+          </div>
+        ) : null}
 
         <div data-modal-form-group>
           <label htmlFor="manual-entry-notes">Примечание</label>

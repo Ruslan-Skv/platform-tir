@@ -256,6 +256,11 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.accounting.cash',
       },
       {
+        label: 'Выплаты з/п',
+        href: '/admin/accounting/payouts',
+        resourceId: 'admin.accounting.payouts',
+      },
+      {
         label: 'Сверка с ДП',
         href: '/admin/accounting/bank/reconciliation',
         resourceId: 'admin.accounting.bank',

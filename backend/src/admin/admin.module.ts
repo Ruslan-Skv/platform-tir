@@ -6,6 +6,7 @@ import { MoneyMovementsModule } from './money-movements/money-movements.module';
 import { InstallerSettlementsModule } from './installer-settlements/installer-settlements.module';
 import { BankEntriesModule } from './bank-entries/bank-entries.module';
 import { CashBookModule } from './cash-book/cash-book.module';
+import { SalaryPayoutsModule } from './salary-payouts/salary-payouts.module';
 import { BankReconciliationModule } from './bank-reconciliation/bank-reconciliation.module';
 import { SalaryModule } from './salary/salary.module';
 import { OfficesModule } from './offices/offices.module';
@@ -75,6 +76,7 @@ import { AdminAuthSettingsModule } from './auth-settings/admin-auth-settings.mod
     InstallerSettlementsModule,
     BankEntriesModule,
     CashBookModule,
+    SalaryPayoutsModule,
     BankReconciliationModule,
     SalaryModule,
     OfficesModule,

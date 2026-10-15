@@ -42,6 +42,11 @@ const ADMIN_API_ROUTE_RESOURCE_PREFIXES_RAW: ReadonlyArray<{
     prefix: '/api/v1/admin/cash-book',
     resourceId: 'admin.accounting.cash',
   },
+  // Бухгалтерия — выплаты з/п
+  {
+    prefix: '/api/v1/admin/salary-payouts',
+    resourceId: 'admin.accounting.payouts',
+  },
   // Бухгалтерия — расчёт з/п
   {
     prefix: '/api/v1/admin/salary',

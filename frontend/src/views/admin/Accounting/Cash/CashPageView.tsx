@@ -426,6 +426,7 @@ export function CashPageView({ model }: CashPageViewProps) {
         submitting={saving}
         onSubmit={handleCreate}
         fixedPaymentForm="CASH"
+        hideSalaryPayoutBasis
         heading="Запись в кассу"
       />
     </div>

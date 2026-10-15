@@ -44,6 +44,8 @@ export type CeilingsNamedQtyLine = {
   qty: string;
   unitPrice: string;
   unit: string;
+  /** Позиция вне прайса: наименование, ед., кол-во и цена заполняются вручную. */
+  manual?: boolean;
 };
 
 export type CeilingsCeilingBlock = {
@@ -102,6 +104,13 @@ export function newCeilingsNamedQtyLine(
     unit: 'шт',
     ...partial,
   };
+}
+
+/** Пустая строка для позиции не из прайса (ручное заполнение). */
+export function newCeilingsManualQtyLine(
+  partial?: Partial<CeilingsNamedQtyLine>
+): CeilingsNamedQtyLine {
+  return newCeilingsNamedQtyLine({ manual: true, ...partial });
 }
 
 export function newCeilingsCeilingBlock(index = 1): CeilingsCeilingBlock {
@@ -189,6 +198,7 @@ export function normalizeCeilingsSpecification(raw: unknown): CeilingsSpecificat
               qty: str(row.qty),
               unitPrice: str(row.unitPrice),
               unit: str(row.unit, 'шт'),
+              ...(row.manual === true ? { manual: true } : {}),
             };
           })
           .filter(Boolean) as CeilingsNamedQtyLine[];
@@ -562,6 +572,7 @@ export function applyPriceItemToNamed(
     name: item.name,
     unit: item.unit || line.unit,
     unitPrice: String(resolveCeilingsRetailPrice(item)),
+    manual: false,
   };
 }
 

@@ -67,8 +67,9 @@ export function BankEntryModal({ isOpen, onClose, entry, saving, onSubmit }: Ban
     setFormError(null);
     if (entry) {
       setEntryDate(entry.entryDate);
-      setBank(entry.bank);
-      setEntryType(entry.entryType);
+      // Строки-проекции выплат з/п не редактируются модалкой — подстраховываемся дефолтами.
+      setBank(entry.bank ?? 'SBER');
+      setEntryType(entry.entryType === 'SALARY_PAYOUT' ? 'TERMINAL_QR' : entry.entryType);
       setAmount(amountToString(entry.amount));
       setFee(amountToString(entry.fee));
       setRefund(amountToString(entry.refund));

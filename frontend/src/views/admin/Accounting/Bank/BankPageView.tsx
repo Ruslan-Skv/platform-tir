@@ -86,6 +86,7 @@ export function BankPageView({ model }: BankPageViewProps) {
     rows,
     totals,
     byBank,
+    payouts,
     total,
     page,
     setPage,
@@ -166,16 +167,24 @@ export function BankPageView({ model }: BankPageViewProps) {
       {
         key: 'bank',
         title: 'Банк',
-        render: (item: BankEntry) => (
-          <span className={`${styles.bankBadge} ${styles[`bank_${item.bank}`] ?? ''}`}>
-            {BANK_LABELS[item.bank] ?? item.bank}
-          </span>
-        ),
+        render: (item: BankEntry) =>
+          item.bank ? (
+            <span className={`${styles.bankBadge} ${styles[`bank_${item.bank}`] ?? ''}`}>
+              {BANK_LABELS[item.bank] ?? item.bank}
+            </span>
+          ) : (
+            <span className={styles.muted}>—</span>
+          ),
       },
       {
         key: 'entryType',
         title: 'Способ оплаты',
-        render: (item: BankEntry) => BANK_ENTRY_TYPE_LABELS[item.entryType] ?? item.entryType,
+        render: (item: BankEntry) =>
+          item.isPayout ? (
+            <span className={styles.payoutTypeBadge}>{BANK_ENTRY_TYPE_LABELS[item.entryType]}</span>
+          ) : (
+            (BANK_ENTRY_TYPE_LABELS[item.entryType] ?? item.entryType)
+          ),
       },
       {
         key: 'counterparty',
@@ -191,7 +200,13 @@ export function BankPageView({ model }: BankPageViewProps) {
         key: 'amount',
         title: 'Зачислено',
         render: (item: BankEntry) => (
-          <span className={dpStyles.amountCell}>{formatMoneyRub(item.amount)}</span>
+          <span
+            className={`${dpStyles.amountCell}${
+              Number(item.amount) < 0 ? ` ${dpStyles.amountCellRefund}` : ''
+            }`}
+          >
+            {formatMoneyRub(item.amount)}
+          </span>
         ),
       },
       {
@@ -238,7 +253,9 @@ export function BankPageView({ model }: BankPageViewProps) {
               key: 'entryActions',
               title: '',
               render: (item: BankEntry) => {
-                if (!canEdit && !canDelete) return null;
+                // Строки-проекции выплат з/п не редактируются в разделе «Банк»:
+                // правятся в «Выплатах з/п» / журнале ДП / расчётах мастеров.
+                if ((!canEdit && !canDelete) || item.isPayout) return null;
                 return (
                   <div className={dpStyles.entryActions}>
                     {canEdit ? (
@@ -378,6 +395,20 @@ export function BankPageView({ model }: BankPageViewProps) {
             grandTotal={grandTotal}
           />
         ))}
+        {payouts && payouts.count > 0 ? (
+          <div
+            className={dpStyles.totalsTile}
+            title="Безналичные выплаты з/п за период (раздел «Выплаты з/п», записи ДП «Зар/плата» и авансы мастерам) — в «Итого за период» не входят"
+          >
+            <span className={dpStyles.totalsTileLabel}>
+              Выплаты з/п · {payouts.count}{' '}
+              {payouts.count === 1 ? 'выплата' : payouts.count < 5 ? 'выплаты' : 'выплат'}
+            </span>
+            <span className={dpStyles.totalsTileValueRow}>
+              <strong className={dpStyles.totalsTileValue}>−{formatMoney(payouts.sum)}</strong>
+            </span>
+          </div>
+        ) : null}
         {Number(totals?.fee ?? 0) > 0 ? (
           <div
             className={dpStyles.totalsTile}

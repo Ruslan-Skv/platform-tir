@@ -1,6 +1,6 @@
 'use client';
 
-import { PlusIcon } from '@heroicons/react/24/outline';
+import { PencilSquareIcon, PlusIcon } from '@heroicons/react/24/outline';
 
 import { type ReactNode, useMemo } from 'react';
 
@@ -34,6 +34,7 @@ import {
   isCeilingsCeilingEmpty,
   newCeilingsCeilingBlock,
   newCeilingsFabricLine,
+  newCeilingsManualQtyLine,
   newCeilingsNamedQtyLine,
   newCeilingsTapeLine,
   sumCeilingsCeilingGross,
@@ -99,6 +100,8 @@ function SpecBlock({
   readOnly,
   onAdd,
   addAriaLabel,
+  onAddManual,
+  addManualAriaLabel,
   headerExtra,
   children,
 }: {
@@ -107,6 +110,8 @@ function SpecBlock({
   readOnly: boolean;
   onAdd?: () => void;
   addAriaLabel?: string;
+  onAddManual?: () => void;
+  addManualAriaLabel?: string;
   headerExtra?: ReactNode;
   children: ReactNode;
 }) {
@@ -128,6 +133,17 @@ function SpecBlock({
             onClick={onAdd}
           >
             +
+          </button>
+        ) : null}
+        {!readOnly && onAddManual ? (
+          <button
+            type="button"
+            className={`${cdWorkspace.secondaryBtn} ${attachStyles.estimateAttachedRemoveBtn} ${cdProduct.ceilingsSpecificationBlockAddBtn}`}
+            aria-label={addManualAriaLabel || `Добавить вручную в «${title}»`}
+            title={addManualAriaLabel || `Добавить вручную в «${title}»`}
+            onClick={onAddManual}
+          >
+            <PencilSquareIcon className={cdProduct.doorsSpecificationAddBtnIcon} aria-hidden />
           </button>
         ) : null}
       </div>
@@ -332,6 +348,7 @@ export function CeilingsSpecificationEditor({
                 lines={ceiling.goods}
                 options={goods}
                 groupOptions
+                allowManual
                 readOnly={readOnly}
                 headerExtra={
                   <label
@@ -585,6 +602,7 @@ function NamedLinesBlock({
   lines,
   options,
   groupOptions = false,
+  allowManual = false,
   readOnly,
   headerExtra,
   onChange,
@@ -593,6 +611,7 @@ function NamedLinesBlock({
   lines: CeilingsNamedQtyLine[];
   options: CeilingsPriceItem[];
   groupOptions?: boolean;
+  allowManual?: boolean;
   readOnly: boolean;
   headerExtra?: ReactNode;
   onChange: (lines: CeilingsNamedQtyLine[]) => void;
@@ -604,78 +623,162 @@ function NamedLinesBlock({
       title={title}
       filled={namedBlockHasData(lines)}
       readOnly={readOnly}
-      addAriaLabel={`Добавить строку в «${title}»`}
+      addAriaLabel={allowManual ? `Добавить из прайса в «${title}»` : undefined}
       headerExtra={headerExtra}
       onAdd={() => onChange([...lines, newCeilingsNamedQtyLine()])}
+      onAddManual={allowManual ? () => onChange([...lines, newCeilingsManualQtyLine()]) : undefined}
+      addManualAriaLabel={allowManual ? `Добавить вручную в «${title}»` : undefined}
     >
-      {lines.map((line) => (
-        <div key={line.id} className={cdProduct.ceilingsSpecificationLineRow}>
-          <select
-            disabled={readOnly}
-            value={line.priceItemId}
-            aria-label={title}
-            onChange={(e) => {
-              const item = options.find((x) => x.id === e.target.value);
-              if (!item) {
-                onChange(lines.map((l) => (l.id === line.id ? { ...l, priceItemId: '' } : l)));
-                return;
+      {lines.map((line) =>
+        line.manual ? (
+          <ManualLineRow
+            key={line.id}
+            line={line}
+            blockTitle={title}
+            readOnly={readOnly}
+            onChange={(next) => onChange(lines.map((l) => (l.id === line.id ? next : l)))}
+            onRemove={() => onChange(lines.filter((l) => l.id !== line.id))}
+          />
+        ) : (
+          <div key={line.id} className={cdProduct.ceilingsSpecificationLineRow}>
+            <select
+              disabled={readOnly}
+              value={line.priceItemId}
+              aria-label={title}
+              onChange={(e) => {
+                const item = options.find((x) => x.id === e.target.value);
+                if (!item) {
+                  onChange(lines.map((l) => (l.id === line.id ? { ...l, priceItemId: '' } : l)));
+                  return;
+                }
+                onChange(lines.map((l) => (l.id === line.id ? applyPriceItemToNamed(l, item) : l)));
+              }}
+            >
+              <option value="">Выберите…</option>
+              {grouped
+                ? grouped.map((block) => (
+                    <optgroup key={block.key} label={block.title}>
+                      {block.items.map((it) => (
+                        <option key={it.id} value={it.id}>
+                          {it.name} ({it.retailPrice} ₽)
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))
+                : options.map((it) => (
+                    <option key={it.id} value={it.id}>
+                      {it.name} ({it.retailPrice} ₽)
+                    </option>
+                  ))}
+            </select>
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="Кол-во"
+              value={line.qty}
+              disabled={readOnly}
+              autoComplete="off"
+              onChange={(e) =>
+                onChange(lines.map((l) => (l.id === line.id ? { ...l, qty: e.target.value } : l)))
               }
-              onChange(lines.map((l) => (l.id === line.id ? applyPriceItemToNamed(l, item) : l)));
-            }}
-          >
-            <option value="">Выберите…</option>
-            {grouped
-              ? grouped.map((block) => (
-                  <optgroup key={block.key} label={block.title}>
-                    {block.items.map((it) => (
-                      <option key={it.id} value={it.id}>
-                        {it.name} ({it.retailPrice} ₽)
-                      </option>
-                    ))}
-                  </optgroup>
-                ))
-              : options.map((it) => (
-                  <option key={it.id} value={it.id}>
-                    {it.name} ({it.retailPrice} ₽)
-                  </option>
-                ))}
-          </select>
-          <input
-            type="text"
-            inputMode="decimal"
-            placeholder="Кол-во"
-            value={line.qty}
-            disabled={readOnly}
-            autoComplete="off"
-            onChange={(e) =>
-              onChange(lines.map((l) => (l.id === line.id ? { ...l, qty: e.target.value } : l)))
-            }
-          />
-          <input
-            type="text"
-            inputMode="decimal"
-            placeholder="Цена"
-            value={line.unitPrice}
-            readOnly
-            tabIndex={-1}
-            aria-label="Цена из прайса"
-            className={cdProduct.ceilingsSpecificationPriceReadonly}
-            autoComplete="off"
-          />
-          <span className={cdProduct.ceilingsSpecificationLineTotal}>
-            {lineTotalLabel(line.qty, line.unitPrice)}
-          </span>
-          <button
-            type="button"
-            className={`${cdWorkspace.secondaryBtn} ${attachStyles.estimateAttachedRemoveBtn}`}
-            aria-label="Удалить строку"
-            disabled={readOnly}
-            onClick={() => onChange(lines.filter((l) => l.id !== line.id))}
-          >
-            ×
-          </button>
-        </div>
-      ))}
+            />
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="Цена"
+              value={line.unitPrice}
+              readOnly
+              tabIndex={-1}
+              aria-label="Цена из прайса"
+              className={cdProduct.ceilingsSpecificationPriceReadonly}
+              autoComplete="off"
+            />
+            <span className={cdProduct.ceilingsSpecificationLineTotal}>
+              {lineTotalLabel(line.qty, line.unitPrice)}
+            </span>
+            <button
+              type="button"
+              className={`${cdWorkspace.secondaryBtn} ${attachStyles.estimateAttachedRemoveBtn}`}
+              aria-label="Удалить строку"
+              disabled={readOnly}
+              onClick={() => onChange(lines.filter((l) => l.id !== line.id))}
+            >
+              ×
+            </button>
+          </div>
+        )
+      )}
     </SpecBlock>
+  );
+}
+
+/** Строка не из прайса: наименование, ед., кол-во и цена заполняются вручную. */
+function ManualLineRow({
+  line,
+  blockTitle,
+  readOnly,
+  onChange,
+  onRemove,
+}: {
+  line: CeilingsNamedQtyLine;
+  blockTitle: string;
+  readOnly: boolean;
+  onChange: (next: CeilingsNamedQtyLine) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div
+      className={`${cdProduct.ceilingsSpecificationLineRow} ${cdProduct.ceilingsSpecificationManualRow}`}
+    >
+      <input
+        type="text"
+        placeholder="Наименование"
+        value={line.name}
+        disabled={readOnly}
+        aria-label={`${blockTitle} — наименование`}
+        autoComplete="off"
+        onChange={(e) => onChange({ ...line, name: e.target.value })}
+      />
+      <input
+        type="text"
+        placeholder="шт"
+        value={line.unit}
+        disabled={readOnly}
+        aria-label={`${blockTitle} — единица`}
+        autoComplete="off"
+        onChange={(e) => onChange({ ...line, unit: e.target.value })}
+      />
+      <input
+        type="text"
+        inputMode="decimal"
+        placeholder="Кол-во"
+        value={line.qty}
+        disabled={readOnly}
+        autoComplete="off"
+        onChange={(e) => onChange({ ...line, qty: e.target.value })}
+      />
+      <input
+        type="text"
+        inputMode="decimal"
+        placeholder="Цена"
+        value={line.unitPrice}
+        disabled={readOnly}
+        aria-label={`${blockTitle} — цена`}
+        autoComplete="off"
+        onChange={(e) => onChange({ ...line, unitPrice: e.target.value })}
+      />
+      <span className={cdProduct.ceilingsSpecificationLineTotal}>
+        {lineTotalLabel(line.qty, line.unitPrice)}
+      </span>
+      <button
+        type="button"
+        className={`${cdWorkspace.secondaryBtn} ${attachStyles.estimateAttachedRemoveBtn}`}
+        aria-label="Удалить строку"
+        disabled={readOnly}
+        onClick={onRemove}
+      >
+        ×
+      </button>
+    </div>
   );
 }

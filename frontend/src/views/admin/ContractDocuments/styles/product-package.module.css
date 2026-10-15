@@ -1407,6 +1407,13 @@
   margin-bottom: var(--admin-space-xs);
 }
 
+/* Строка «Товар» вне прайса: наименование + ед. + кол-во + цена + сумма + удаление. */
+.ceilingsSpecificationManualRow {
+  grid-template-columns:
+    minmax(0, 2fr) minmax(48px, 0.35fr) minmax(64px, 0.65fr) minmax(72px, 0.75fr)
+    minmax(72px, 0.8fr) auto;
+}
+
 .ceilingsSpecificationFabricRow {
   display: grid;
   grid-template-columns:
@@ -1493,6 +1500,14 @@
   }
 
   .ceilingsSpecificationLineRow select {
+    grid-column: 1 / -1;
+  }
+
+  .ceilingsSpecificationManualRow {
+    grid-template-columns: 1fr 1fr 1fr auto;
+  }
+
+  .ceilingsSpecificationManualRow input:first-child {
     grid-column: 1 / -1;
   }
 

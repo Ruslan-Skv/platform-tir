@@ -12,6 +12,7 @@ import {
   DP_MANUAL_DIRECTION_OTHER,
   MANUAL_MONEY_MOVEMENT_DIRECTIONS,
 } from '../../common/config/package-direction-registry.config';
+import { SALARY_PAYOUT_BASIS } from '../../common/constants/salary-payout';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateManualMoneyMovementDto } from './dto/create-manual-money-movement.dto';
 import { SalesTotalsNotifyService } from './sales-totals-notify.service';
@@ -54,13 +55,25 @@ export class ManualEntriesService {
     });
     if (!managerExists) throw new BadRequestException('Указанный менеджер не найден');
 
-    const direction = this.normalizeDirection(dto.direction);
+    // Запись «Зар/плата» — всегда изъятие из кассы вне договоров: направление «Прочее»,
+    // основание фиксировано, договорных полей нет.
+    const salaryRecipient = dto.salaryRecipientUserId
+      ? await this.resolveSalaryRecipient(dto.salaryRecipientUserId)
+      : null;
+    if (salaryRecipient && dto.amount > 0) {
+      throw new BadRequestException(
+        'Выплата зар/платы — изъятие из кассы: выберите тип операции «Изъятие»',
+      );
+    }
+    const direction = salaryRecipient
+      ? DP_MANUAL_DIRECTION_OTHER
+      : this.normalizeDirection(dto.direction);
 
     // № договора и заказчик — только у записей по направлениям и «Материалам»;
     // «Прочее» — движения вне договоров, поля договора не сохраняем.
-    const withContract = this.hasContractFields(direction);
+    const withContract = salaryRecipient ? false : this.hasContractFields(direction);
     // Исполнитель — только у «Мебели» (выбирается из справочника реквизитов исполнителей).
-    const withExecutor = this.hasExecutorField(direction);
+    const withExecutor = salaryRecipient ? false : this.hasExecutorField(direction);
 
     const row = await this.prisma.moneyMovement.create({
       data: {
@@ -72,7 +85,7 @@ export class ManualEntriesService {
         amount: dto.amount,
         paymentForm: dto.paymentForm,
         paymentType: PaymentType.OTHER,
-        basis: dto.basis.trim(),
+        basis: salaryRecipient ? SALARY_PAYOUT_BASIS : dto.basis.trim(),
         notes: dto.notes?.trim() || null,
         managerId,
         direction,
@@ -80,6 +93,8 @@ export class ManualEntriesService {
         contractNumber: withContract ? dto.contractNumber?.trim() || null : null,
         customerName: withContract ? dto.customerName?.trim() || null : null,
         executorName: withExecutor ? dto.executorName?.trim() || null : null,
+        salaryRecipientUserId: salaryRecipient?.id ?? null,
+        salaryRecipientName: salaryRecipient?.name ?? null,
         createdById: currentUserId,
       },
       include: { manager: { select: { id: true, email: true, firstName: true, lastName: true } } },
@@ -116,18 +131,31 @@ export class ManualEntriesService {
       if (!managerExists) throw new BadRequestException('Указанный менеджер не найден');
     }
 
-    const direction = this.normalizeDirection(dto.direction);
-    const withContract = this.hasContractFields(direction);
-    const withExecutor = this.hasExecutorField(direction);
+    // Запись «Зар/плата» — как при создании: изъятие, «Прочее», фиксированное основание.
+    // Получателя можно снять (поле не передано) — запись станет обычной проводкой.
+    const salaryRecipient = dto.salaryRecipientUserId
+      ? await this.resolveSalaryRecipient(dto.salaryRecipientUserId)
+      : null;
+    if (salaryRecipient && dto.amount > 0) {
+      throw new BadRequestException(
+        'Выплата зар/платы — изъятие из кассы: выберите тип операции «Изъятие»',
+      );
+    }
+    const direction = salaryRecipient
+      ? DP_MANUAL_DIRECTION_OTHER
+      : this.normalizeDirection(dto.direction);
+    const withContract = salaryRecipient ? false : this.hasContractFields(direction);
+    const withExecutor = salaryRecipient ? false : this.hasExecutorField(direction);
 
     // Дата записи клиентом не правится: без поля в запросе сохраняем прежнюю.
     const paymentDate =
       dto.paymentDate !== undefined ? new Date(dto.paymentDate) : existing.paymentDate;
-    const basis = dto.basis.trim();
+    const basis = salaryRecipient ? SALARY_PAYOUT_BASIS : dto.basis.trim();
     const notes = dto.notes?.trim() || null;
     const contractNumber = withContract ? dto.contractNumber?.trim() || null : null;
     const customerName = withContract ? dto.customerName?.trim() || null : null;
     const executorName = withExecutor ? dto.executorName?.trim() || null : null;
+    const salaryRecipientName = salaryRecipient?.name ?? null;
 
     const originalValues = await this.collectOriginalValues(existing, {
       managerId,
@@ -140,6 +168,7 @@ export class ManualEntriesService {
       executorName,
       basis,
       notes,
+      salaryRecipientName,
     });
 
     // performedAt не трогаем — это время исходного проведения записи.
@@ -156,6 +185,8 @@ export class ManualEntriesService {
         contractNumber,
         customerName,
         executorName,
+        salaryRecipientUserId: salaryRecipient?.id ?? null,
+        salaryRecipientName,
         ...(originalValues ? { originalValues } : { originalValues: Prisma.DbNull }),
       },
       include: { manager: { select: { id: true, email: true, firstName: true, lastName: true } } },
@@ -308,6 +339,20 @@ export class ManualEntriesService {
     return direction;
   }
 
+  /** Получатель зар/платы ручной записи «Зар/плата»: сотрудник из справочника,
+   *  имя хранится снимком (как installerName у авансов мастерам). */
+  private async resolveSalaryRecipient(userId: string): Promise<{ id: string; name: string }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId.trim() },
+      select: { id: true, email: true, firstName: true, lastName: true },
+    });
+    if (!user) throw new BadRequestException('Указанный получатель зар/платы не найден');
+    return {
+      id: user.id,
+      name: [user.lastName, user.firstName].filter(Boolean).join(' ').trim() || user.email,
+    };
+  }
+
   /** № договора и заказчик — у записей по направлениям и «Материалам» (не «Прочее»). */
   private hasContractFields(direction: string | null): boolean {
     return Boolean(direction) && direction !== DP_MANUAL_DIRECTION_OTHER;
@@ -336,6 +381,7 @@ export class ManualEntriesService {
       executorName: string | null;
       basis: string;
       notes: string | null;
+      salaryRecipientName: string | null;
     },
   ): Promise<Record<string, string | null> | null> {
     const original = {
@@ -423,6 +469,11 @@ export class ManualEntriesService {
         changed: (existing.notes ?? null) !== next.notes,
         fallback: existing.notes ?? null,
         backToOriginal: norm(original.notes) === norm(next.notes),
+      },
+      salaryRecipientName: {
+        changed: (existing.salaryRecipientName ?? null) !== next.salaryRecipientName,
+        fallback: existing.salaryRecipientName ?? null,
+        backToOriginal: norm(original.salaryRecipientName) === norm(next.salaryRecipientName),
       },
     };
 

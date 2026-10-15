@@ -24,6 +24,26 @@ export const DP_FURNITURE_DIRECTION = 'Мебель';
 /** Движения ДС вне продаж и договоров (хоз. товары и прочее) — не входят в итоговые продажи. */
 export const DP_OTHER_DIRECTION = 'Прочее';
 
+/** Основание ручной записи «Зар/плата»: выплата зар/платы из кассы с указанием получателя. */
+export const DP_SALARY_PAYOUT_BASIS = 'Зар/плата';
+
+/** Значение селекта основания «ввести вручную» — не сохраняется. */
+export const DP_BASIS_CUSTOM_VALUE = '__custom__';
+
+/** Пресеты основания ручной записи: выбор вместо набора текста. */
+export const DP_MANUAL_BASIS_PRESET_OPTIONS: { value: string; label: string }[] = [
+  { value: DP_SALARY_PAYOUT_BASIS, label: DP_SALARY_PAYOUT_BASIS },
+  { value: 'Бытовые нужды', label: 'Бытовые нужды' },
+  { value: 'Возврат излишка', label: 'Возврат излишка' },
+];
+
+/** Способы оплаты записи «Зар/плата»: наличные из кассы и безнал (перевод). */
+export const DP_SALARY_PAYMENT_FORM_OPTIONS: { value: string; label: string }[] = [
+  { value: 'CASH', label: 'Наличные' },
+  { value: 'LC_TRANSFER', label: 'Переводы на ЛК' },
+  { value: 'BANK_APP', label: 'Банк. прилож' },
+];
+
 /** Направления ручной записи: направления договоров + «Материалы» + «Прочее». */
 export const DP_MANUAL_DIRECTION_OPTIONS: { value: string; label: string }[] = [
   ...DP_DIRECTION_OPTIONS,

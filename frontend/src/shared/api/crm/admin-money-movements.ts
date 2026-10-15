@@ -37,6 +37,10 @@ export type MoneyMovement = {
   direction: string | null;
   /** Исполнитель ручной записи направления «Мебель» — название набора из справочника реквизитов. */
   executorName: string | null;
+  /** ФИО получателя зар/платы ручной записи с основанием «Зар/плата»; null — обычная запись. */
+  salaryRecipientName: string | null;
+  /** Id сотрудника-получателя зар/платы (справочник); null — обычная запись. */
+  salaryRecipientUserId: string | null;
   /** Офис заключения договора на момент оплаты («Офис закл.»). */
   office: string | null;
   /**
@@ -253,6 +257,11 @@ export type ManualMoneyMovementParams = {
   executorName?: string;
   /** Основание: «Бытовые нужды» и т.п. */
   basis: string;
+  /**
+   * Сотрудник, получивший зар/плату (id из справочника): передаётся, когда основание —
+   * «Зар/плата» (запись становится изъятием из кассы с получателем в колонке «Зар/плата»).
+   */
+  salaryRecipientUserId?: string;
   notes?: string;
 };
 

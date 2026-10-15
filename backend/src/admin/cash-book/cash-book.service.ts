@@ -8,6 +8,7 @@ import {
   PACKAGE_DIRECTION_REGISTRY,
 } from '../../common/config/package-direction-registry.config';
 import { PrismaService } from '../../database/prisma.service';
+import { SALARY_PAYOUT_BASIS } from '../../common/constants/salary-payout';
 import { MoneyMovementsService } from '../money-movements/money-movements.service';
 import { CreateCashBookEntryDto } from './dto/create-cash-book-entry.dto';
 
@@ -16,9 +17,6 @@ const MANAGER_SELECT = { id: true, email: true, firstName: true, lastName: true 
 const KIND_TO_DIRECTION_NAME = Object.fromEntries(
   PACKAGE_DIRECTION_REGISTRY.map((d) => [d.kind, d.name]),
 ) as Record<ContractDocumentPackageKind, string>;
-
-/** Основание записи кассы для выплаты мастеру наличными (зар/плата). */
-const SALARY_ADVANCE_BASIS = 'Зар/плата';
 
 /** Экранирование спецсимволов ILIKE (% _ \) в поисковом запросе. */
 function escapeLike(value: string): string {
@@ -33,8 +31,14 @@ const MOVEMENT_INCLUDE = {
   manager: { select: MANAGER_SELECT },
 } satisfies Prisma.MoneyMovementInclude;
 
+const PAYOUT_INCLUDE = {
+  manager: { select: MANAGER_SELECT },
+  createdBy: { select: MANAGER_SELECT },
+} satisfies Prisma.SalaryPayoutInclude;
+
 type CashBookRowWithManager = Prisma.CashBookEntryGetPayload<{ include: typeof ENTRY_INCLUDE }>;
 type MovementRowWithManager = Prisma.MoneyMovementGetPayload<{ include: typeof MOVEMENT_INCLUDE }>;
+type PayoutRowWithUsers = Prisma.SalaryPayoutGetPayload<{ include: typeof PAYOUT_INCLUDE }>;
 
 /** Строка журнала выплат мастерам (сырой SQL): реквизиты договора достаём из formData пакета. */
 type SalaryAdvanceRawRow = {
@@ -70,6 +74,19 @@ function cashSearchFilter(search: string) {
       { customerName: { contains: search, mode: 'insensitive' as const } },
       { basis: { contains: search, mode: 'insensitive' as const } },
       { notes: { contains: search, mode: 'insensitive' as const } },
+    ],
+  };
+}
+
+/** Поиск по полям движений ДП — как в кассе, плюс получатель зар/платы записи «Зар/плата». */
+function movementSearchFilter(search: string): Prisma.MoneyMovementWhereInput {
+  return {
+    OR: [
+      { contractNumber: { contains: search, mode: 'insensitive' } },
+      { customerName: { contains: search, mode: 'insensitive' } },
+      { basis: { contains: search, mode: 'insensitive' } },
+      { notes: { contains: search, mode: 'insensitive' } },
+      { salaryRecipientName: { contains: search, mode: 'insensitive' } },
     ],
   };
 }
@@ -119,7 +136,8 @@ function serializeMovementAsCashEntry(row: MovementRowWithManager): SerializedCa
     executorName: row.executorName,
     basis: row.basis,
     notes: row.notes,
-    salaryRecipientName: null,
+    /** Получатель зар/платы свёрнутой записи ДП с основанием «Зар/плата». */
+    salaryRecipientName: row.salaryRecipientName ?? null,
     createdById: row.createdById,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
@@ -145,9 +163,33 @@ function serializeSalaryAdvanceAsCashEntry(row: SalaryAdvanceRawRow): Serialized
     contractNumber: row.contractNumber,
     customerName: row.customerName,
     executorName: null,
-    basis: SALARY_ADVANCE_BASIS,
+    basis: SALARY_PAYOUT_BASIS,
     notes: row.note,
     salaryRecipientName: row.installerLiveName ?? row.installerName,
+    createdById: row.createdById,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+/** Выплата з/п из раздела «Выплаты з/п» в форме записи кассы: сумма — со знаком
+ *  минус (изъятие наличных), основание — «Зар/плата», в колонке зар/платы — ФИО
+ *  получателя. Менеджер кассы — кто выдал (менеджер или автор записи выплаты). */
+function serializeSalaryPayoutAsCashEntry(row: PayoutRowWithUsers): SerializedCashEntry {
+  const manager = row.manager ?? row.createdBy;
+  return {
+    id: row.id,
+    paymentDate: row.paidAt.toISOString().slice(0, 10),
+    performedAt: row.createdAt.toISOString(),
+    amount: row.amount.neg().toString(),
+    manager: manager ? { id: manager.id, name: managerName(manager) } : null,
+    direction: null,
+    contractNumber: null,
+    customerName: null,
+    executorName: null,
+    basis: SALARY_PAYOUT_BASIS,
+    notes: row.note,
+    salaryRecipientName: row.recipientName,
     createdById: row.createdById,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
@@ -163,7 +205,8 @@ function compareCashEntriesDesc(a: SerializedCashEntry, b: SerializedCashEntry):
 }
 
 /** Раздел «Касса»: свёрнутые наличные оплаты ДП + собственные ручные записи кассы
- *  + выплаты мастерам наличными из расчётов (зар/плата, сумма со знаком минус). */
+ *  + выплаты мастерам наличными из расчётов (зар/плата, сумма со знаком минус)
+ *  + наличные выплаты з/п из раздела «Выплаты з/п» (проекция, со знаком минус). */
 @Injectable()
 export class CashBookService {
   constructor(
@@ -199,6 +242,15 @@ export class CashBookService {
             },
           }
         : undefined;
+    const payoutPeriodFilter =
+      params.dateFrom || params.dateTo
+        ? {
+            paidAt: {
+              ...(params.dateFrom ? { gte: new Date(params.dateFrom) } : {}),
+              ...(params.dateTo ? { lte: new Date(`${params.dateTo}T23:59:59.999`) } : {}),
+            },
+          }
+        : undefined;
     const managerFilter = params.managerId ? { managerId: params.managerId } : undefined;
     const searchFilter = search ? cashSearchFilter(search) : undefined;
 
@@ -210,12 +262,29 @@ export class CashBookService {
       manualReconciledAt: { not: null },
       ...(periodFilter ?? {}),
       ...(managerFilter ?? {}),
-      ...(searchFilter ?? {}),
+      ...(search ? movementSearchFilter(search) : {}),
     };
     const cashWhere: Prisma.CashBookEntryWhereInput = {
       ...(periodFilter ?? {}),
       ...(managerFilter ?? {}),
       ...(searchFilter ?? {}),
+    };
+
+    // Четвёртый источник кассы — наличные выплаты з/п из раздела «Выплаты з/п»:
+    // попадают синхронно, без сверки (как выплаты мастерам), со знаком минус.
+    const payoutWhere: Prisma.SalaryPayoutWhereInput = {
+      deletedAt: null,
+      paymentMethod: 'CASH',
+      ...(payoutPeriodFilter ?? {}),
+      ...(managerFilter ?? {}),
+      ...(search
+        ? {
+            OR: [
+              { recipientName: { contains: search, mode: 'insensitive' } },
+              { note: { contains: search, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
     };
 
     // Третий источник кассы — выплаты мастерам из расчётов («Наличные»): попадают
@@ -241,7 +310,7 @@ export class CashBookService {
               OR COALESCE(a."note", '') ILIKE ${salaryPattern}
               OR COALESCE(p."formData"->'contract'->>'number', '') ILIKE ${salaryPattern}
               OR COALESCE(p."formData"->'customer'->>'fullName', '') ILIKE ${salaryPattern}
-              OR ${SALARY_ADVANCE_BASIS} ILIKE ${salaryPattern}
+              OR ${SALARY_PAYOUT_BASIS} ILIKE ${salaryPattern}
             )`
           : Prisma.empty
       }`;
@@ -264,6 +333,10 @@ export class CashBookService {
       salaryRows,
       salarySum,
       salaryByManagerRaw,
+      payoutTotal,
+      payoutRows,
+      payoutSum,
+      payoutByManagerRaw,
       directoryUserIds,
     ] = await Promise.all([
       this.prisma.moneyMovement.count({ where: dpWhere }),
@@ -313,33 +386,57 @@ export class CashBookService {
       this.prisma.$queryRaw<Array<{ managerId: string | null; sum: Prisma.Decimal | number }>>(
         Prisma.sql`SELECT a."createdById" AS "managerId", COALESCE(SUM(a."amount"), 0) AS "sum"${fromSalaryAdvances} GROUP BY a."createdById"`,
       ),
+      this.prisma.salaryPayout.count({ where: payoutWhere }),
+      this.prisma.salaryPayout.findMany({
+        where: payoutWhere,
+        include: PAYOUT_INCLUDE,
+        orderBy: [{ paidAt: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
+        take: fetchTake,
+      }),
+      this.prisma.salaryPayout.aggregate({ where: payoutWhere, _sum: { amount: true } }),
+      this.prisma.salaryPayout.groupBy({
+        by: ['managerId'],
+        where: payoutWhere,
+        _sum: { amount: true },
+      }),
       this.moneyMovements.getSignatoryProfileUserIds(),
     ]);
 
-    const total = dpTotal + cashTotal + (salaryTotal[0]?.total ?? 0);
+    const total = dpTotal + cashTotal + (salaryTotal[0]?.total ?? 0) + payoutTotal;
 
     const rows = [
       ...dpRows.map(serializeMovementAsCashEntry),
       ...cashRows.map(serializeCashBookEntry),
       ...salaryRows.map(serializeSalaryAdvanceAsCashEntry),
+      ...payoutRows.map(serializeSalaryPayoutAsCashEntry),
     ]
       .sort(compareCashEntriesDesc)
       .slice(skip, skip + limit);
 
     // Итоги — по всем источникам: общая сумма и разбивка по менеджерам кассы.
-    // Выплаты мастерам входят со знаком минус (изъятие наличных из кассы).
+    // Выплаты мастерам и выплаты з/п входят со знаком минус (изъятие наличных из кассы).
     const totalSum =
       Number(dpSum._sum.amount ?? 0) +
       Number(cashSum._sum.amount ?? 0) -
-      Number(salarySum[0]?.sum ?? 0);
+      Number(salarySum[0]?.sum ?? 0) -
+      Number(payoutSum._sum.amount ?? 0);
     const salaryByManager = salaryByManagerRaw.map((row) => ({
       managerId: row.managerId,
       _sum: { amount: -Number(row.sum ?? 0) },
     }));
+    const payoutByManager = payoutByManagerRaw.map((row) => ({
+      managerId: row.managerId,
+      _sum: { amount: -Number(row._sum.amount ?? 0) },
+    }));
     const sumByManagerId = new Map<string, number>();
     let noneManagerSum = 0;
     let hasNoneManager = false;
-    for (const row of [...dpByManagerRaw, ...cashByManagerRaw, ...salaryByManager]) {
+    for (const row of [
+      ...dpByManagerRaw,
+      ...cashByManagerRaw,
+      ...salaryByManager,
+      ...payoutByManager,
+    ]) {
       const sum = Number(row._sum.amount ?? 0);
       if (!row.managerId) {
         hasNoneManager = true;
