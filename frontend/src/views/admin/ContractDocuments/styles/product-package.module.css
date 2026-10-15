@@ -1379,6 +1379,14 @@
   background: color-mix(in srgb, var(--admin-info, #2563eb) 8%, var(--admin-surface, #fff));
 }
 
+/* Группа кнопок шапки блока: «+» остаётся у правого края, рядом — «вручную». */
+.ceilingsSpecificationBlockActions {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-xs);
+  margin-left: auto;
+}
+
 .ceilingsSpecificationBlockAddBtn {
   min-width: 28px;
   width: 28px;

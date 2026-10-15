@@ -124,28 +124,30 @@ function SpecBlock({
       <div className={cdProduct.ceilingsSpecificationBlockHeader}>
         <h4 className={cdProduct.ceilingsSpecificationSectionTitle}>{title}</h4>
         {headerExtra}
-        {!readOnly && onAdd ? (
-          <button
-            type="button"
-            className={`${cdWorkspace.secondaryBtn} ${attachStyles.estimateAttachedRemoveBtn} ${cdProduct.ceilingsSpecificationBlockAddBtn}`}
-            aria-label={addAriaLabel || `Добавить в «${title}»`}
-            title={addAriaLabel || `Добавить в «${title}»`}
-            onClick={onAdd}
-          >
-            +
-          </button>
-        ) : null}
-        {!readOnly && onAddManual ? (
-          <button
-            type="button"
-            className={`${cdWorkspace.secondaryBtn} ${attachStyles.estimateAttachedRemoveBtn} ${cdProduct.ceilingsSpecificationBlockAddBtn}`}
-            aria-label={addManualAriaLabel || `Добавить вручную в «${title}»`}
-            title={addManualAriaLabel || `Добавить вручную в «${title}»`}
-            onClick={onAddManual}
-          >
-            <PencilSquareIcon className={cdProduct.doorsSpecificationAddBtnIcon} aria-hidden />
-          </button>
-        ) : null}
+        <div className={cdProduct.ceilingsSpecificationBlockActions}>
+          {!readOnly && onAdd ? (
+            <button
+              type="button"
+              className={`${cdWorkspace.secondaryBtn} ${attachStyles.estimateAttachedRemoveBtn} ${cdProduct.ceilingsSpecificationBlockAddBtn}`}
+              aria-label={addAriaLabel || `Добавить в «${title}»`}
+              title={addAriaLabel || `Добавить в «${title}»`}
+              onClick={onAdd}
+            >
+              +
+            </button>
+          ) : null}
+          {!readOnly && onAddManual ? (
+            <button
+              type="button"
+              className={`${cdWorkspace.secondaryBtn} ${attachStyles.estimateAttachedRemoveBtn} ${cdProduct.ceilingsSpecificationBlockAddBtn}`}
+              aria-label={addManualAriaLabel || `Добавить вручную в «${title}»`}
+              title={addManualAriaLabel || `Добавить вручную в «${title}»`}
+              onClick={onAddManual}
+            >
+              <PencilSquareIcon className={cdProduct.doorsSpecificationAddBtnIcon} aria-hidden />
+            </button>
+          ) : null}
+        </div>
       </div>
       <div className={cdProduct.ceilingsSpecificationBlockBody}>{children}</div>
     </section>
