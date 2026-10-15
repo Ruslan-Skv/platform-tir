@@ -5,7 +5,9 @@ import { useEffect, useState } from 'react';
 import {
   type ContractDocumentPackageInstallerAdvance,
   type ContractDocumentPackageInstallerAdvancePatch,
+  type ContractDocumentPackageInstallerAdvancePaymentMethod,
 } from '@/shared/api/admin-contract-document-packages';
+import { INSTALLER_ADVANCE_PAYMENT_METHOD_LABELS } from '@/shared/constants/installerAdvancePaymentMethod';
 import { Modal } from '@/shared/ui/Modal';
 
 import cdBase from '../../../../styles/base.module.css';
@@ -32,6 +34,8 @@ type EditDraft = {
   installerId: string;
   paidAt: string;
   amount: string;
+  /** Способ оплаты; '' — не указан (записи до появления поля). */
+  paymentMethod: ContractDocumentPackageInstallerAdvancePaymentMethod | '';
   note: string;
 };
 
@@ -41,6 +45,7 @@ function draftFromAdvance(advance: ContractDocumentPackageInstallerAdvance): Edi
     installerId: advance.installerId ?? '',
     paidAt: advance.paidAt,
     amount: Number.isFinite(amountNum) ? String(amountNum) : '',
+    paymentMethod: advance.paymentMethod ?? '',
     note: advance.note ?? '',
   };
 }
@@ -53,7 +58,9 @@ export function PackageInstallerAdvancesEditModal({
   onSave,
 }: PackageInstallerAdvancesEditModalProps) {
   const [draft, setDraft] = useState<EditDraft>(() =>
-    advance ? draftFromAdvance(advance) : { installerId: '', paidAt: '', amount: '', note: '' }
+    advance
+      ? draftFromAdvance(advance)
+      : { installerId: '', paidAt: '', amount: '', paymentMethod: '', note: '' }
   );
 
   // При открытии модалки на другой строке журнала — перечитываем черновик.
@@ -80,6 +87,7 @@ export function PackageInstallerAdvancesEditModal({
       installerId: draft.installerId,
       paidAt: draft.paidAt,
       amount: Math.round(parsedAmount * 100) / 100,
+      paymentMethod: draft.paymentMethod === '' ? null : draft.paymentMethod,
       note: draft.note.trim() ? draft.note.trim() : null,
     });
   };
@@ -149,6 +157,29 @@ export function PackageInstallerAdvancesEditModal({
             {draft.amount.trim() !== '' && !amountValid ? (
               <p className={cdBase.paymentsEditModalFieldError}>Укажите число больше нуля</p>
             ) : null}
+          </div>
+          <div className={cdBase.field}>
+            <label htmlFor="advance_edit_payment_method">Способ оплаты</label>
+            <select
+              id="advance_edit_payment_method"
+              value={draft.paymentMethod}
+              disabled={saving}
+              onChange={(e) =>
+                setDraft((d) => ({
+                  ...d,
+                  paymentMethod: e.target.value as
+                    | ContractDocumentPackageInstallerAdvancePaymentMethod
+                    | '',
+                }))
+              }
+            >
+              <option value="">Не указан</option>
+              {Object.entries(INSTALLER_ADVANCE_PAYMENT_METHOD_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
           </div>
           <div className={`${cdBase.field} ${cdEstimateTab.fieldSpanAll}`}>
             <label htmlFor="advance_edit_note">Комментарий</label>

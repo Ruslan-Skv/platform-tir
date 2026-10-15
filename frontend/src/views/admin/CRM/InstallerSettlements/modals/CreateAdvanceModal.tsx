@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import type { ContractDocumentPackageInstallerAdvancePaymentMethod } from '@/shared/api/admin-contract-document-packages';
 import type { InstallerMaster } from '@/shared/api/admin-crm';
 import {
   type CreateInstallerSettlementAdvanceParams,
   type InstallerSettlementPackageOption,
 } from '@/shared/api/crm/admin-installer-settlements';
+import { INSTALLER_ADVANCE_PAYMENT_METHOD_LABELS } from '@/shared/constants/installerAdvancePaymentMethod';
 import { Modal } from '@/shared/ui/Modal';
 import formStyles from '@/views/admin/CRM/MoneyMovements/modals/MoneyMovementModalForm.module.css';
 import modalStyles from '@/views/admin/Catalog/Components/shared/ComponentCatalogModal.module.css';
@@ -70,6 +72,8 @@ export function CreateAdvanceModal({
   const [installerId, setInstallerId] = useState('');
   const [paidAt, setPaidAt] = useState(todayIsoDate);
   const [amount, setAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] =
+    useState<ContractDocumentPackageInstallerAdvancePaymentMethod>('CASH');
   const [note, setNote] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -83,6 +87,7 @@ export function CreateAdvanceModal({
     setInstallerId('');
     setPaidAt(todayIsoDate);
     setAmount('');
+    setPaymentMethod('CASH');
     setNote('');
     setError(null);
   }, [open]);
@@ -163,6 +168,7 @@ export function CreateAdvanceModal({
         installerId,
         paidAt,
         amount: Math.round(amountNumber * 100) / 100,
+        paymentMethod,
         note: note.trim() ? note.trim() : undefined,
       });
     } catch (submitError) {
@@ -311,6 +317,26 @@ export function CreateAdvanceModal({
           {amount.trim() !== '' && !amountValid ? (
             <p data-modal-form-error>Укажите число больше нуля</p>
           ) : null}
+        </div>
+
+        <div data-modal-form-group>
+          <label htmlFor="advance-payment-method">Способ оплаты</label>
+          <select
+            id="advance-payment-method"
+            value={paymentMethod}
+            onChange={(e) =>
+              setPaymentMethod(
+                e.target.value as ContractDocumentPackageInstallerAdvancePaymentMethod
+              )
+            }
+            disabled={submitting}
+          >
+            {Object.entries(INSTALLER_ADVANCE_PAYMENT_METHOD_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div data-modal-form-group>

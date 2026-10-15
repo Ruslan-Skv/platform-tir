@@ -1,6 +1,8 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsDateString, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsDateString, IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+
+import { InstallerAdvancePaymentMethodDto } from './payment.enums';
 
 export class UpdateContractDocumentPackageInstallerAdvanceDto {
   @ApiPropertyOptional({ description: 'Мастер из справочника (CRM → Мастера)' })
@@ -19,6 +21,14 @@ export class UpdateContractDocumentPackageInstallerAdvanceDto {
   @IsNumber()
   @Min(0.01)
   amount?: number;
+
+  @ApiPropertyOptional({
+    enum: InstallerAdvancePaymentMethodDto,
+    description: 'Способ оплаты: CASH — наличные, BANK — банк; null — сбросить',
+  })
+  @IsOptional()
+  @IsEnum(InstallerAdvancePaymentMethodDto)
+  paymentMethod?: InstallerAdvancePaymentMethodDto | null;
 
   @ApiPropertyOptional({ description: 'Комментарий (за что выдан аванс); null — сбросить' })
   @IsOptional()

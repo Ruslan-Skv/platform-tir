@@ -559,8 +559,9 @@
   }
 }
 
-/* Блок «Выдать аванс» (вкладка «Авансы»): поля в одну строку, кнопка ниже —
-   как «Провести оплату» в модалке оплат (бланк + paymentsHubConduct*). */
+/* Блок «Выдать аванс» (вкладка «Авансы»): реквизиты в одну строку, ниже —
+   комментарий во всю ширину и кнопка «Выдать аванс» с ним в одной строке
+   (как «Провести оплату» в модалке оплат: бланк + paymentsHubConduct*). */
 .advancesFormSheet {
   display: flex;
   flex-direction: column;
@@ -575,14 +576,20 @@
     minmax(0, 1.15fr)
     minmax(8.25rem, 9.5rem)
     minmax(7.5rem, 8.75rem)
-    minmax(0, 1.5fr);
+    minmax(6.75rem, 1fr);
 }
 
+/* Вторая строка: комментарий растягивается на свободную ширину, кнопка справа. */
 .advancesFormActions {
-  align-items: center;
+  align-items: start;
   display: flex;
   flex-wrap: wrap;
   gap: var(--admin-space-md, 0.75rem);
+}
+
+.advancesFormNoteField {
+  flex: 1 1 auto;
+  min-width: min(100%, 22rem);
 }
 
 @media (max-width: 900px) {
@@ -592,19 +599,10 @@
       minmax(8.25rem, 9.5rem)
       minmax(7.5rem, 8.75rem);
   }
-
-  /* Комментарий переносится на отдельную строку. */
-  .advancesFormRow > .advancesFormNoteField {
-    grid-column: 1 / -1;
-  }
 }
 
 @media (max-width: 620px) {
   .advancesFormRow {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .advancesFormRow > .advancesFormNoteField {
-    grid-column: auto;
   }
 }

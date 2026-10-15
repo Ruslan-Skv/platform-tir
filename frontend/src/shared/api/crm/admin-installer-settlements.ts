@@ -2,6 +2,8 @@
 
 import { apiFetch } from '@/shared/lib/api-fetch';
 
+import type { ContractDocumentPackageInstallerAdvancePaymentMethod } from '../admin-contract-document-packages';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 function getAdminAuthHeaders(): HeadersInit {
@@ -29,6 +31,8 @@ export type InstallerSettlementAdvance = {
   /** Дата выдачи аванса (YYYY-MM-DD). */
   paidAt: string;
   amount: string;
+  /** Способ оплаты: CASH — наличные, BANK — банк; null — не указан (старые записи). */
+  paymentMethod: ContractDocumentPackageInstallerAdvancePaymentMethod | null;
   note: string | null;
   direction: string;
   packageStatus: string;
@@ -134,6 +138,8 @@ export type CreateInstallerSettlementAdvanceParams = {
   /** Дата выдачи (YYYY-MM-DD). */
   paidAt: string;
   amount: number;
+  /** Способ оплаты: наличные (CASH) или банк (BANK). */
+  paymentMethod?: ContractDocumentPackageInstallerAdvancePaymentMethod;
   note?: string;
 };
 

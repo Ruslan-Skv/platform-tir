@@ -52,6 +52,8 @@ type JournalRawRow = {
   installerGrade: string | null;
   paidAt: Date;
   amount: Prisma.Decimal | number;
+  /** Способ оплаты: CASH — наличные, BANK — банк; null — не указан (старые записи). */
+  paymentMethod: string | null;
   note: string | null;
   createdAt: Date;
   createdById: string | null;
@@ -173,7 +175,7 @@ export class InstallerSettlementsService {
     ] = await Promise.all([
       this.prisma.$queryRaw<JournalRawRow[]>(Prisma.sql`
           SELECT a."id", a."packageId", a."installerId", a."installerName", a."paidAt",
-            a."amount", a."note", a."createdAt", a."createdById",
+            a."amount", a."paymentMethod", a."note", a."createdAt", a."createdById",
             inst."fullName" AS "installerLiveName", inst."grade" AS "installerGrade",
             p."kind" AS "packageKind", p."status" AS "packageStatus",
             p."formData"->'contract'->>'number' AS "contractNumber",
@@ -420,6 +422,7 @@ export class InstallerSettlementsService {
         installerGrade: row.installerGrade,
         paidAt: isoDate(row.paidAt),
         amount: String(row.amount),
+        paymentMethod: row.paymentMethod ?? null,
         note: row.note,
         direction: KIND_TO_DIRECTION_NAME[row.packageKind] ?? String(row.packageKind),
         packageStatus: String(row.packageStatus),

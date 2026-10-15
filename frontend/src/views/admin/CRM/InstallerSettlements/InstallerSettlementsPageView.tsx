@@ -2,6 +2,7 @@
 
 import { useId, useMemo, useState } from 'react';
 
+import { formatInstallerAdvancePaymentMethod } from '@/shared/constants/installerAdvancePaymentMethod';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
@@ -230,6 +231,12 @@ export function InstallerSettlementsPageView({ model }: { model: InstallerSettle
       render: (item: (typeof items)[number]) => (
         <span className={styles.amountCell}>{formatIsMoney(item.amount)}</span>
       ),
+    },
+    {
+      key: 'paymentMethod',
+      title: 'Способ оплаты',
+      render: (item: (typeof items)[number]) =>
+        formatInstallerAdvancePaymentMethod(item.paymentMethod),
     },
   ];
 

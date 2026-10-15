@@ -3,6 +3,8 @@
 import { useMemo, useState } from 'react';
 
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { type ContractDocumentPackageInstallerAdvancePaymentMethod } from '@/shared/api/admin-contract-document-packages';
+import { formatInstallerAdvancePaymentMethod } from '@/shared/constants/installerAdvancePaymentMethod';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import measurementBlankStyles from '@/views/admin/CRM/Measurements/form/MeasurementFormPage.module.css';
 
@@ -64,6 +66,8 @@ export function PackageWorkOrdersHubInstallerAdvancesPanel() {
   const [installerId, setInstallerId] = useState('');
   const [paidAt, setPaidAt] = useState(todayIsoLocal);
   const [amount, setAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] =
+    useState<ContractDocumentPackageInstallerAdvancePaymentMethod>('CASH');
   const [note, setNote] = useState('');
 
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -155,10 +159,11 @@ export function PackageWorkOrdersHubInstallerAdvancesPanel() {
       installerId,
       paidAt,
       amount: Math.round(parsedAmount * 100) / 100,
+      paymentMethod,
       note: note.trim() ? note.trim() : undefined,
     });
     if (ok) {
-      // Мастера и дату оставляем — обычно сразу выдают несколько авансов подряд.
+      // Мастера, дату и способ оплаты оставляем — обычно сразу выдают несколько авансов подряд.
       setAmount('');
       setNote('');
     }
@@ -357,6 +362,30 @@ export function PackageWorkOrdersHubInstallerAdvancesPanel() {
                     <p className={cdBase.paymentsEditModalFieldError}>Укажите число больше нуля</p>
                   ) : null}
                 </div>
+                <div className={cdBase.paymentsHubConductField}>
+                  <label
+                    className={`${measurementBlankStyles.label} ${cdBase.paymentsHubConductLabel}`}
+                    htmlFor="advance_form_payment_method"
+                  >
+                    Способ оплаты
+                  </label>
+                  <select
+                    id="advance_form_payment_method"
+                    className={`${measurementBlankStyles.select} ${cdBase.paymentsHubConductControl}`}
+                    value={paymentMethod}
+                    disabled={advances.creating}
+                    onChange={(e) =>
+                      setPaymentMethod(
+                        e.target.value as ContractDocumentPackageInstallerAdvancePaymentMethod
+                      )
+                    }
+                  >
+                    <option value="CASH">Наличные</option>
+                    <option value="BANK">Банк</option>
+                  </select>
+                </div>
+              </div>
+              <div className={hubStyles.advancesFormActions}>
                 <div
                   className={`${cdBase.paymentsHubConductField} ${hubStyles.advancesFormNoteField}`}
                 >
@@ -376,9 +405,13 @@ export function PackageWorkOrdersHubInstallerAdvancesPanel() {
                     onChange={(e) => setNote(e.target.value)}
                   />
                 </div>
-              </div>
-              <div className={hubStyles.advancesFormActions}>
                 <div className={cdBase.paymentsFormHubSubmitField}>
+                  <label
+                    className={`${measurementBlankStyles.label} ${cdBase.paymentsHubConductLabel} ${cdBase.paymentsFormHubSubmitSpacer}`}
+                    aria-hidden="true"
+                  >
+                    &nbsp;
+                  </label>
                   <button
                     data-admin-mutation
                     type="button"
@@ -413,6 +446,7 @@ export function PackageWorkOrdersHubInstallerAdvancesPanel() {
                     <th>Дата</th>
                     <th>Мастер</th>
                     <th>Сумма</th>
+                    <th>Способ оплаты</th>
                     <th>Комментарий</th>
                     <th>Кто выдал</th>
                     {canManageAdvances ? <th>Действия</th> : null}
@@ -427,6 +461,7 @@ export function PackageWorkOrdersHubInstallerAdvancesPanel() {
                         <td>{formatDateRu(r.paidAt)}</td>
                         <td>{r.installerName ?? '—'}</td>
                         <td>{formatMoneyRub(Number.parseFloat(r.amount))}</td>
+                        <td>{formatInstallerAdvancePaymentMethod(r.paymentMethod)}</td>
                         <td className={cdBase.paymentsTableBasisCell}>{r.note?.trim() || '—'}</td>
                         <td className={cdBase.paymentsTableUserCell}>
                           {r.createdBy

@@ -14,3 +14,9 @@ export enum PaymentTypeDto {
   AMENDMENT = 'AMENDMENT',
   REFUND = 'REFUND',
 }
+
+/** Способ выдачи аванса мастеру: наличными или переводом по банку. */
+export enum InstallerAdvancePaymentMethodDto {
+  CASH = 'CASH',
+  BANK = 'BANK',
+}

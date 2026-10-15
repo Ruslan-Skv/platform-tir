@@ -3662,18 +3662,20 @@ model ContractDocumentPackagePayment {
 /// Выданный аванс (часть з/п) мастеру по договору: журнал частичных выплат
 /// рядом с расчётом з/п в заказ-нарядах пакета.
 model ContractDocumentPackageInstallerAdvance {
-  id            String   @id @default(cuid())
+  id            String                         @id @default(cuid())
   packageId     String
   /// Мастер из справочника (мастера удаляются из договоров, но записи журнала остаются).
   installerId   String?
   /// Снимок ФИО мастера на момент выдачи — если мастер удалён из справочника.
   installerName String?
-  paidAt        DateTime @db.Date
-  amount        Decimal  @db.Decimal(12, 2)
-  note          String?  @db.Text
+  paidAt        DateTime                       @db.Date
+  amount        Decimal                        @db.Decimal(12, 2)
+  /// Как выдана выплата мастеру: наличными или переводом по банку.
+  paymentMethod InstallerAdvancePaymentMethod?
+  note          String?                        @db.Text
   createdById   String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime                       @default(now())
+  updatedAt     DateTime                       @updatedAt
 
   package   ContractDocumentPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
   installer InstallerMaster?        @relation(fields: [installerId], references: [id], onDelete: SetNull)
@@ -4196,6 +4198,13 @@ enum PaymentForm {
   INVOICE
   LC_TRANSFER // Переводы на личный счёт (ЛК)
   BANK_APP // Оплата через банковское приложение
+}
+
+/// Способ выдачи аванса мастеру (форма «Выдать аванс» в заказ-нарядах договора
+/// и раздел «Расчёт мастеров»): наличными или переводом по банку.
+enum InstallerAdvancePaymentMethod {
+  CASH // Наличные
+  BANK // Перевод по банку
 }
 
 enum PaymentType {

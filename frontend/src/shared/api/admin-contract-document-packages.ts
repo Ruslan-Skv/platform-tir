@@ -172,6 +172,8 @@ export interface ContractDocumentPackageInstallerAdvance {
   installerGrade: string | null;
   paidAt: string;
   amount: string;
+  /** Способ оплаты: CASH — наличные, BANK — банк; null — не указан (старые записи). */
+  paymentMethod: ContractDocumentPackageInstallerAdvancePaymentMethod | null;
   note: string | null;
   createdById: string | null;
   createdAt: string;
@@ -179,18 +181,23 @@ export interface ContractDocumentPackageInstallerAdvance {
   createdBy: ContractDocumentPackagePaymentUserRef | null;
 }
 
+/** Способ выдачи аванса мастеру: наличные или банк. */
+export type ContractDocumentPackageInstallerAdvancePaymentMethod = 'CASH' | 'BANK';
+
 export interface ContractDocumentPackageInstallerAdvanceInput {
   installerId: string;
   paidAt: string;
   amount: number;
+  paymentMethod?: ContractDocumentPackageInstallerAdvancePaymentMethod;
   note?: string;
 }
 
-/** PATCH аванса: допускается null для сброса комментария. */
+/** PATCH аванса: допускается null для сброса комментария и способа оплаты. */
 export type ContractDocumentPackageInstallerAdvancePatch = Partial<{
   installerId: string;
   paidAt: string;
   amount: number;
+  paymentMethod: ContractDocumentPackageInstallerAdvancePaymentMethod | null;
   note: string | null;
 }>;
 
