@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   type DriverDeliveryAvailabilityListItem,
   listDriverDeliveryAvailability,
-} from '@/shared/api/admin-waybills';
+} from '@/shared/api/crm/admin-waybills';
 
 import {
   formatDayChipDate,

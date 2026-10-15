@@ -12,7 +12,7 @@ import {
   deleteAdminLead,
   getAdminLeads,
   updateAdminLead,
-} from '@/shared/api/admin-leads';
+} from '@/shared/api/crm/admin-leads';
 import { useAdminSaveFeedback } from '@/shared/ui/admin/useAdminSaveFeedback';
 
 function parseSourceParam(value: string | null): LeadSource | '' {

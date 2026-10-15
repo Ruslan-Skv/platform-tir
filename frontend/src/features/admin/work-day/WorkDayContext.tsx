@@ -11,7 +11,7 @@ import {
   getWorkDayMyStatus,
   startWorkDay,
   startWorkDayAbsence,
-} from '@/shared/api/admin-work-days';
+} from '@/shared/api/crm/admin-work-days';
 import { canRunBackgroundNetwork, whenOnlineSettled } from '@/shared/lib/browser-network';
 
 type WorkDayContextValue = {

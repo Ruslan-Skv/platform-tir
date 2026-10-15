@@ -1,8 +1,8 @@
-import type { LeadSource, UnifiedLeadItem } from '@/shared/api/admin-leads';
-import { LEAD_SOURCES } from '@/shared/api/admin-leads';
 import type { AdminNotificationsSettings } from '@/shared/api/admin-notifications';
 import type { AdminReview } from '@/shared/api/admin-reviews';
 import type { AdminSupportConversation } from '@/shared/api/admin-support';
+import type { LeadSource, UnifiedLeadItem } from '@/shared/api/crm/admin-leads';
+import { LEAD_SOURCES } from '@/shared/api/crm/admin-leads';
 
 export type AdminBellNotificationType =
   | 'review'

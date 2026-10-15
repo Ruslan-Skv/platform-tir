@@ -9,7 +9,7 @@ import {
   type DriverDeliveryAvailabilityListItem,
   listDriverDeliveryAvailability,
   resolveDriverDeliveryAvailability,
-} from '@/shared/api/admin-waybills';
+} from '@/shared/api/crm/admin-waybills';
 import { PackageOrderSearch } from '@/views/admin/CRM/shared/PackageOrderSearch';
 import sectionStyles from '@/views/admin/CRM/shared/crmFormSections.module.css';
 

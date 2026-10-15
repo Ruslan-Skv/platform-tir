@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-import type { SalaryCategory } from '@/shared/api/admin-salary';
+import type { SalaryCategory } from '@/shared/api/accounting/admin-salary';
 import { Modal } from '@/shared/ui/Modal';
 
 import styles from './SalaryPage.module.css';

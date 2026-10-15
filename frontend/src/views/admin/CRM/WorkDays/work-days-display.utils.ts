@@ -6,7 +6,7 @@ import type {
   WorkDayRecord,
   WorkDayRequestBadge,
   WorkDayTruancyRow,
-} from '@/shared/api/admin-work-days';
+} from '@/shared/api/crm/admin-work-days';
 
 export function formatWorkDayTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });

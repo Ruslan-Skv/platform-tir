@@ -39,7 +39,8 @@ const CASH_SECTION_ROLES = [
 export class CashBookController {
   constructor(private readonly cashBook: CashBookService) {}
 
-  /** Список записей кассы: свёрнутые наличные оплаты ДП + собственные записи кассы. */
+  /** Список записей кассы: свёрнутые наличные оплаты ДП + собственные записи кассы
+   *  + выплаты мастерам наличными (зар/плата, со знаком минус). */
   @Get()
   findAll(@Query() query: QueryCashBookDto) {
     return this.cashBook.findAll({

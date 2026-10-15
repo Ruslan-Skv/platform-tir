@@ -167,6 +167,11 @@ export function CashPageView({ model }: CashPageViewProps) {
         ),
       },
       {
+        key: 'salaryRecipientName',
+        title: 'Зар/плата',
+        render: (item: CashBookEntry) => item.salaryRecipientName || '—',
+      },
+      {
         key: 'amount',
         title: 'Сумма',
         render: (item: CashBookEntry) => (

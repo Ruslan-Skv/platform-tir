@@ -1,6 +1,6 @@
 'use client';
 
-import type { WorkDayRequestStatus, WorkDayRequestType } from '@/shared/api/admin-work-days';
+import type { WorkDayRequestStatus, WorkDayRequestType } from '@/shared/api/crm/admin-work-days';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';

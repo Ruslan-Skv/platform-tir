@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 
 import { useAuth } from '@/features/auth';
-import { postAdminPresenceHeartbeat } from '@/shared/api/admin-presence';
+import { postAdminPresenceHeartbeat } from '@/shared/api/crm/admin-presence';
 import { canRunBackgroundNetwork, whenOnlineSettled } from '@/shared/lib/browser-network';
 
 const INTERVAL_MS = 25_000;

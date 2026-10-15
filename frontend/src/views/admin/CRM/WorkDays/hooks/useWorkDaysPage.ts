@@ -14,7 +14,7 @@ import {
   getWorkDayLeaves,
   getWorkDayUsers,
   getWorkDays,
-} from '@/shared/api/admin-work-days';
+} from '@/shared/api/crm/admin-work-days';
 
 import { isWorkDaySyntheticRow } from '../work-days-display.utils';
 

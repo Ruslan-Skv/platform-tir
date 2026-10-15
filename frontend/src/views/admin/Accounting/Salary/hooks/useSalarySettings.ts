@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import type { SalaryCategory, SalarySettings } from '@/shared/api/admin-salary';
+import type { SalaryCategory, SalarySettings } from '@/shared/api/accounting/admin-salary';
 import {
   createSalaryCategory,
   deleteSalaryCategory,
@@ -10,7 +10,7 @@ import {
   saveSalaryGlobalSettings,
   updateSalaryCategory,
   upsertSalaryRateRule,
-} from '@/shared/api/admin-salary';
+} from '@/shared/api/accounting/admin-salary';
 
 export interface GlobalFormState {
   taxPercent: string;

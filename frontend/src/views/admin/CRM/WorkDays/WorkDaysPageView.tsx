@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import type { WorkDayJournalRow, WorkDayLeave } from '@/shared/api/admin-work-days';
+import type { WorkDayJournalRow, WorkDayLeave } from '@/shared/api/crm/admin-work-days';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';

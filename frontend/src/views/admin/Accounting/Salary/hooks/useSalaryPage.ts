@@ -4,8 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
 import { useAuth } from '@/features/auth';
+import { type SalarySettings, getSalarySettings } from '@/shared/api/accounting/admin-salary';
 import { type CrmUser, type Office, getCrmUsers, getOffices } from '@/shared/api/admin-crm';
-import { type SalarySettings, getSalarySettings } from '@/shared/api/admin-salary';
 
 import { useSalaryCalc } from './useSalaryCalc';
 import { useSalaryContracts } from './useSalaryContracts';

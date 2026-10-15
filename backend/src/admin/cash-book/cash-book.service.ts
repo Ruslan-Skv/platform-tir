@@ -1,16 +1,29 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { PaymentForm, Prisma } from '@prisma/client';
+import { ContractDocumentPackageKind, PaymentForm, Prisma } from '@prisma/client';
 
 import {
   DP_FURNITURE_DIRECTION,
   DP_MANUAL_DIRECTION_OTHER,
   MANUAL_MONEY_MOVEMENT_DIRECTIONS,
+  PACKAGE_DIRECTION_REGISTRY,
 } from '../../common/config/package-direction-registry.config';
 import { PrismaService } from '../../database/prisma.service';
 import { MoneyMovementsService } from '../money-movements/money-movements.service';
 import { CreateCashBookEntryDto } from './dto/create-cash-book-entry.dto';
 
 const MANAGER_SELECT = { id: true, email: true, firstName: true, lastName: true } as const;
+
+const KIND_TO_DIRECTION_NAME = Object.fromEntries(
+  PACKAGE_DIRECTION_REGISTRY.map((d) => [d.kind, d.name]),
+) as Record<ContractDocumentPackageKind, string>;
+
+/** Основание записи кассы для выплаты мастеру наличными (зар/плата). */
+const SALARY_ADVANCE_BASIS = 'Зар/плата';
+
+/** Экранирование спецсимволов ILIKE (% _ \) в поисковом запросе. */
+function escapeLike(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+}
 
 const ENTRY_INCLUDE = {
   manager: { select: MANAGER_SELECT },
@@ -22,6 +35,25 @@ const MOVEMENT_INCLUDE = {
 
 type CashBookRowWithManager = Prisma.CashBookEntryGetPayload<{ include: typeof ENTRY_INCLUDE }>;
 type MovementRowWithManager = Prisma.MoneyMovementGetPayload<{ include: typeof MOVEMENT_INCLUDE }>;
+
+/** Строка журнала выплат мастерам (сырой SQL): реквизиты договора достаём из formData пакета. */
+type SalaryAdvanceRawRow = {
+  id: string;
+  installerLiveName: string | null;
+  installerName: string | null;
+  paidAt: Date;
+  amount: Prisma.Decimal | number;
+  note: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  createdById: string | null;
+  createdByFirstName: string | null;
+  createdByLastName: string | null;
+  createdByEmail: string | null;
+  packageKind: ContractDocumentPackageKind;
+  contractNumber: string | null;
+  customerName: string | null;
+};
 
 /** Общий вид записи кассы на клиенте: записи кассы и наличные ДП сериализуются одинаково. */
 type SerializedCashEntry = ReturnType<typeof serializeCashBookEntry>;
@@ -61,6 +93,7 @@ function serializeCashBookEntry(row: CashBookRowWithManager) {
     executorName: row.executorName,
     basis: row.basis,
     notes: row.notes,
+    salaryRecipientName: null as string | null,
     createdById: row.createdById,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
@@ -86,6 +119,35 @@ function serializeMovementAsCashEntry(row: MovementRowWithManager): SerializedCa
     executorName: row.executorName,
     basis: row.basis,
     notes: row.notes,
+    salaryRecipientName: null,
+    createdById: row.createdById,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+/** Выплата мастеру наличными в форме записи кассы: сумма — со знаком минус
+ *  (изъятие из кассы), основание — «Зар/плата», в колонке зар/платы — ФИО мастера. */
+function serializeSalaryAdvanceAsCashEntry(row: SalaryAdvanceRawRow): SerializedCashEntry {
+  const createdBy = [row.createdByLastName, row.createdByFirstName]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+  const managerNameValue = createdBy || row.createdByEmail || null;
+  return {
+    id: row.id,
+    paymentDate: row.paidAt.toISOString().slice(0, 10),
+    performedAt: row.createdAt.toISOString(),
+    amount: new Prisma.Decimal(row.amount).neg().toString(),
+    manager:
+      row.createdById && managerNameValue ? { id: row.createdById, name: managerNameValue } : null,
+    direction: KIND_TO_DIRECTION_NAME[row.packageKind] ?? String(row.packageKind),
+    contractNumber: row.contractNumber,
+    customerName: row.customerName,
+    executorName: null,
+    basis: SALARY_ADVANCE_BASIS,
+    notes: row.note,
+    salaryRecipientName: row.installerLiveName ?? row.installerName,
     createdById: row.createdById,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
@@ -93,14 +155,15 @@ function serializeMovementAsCashEntry(row: MovementRowWithManager): SerializedCa
 }
 
 /** Порядок журнала кассы: дата по убыванию, затем время и id — для стабильного
- *  слияния двух источников (записи кассы и наличные ДП). */
+ *  слияния источников (записи кассы, наличные ДП и выплаты мастерам). */
 function compareCashEntriesDesc(a: SerializedCashEntry, b: SerializedCashEntry): number {
   if (a.paymentDate !== b.paymentDate) return a.paymentDate < b.paymentDate ? 1 : -1;
   if (a.performedAt !== b.performedAt) return a.performedAt < b.performedAt ? 1 : -1;
   return a.id < b.id ? 1 : a.id > b.id ? -1 : 0;
 }
 
-/** Раздел «Касса»: свёрнутые наличные оплаты ДП + собственные ручные записи кассы. */
+/** Раздел «Касса»: свёрнутые наличные оплаты ДП + собственные ручные записи кассы
+ *  + выплаты мастерам наличными из расчётов (зар/плата, сумма со знаком минус). */
 @Injectable()
 export class CashBookService {
   constructor(
@@ -110,7 +173,9 @@ export class CashBookService {
 
   /**
    * Записи кассы за период: наличные оплаты журнала ДП, отмеченные сверёнными
-   * супер-админом (золотая печать), + собственные ручные записи кассы.
+   * супер-админом (золотая печать), + собственные ручные записи кассы
+   * + выплаты мастерам из расчётов со способом оплаты «Наличные» (синхронно,
+   * со знаком минус; колонка зар/платы — ФИО получившего мастера).
    * Связь с ДП односторонняя: касса читает наличные ДП, но её записи в ДП не попадают.
    */
   async findAll(params: {
@@ -153,6 +218,34 @@ export class CashBookService {
       ...(searchFilter ?? {}),
     };
 
+    // Третий источник кассы — выплаты мастерам из расчётов («Наличные»): попадают
+    // синхронно, без сверки. Менеджер кассы — кто выдал (создатель записи расчёта).
+    const salaryPattern = search ? `%${escapeLike(search)}%` : '';
+    const salaryDateConditions: Prisma.Sql[] = [];
+    if (params.dateFrom)
+      salaryDateConditions.push(Prisma.sql`a."paidAt" >= ${params.dateFrom}::date`);
+    if (params.dateTo) salaryDateConditions.push(Prisma.sql`a."paidAt" <= ${params.dateTo}::date`);
+    const fromSalaryAdvances = Prisma.sql`
+      FROM contract_document_package_installer_advances a
+      JOIN contract_document_packages p ON p."id" = a."packageId"
+      LEFT JOIN installer_masters inst ON inst."id" = a."installerId"
+      LEFT JOIN users u ON u."id" = a."createdById"
+      WHERE p."deleted_at" IS NULL AND a."paymentMethod" = 'CASH'${
+        salaryDateConditions.length
+          ? Prisma.sql` AND ${Prisma.join(salaryDateConditions, ' AND ')}`
+          : Prisma.empty
+      }${params.managerId ? Prisma.sql` AND a."createdById" = ${params.managerId}` : Prisma.empty}${
+        salaryPattern
+          ? Prisma.sql` AND (
+              COALESCE(inst."fullName", a."installerName", '') ILIKE ${salaryPattern}
+              OR COALESCE(a."note", '') ILIKE ${salaryPattern}
+              OR COALESCE(p."formData"->'contract'->>'number', '') ILIKE ${salaryPattern}
+              OR COALESCE(p."formData"->'customer'->>'fullName', '') ILIKE ${salaryPattern}
+              OR ${SALARY_ADVANCE_BASIS} ILIKE ${salaryPattern}
+            )`
+          : Prisma.empty
+      }`;
+
     // Страница объединённого списка: из каждого источника достаточно skip + limit
     // отсортированных строк — слияние и срез дают страницу объединения.
     const skip = (page - 1) * limit;
@@ -167,6 +260,10 @@ export class CashBookService {
       cashSum,
       dpByManagerRaw,
       cashByManagerRaw,
+      salaryTotal,
+      salaryRows,
+      salarySum,
+      salaryByManagerRaw,
       directoryUserIds,
     ] = await Promise.all([
       this.prisma.moneyMovement.count({ where: dpWhere }),
@@ -195,24 +292,54 @@ export class CashBookService {
         where: cashWhere,
         _sum: { amount: true },
       }),
+      this.prisma.$queryRaw<Array<{ total: number }>>(
+        Prisma.sql`SELECT COUNT(*)::int AS "total"${fromSalaryAdvances}`,
+      ),
+      this.prisma.$queryRaw<SalaryAdvanceRawRow[]>(Prisma.sql`
+          SELECT a."id", a."installerName", a."paidAt", a."amount", a."note",
+            a."createdAt", a."updatedAt", a."createdById",
+            inst."fullName" AS "installerLiveName",
+            u."firstName" AS "createdByFirstName", u."lastName" AS "createdByLastName",
+            u."email" AS "createdByEmail",
+            p."kind" AS "packageKind",
+            p."formData"->'contract'->>'number' AS "contractNumber",
+            p."formData"->'customer'->>'fullName' AS "customerName"
+          ${fromSalaryAdvances}
+          ORDER BY a."paidAt" DESC, a."createdAt" DESC, a."id" DESC
+          LIMIT ${fetchTake}`),
+      this.prisma.$queryRaw<Array<{ sum: Prisma.Decimal | number }>>(
+        Prisma.sql`SELECT COALESCE(SUM(a."amount"), 0) AS "sum"${fromSalaryAdvances}`,
+      ),
+      this.prisma.$queryRaw<Array<{ managerId: string | null; sum: Prisma.Decimal | number }>>(
+        Prisma.sql`SELECT a."createdById" AS "managerId", COALESCE(SUM(a."amount"), 0) AS "sum"${fromSalaryAdvances} GROUP BY a."createdById"`,
+      ),
       this.moneyMovements.getSignatoryProfileUserIds(),
     ]);
 
-    const total = dpTotal + cashTotal;
+    const total = dpTotal + cashTotal + (salaryTotal[0]?.total ?? 0);
 
     const rows = [
       ...dpRows.map(serializeMovementAsCashEntry),
       ...cashRows.map(serializeCashBookEntry),
+      ...salaryRows.map(serializeSalaryAdvanceAsCashEntry),
     ]
       .sort(compareCashEntriesDesc)
       .slice(skip, skip + limit);
 
-    // Итоги — по обоим источникам: общая сумма и разбивка по менеджерам кассы.
-    const totalSum = Number(dpSum._sum.amount ?? 0) + Number(cashSum._sum.amount ?? 0);
+    // Итоги — по всем источникам: общая сумма и разбивка по менеджерам кассы.
+    // Выплаты мастерам входят со знаком минус (изъятие наличных из кассы).
+    const totalSum =
+      Number(dpSum._sum.amount ?? 0) +
+      Number(cashSum._sum.amount ?? 0) -
+      Number(salarySum[0]?.sum ?? 0);
+    const salaryByManager = salaryByManagerRaw.map((row) => ({
+      managerId: row.managerId,
+      _sum: { amount: -Number(row.sum ?? 0) },
+    }));
     const sumByManagerId = new Map<string, number>();
     let noneManagerSum = 0;
     let hasNoneManager = false;
-    for (const row of [...dpByManagerRaw, ...cashByManagerRaw]) {
+    for (const row of [...dpByManagerRaw, ...cashByManagerRaw, ...salaryByManager]) {
       const sum = Number(row._sum.amount ?? 0);
       if (!row.managerId) {
         hasNoneManager = true;

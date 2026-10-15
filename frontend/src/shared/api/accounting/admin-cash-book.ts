@@ -31,6 +31,8 @@ export type CashBookEntry = {
   executorName: string | null;
   basis: string | null;
   notes: string | null;
+  /** ФИО мастера, получившего зарплату наличными (записи «Зар/плата» из расчётов). */
+  salaryRecipientName: string | null;
   createdById: string | null;
   createdAt: string;
   updatedAt: string;

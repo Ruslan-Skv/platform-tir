@@ -9,7 +9,7 @@ import {
   deleteDriverDeliveryAvailability,
   listDriverDeliveryAvailability,
   upsertDriverDeliveryAvailability,
-} from '@/shared/api/admin-waybills';
+} from '@/shared/api/crm/admin-waybills';
 import { Modal } from '@/shared/ui/Modal';
 import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';
 import toolbarButtonStyles from '@/shared/ui/admin/AdminToolbarIconButton/AdminToolbarIconButton.module.css';

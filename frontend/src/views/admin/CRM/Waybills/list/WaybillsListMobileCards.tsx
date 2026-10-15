@@ -1,6 +1,6 @@
 'use client';
 
-import type { WaybillTask } from '@/shared/api/admin-waybills';
+import type { WaybillTask } from '@/shared/api/crm/admin-waybills';
 
 import { WaybillMobileCallControl } from '../shared/WaybillMobileCallControl';
 import styles from '../shared/Waybills.module.css';

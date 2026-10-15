@@ -7,7 +7,7 @@ import {
   type WaybillTaskAttachment,
   deleteWaybillAttachment,
   uploadWaybillAttachments,
-} from '@/shared/api/admin-waybills';
+} from '@/shared/api/crm/admin-waybills';
 import { Modal } from '@/shared/ui/Modal';
 
 import styles from '../shared/Waybills.module.css';

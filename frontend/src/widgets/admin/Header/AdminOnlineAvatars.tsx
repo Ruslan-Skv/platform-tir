@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
-import { type AdminOnlineUser, getAdminOnlineAdmins } from '@/shared/api/admin-presence';
+import { type AdminOnlineUser, getAdminOnlineAdmins } from '@/shared/api/crm/admin-presence';
 import { canSeeAdminOnlineAvatars, getRoleLabel } from '@/shared/config/admin-roles';
 import { getAvatarUrl, getInitials } from '@/shared/lib/avatar';
 import { canRunBackgroundNetwork, whenOnlineSettled } from '@/shared/lib/browser-network';

@@ -2,8 +2,11 @@
 
 import { useId, useMemo } from 'react';
 
+import type {
+  SalaryCalcResult,
+  SalarySettlementListItem,
+} from '@/shared/api/accounting/admin-salary';
 import type { CrmUser, Office } from '@/shared/api/admin-crm';
-import type { SalaryCalcResult, SalarySettlementListItem } from '@/shared/api/admin-salary';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal/ConfirmModal';
 import { DataTable } from '@/shared/ui/admin/DataTable';
 import dpStyles from '@/views/admin/CRM/MoneyMovements/MoneyMovements.module.css';

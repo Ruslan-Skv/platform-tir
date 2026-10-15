@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
-import { type WaybillSettlement, getWaybillSettlements } from '@/shared/api/admin-waybills';
+import { type WaybillSettlement, getWaybillSettlements } from '@/shared/api/crm/admin-waybills';
 import { Modal } from '@/shared/ui/Modal';
 import panelStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
 import styles from '@/views/admin/CRM/Customers/modals/CrmCustomerTrashModal.module.css';

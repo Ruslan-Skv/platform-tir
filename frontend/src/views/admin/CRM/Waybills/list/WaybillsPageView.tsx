@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 
-import type { WaybillTask } from '@/shared/api/admin-waybills';
+import type { WaybillTask } from '@/shared/api/crm/admin-waybills';
 import { BadgeTooltip } from '@/shared/ui/BadgeTooltip';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { Modal } from '@/shared/ui/Modal';

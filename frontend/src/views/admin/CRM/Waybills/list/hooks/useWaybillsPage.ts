@@ -20,7 +20,7 @@ import {
   rescheduleWaybillTask,
   updateWaybillTask,
   uploadWaybillAttachments,
-} from '@/shared/api/admin-waybills';
+} from '@/shared/api/crm/admin-waybills';
 import { packageSearchLabel } from '@/views/admin/CRM/shared/PackageOrderSearch';
 
 import { getBlockedDeliveryDayMessage } from '../../shared/driver-availability.utils';

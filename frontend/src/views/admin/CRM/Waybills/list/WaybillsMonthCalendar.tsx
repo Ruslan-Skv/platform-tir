@@ -6,7 +6,7 @@ import {
   type DriverDeliveryAvailabilityListItem,
   type WaybillTask,
   listDriverDeliveryAvailability,
-} from '@/shared/api/admin-waybills';
+} from '@/shared/api/crm/admin-waybills';
 
 import {
   type LocalAvailabilityPreviewDay,

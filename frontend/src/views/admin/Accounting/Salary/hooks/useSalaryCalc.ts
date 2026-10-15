@@ -12,7 +12,7 @@ import {
   deleteSalarySettlement,
   getSalarySettlement,
   getSalarySettlements,
-} from '@/shared/api/admin-salary';
+} from '@/shared/api/accounting/admin-salary';
 
 import {
   monthEndIso,

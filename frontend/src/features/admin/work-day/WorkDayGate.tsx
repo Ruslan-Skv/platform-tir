@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-import { type WorkDayOfficeSchedule, getWorkDayOffices } from '@/shared/api/admin-work-days';
+import { type WorkDayOfficeSchedule, getWorkDayOffices } from '@/shared/api/crm/admin-work-days';
 
 import { useWorkDay } from './WorkDayContext';
 import styles from './WorkDayGate.module.css';

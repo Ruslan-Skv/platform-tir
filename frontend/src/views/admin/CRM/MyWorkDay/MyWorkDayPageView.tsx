@@ -12,7 +12,7 @@ import type {
   WorkDayJournalRow,
   WorkDayRecord,
   WorkDayRequestType,
-} from '@/shared/api/admin-work-days';
+} from '@/shared/api/crm/admin-work-days';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { contractsListFilterFieldClass } from '@/views/admin/ContractDocuments/packages/pages/contracts/list/contractsListFormatters';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';

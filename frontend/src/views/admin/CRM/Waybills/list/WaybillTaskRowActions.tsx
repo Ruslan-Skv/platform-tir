@@ -1,6 +1,6 @@
 'use client';
 
-import type { WaybillTask } from '@/shared/api/admin-waybills';
+import type { WaybillTask } from '@/shared/api/crm/admin-waybills';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { CopyIcon, DeleteIcon, EditIcon, FailIcon, PublishIcon } from '@/shared/ui/icons';
 

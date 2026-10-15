@@ -10,7 +10,7 @@ import {
   approveWorkDayRequest,
   getAdminWorkDayRequests,
   rejectWorkDayRequest,
-} from '@/shared/api/admin-work-days';
+} from '@/shared/api/crm/admin-work-days';
 
 export function useWorkDayRequestsPage() {
   const searchParams = useSearchParams();

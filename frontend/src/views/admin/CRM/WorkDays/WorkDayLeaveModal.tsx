@@ -2,7 +2,7 @@
 
 import { type FormEvent, useEffect, useState } from 'react';
 
-import type { WorkDayLeaveType, WorkDayUserSchedule } from '@/shared/api/admin-work-days';
+import type { WorkDayLeaveType, WorkDayUserSchedule } from '@/shared/api/crm/admin-work-days';
 import { Modal } from '@/shared/ui/Modal';
 import crmFormStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
 import modalStyles from '@/views/admin/Catalog/Components/shared/ComponentCatalogModal.module.css';

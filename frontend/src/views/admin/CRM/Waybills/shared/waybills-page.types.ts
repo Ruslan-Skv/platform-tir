@@ -22,7 +22,7 @@ export type WaybillFormValues = {
   /** Новые файлы-вложения, загружаются после сохранения задания. */
   pendingFiles: File[];
   /** Уже сохранённые вложения (отображаются в форме редактирования). */
-  existingAttachments: import('@/shared/api/admin-waybills').WaybillTaskAttachment[];
+  existingAttachments: import('@/shared/api/crm/admin-waybills').WaybillTaskAttachment[];
   /** Id сохранённых вложений, помеченных к удалению. */
   removedAttachmentIds: string[];
 };

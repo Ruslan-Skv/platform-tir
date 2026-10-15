@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 
+import type { SalaryCategory } from '@/shared/api/accounting/admin-salary';
 import type { Office } from '@/shared/api/admin-crm';
-import type { SalaryCategory } from '@/shared/api/admin-salary';
 import { Modal } from '@/shared/ui/Modal';
 
 import type { SalaryRateRuleInput } from './hooks/useSalarySettings';

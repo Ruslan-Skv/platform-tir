@@ -8,14 +8,14 @@ import type {
   SalaryContractsList,
   SalaryContractsSyncReport,
   SalarySettings,
-} from '@/shared/api/admin-salary';
+} from '@/shared/api/accounting/admin-salary';
 import {
   createSalaryContract,
   deleteSalaryContract,
   getSalaryContracts,
   syncSalaryContracts,
   updateSalaryContract,
-} from '@/shared/api/admin-salary';
+} from '@/shared/api/accounting/admin-salary';
 
 import { SALARY_PAGE_LIMIT_OPTIONS, type SalaryPageLimit } from '../salary-page.constants';
 

@@ -10,7 +10,7 @@ import {
   deleteAdminDirectorMessage,
   getAdminDirectorMessages,
   updateAdminDirectorMessage,
-} from '@/shared/api/admin-leads';
+} from '@/shared/api/crm/admin-leads';
 import { useAdminSaveFeedback } from '@/shared/ui/admin/useAdminSaveFeedback';
 
 export function useDirectorMessagesPage() {

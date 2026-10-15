@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { getMyClientIp } from '@/shared/api/admin-work-days';
+import { getMyClientIp } from '@/shared/api/crm/admin-work-days';
 
 import styles from './WorkDaysIpHelp.module.css';
 

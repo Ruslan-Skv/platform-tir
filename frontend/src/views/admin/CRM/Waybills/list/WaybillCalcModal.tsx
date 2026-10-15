@@ -7,7 +7,7 @@ import {
   type WaybillTask,
   createWaybillSettlement,
   getWaybillTasks,
-} from '@/shared/api/admin-waybills';
+} from '@/shared/api/crm/admin-waybills';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { Modal } from '@/shared/ui/Modal';
 import { DataTable } from '@/shared/ui/admin/DataTable';

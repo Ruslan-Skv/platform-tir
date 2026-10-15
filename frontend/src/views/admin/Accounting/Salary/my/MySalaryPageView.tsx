@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 
-import type { MySalaryResult } from '@/shared/api/admin-salary';
+import type { MySalaryResult } from '@/shared/api/accounting/admin-salary';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
 import dpStyles from '@/views/admin/CRM/MoneyMovements/MoneyMovements.module.css';

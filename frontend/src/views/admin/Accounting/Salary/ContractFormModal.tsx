@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 
+import type { SalaryCategory, SalaryContract } from '@/shared/api/accounting/admin-salary';
 import type { CrmUser, Office } from '@/shared/api/admin-crm';
-import type { SalaryCategory, SalaryContract } from '@/shared/api/admin-salary';
 import { Modal } from '@/shared/ui/Modal';
 
 import styles from './SalaryPage.module.css';

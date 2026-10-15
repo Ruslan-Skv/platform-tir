@@ -1,6 +1,6 @@
 'use client';
 
-import type { WaybillTask } from '@/shared/api/admin-waybills';
+import type { WaybillTask } from '@/shared/api/crm/admin-waybills';
 import { Modal } from '@/shared/ui/Modal';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';

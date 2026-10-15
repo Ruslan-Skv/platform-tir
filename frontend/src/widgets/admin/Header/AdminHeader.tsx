@@ -23,8 +23,6 @@ import { WorkDayWidget } from '@/features/admin/work-day';
 import { useAuth } from '@/features/auth';
 import { useTheme } from '@/features/theme';
 import { markKnowledgePlatformFeedbackRead } from '@/shared/api/admin-knowledge';
-import { getAdminDirectorMessages, getAdminLeads, updateAdminLead } from '@/shared/api/admin-leads';
-import type { UnifiedLeadItem } from '@/shared/api/admin-leads';
 import {
   getAdminBellCalendarNotifications,
   getAdminBellContractConcludedNotifications,
@@ -69,6 +67,12 @@ import type { AdminReview } from '@/shared/api/admin-reviews';
 import { markSitePlatformFeedbackRead } from '@/shared/api/admin-site-feedback';
 import { getAdminSupportConversations } from '@/shared/api/admin-support';
 import type { AdminSupportConversation } from '@/shared/api/admin-support';
+import {
+  getAdminDirectorMessages,
+  getAdminLeads,
+  updateAdminLead,
+} from '@/shared/api/crm/admin-leads';
+import type { UnifiedLeadItem } from '@/shared/api/crm/admin-leads';
 import { canUseAdminNotificationBell, getRoleLabel } from '@/shared/config/admin-roles';
 import {
   PUBLIC_SITE_EDIT_MODE_EVENT,

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { type MySalaryResult, getMySalary } from '@/shared/api/admin-salary';
+import { type MySalaryResult, getMySalary } from '@/shared/api/accounting/admin-salary';
 
 import {
   monthEndIso,

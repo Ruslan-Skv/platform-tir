@@ -2,7 +2,7 @@ import type {
   DriverDeliveryAbsenceBlock,
   DriverDeliveryAvailabilityScheme,
   DriverDeliveryCycleDay,
-} from '@/shared/api/admin-waybills';
+} from '@/shared/api/crm/admin-waybills';
 
 import { todayIsoDate } from './waybills-page.utils';
 

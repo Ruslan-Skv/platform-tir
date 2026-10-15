@@ -6,8 +6,8 @@ import { useEffect, useState } from 'react';
 
 import Link from 'next/link';
 
-import type { LeadSource, LeadStatus, UnifiedLeadItem } from '@/shared/api/admin-leads';
-import { LEAD_STATUS_LABELS } from '@/shared/api/admin-leads';
+import type { LeadSource, LeadStatus, UnifiedLeadItem } from '@/shared/api/crm/admin-leads';
+import { LEAD_STATUS_LABELS } from '@/shared/api/crm/admin-leads';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { AdminFormMessage } from '@/shared/ui/admin/AdminFormMessage';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';

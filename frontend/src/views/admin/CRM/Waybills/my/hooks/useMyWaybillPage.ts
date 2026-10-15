@@ -7,7 +7,7 @@ import {
   completeWaybillTask,
   failWaybillTask,
   getMyWaybillTasks,
-} from '@/shared/api/admin-waybills';
+} from '@/shared/api/crm/admin-waybills';
 
 import type { WaybillStatusFilter, WaybillsPageMessage } from '../../shared/waybills-page.types';
 import { todayIsoDate, weekAheadIsoDate } from '../../shared/waybills-page.utils';

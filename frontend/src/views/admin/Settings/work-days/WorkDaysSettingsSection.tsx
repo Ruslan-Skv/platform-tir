@@ -16,7 +16,7 @@ import {
   updateWorkDayOffice,
   updateWorkDaySettings,
   updateWorkDayUser,
-} from '@/shared/api/admin-work-days';
+} from '@/shared/api/crm/admin-work-days';
 import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { useAdminSaveFeedback } from '@/shared/ui/admin/useAdminSaveFeedback';
