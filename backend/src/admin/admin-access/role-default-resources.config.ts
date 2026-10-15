@@ -120,6 +120,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.settings.quote-form',
     'admin.settings.pwa',
     'admin.settings.work-days',
+    'admin.settings.auth',
     'admin.settings.roles',
     'admin.contract-documents.templates',
     'admin.contract-documents.repair-settings',

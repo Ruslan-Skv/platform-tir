@@ -732,6 +732,11 @@ const baseNavItems: NavItem[] = [
         href: '/admin/settings/work-days',
         resourceId: 'admin.settings.work-days',
       },
+      {
+        label: 'Авторизация на сайте',
+        href: '/admin/settings/auth',
+        resourceId: 'admin.settings.auth',
+      },
       { label: 'Роли', href: '/admin/settings/roles', resourceId: 'admin.settings.roles' },
       { label: 'Управление пользователями', href: '/admin/users', resourceId: 'admin.users' },
     ],

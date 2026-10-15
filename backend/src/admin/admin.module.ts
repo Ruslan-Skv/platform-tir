@@ -53,12 +53,14 @@ import { InstallationSchedulesModule } from './installation-schedules/installati
 import { RepairSchedulesModule } from './repair-schedules/repair-schedules.module';
 import { FurnitureSchedulesModule } from './furniture-schedules/furniture-schedules.module';
 import { JointObjectsModule } from './joint-objects/joint-objects.module';
+import { AdminAuthSettingsModule } from './auth-settings/admin-auth-settings.module';
 
 @Module({
   imports: [
     AdminAccessModule,
     AdminPresenceModule,
     AdminDashboardModule,
+    AdminAuthSettingsModule,
     // CRM
     CustomersModule,
     CrmDirectionsModule,

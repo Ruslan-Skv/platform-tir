@@ -24,6 +24,7 @@ const SETTINGS_LINKS = [
   { href: '/admin/settings/quote-form', label: 'Рассчитать стоимость (виды работ)' },
   { href: '/admin/settings/pwa', label: 'PWA и обновления' },
   { href: '/admin/settings/work-days', label: 'Учёт рабочего времени' },
+  { href: '/admin/settings/auth', label: 'Авторизация на сайте' },
   { href: '/admin/settings/roles', label: 'Роли пользователей' },
   { href: '/admin/users', label: 'Управление пользователями' },
 ] as const;

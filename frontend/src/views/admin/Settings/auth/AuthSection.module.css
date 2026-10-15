@@ -1,0 +1,145 @@
+.page {
+  max-width: 900px;
+}
+
+.loading {
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-base);
+  margin: 0;
+}
+
+.section {
+  margin-bottom: var(--admin-space-6xl);
+}
+
+.sectionTitle {
+  font-size: var(--admin-font-size-2xl);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-md) var(--admin-space-0);
+}
+
+.sectionDescription {
+  font-size: var(--admin-font-size-base);
+  color: var(--admin-text-muted);
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-3xl) var(--admin-space-0);
+  line-height: var(--admin-line-height-lg);
+}
+
+.form {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-xl);
+  padding: var(--admin-space-4xl);
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-lg);
+  margin-bottom: var(--admin-space-xl);
+}
+
+.checkboxRow input {
+  width: 18px;
+  height: 18px;
+}
+
+.checkboxRow label {
+  font-size: var(--admin-font-size-base);
+  font-weight: 500;
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+}
+
+.hint {
+  font-size: var(--admin-font-size-base);
+  color: var(--admin-text-muted);
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-2xl) var(--admin-space-0);
+  line-height: var(--admin-line-height-lg);
+}
+
+.saveButton {
+  margin-top: var(--admin-space-2xl);
+  padding: var(--admin-space-md) var(--admin-space-3xl);
+  font-size: var(--admin-font-size-base);
+  font-weight: 500;
+  color: var(--admin-surface);
+  background: var(--admin-accent);
+  border: none;
+  border-radius: var(--admin-radius-md);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.saveButton:hover:not(:disabled) {
+  background: var(--admin-accent);
+}
+
+.saveButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Toast notification */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: var(--admin-space-2xl) var(--admin-space-4xl);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: 0 4px 20px var(--admin-overlay-color-149);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-xl);
+  animation: toastSlideIn 0.3s ease-out;
+  max-width: 400px;
+}
+
+.toastSuccess {
+  background: var(--admin-success-text);
+  color: white;
+}
+
+.toastError {
+  background: var(--admin-error-text-strong);
+  color: white;
+}
+
+.toastIcon {
+  font-size: var(--admin-font-size-2xl);
+  flex-shrink: 0;
+}
+
+.toastMessage {
+  font-size: var(--admin-font-size-base);
+  font-weight: 500;
+}
+
+.toastClose {
+  background: none;
+  border: none;
+  color: var(--admin-overlay-color-093);
+  cursor: pointer;
+  padding: var(--admin-space-xs);
+  margin-left: auto;
+  font-size: var(--admin-font-size-xl);
+  line-height: var(--admin-line-height-flat);
+  transition: color 0.15s;
+}
+
+.toastClose:hover {
+  color: white;
+}
+
+@keyframes toastSlideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}

@@ -2738,6 +2738,15 @@ model SitePublicConfig {
   @@map("site_public_config")
 }
 
+/// Настройки авторизации на сайте (singleton-строка id='main').
+model AuthSettings {
+  id              String   @id @default("main")
+  sberAuthEnabled Boolean  @default(true) // Разрешить вход через Сбер ID
+  updatedAt       DateTime @updatedAt
+
+  @@map("auth_settings")
+}
+
 model NotificationSound {
   id        String   @id @default(cuid())
   name      String // Название звука

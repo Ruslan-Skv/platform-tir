@@ -387,6 +387,11 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     label: 'Учёт рабочего времени',
     path: '/admin/settings/work-days',
   },
+  {
+    id: 'admin.settings.auth',
+    label: 'Авторизация на сайте',
+    path: '/admin/settings/auth',
+  },
   { id: 'admin.users', label: 'Управление пользователями', path: '/admin/users' },
 ];
 

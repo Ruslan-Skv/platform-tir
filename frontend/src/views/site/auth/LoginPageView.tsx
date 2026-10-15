@@ -2,13 +2,14 @@
 
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { useUserAuth } from '@/features/auth/context/UserAuthContext';
 import { SiteConsentField } from '@/features/site-consent';
+import { getAuthSettings } from '@/shared/api/auth-settings';
 import { apiFetch } from '@/shared/lib/api-fetch';
 import { getApiBaseUrl } from '@/shared/lib/auth-session';
 
@@ -57,6 +58,22 @@ export function LoginPageView() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [consent, setConsent] = useState(false);
+  // По умолчанию кнопка видна; скрываем, только если настройки загрузились с флагом false
+  const [sberAuthEnabled, setSberAuthEnabled] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    getAuthSettings()
+      .then((settings) => {
+        if (!cancelled) setSberAuthEnabled(settings.sberAuthEnabled);
+      })
+      .catch(() => {
+        // Ошибка загрузки настроек не должна ломать страницу входа
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleYandexLogin = async () => {
     setYandexLoading(true);
@@ -339,14 +356,16 @@ export function LoginPageView() {
                     </>
                   )}
                 </button>
-                <button
-                  type="button"
-                  onClick={handleSberLogin}
-                  className={styles.sberButton}
-                  disabled={sberLoading}
-                >
-                  {sberLoading ? 'Загрузка...' : 'Войти по Сбер ID'}
-                </button>
+                {sberAuthEnabled && (
+                  <button
+                    type="button"
+                    onClick={handleSberLogin}
+                    className={styles.sberButton}
+                    disabled={sberLoading}
+                  >
+                    {sberLoading ? 'Загрузка...' : 'Войти по Сбер ID'}
+                  </button>
+                )}
               </div>
               <div className={styles.oauthDivider}>
                 <span>или по email</span>

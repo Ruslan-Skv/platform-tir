@@ -5,6 +5,7 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 import { Agent, fetch as undiciFetch } from 'undici';
 import { AuthService } from './auth.service';
+import { AuthSettingsService } from './auth-settings.service';
 import { hashPassword } from './password-crypto';
 import { UsersService } from '../users/users.service';
 import { PrismaService } from '../database/prisma.service';
@@ -43,11 +44,13 @@ export class SberAuthService {
   constructor(
     private config: ConfigService,
     private authService: AuthService,
+    private authSettings: AuthSettingsService,
     private usersService: UsersService,
     private prisma: PrismaService,
   ) {}
 
-  getAuthorizationUrl(res: Response): { url: string } {
+  async getAuthorizationUrl(res: Response): Promise<{ url: string }> {
+    await this.authSettings.assertSberAuthEnabled();
     const clientId = this.config.get<string>('SBER_CLIENT_ID');
     if (!clientId) {
       throw new BadRequestException('Сбер ID не настроен (SBER_CLIENT_ID)');
@@ -173,6 +176,7 @@ export class SberAuthService {
   }
 
   async exchangeCodeForUser(code: string, req: Request, res: Response) {
+    await this.authSettings.assertSberAuthEnabled();
     this.assertStateCookie(req, (req.body as { state?: string } | undefined)?.state);
     res.clearCookie(SBER_OAUTH_STATE_COOKIE, { path: '/api/v1/auth' });
 

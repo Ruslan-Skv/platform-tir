@@ -189,6 +189,7 @@ const ADMIN_API_ROUTE_RESOURCE_PREFIXES_RAW: ReadonlyArray<{
   { prefix: '/api/v1/admin/notifications', resourceId: 'admin.settings.notifications' },
   { prefix: '/api/v1/admin/user-cabinet', resourceId: 'admin.settings.user-cabinet' },
   { prefix: '/api/v1/admin/reviews', resourceId: 'admin.settings.reviews' },
+  { prefix: '/api/v1/admin/auth-settings', resourceId: 'admin.settings.auth' },
   { prefix: '/api/v1/admin/dashboard', resourceId: 'admin' },
   { prefix: '/api/v1/admin/site-public', resourceId: 'admin.settings' },
   { prefix: '/api/v1/admin/site-feedback', resourceId: 'admin.settings' },

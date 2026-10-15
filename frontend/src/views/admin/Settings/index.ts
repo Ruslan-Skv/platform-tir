@@ -14,6 +14,7 @@ export { QuoteFormSection } from './forms/QuoteFormSection';
 export { CatalogFilterBlockSection } from './catalog-filters/CatalogFilterBlockSection';
 export { CatalogHubPreviewSection } from './catalog-hub/CatalogHubPreviewSection';
 export { ReviewsSection } from './reviews/ReviewsSection';
+export { AuthSection } from './auth/AuthSection';
 export { NotificationsSection } from './notifications/NotificationsSection';
 export { PartnerProductsSection } from './partner-products/PartnerProductsSection';
 export { UserCabinetSection } from './user-cabinet/UserCabinetSection';

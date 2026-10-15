@@ -24,6 +24,7 @@ import { YandexCallbackDto } from './dto/yandex-callback.dto';
 import { YandexAuthService } from './yandex-auth.service';
 import { SberCallbackDto } from './dto/sber-callback.dto';
 import { SberAuthService } from './sber-auth.service';
+import { AuthSettingsService } from './auth-settings.service';
 import { RefreshCookieService } from './refresh-cookie.service';
 import type { RequestWithUser } from '../common/types/request-with-user.types';
 
@@ -34,8 +35,16 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly yandexAuthService: YandexAuthService,
     private readonly sberAuthService: SberAuthService,
+    private readonly authSettings: AuthSettingsService,
     private readonly refreshCookie: RefreshCookieService,
   ) {}
+
+  @SkipThrottle()
+  @Get('settings')
+  @ApiOperation({ summary: 'Настройки авторизации (публичный, для страницы входа)' })
+  getAuthSettings() {
+    return this.authSettings.getPublicSettings();
+  }
 
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @UseGuards(OriginGuard, LocalAuthGuard)
