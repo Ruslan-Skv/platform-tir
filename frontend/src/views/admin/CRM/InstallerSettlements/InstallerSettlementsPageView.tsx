@@ -102,7 +102,6 @@ export function InstallerSettlementsPageView({ model }: { model: InstallerSettle
     advanceSubmitting,
     submitAdvance,
     installersRegistry,
-    loadAdvancePackages,
   } = model;
 
   const filtersContentId = useId();
@@ -612,7 +611,6 @@ export function InstallerSettlementsPageView({ model }: { model: InstallerSettle
           open={advanceModalOpen}
           onClose={closeAdvanceModal}
           installers={installersRegistry}
-          loadPackages={loadAdvancePackages}
           submitting={advanceSubmitting}
           onSubmit={submitAdvance}
         />

@@ -12,7 +12,6 @@ import {
   type InstallerSettlementsListResponse,
   createInstallerSettlementAdvance,
   getInstallerSettlements,
-  searchInstallerSettlementPackages,
 } from '@/shared/api/crm/admin-installer-settlements';
 
 import {
@@ -192,10 +191,6 @@ export function useInstallerSettlementsPage() {
     if (!advanceSubmitting) setAdvanceModalOpen(false);
   }, [advanceSubmitting]);
 
-  const loadAdvancePackages = useCallback(async (searchValue: string) => {
-    return searchInstallerSettlementPackages({ search: searchValue || undefined, limit: 15 });
-  }, []);
-
   const submitAdvance = useCallback(
     async (data: CreateInstallerSettlementAdvanceParams) => {
       setAdvanceSubmitting(true);
@@ -267,8 +262,6 @@ export function useInstallerSettlementsPage() {
     submitAdvance,
     /** Справочник мастеров для формы выдачи (загружается при открытии модалки). */
     installersRegistry,
-    /** Поиск договоров для формы выдачи аванса. */
-    loadAdvancePackages,
   };
 }
 

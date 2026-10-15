@@ -107,31 +107,6 @@ export async function getInstallerSettlements(params?: {
   return res.json();
 }
 
-/** Договор для формы выдачи аванса (поиск по № договора / заказчику). */
-export type InstallerSettlementPackageOption = {
-  id: string;
-  kind: string;
-  direction: string;
-  status: string;
-  contractNumber: string | null;
-  customerName: string | null;
-  objectAddress: string | null;
-};
-
-export async function searchInstallerSettlementPackages(params?: {
-  search?: string;
-  limit?: number;
-}): Promise<InstallerSettlementPackageOption[]> {
-  const search = new URLSearchParams();
-  if (params?.search) search.set('search', params.search);
-  if (params?.limit) search.set('limit', String(params.limit));
-  const res = await apiFetch(`${API_URL}/admin/installer-settlements/packages?${search}`, {
-    headers: getAdminAuthHeaders(),
-  });
-  if (!res.ok) await throwApiError(res, 'Не удалось загрузить договоры');
-  return res.json();
-}
-
 export type CreateInstallerSettlementAdvanceParams = {
   packageId: string;
   installerId: string;
