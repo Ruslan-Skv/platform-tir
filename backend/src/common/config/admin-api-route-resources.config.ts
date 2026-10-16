@@ -143,6 +143,11 @@ const ADMIN_API_ROUTE_RESOURCE_PREFIXES_RAW: ReadonlyArray<{
   { prefix: '/api/v1/admin/measurements', resourceId: 'admin.crm.measurements' },
   { prefix: '/api/v1/admin/customers', resourceId: 'admin.crm.customers' },
   { prefix: '/api/v1/admin/installers', resourceId: 'admin.crm.installers' },
+  // Расчётники мастеров — ведомости авансов (создают ВС/бригадиры, выплаты — супер-админ)
+  {
+    prefix: '/api/v1/admin/installer-advance-sheets',
+    resourceId: 'admin.crm.installer-advance-sheets',
+  },
   {
     prefix: '/api/v1/admin/installation-schedules',
     resourceId: 'admin.crm.installation-schedules',

@@ -124,6 +124,9 @@ model User {
   contractDocumentSigningSessionsCreated  ContractDocumentSigningSession[]          @relation("ContractDocumentSigningSessionsCreated")
   contractDocumentPackagePaymentsRecorded ContractDocumentPackagePayment[]          @relation("ContractDocumentPackagePaymentRecordedBy")
   contractInstallerAdvancesCreated        ContractDocumentPackageInstallerAdvance[] @relation("ContractDocumentPackageInstallerAdvanceCreatedBy")
+  installerAdvanceSheetsCreated           InstallerAdvanceSheet[]                   @relation("InstallerAdvanceSheetCreatedBy")
+  installerAdvanceSheetItemsPaid          InstallerAdvanceSheetItem[]               @relation("InstallerAdvanceSheetItemPaidBy")
+  installerAdvanceSheetComments           InstallerAdvanceSheetItemComment[]        @relation("InstallerAdvanceSheetItemCommentAuthor")
   moneyMovementsConducted                 MoneyMovement[]                           @relation("MoneyMovementManager")
   moneyMovementsCreated                   MoneyMovement[]                           @relation("MoneyMovementCreatedBy")
   moneyMovementsDeleted                   MoneyMovement[]                           @relation("MoneyMovementDeletedBy")
@@ -2980,6 +2983,7 @@ model InstallerMaster {
   user                      User?                                     @relation("InstallerMasterUser", fields: [userId], references: [id], onDelete: SetNull)
   installationSchedules     InstallationScheduleEntry[]
   contractAdvances          ContractDocumentPackageInstallerAdvance[]
+  advanceSheets             InstallerAdvanceSheet[]
   repairScheduleProjects    RepairScheduleProject[]
   furnitureScheduleProjects FurnitureScheduleProject[]
 
@@ -3631,6 +3635,7 @@ model ContractDocumentPackage {
   paymentInvoices           ContractDocumentPaymentInvoice[]
   installationSchedules     InstallationScheduleEntry[]
   installerAdvances         ContractDocumentPackageInstallerAdvance[]
+  advanceSheetItems         InstallerAdvanceSheetItem[]
   repairScheduleProjects    RepairScheduleProject[]
   furnitureScheduleProjects FurnitureScheduleProject[]
   signingSessions           ContractDocumentSigningSession[]
@@ -3690,14 +3695,97 @@ model ContractDocumentPackageInstallerAdvance {
   createdAt     DateTime                       @default(now())
   updatedAt     DateTime                       @updatedAt
 
-  package   ContractDocumentPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
-  installer InstallerMaster?        @relation(fields: [installerId], references: [id], onDelete: SetNull)
-  createdBy User?                   @relation("ContractDocumentPackageInstallerAdvanceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  /// Строка ведомости раздела «Расчётники мастеров», из которой создана запись
+  /// (null — аванс выдан вручную из модалки договора или раздела «Расчёт мастеров»).
+  sheetItemId String? @unique
+
+  package   ContractDocumentPackage    @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  installer InstallerMaster?           @relation(fields: [installerId], references: [id], onDelete: SetNull)
+  createdBy User?                      @relation("ContractDocumentPackageInstallerAdvanceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  sheetItem InstallerAdvanceSheetItem? @relation(fields: [sheetItemId], references: [id], onDelete: SetNull)
 
   @@index([packageId])
   @@index([installerId])
   @@index([paidAt])
   @@map("contract_document_package_installer_advances")
+}
+
+/// Статус строки ведомости авансов раздела «Расчётники мастеров».
+enum InstallerAdvanceSheetItemStatus {
+  /// Ожидает выплаты супер-админом.
+  PENDING
+  /// Супер-админ задал вопрос по авансу — ждём правок/ответа ведущего специалиста.
+  QUESTION
+  /// Выплачено: запись в журнале авансов уже создана.
+  PAID
+}
+
+/// Ведомость выплаты авансов (части з/п) мастеру раздела «Расчётники мастеров»:
+/// еженедельный набор авансов по 1–10 договорам одного мастера. Создаёт ведущий
+/// специалист / бригадир; супер-админ отмечает выплаты построчно или всей
+/// ведомостью — каждая отметка создаёт запись журнала авансов
+/// (ContractDocumentPackageInstallerAdvance), доступную и в «Расчёте мастеров».
+model InstallerAdvanceSheet {
+  id          String   @id @default(cuid())
+  /// Человекочитаемый номер ведомости («Ведомость № 42 от 16.10.2026»).
+  number      Int      @unique @default(autoincrement())
+  installerId String
+  note        String?  @db.Text
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  installer InstallerMaster             @relation(fields: [installerId], references: [id], onDelete: Restrict)
+  createdBy User?                       @relation("InstallerAdvanceSheetCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  items     InstallerAdvanceSheetItem[]
+
+  @@index([installerId])
+  @@index([createdAt])
+  @@map("installer_advance_sheets")
+}
+
+/// Строка ведомости: аванс по конкретному договору. Пока PENDING/QUESTION —
+/// редактируется ведущим специалистом; после выплаты замораживается.
+model InstallerAdvanceSheetItem {
+  id            String                          @id @default(cuid())
+  sheetId       String
+  packageId     String
+  amount        Decimal                         @db.Decimal(12, 2)
+  status        InstallerAdvanceSheetItemStatus @default(PENDING)
+  paidAt        DateTime?                       @db.Date
+  /// Как выдана выплата мастеру: наличными или переводом по банку.
+  paymentMethod InstallerAdvancePaymentMethod?
+  paidById      String?
+  createdAt     DateTime                        @default(now())
+  updatedAt     DateTime                        @updatedAt
+
+  sheet    InstallerAdvanceSheet                    @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  package  ContractDocumentPackage                  @relation(fields: [packageId], references: [id], onDelete: Restrict)
+  paidBy   User?                                    @relation("InstallerAdvanceSheetItemPaidBy", fields: [paidById], references: [id], onDelete: SetNull)
+  comments InstallerAdvanceSheetItemComment[]
+  /// Запись журнала авансов, созданная при выплате этой строки (для отмены выплаты).
+  advance  ContractDocumentPackageInstallerAdvance?
+
+  @@index([sheetId])
+  @@index([packageId])
+  @@index([status])
+  @@map("installer_advance_sheet_items")
+}
+
+/// Комментарий в мини-переписке по строке ведомости: супер-админ задаёт вопросы
+/// по авансу конкретного договора, ведущий специалист отвечает/исправляет.
+model InstallerAdvanceSheetItemComment {
+  id        String   @id @default(cuid())
+  itemId    String
+  authorId  String?
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+
+  item   InstallerAdvanceSheetItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  author User?                     @relation("InstallerAdvanceSheetItemCommentAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([itemId])
+  @@map("installer_advance_sheet_item_comments")
 }
 
 /// ДП — журнал денежных движений по договорам. Записи создаёт бэкенд автоматически

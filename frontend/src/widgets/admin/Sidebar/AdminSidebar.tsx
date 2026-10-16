@@ -175,6 +175,12 @@ const baseNavItems: NavItem[] = [
     resourceId: 'admin.crm.installer-settlements',
   },
   {
+    label: 'Расчётники мастеров',
+    href: '/admin/installer-advance-sheets',
+    icon: '💵',
+    resourceId: 'admin.crm.installer-advance-sheets',
+  },
+  {
     label: 'Мастера (монтажники)',
     href: '/admin/crm/installers',
     icon: '🛠️',

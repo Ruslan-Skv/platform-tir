@@ -4,6 +4,7 @@ import { CrmDirectionsModule } from './crm-directions/crm-directions.module';
 import { MeasurementsModule } from './measurements/measurements.module';
 import { MoneyMovementsModule } from './money-movements/money-movements.module';
 import { InstallerSettlementsModule } from './installer-settlements/installer-settlements.module';
+import { InstallerAdvanceSheetsModule } from './installer-advance-sheets/installer-advance-sheets.module';
 import { BankEntriesModule } from './bank-entries/bank-entries.module';
 import { CashBookModule } from './cash-book/cash-book.module';
 import { SalaryPayoutsModule } from './salary-payouts/salary-payouts.module';
@@ -74,6 +75,7 @@ import { AdminAuthSettingsModule } from './auth-settings/admin-auth-settings.mod
     MeasurementsModule,
     MoneyMovementsModule,
     InstallerSettlementsModule,
+    InstallerAdvanceSheetsModule,
     BankEntriesModule,
     CashBookModule,
     SalaryPayoutsModule,
