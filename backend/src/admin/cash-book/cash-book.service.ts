@@ -1,231 +1,37 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { ContractDocumentPackageKind, PaymentForm, Prisma } from '@prisma/client';
+import { PaymentForm, Prisma } from '@prisma/client';
 
 import {
   DP_FURNITURE_DIRECTION,
   DP_MANUAL_DIRECTION_OTHER,
   MANUAL_MONEY_MOVEMENT_DIRECTIONS,
-  PACKAGE_DIRECTION_REGISTRY,
 } from '../../common/config/package-direction-registry.config';
 import { PrismaService } from '../../database/prisma.service';
 import { SALARY_PAYOUT_BASIS } from '../../common/constants/salary-payout';
 import { MoneyMovementsService } from '../money-movements/money-movements.service';
+import { CashBookBalanceService } from './cash-book-balance.service';
 import { CreateCashBookEntryDto } from './dto/create-cash-book-entry.dto';
 import { SetOpeningBalanceDto } from './dto/set-opening-balance.dto';
-
-const MANAGER_SELECT = { id: true, email: true, firstName: true, lastName: true } as const;
-
-/** Тип записи кассы: MANUAL — ручная проводка, OPENING — начальный остаток. */
-const CASH_ENTRY_KIND_MANUAL = 'MANUAL';
-const CASH_ENTRY_KIND_OPENING = 'OPENING';
-
-/** Основание спец-записи начального остатка кассы. */
-const OPENING_BALANCE_BASIS = 'Начальный остаток';
-
-const KIND_TO_DIRECTION_NAME = Object.fromEntries(
-  PACKAGE_DIRECTION_REGISTRY.map((d) => [d.kind, d.name]),
-) as Record<ContractDocumentPackageKind, string>;
-
-/** Экранирование спецсимволов ILIKE (% _ \) в поисковом запросе. */
-function escapeLike(value: string): string {
-  return value.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
-}
-
-const ENTRY_INCLUDE = {
-  manager: { select: MANAGER_SELECT },
-} satisfies Prisma.CashBookEntryInclude;
-
-const MOVEMENT_INCLUDE = {
-  manager: { select: MANAGER_SELECT },
-} satisfies Prisma.MoneyMovementInclude;
-
-const PAYOUT_INCLUDE = {
-  manager: { select: MANAGER_SELECT },
-  createdBy: { select: MANAGER_SELECT },
-} satisfies Prisma.SalaryPayoutInclude;
-
-type CashBookRowWithManager = Prisma.CashBookEntryGetPayload<{ include: typeof ENTRY_INCLUDE }>;
-type MovementRowWithManager = Prisma.MoneyMovementGetPayload<{ include: typeof MOVEMENT_INCLUDE }>;
-type PayoutRowWithUsers = Prisma.SalaryPayoutGetPayload<{ include: typeof PAYOUT_INCLUDE }>;
-
-/** Строка журнала выплат мастерам (сырой SQL): реквизиты договора достаём из formData пакета. */
-type SalaryAdvanceRawRow = {
-  id: string;
-  installerLiveName: string | null;
-  installerName: string | null;
-  paidAt: Date;
-  amount: Prisma.Decimal | number;
-  note: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  createdById: string | null;
-  createdByFirstName: string | null;
-  createdByLastName: string | null;
-  createdByEmail: string | null;
-  packageKind: ContractDocumentPackageKind;
-  contractNumber: string | null;
-  customerName: string | null;
-};
-
-/** Общий вид записи кассы на клиенте: записи кассы и наличные ДП сериализуются одинаково. */
-type SerializedCashEntry = ReturnType<typeof serializeCashBookEntry>;
-
-function managerName(user: { email: string; firstName: string | null; lastName: string | null }) {
-  return [user.lastName, user.firstName].filter(Boolean).join(' ').trim() || user.email;
-}
-
-/** Поиск по текстовым полям — поля совпадают у записей кассы и движений ДП. */
-function cashSearchFilter(search: string) {
-  return {
-    OR: [
-      { contractNumber: { contains: search, mode: 'insensitive' as const } },
-      { customerName: { contains: search, mode: 'insensitive' as const } },
-      { basis: { contains: search, mode: 'insensitive' as const } },
-      { notes: { contains: search, mode: 'insensitive' as const } },
-    ],
-  };
-}
-
-/** Поиск по полям движений ДП — как в кассе, плюс получатель зар/платы записи «Зар/плата». */
-function movementSearchFilter(search: string): Prisma.MoneyMovementWhereInput {
-  return {
-    OR: [
-      { contractNumber: { contains: search, mode: 'insensitive' } },
-      { customerName: { contains: search, mode: 'insensitive' } },
-      { basis: { contains: search, mode: 'insensitive' } },
-      { notes: { contains: search, mode: 'insensitive' } },
-      { salaryRecipientName: { contains: search, mode: 'insensitive' } },
-    ],
-  };
-}
-
-/** Форма записи кассы для клиента (задаёт тип SerializedCashEntry). */
-function serializeCashBookEntry(row: CashBookRowWithManager) {
-  return {
-    id: row.id,
-    paymentDate: row.paymentDate.toISOString().slice(0, 10),
-    performedAt: row.performedAt.toISOString(),
-    amount: row.amount.toString(),
-    manager: row.manager
-      ? {
-          id: row.manager.id,
-          name: managerName(row.manager),
-        }
-      : null,
-    direction: row.direction,
-    contractNumber: row.contractNumber,
-    customerName: row.customerName,
-    executorName: row.executorName,
-    basis: row.basis,
-    notes: row.notes,
-    kind: row.kind,
-    salaryRecipientName: null as string | null,
-    createdById: row.createdById,
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
-  };
-}
-
-/** Начальный остаток кассы для клиента: якорь, от которого считаются остатки. */
-function serializeOpeningBalance(row: CashBookRowWithManager) {
-  return {
-    id: row.id,
-    date: row.paymentDate.toISOString().slice(0, 10),
-    amount: Number(row.amount),
-    notes: row.notes,
-    updatedAt: row.updatedAt.toISOString(),
-  };
-}
-
-/** Наличная оплата ДП в форме записи кассы — те же поля, что у записи кассы. */
-function serializeMovementAsCashEntry(row: MovementRowWithManager): SerializedCashEntry {
-  return {
-    id: row.id,
-    paymentDate: row.paymentDate.toISOString().slice(0, 10),
-    performedAt: row.performedAt.toISOString(),
-    amount: row.amount.toString(),
-    manager: row.manager
-      ? {
-          id: row.manager.id,
-          name: managerName(row.manager),
-        }
-      : null,
-    direction: row.direction,
-    contractNumber: row.contractNumber,
-    customerName: row.customerName,
-    executorName: row.executorName,
-    basis: row.basis,
-    notes: row.notes,
-    kind: CASH_ENTRY_KIND_MANUAL,
-    /** Получатель зар/платы свёрнутой записи ДП с основанием «Зар/плата». */
-    salaryRecipientName: row.salaryRecipientName ?? null,
-    createdById: row.createdById,
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
-  };
-}
-
-/** Выплата мастеру наличными в форме записи кассы: сумма — со знаком минус
- *  (изъятие из кассы), основание — «Зар/плата», в колонке зар/платы — ФИО мастера. */
-function serializeSalaryAdvanceAsCashEntry(row: SalaryAdvanceRawRow): SerializedCashEntry {
-  const createdBy = [row.createdByLastName, row.createdByFirstName]
-    .filter(Boolean)
-    .join(' ')
-    .trim();
-  const managerNameValue = createdBy || row.createdByEmail || null;
-  return {
-    id: row.id,
-    paymentDate: row.paidAt.toISOString().slice(0, 10),
-    performedAt: row.createdAt.toISOString(),
-    amount: new Prisma.Decimal(row.amount).neg().toString(),
-    manager:
-      row.createdById && managerNameValue ? { id: row.createdById, name: managerNameValue } : null,
-    direction: KIND_TO_DIRECTION_NAME[row.packageKind] ?? String(row.packageKind),
-    contractNumber: row.contractNumber,
-    customerName: row.customerName,
-    executorName: null,
-    basis: SALARY_PAYOUT_BASIS,
-    notes: row.note,
-    kind: CASH_ENTRY_KIND_MANUAL,
-    salaryRecipientName: row.installerLiveName ?? row.installerName,
-    createdById: row.createdById,
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
-  };
-}
-
-/** Выплата з/п из раздела «Выплаты з/п» в форме записи кассы: сумма — со знаком
- *  минус (изъятие наличных), основание — «Зар/плата», в колонке зар/платы — ФИО
- *  получателя. Менеджер кассы — кто выдал (менеджер или автор записи выплаты). */
-function serializeSalaryPayoutAsCashEntry(row: PayoutRowWithUsers): SerializedCashEntry {
-  const manager = row.manager ?? row.createdBy;
-  return {
-    id: row.id,
-    paymentDate: row.paidAt.toISOString().slice(0, 10),
-    performedAt: row.createdAt.toISOString(),
-    amount: row.amount.neg().toString(),
-    manager: manager ? { id: manager.id, name: managerName(manager) } : null,
-    direction: null,
-    contractNumber: null,
-    customerName: null,
-    executorName: null,
-    basis: SALARY_PAYOUT_BASIS,
-    notes: row.note,
-    kind: CASH_ENTRY_KIND_MANUAL,
-    salaryRecipientName: row.recipientName,
-    createdById: row.createdById,
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
-  };
-}
-
-/** Порядок журнала кассы: дата по убыванию, затем время и id — для стабильного
- *  слияния источников (записи кассы, наличные ДП и выплаты мастерам). */
-function compareCashEntriesDesc(a: SerializedCashEntry, b: SerializedCashEntry): number {
-  if (a.paymentDate !== b.paymentDate) return a.paymentDate < b.paymentDate ? 1 : -1;
-  if (a.performedAt !== b.performedAt) return a.performedAt < b.performedAt ? 1 : -1;
-  return a.id < b.id ? 1 : a.id > b.id ? -1 : 0;
-}
+import {
+  CASH_ENTRY_KIND_MANUAL,
+  CASH_ENTRY_KIND_OPENING,
+  ENTRY_INCLUDE,
+  MANAGER_SELECT,
+  MOVEMENT_INCLUDE,
+  OPENING_BALANCE_BASIS,
+  PAYOUT_INCLUDE,
+  type SalaryAdvanceRawRow,
+  cashSearchFilter,
+  compareCashEntriesDesc,
+  escapeLike,
+  managerName,
+  movementSearchFilter,
+  serializeCashBookEntry,
+  serializeMovementAsCashEntry,
+  serializeOpeningBalance,
+  serializeSalaryAdvanceAsCashEntry,
+  serializeSalaryPayoutAsCashEntry,
+} from './cash-book-serialize';
 
 /** Раздел «Касса»: свёрнутые наличные оплаты ДП + собственные ручные записи кассы
  *  + выплаты мастерам наличными из расчётов (зар/плата, сумма со знаком минус)
@@ -235,6 +41,7 @@ export class CashBookService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly moneyMovements: MoneyMovementsService,
+    private readonly balance: CashBookBalanceService,
   ) {}
 
   /**
@@ -367,6 +174,7 @@ export class CashBookService {
       payoutSum,
       payoutByManagerRaw,
       directoryUserIds,
+      { balance, openingBalance },
     ] = await Promise.all([
       this.prisma.moneyMovement.count({ where: dpWhere }),
       this.prisma.cashBookEntry.count({ where: cashWhere }),
@@ -429,6 +237,8 @@ export class CashBookService {
         _sum: { amount: true },
       }),
       this.moneyMovements.getSignatoryProfileUserIds(),
+      // Остатки — отдельным сервисом: только границы периода, без фильтров.
+      this.balance.compute({ dateFrom: params.dateFrom, dateTo: params.dateTo }),
     ]);
 
     const total = dpTotal + cashTotal + (salaryTotal[0]?.total ?? 0) + payoutTotal;
@@ -497,147 +307,6 @@ export class CashBookService {
         : []),
     ].sort((a, b) => b.sum - a.sum);
 
-    // Остатки кассы: только границы периода, без фильтров менеджера и поиска —
-    // фильтры не должны искажать остаток. Все источники, включая начальный
-    // остаток (он лежит в cash_book_entries с kind = OPENING).
-    const beforeFilter = params.dateFrom
-      ? { paymentDate: { lt: new Date(params.dateFrom) } }
-      : undefined;
-    const toEndFilter = params.dateTo
-      ? { paymentDate: { lte: new Date(`${params.dateTo}T23:59:59.999`) } }
-      : undefined;
-    const payoutBeforeFilter = params.dateFrom
-      ? { paidAt: { lt: new Date(params.dateFrom) } }
-      : undefined;
-    const payoutToEndFilter = params.dateTo
-      ? { paidAt: { lte: new Date(`${params.dateTo}T23:59:59.999`) } }
-      : undefined;
-    const dpBalanceBase: Prisma.MoneyMovementWhereInput = {
-      deletedAt: null,
-      paymentForm: PaymentForm.CASH,
-      manualReconciledAt: { not: null },
-    };
-    const advanceBalanceFrom = Prisma.sql`
-      FROM contract_document_package_installer_advances a
-      JOIN contract_document_packages p ON p."id" = a."packageId"
-      WHERE p."deleted_at" IS NULL AND a."paymentMethod" = 'CASH'`;
-    const payoutBalanceBase: Prisma.SalaryPayoutWhereInput = {
-      deletedAt: null,
-      paymentMethod: 'CASH',
-    };
-    const [
-      openingRow,
-      dpSumBefore,
-      dpSumToEnd,
-      dpSumPosInPeriod,
-      dpSumNegInPeriod,
-      cashSumBefore,
-      cashSumToEnd,
-      cashSumPosInPeriod,
-      cashSumNegInPeriod,
-      advanceSumBefore,
-      advanceSumToEnd,
-      advanceSumInPeriod,
-      payoutSumBefore,
-      payoutSumToEnd,
-      payoutSumInPeriod,
-    ] = await Promise.all([
-      this.prisma.cashBookEntry.findFirst({
-        where: { kind: CASH_ENTRY_KIND_OPENING },
-        include: ENTRY_INCLUDE,
-      }),
-      this.prisma.moneyMovement.aggregate({
-        where: { ...dpBalanceBase, ...(beforeFilter ?? {}) },
-        _sum: { amount: true },
-      }),
-      this.prisma.moneyMovement.aggregate({
-        where: { ...dpBalanceBase, ...(toEndFilter ?? {}) },
-        _sum: { amount: true },
-      }),
-      this.prisma.moneyMovement.aggregate({
-        where: { ...dpBalanceBase, ...(periodFilter ?? {}), amount: { gt: 0 } },
-        _sum: { amount: true },
-      }),
-      this.prisma.moneyMovement.aggregate({
-        where: { ...dpBalanceBase, ...(periodFilter ?? {}), amount: { lt: 0 } },
-        _sum: { amount: true },
-      }),
-      this.prisma.cashBookEntry.aggregate({
-        where: beforeFilter ?? {},
-        _sum: { amount: true },
-      }),
-      this.prisma.cashBookEntry.aggregate({
-        where: toEndFilter ?? {},
-        _sum: { amount: true },
-      }),
-      this.prisma.cashBookEntry.aggregate({
-        where: { kind: CASH_ENTRY_KIND_MANUAL, ...(periodFilter ?? {}), amount: { gt: 0 } },
-        _sum: { amount: true },
-      }),
-      this.prisma.cashBookEntry.aggregate({
-        where: { kind: CASH_ENTRY_KIND_MANUAL, ...(periodFilter ?? {}), amount: { lt: 0 } },
-        _sum: { amount: true },
-      }),
-      params.dateFrom
-        ? this.prisma.$queryRaw<Array<{ sum: Prisma.Decimal | number }>>(
-            Prisma.sql`SELECT COALESCE(SUM(a."amount"), 0) AS "sum"${advanceBalanceFrom} AND a."paidAt" < ${params.dateFrom}::date`,
-          )
-        : Promise.resolve([{ sum: 0 }]),
-      params.dateTo
-        ? this.prisma.$queryRaw<Array<{ sum: Prisma.Decimal | number }>>(
-            Prisma.sql`SELECT COALESCE(SUM(a."amount"), 0) AS "sum"${advanceBalanceFrom} AND a."paidAt" <= ${params.dateTo}::date`,
-          )
-        : this.prisma.$queryRaw<Array<{ sum: Prisma.Decimal | number }>>(
-            Prisma.sql`SELECT COALESCE(SUM(a."amount"), 0) AS "sum"${advanceBalanceFrom}`,
-          ),
-      this.prisma.$queryRaw<Array<{ sum: Prisma.Decimal | number }>>(
-        Prisma.sql`SELECT COALESCE(SUM(a."amount"), 0) AS "sum"${advanceBalanceFrom}${
-          params.dateFrom ? Prisma.sql` AND a."paidAt" >= ${params.dateFrom}::date` : Prisma.empty
-        }${params.dateTo ? Prisma.sql` AND a."paidAt" <= ${params.dateTo}::date` : Prisma.empty}`,
-      ),
-      this.prisma.salaryPayout.aggregate({
-        where: { ...payoutBalanceBase, ...(payoutBeforeFilter ?? {}) },
-        _sum: { amount: true },
-      }),
-      this.prisma.salaryPayout.aggregate({
-        where: { ...payoutBalanceBase, ...(payoutToEndFilter ?? {}) },
-        _sum: { amount: true },
-      }),
-      this.prisma.salaryPayout.aggregate({
-        where: { ...payoutBalanceBase, ...(payoutPeriodFilter ?? {}) },
-        _sum: { amount: true },
-      }),
-    ]);
-
-    // Начальный остаток внутри периода учитывается отдельной строкой, чтобы
-    // сходилась арифметика: начало + нач. остаток + приход − расход = конец.
-    const openingInPeriod =
-      openingRow &&
-      (!params.dateFrom || openingRow.paymentDate >= new Date(params.dateFrom)) &&
-      (!params.dateTo || openingRow.paymentDate <= new Date(`${params.dateTo}T23:59:59.999`))
-        ? Number(openingRow.amount)
-        : 0;
-    const balance = {
-      start:
-        Number(dpSumBefore._sum.amount ?? 0) +
-        Number(cashSumBefore._sum.amount ?? 0) -
-        Number(advanceSumBefore[0]?.sum ?? 0) -
-        Number(payoutSumBefore._sum.amount ?? 0),
-      end:
-        Number(dpSumToEnd._sum.amount ?? 0) +
-        Number(cashSumToEnd._sum.amount ?? 0) -
-        Number(advanceSumToEnd[0]?.sum ?? 0) -
-        Number(payoutSumToEnd._sum.amount ?? 0),
-      income:
-        Number(dpSumPosInPeriod._sum.amount ?? 0) + Number(cashSumPosInPeriod._sum.amount ?? 0),
-      expense:
-        Math.abs(Number(dpSumNegInPeriod._sum.amount ?? 0)) +
-        Math.abs(Number(cashSumNegInPeriod._sum.amount ?? 0)) +
-        Number(advanceSumInPeriod[0]?.sum ?? 0) +
-        Number(payoutSumInPeriod._sum.amount ?? 0),
-      openingInPeriod,
-    };
-
     // Список «Все менеджеры» — справочник карточек, как в фильтре ДП: не зависит
     // от фильтров и данных кассы. Удалённые пользователи не показываются.
     const managers = directoryUserIds
@@ -657,7 +326,7 @@ export class CashBookService {
       byManager,
       managers,
       balance,
-      openingBalance: openingRow ? serializeOpeningBalance(openingRow) : null,
+      openingBalance,
     };
   }
 
