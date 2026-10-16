@@ -251,7 +251,7 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.accounting.bank',
       },
       {
-        label: 'Касса',
+        label: 'Касса (центр)',
         href: '/admin/accounting/cash',
         resourceId: 'admin.accounting.cash',
       },

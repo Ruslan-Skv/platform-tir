@@ -1,0 +1,96 @@
+/* Раздел «Бухгалтерия → Касса (центр)»: специфичные элементы — карточка остатков
+   и бейдж начального остатка. Общий каркас — из стилей журнала ДП и контрактов. */
+
+/* Карточка остатков: заголовок с кнопкой управления начальным остатком */
+.balanceCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.balanceCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.balanceCardTitle {
+  margin: 0;
+  font-size: var(--admin-font-size-md, 15px);
+  font-weight: 700;
+  color: var(--admin-text, #111827);
+}
+
+.balanceCardHint {
+  margin: 0;
+  font-size: var(--admin-font-size-xs, 12px);
+  color: var(--admin-text-secondary, #6b7280);
+}
+
+/* Кнопка «Задать/Изменить начальный остаток» — приглушённая, у заголовка карточки */
+.openingBtn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--admin-border, #e5e7eb);
+  background: var(--admin-surface-soft, #f9fafb);
+  color: var(--admin-text-secondary, #4b5563);
+  font-size: var(--admin-font-size-xs, 12px);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.openingBtn:hover:not(:disabled) {
+  border-color: var(--admin-primary, #2563eb);
+  color: var(--admin-primary, #2563eb);
+}
+
+.openingBtn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Отрицательный остаток кассы — красным (признак ошибки или записи задним числом) */
+.balanceNegative {
+  color: var(--admin-danger, #dc2626);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .balanceNegative {
+  color: #f87171;
+}
+
+/* Приход/расход за период в карточке остатков */
+.balanceIncome {
+  color: #1d7a24;
+}
+
+.balanceExpense {
+  color: var(--admin-danger, #dc2626);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .balanceIncome {
+  color: #4ade80;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .balanceExpense {
+  color: #f87171;
+}
+
+/* Бейдж спец-записи «Начальный остаток» в журнале */
+.openingBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: var(--admin-font-size-xs, 12px);
+  font-weight: 600;
+  border: 1px solid #8b5cf6;
+  background: rgb(139 92 246 / 10%);
+  color: #6d28d9;
+  white-space: nowrap;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .openingBadge {
+  color: #c4b5fd;
+}

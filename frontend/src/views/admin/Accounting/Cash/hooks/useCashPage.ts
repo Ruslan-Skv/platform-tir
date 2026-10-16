@@ -5,11 +5,16 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
 import { useAuth } from '@/features/auth';
 import {
+  type CashBookBalance,
   type CashBookEntry,
   type CashBookListResponse,
   type CashBookManagerTotals,
+  type CashBookOpeningBalance,
+  type CashBookOpeningBalanceParams,
   createCashBookEntry,
+  deleteCashBookOpeningBalance,
   listCashBook,
+  setCashBookOpeningBalance,
 } from '@/shared/api/accounting/admin-cash-book';
 import { getContractDocumentExecutorProfiles } from '@/shared/api/admin-contract-document-packages';
 import type { MoneyMovementManagerOption } from '@/shared/api/crm/admin-money-movements';
@@ -27,6 +32,10 @@ export type CashPageModel = {
   rows: CashBookEntry[];
   totalSum: number;
   byManager: CashBookManagerTotals[];
+  /** Остатки кассы (центра) за выбранный период. */
+  balance: CashBookBalance;
+  /** Зафиксированный начальный остаток; null — ещё не задан. */
+  openingBalance: CashBookOpeningBalance | null;
   managers: MoneyMovementManagerOption[];
   executors: string[];
   total: number;
@@ -67,9 +76,30 @@ export type CashPageModel = {
   canEdit: boolean;
   /** Дефолтный менеджер записи — текущий пользователь. */
   defaultManager: { managerId: string; managerName: string | null } | null;
+  /** true — текущий пользователь супер-админ: управление начальным остатком. */
+  isSuperAdmin: boolean;
+  openingModalOpen: boolean;
+  openingSubmitting: boolean;
+  openOpeningModal: () => void;
+  closeOpeningModal: () => void;
+  submitOpening: (input: CashBookOpeningBalanceParams) => Promise<void>;
+  deleteOpeningConfirm: boolean;
+  askDeleteOpening: () => void;
+  cancelDeleteOpening: () => void;
+  deletingOpening: boolean;
+  handleDeleteOpening: () => Promise<void>;
 };
 
 const DEFAULT_LIMIT: CashPageLimit = 50;
+
+/** Остатки до первой загрузки / при ошибке. */
+const EMPTY_BALANCE: CashBookBalance = {
+  start: 0,
+  end: 0,
+  income: 0,
+  expense: 0,
+  openingInPeriod: 0,
+};
 
 type CashPagePersistedFilters = {
   dateFrom: string;
@@ -117,8 +147,18 @@ export function useCashPage(): CashPageModel {
 
   const [rows, setRows] = useState<CashBookEntry[]>([]);
   const [listMeta, setListMeta] = useState<
-    Pick<CashBookListResponse, 'totalSum' | 'byManager' | 'managers' | 'total'>
-  >({ totalSum: 0, byManager: [], managers: [], total: 0 });
+    Pick<CashBookListResponse, 'totalSum' | 'byManager' | 'managers' | 'total'> & {
+      balance: CashBookBalance;
+      openingBalance: CashBookOpeningBalance | null;
+    }
+  >({
+    totalSum: 0,
+    byManager: [],
+    managers: [],
+    total: 0,
+    balance: EMPTY_BALANCE,
+    openingBalance: null,
+  });
   const [executors, setExecutors] = useState<string[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPageState] = useState(1);
@@ -181,6 +221,8 @@ export function useCashPage(): CashPageModel {
         byManager: res.byManager,
         managers: res.managers,
         total: res.total,
+        balance: res.balance,
+        openingBalance: res.openingBalance,
       });
       setTotal(res.total);
       if (res.total === 0) {
@@ -191,7 +233,14 @@ export function useCashPage(): CashPageModel {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось загрузить кассу');
       setRows([]);
-      setListMeta({ totalSum: 0, byManager: [], managers: [], total: 0 });
+      setListMeta({
+        totalSum: 0,
+        byManager: [],
+        managers: [],
+        total: 0,
+        balance: EMPTY_BALANCE,
+        openingBalance: null,
+      });
       setTotal(0);
     } finally {
       setLoading(false);
@@ -302,6 +351,46 @@ export function useCashPage(): CashPageModel {
     setPageState(1);
   }, []);
 
+  /** Начальный остаток кассы: задать/изменить и удалить может супер-админ. */
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const [openingModalOpen, setOpeningModalOpen] = useState(false);
+  const [openingSubmitting, setOpeningSubmitting] = useState(false);
+  const [deleteOpeningConfirm, setDeleteOpeningConfirm] = useState(false);
+  const [deletingOpening, setDeletingOpening] = useState(false);
+
+  const openOpeningModal = useCallback(() => setOpeningModalOpen(true), []);
+  const closeOpeningModal = useCallback(() => {
+    if (!openingSubmitting) setOpeningModalOpen(false);
+  }, [openingSubmitting]);
+  const askDeleteOpening = useCallback(() => setDeleteOpeningConfirm(true), []);
+  const cancelDeleteOpening = useCallback(() => setDeleteOpeningConfirm(false), []);
+
+  const submitOpening = useCallback(
+    async (input: CashBookOpeningBalanceParams) => {
+      setOpeningSubmitting(true);
+      try {
+        await setCashBookOpeningBalance(input);
+        setOpeningModalOpen(false);
+        await load();
+      } finally {
+        setOpeningSubmitting(false);
+      }
+    },
+    [load]
+  );
+
+  const handleDeleteOpening = useCallback(async () => {
+    setDeletingOpening(true);
+    try {
+      await deleteCashBookOpeningBalance();
+      setDeleteOpeningConfirm(false);
+      setOpeningModalOpen(false);
+      await load();
+    } finally {
+      setDeletingOpening(false);
+    }
+  }, [load]);
+
   /** Дефолтный менеджер записи — текущий пользователь. */
   const defaultManager = useMemo(
     () =>
@@ -319,6 +408,8 @@ export function useCashPage(): CashPageModel {
     rows,
     totalSum: listMeta.totalSum,
     byManager: listMeta.byManager,
+    balance: listMeta.balance,
+    openingBalance: listMeta.openingBalance,
     managers: listMeta.managers,
     executors,
     total,
@@ -349,5 +440,16 @@ export function useCashPage(): CashPageModel {
     handleCreate,
     canEdit,
     defaultManager,
+    isSuperAdmin,
+    openingModalOpen,
+    openingSubmitting,
+    openOpeningModal,
+    closeOpeningModal,
+    submitOpening,
+    deleteOpeningConfirm,
+    askDeleteOpening,
+    cancelDeleteOpening,
+    deletingOpening,
+    handleDeleteOpening,
   };
 }

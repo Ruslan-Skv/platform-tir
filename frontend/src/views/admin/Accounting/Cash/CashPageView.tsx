@@ -3,6 +3,7 @@
 import { useId, useMemo } from 'react';
 
 import type { CashBookEntry, CashBookManagerTotals } from '@/shared/api/accounting/admin-cash-book';
+import { ConfirmModal } from '@/shared/ui/ConfirmModal/ConfirmModal';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
 import dpStyles from '@/views/admin/CRM/MoneyMovements/MoneyMovements.module.css';
@@ -18,6 +19,9 @@ import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.modul
 import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
 
 import { formatDateRu } from '../accounting-invoices-page.utils';
+import styles from './CashPage.module.css';
+import { CashRulesInfoTip } from './CashRulesInfoTip';
+import { OpeningBalanceModal } from './OpeningBalanceModal';
 import {
   CASH_PAGE_LIMIT_OPTIONS,
   type CashPageLimit,
@@ -66,6 +70,8 @@ export function CashPageView({ model }: CashPageViewProps) {
     rows,
     totalSum,
     byManager,
+    balance,
+    openingBalance,
     managers,
     executors,
     total,
@@ -96,6 +102,17 @@ export function CashPageView({ model }: CashPageViewProps) {
     handleCreate,
     canEdit,
     defaultManager,
+    isSuperAdmin,
+    openingModalOpen,
+    openingSubmitting,
+    openOpeningModal,
+    closeOpeningModal,
+    submitOpening,
+    deleteOpeningConfirm,
+    askDeleteOpening,
+    cancelDeleteOpening,
+    deletingOpening,
+    handleDeleteOpening,
   } = model;
 
   const filtersContentId = useId();
@@ -161,7 +178,11 @@ export function CashPageView({ model }: CashPageViewProps) {
         title: 'Основание',
         render: (item: CashBookEntry) => (
           <div className={dpStyles.basisCell}>
-            {item.basis || '—'}
+            {item.kind === 'OPENING' ? (
+              <span className={styles.openingBadge}>Начальный остаток</span>
+            ) : (
+              item.basis || '—'
+            )}
             {item.notes ? <span className={dpStyles.basisSubline}>{item.notes}</span> : null}
           </div>
         ),
@@ -195,7 +216,8 @@ export function CashPageView({ model }: CashPageViewProps) {
           <div className={cdHub.contractsHeaderTitleRow}>
             <div className={cdHub.contractsHeaderTitleCluster}>
               <div className={cdHub.contractsListHeaderTitleGroup}>
-                <h1 className={cdHub.title}>Касса — наличные</h1>
+                <h1 className={cdHub.title}>Касса (центр) — наличные</h1>
+                <CashRulesInfoTip />
               </div>
               <span className={cdHub.contractsListCount} title={countTitle}>
                 <span className={cdHub.contractsListCountDesktop}>{countTitle}</span>
@@ -245,6 +267,95 @@ export function CashPageView({ model }: CashPageViewProps) {
           </button>
         </div>
       ) : null}
+
+      {/* Карточка остатков: начало/конец периода, приход/расход и начальный остаток.
+          Остатки считаются по всем записям кассы и от фильтров менеджера/поиска не зависят. */}
+      <section className={styles.balanceCard} aria-label="Остатки кассы (центр)">
+        <div className={styles.balanceCardHeader}>
+          <div>
+            <p className={styles.balanceCardTitle}>
+              Остаток кассы{dateTo ? ` на ${formatDateRu(dateTo)}` : ' — текущий'}
+            </p>
+            <p className={styles.balanceCardHint}>
+              Начало периода + приход − расход = остаток; от фильтров менеджера и поиска не зависит.
+              {openingBalance ? '' : ' Начальный остаток ещё не задан — остатки считаются от нуля.'}
+            </p>
+          </div>
+          {isSuperAdmin ? (
+            <button
+              type="button"
+              className={styles.openingBtn}
+              onClick={openOpeningModal}
+              disabled={loading}
+            >
+              {openingBalance ? 'Изменить начальный остаток' : 'Задать начальный остаток'}
+            </button>
+          ) : null}
+        </div>
+        <div
+          className={`${dpStyles.totalsRow}${loading ? ` ${dpStyles.totalsRowLoading}` : ''}`}
+          aria-label="Движение остатка за выбранный период"
+        >
+          <div className={dpStyles.totalsTile} title="Сумма всех записей кассы до начала периода">
+            <span className={dpStyles.totalsTileLabel}>На начало периода</span>
+            <strong
+              className={`${dpStyles.totalsTileValue}${
+                balance.start < 0 ? ` ${styles.balanceNegative}` : ''
+              }`}
+            >
+              {formatDpMoney(balance.start)}
+            </strong>
+          </div>
+          {balance.openingInPeriod !== 0 ? (
+            <div
+              className={dpStyles.totalsTile}
+              title="Начальный остаток, зафиксированный внутри выбранного периода"
+            >
+              <span className={dpStyles.totalsTileLabel}>Начальный остаток</span>
+              <strong className={dpStyles.totalsTileValue}>
+                +{formatDpMoney(balance.openingInPeriod)}
+              </strong>
+            </div>
+          ) : null}
+          <div
+            className={dpStyles.totalsTile}
+            title="Внесения в кассу за период (свёрнутые наличные ДП и ручные записи)"
+          >
+            <span className={dpStyles.totalsTileLabel}>Приход за период</span>
+            <strong className={`${dpStyles.totalsTileValue} ${styles.balanceIncome}`}>
+              +{formatDpMoney(balance.income)}
+            </strong>
+          </div>
+          <div
+            className={dpStyles.totalsTile}
+            title="Изъятия за период: ручные проводки и наличные выплаты зар/платы"
+          >
+            <span className={dpStyles.totalsTileLabel}>Расход за период</span>
+            <strong className={`${dpStyles.totalsTileValue} ${styles.balanceExpense}`}>
+              −{formatDpMoney(balance.expense)}
+            </strong>
+          </div>
+          <div
+            className={`${dpStyles.totalsTile} ${dpStyles.totalsTileTotal}`}
+            title={
+              dateTo
+                ? 'Сумма всех записей кассы по конец периода'
+                : 'Сумма всех записей кассы на текущий момент'
+            }
+          >
+            <span className={dpStyles.totalsTileLabel}>
+              {dateTo ? 'На конец периода' : 'Сейчас в кассе'}
+            </span>
+            <strong
+              className={`${dpStyles.totalsTileValue}${
+                balance.end < 0 ? ` ${styles.balanceNegative}` : ''
+              }`}
+            >
+              {formatDpMoney(balance.end)}
+            </strong>
+          </div>
+        </div>
+      </section>
 
       {/* Блок итогов: сумма свёрнных наличных за период и разбивка по менеджерам. */}
       <div
@@ -428,6 +539,27 @@ export function CashPageView({ model }: CashPageViewProps) {
         fixedPaymentForm="CASH"
         hideSalaryPayoutBasis
         heading="Запись в кассу"
+      />
+
+      <OpeningBalanceModal
+        open={openingModalOpen}
+        onClose={closeOpeningModal}
+        openingBalance={openingBalance}
+        submitting={openingSubmitting}
+        onSubmit={submitOpening}
+        onDeleteAsk={askDeleteOpening}
+      />
+
+      <ConfirmModal
+        isOpen={deleteOpeningConfirm}
+        onClose={cancelDeleteOpening}
+        onConfirm={() => void handleDeleteOpening()}
+        title="Удалить начальный остаток"
+        message="Остатки кассы снова будут считаться от нуля. Продолжить?"
+        confirmText="Удалить"
+        variant="danger"
+        closeOnConfirm={false}
+        confirmLoading={deletingOpening}
       />
     </div>
   );

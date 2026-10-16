@@ -11,6 +11,7 @@ import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.modul
 import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
 
 import styles from './InstallerSettlements.module.css';
+import { InstallerSettlementsRulesInfoTip } from './InstallerSettlementsRulesInfoTip';
 import type { InstallerSettlementsPageModel } from './hooks/useInstallerSettlementsPage';
 import { buildIsFiltersSummary } from './installer-settlements-filters';
 import {
@@ -249,6 +250,7 @@ export function InstallerSettlementsPageView({ model }: { model: InstallerSettle
             <div className={cdHub.contractsHeaderTitleCluster}>
               <div className={cdHub.contractsListHeaderTitleGroup}>
                 <h1 className={cdHub.title}>Расчёт мастеров</h1>
+                <InstallerSettlementsRulesInfoTip />
               </div>
               <span
                 className={cdHub.contractsListCount}

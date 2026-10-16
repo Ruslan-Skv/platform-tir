@@ -31,6 +31,8 @@ export type CashBookEntry = {
   executorName: string | null;
   basis: string | null;
   notes: string | null;
+  /** Тип записи: MANUAL — ручная проводка, OPENING — начальный остаток кассы. */
+  kind: 'MANUAL' | 'OPENING';
   /** ФИО мастера, получившего зарплату наличными (записи «Зар/плата» из расчётов). */
   salaryRecipientName: string | null;
   createdById: string | null;
@@ -47,6 +49,31 @@ export type CashBookManagerTotals = {
 
 export type CashBookManagerOption = { id: string; name: string };
 
+/** Остатки кассы (центра) за период: считаются на бэкенде по всем источникам,
+ *  от фильтров менеджера и поиска не зависят — только от границ периода. */
+export type CashBookBalance = {
+  /** Остаток на начало периода (все записи до «даты от»). */
+  start: number;
+  /** Остаток на конец периода (все записи до «даты до»; без неё — текущий). */
+  end: number;
+  /** Приход за период (положительные записи, без начального остатка). */
+  income: number;
+  /** Расход за период (величина изъятий, положительное число). */
+  expense: number;
+  /** Начальный остаток, если его дата попала внутрь периода. */
+  openingInPeriod: number;
+};
+
+/** Зафиксированный начальный остаток кассы — якорь остатков (kind = OPENING). */
+export type CashBookOpeningBalance = {
+  id: string;
+  /** Дата, на которую зафиксирован остаток (YYYY-MM-DD). */
+  date: string;
+  amount: number;
+  notes: string | null;
+  updatedAt: string;
+};
+
 export type CashBookListResponse = {
   data: CashBookEntry[];
   total: number;
@@ -59,6 +86,10 @@ export type CashBookListResponse = {
   byManager: CashBookManagerTotals[];
   /** Менеджеры из справочника «Карточки менеджеров» — как в фильтре «Все менеджеры» ДП. */
   managers: CashBookManagerOption[];
+  /** Остатки кассы за выбранный период (начало/конец, приход/расход). */
+  balance: CashBookBalance;
+  /** Зафиксированный начальный остаток; null — ещё не задан. */
+  openingBalance: CashBookOpeningBalance | null;
 };
 
 /** Записи кассы за период: свёрнутые наличные оплаты ДП + ручные записи кассы. */
@@ -105,5 +136,37 @@ export async function createCashBookEntry(params: CashBookEntryParams): Promise<
     body: JSON.stringify(params),
   });
   if (!res.ok) await throwApiError(res, 'Не удалось записать проводку в кассу');
+  return res.json();
+}
+
+/** Параметры фиксации начального остатка кассы (центра). */
+export type CashBookOpeningBalanceParams = {
+  /** Дата остатка (YYYY-MM-DD). */
+  date: string;
+  /** Фактическая сумма наличных на дату (положительное число). */
+  amount: number;
+  notes?: string;
+};
+
+/** Фиксация начального остатка кассы: задаёт или перезаписывает (супер-админ). */
+export async function setCashBookOpeningBalance(
+  params: CashBookOpeningBalanceParams
+): Promise<CashBookOpeningBalance> {
+  const res = await apiFetch(`${API_URL}/admin/cash-book/opening-balance`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) await throwApiError(res, 'Не удалось зафиксировать начальный остаток');
+  return res.json();
+}
+
+/** Удаление начального остатка: остатки снова считаются от нуля (супер-админ). */
+export async function deleteCashBookOpeningBalance(): Promise<{ deleted: boolean }> {
+  const res = await apiFetch(`${API_URL}/admin/cash-book/opening-balance`, {
+    method: 'DELETE',
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) await throwApiError(res, 'Не удалось удалить начальный остаток');
   return res.json();
 }

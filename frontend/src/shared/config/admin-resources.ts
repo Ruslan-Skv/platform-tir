@@ -153,7 +153,11 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     path: '/admin/accounting/invoices',
   },
   { id: 'admin.accounting.bank', label: 'Банк', path: '/admin/accounting/bank' },
-  { id: 'admin.accounting.cash', label: 'Касса', path: '/admin/accounting/cash' },
+  {
+    id: 'admin.accounting.cash',
+    label: 'Касса (центр)',
+    path: '/admin/accounting/cash',
+  },
   {
     id: 'admin.accounting.payouts',
     label: 'Выплаты з/п',

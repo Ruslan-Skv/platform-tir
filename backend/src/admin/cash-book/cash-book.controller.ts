@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -17,6 +18,7 @@ import type { RequestWithUser } from '../../common/types/request-with-user.types
 import { CashBookService } from './cash-book.service';
 import { QueryCashBookDto } from './dto/query-cash-book.dto';
 import { CreateCashBookEntryDto } from './dto/create-cash-book-entry.dto';
+import { SetOpeningBalanceDto } from './dto/set-opening-balance.dto';
 
 /**
  * Роли на классе — «широкий фильтр» как у раздела «Банк»; фактический доступ
@@ -58,5 +60,20 @@ export class CashBookController {
   @HttpCode(HttpStatus.CREATED)
   createEntry(@Body() dto: CreateCashBookEntryDto, @Req() req: RequestWithUser) {
     return this.cashBook.createEntry(dto, req.user?.id);
+  }
+
+  /** Фиксация начального остатка кассы (центра) — задаёт или перезаписывает. */
+  @Post('opening-balance')
+  @Roles('SUPER_ADMIN')
+  @HttpCode(HttpStatus.OK)
+  setOpeningBalance(@Body() dto: SetOpeningBalanceDto, @Req() req: RequestWithUser) {
+    return this.cashBook.setOpeningBalance(dto, req.user?.id);
+  }
+
+  /** Удаление начального остатка: остатки снова считаются от нуля. */
+  @Delete('opening-balance')
+  @Roles('SUPER_ADMIN')
+  deleteOpeningBalance() {
+    return this.cashBook.deleteOpeningBalance();
   }
 }

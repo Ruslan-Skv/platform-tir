@@ -11,8 +11,16 @@ import { PrismaService } from '../../database/prisma.service';
 import { SALARY_PAYOUT_BASIS } from '../../common/constants/salary-payout';
 import { MoneyMovementsService } from '../money-movements/money-movements.service';
 import { CreateCashBookEntryDto } from './dto/create-cash-book-entry.dto';
+import { SetOpeningBalanceDto } from './dto/set-opening-balance.dto';
 
 const MANAGER_SELECT = { id: true, email: true, firstName: true, lastName: true } as const;
+
+/** Тип записи кассы: MANUAL — ручная проводка, OPENING — начальный остаток. */
+const CASH_ENTRY_KIND_MANUAL = 'MANUAL';
+const CASH_ENTRY_KIND_OPENING = 'OPENING';
+
+/** Основание спец-записи начального остатка кассы. */
+const OPENING_BALANCE_BASIS = 'Начальный остаток';
 
 const KIND_TO_DIRECTION_NAME = Object.fromEntries(
   PACKAGE_DIRECTION_REGISTRY.map((d) => [d.kind, d.name]),
@@ -110,9 +118,21 @@ function serializeCashBookEntry(row: CashBookRowWithManager) {
     executorName: row.executorName,
     basis: row.basis,
     notes: row.notes,
+    kind: row.kind,
     salaryRecipientName: null as string | null,
     createdById: row.createdById,
     createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+/** Начальный остаток кассы для клиента: якорь, от которого считаются остатки. */
+function serializeOpeningBalance(row: CashBookRowWithManager) {
+  return {
+    id: row.id,
+    date: row.paymentDate.toISOString().slice(0, 10),
+    amount: Number(row.amount),
+    notes: row.notes,
     updatedAt: row.updatedAt.toISOString(),
   };
 }
@@ -136,6 +156,7 @@ function serializeMovementAsCashEntry(row: MovementRowWithManager): SerializedCa
     executorName: row.executorName,
     basis: row.basis,
     notes: row.notes,
+    kind: CASH_ENTRY_KIND_MANUAL,
     /** Получатель зар/платы свёрнутой записи ДП с основанием «Зар/плата». */
     salaryRecipientName: row.salaryRecipientName ?? null,
     createdById: row.createdById,
@@ -165,6 +186,7 @@ function serializeSalaryAdvanceAsCashEntry(row: SalaryAdvanceRawRow): Serialized
     executorName: null,
     basis: SALARY_PAYOUT_BASIS,
     notes: row.note,
+    kind: CASH_ENTRY_KIND_MANUAL,
     salaryRecipientName: row.installerLiveName ?? row.installerName,
     createdById: row.createdById,
     createdAt: row.createdAt.toISOString(),
@@ -189,6 +211,7 @@ function serializeSalaryPayoutAsCashEntry(row: PayoutRowWithUsers): SerializedCa
     executorName: null,
     basis: SALARY_PAYOUT_BASIS,
     notes: row.note,
+    kind: CASH_ENTRY_KIND_MANUAL,
     salaryRecipientName: row.recipientName,
     createdById: row.createdById,
     createdAt: row.createdAt.toISOString(),
@@ -268,6 +291,12 @@ export class CashBookService {
       ...(periodFilter ?? {}),
       ...(managerFilter ?? {}),
       ...(searchFilter ?? {}),
+    };
+    /** Итоги оборотов — только ручные записи: начальный остаток не является
+     *  оборотом периода (он входит в остатки, но не в «Итого за период»). */
+    const cashTotalsWhere: Prisma.CashBookEntryWhereInput = {
+      ...cashWhere,
+      kind: CASH_ENTRY_KIND_MANUAL,
     };
 
     // Четвёртый источник кассы — наличные выплаты з/п из раздела «Выплаты з/п»:
@@ -354,7 +383,7 @@ export class CashBookService {
         take: fetchTake,
       }),
       this.prisma.moneyMovement.aggregate({ where: dpWhere, _sum: { amount: true } }),
-      this.prisma.cashBookEntry.aggregate({ where: cashWhere, _sum: { amount: true } }),
+      this.prisma.cashBookEntry.aggregate({ where: cashTotalsWhere, _sum: { amount: true } }),
       this.prisma.moneyMovement.groupBy({
         by: ['managerId'],
         where: dpWhere,
@@ -362,7 +391,7 @@ export class CashBookService {
       }),
       this.prisma.cashBookEntry.groupBy({
         by: ['managerId'],
-        where: cashWhere,
+        where: cashTotalsWhere,
         _sum: { amount: true },
       }),
       this.prisma.$queryRaw<Array<{ total: number }>>(
@@ -468,6 +497,147 @@ export class CashBookService {
         : []),
     ].sort((a, b) => b.sum - a.sum);
 
+    // Остатки кассы: только границы периода, без фильтров менеджера и поиска —
+    // фильтры не должны искажать остаток. Все источники, включая начальный
+    // остаток (он лежит в cash_book_entries с kind = OPENING).
+    const beforeFilter = params.dateFrom
+      ? { paymentDate: { lt: new Date(params.dateFrom) } }
+      : undefined;
+    const toEndFilter = params.dateTo
+      ? { paymentDate: { lte: new Date(`${params.dateTo}T23:59:59.999`) } }
+      : undefined;
+    const payoutBeforeFilter = params.dateFrom
+      ? { paidAt: { lt: new Date(params.dateFrom) } }
+      : undefined;
+    const payoutToEndFilter = params.dateTo
+      ? { paidAt: { lte: new Date(`${params.dateTo}T23:59:59.999`) } }
+      : undefined;
+    const dpBalanceBase: Prisma.MoneyMovementWhereInput = {
+      deletedAt: null,
+      paymentForm: PaymentForm.CASH,
+      manualReconciledAt: { not: null },
+    };
+    const advanceBalanceFrom = Prisma.sql`
+      FROM contract_document_package_installer_advances a
+      JOIN contract_document_packages p ON p."id" = a."packageId"
+      WHERE p."deleted_at" IS NULL AND a."paymentMethod" = 'CASH'`;
+    const payoutBalanceBase: Prisma.SalaryPayoutWhereInput = {
+      deletedAt: null,
+      paymentMethod: 'CASH',
+    };
+    const [
+      openingRow,
+      dpSumBefore,
+      dpSumToEnd,
+      dpSumPosInPeriod,
+      dpSumNegInPeriod,
+      cashSumBefore,
+      cashSumToEnd,
+      cashSumPosInPeriod,
+      cashSumNegInPeriod,
+      advanceSumBefore,
+      advanceSumToEnd,
+      advanceSumInPeriod,
+      payoutSumBefore,
+      payoutSumToEnd,
+      payoutSumInPeriod,
+    ] = await Promise.all([
+      this.prisma.cashBookEntry.findFirst({
+        where: { kind: CASH_ENTRY_KIND_OPENING },
+        include: ENTRY_INCLUDE,
+      }),
+      this.prisma.moneyMovement.aggregate({
+        where: { ...dpBalanceBase, ...(beforeFilter ?? {}) },
+        _sum: { amount: true },
+      }),
+      this.prisma.moneyMovement.aggregate({
+        where: { ...dpBalanceBase, ...(toEndFilter ?? {}) },
+        _sum: { amount: true },
+      }),
+      this.prisma.moneyMovement.aggregate({
+        where: { ...dpBalanceBase, ...(periodFilter ?? {}), amount: { gt: 0 } },
+        _sum: { amount: true },
+      }),
+      this.prisma.moneyMovement.aggregate({
+        where: { ...dpBalanceBase, ...(periodFilter ?? {}), amount: { lt: 0 } },
+        _sum: { amount: true },
+      }),
+      this.prisma.cashBookEntry.aggregate({
+        where: beforeFilter ?? {},
+        _sum: { amount: true },
+      }),
+      this.prisma.cashBookEntry.aggregate({
+        where: toEndFilter ?? {},
+        _sum: { amount: true },
+      }),
+      this.prisma.cashBookEntry.aggregate({
+        where: { kind: CASH_ENTRY_KIND_MANUAL, ...(periodFilter ?? {}), amount: { gt: 0 } },
+        _sum: { amount: true },
+      }),
+      this.prisma.cashBookEntry.aggregate({
+        where: { kind: CASH_ENTRY_KIND_MANUAL, ...(periodFilter ?? {}), amount: { lt: 0 } },
+        _sum: { amount: true },
+      }),
+      params.dateFrom
+        ? this.prisma.$queryRaw<Array<{ sum: Prisma.Decimal | number }>>(
+            Prisma.sql`SELECT COALESCE(SUM(a."amount"), 0) AS "sum"${advanceBalanceFrom} AND a."paidAt" < ${params.dateFrom}::date`,
+          )
+        : Promise.resolve([{ sum: 0 }]),
+      params.dateTo
+        ? this.prisma.$queryRaw<Array<{ sum: Prisma.Decimal | number }>>(
+            Prisma.sql`SELECT COALESCE(SUM(a."amount"), 0) AS "sum"${advanceBalanceFrom} AND a."paidAt" <= ${params.dateTo}::date`,
+          )
+        : this.prisma.$queryRaw<Array<{ sum: Prisma.Decimal | number }>>(
+            Prisma.sql`SELECT COALESCE(SUM(a."amount"), 0) AS "sum"${advanceBalanceFrom}`,
+          ),
+      this.prisma.$queryRaw<Array<{ sum: Prisma.Decimal | number }>>(
+        Prisma.sql`SELECT COALESCE(SUM(a."amount"), 0) AS "sum"${advanceBalanceFrom}${
+          params.dateFrom ? Prisma.sql` AND a."paidAt" >= ${params.dateFrom}::date` : Prisma.empty
+        }${params.dateTo ? Prisma.sql` AND a."paidAt" <= ${params.dateTo}::date` : Prisma.empty}`,
+      ),
+      this.prisma.salaryPayout.aggregate({
+        where: { ...payoutBalanceBase, ...(payoutBeforeFilter ?? {}) },
+        _sum: { amount: true },
+      }),
+      this.prisma.salaryPayout.aggregate({
+        where: { ...payoutBalanceBase, ...(payoutToEndFilter ?? {}) },
+        _sum: { amount: true },
+      }),
+      this.prisma.salaryPayout.aggregate({
+        where: { ...payoutBalanceBase, ...(payoutPeriodFilter ?? {}) },
+        _sum: { amount: true },
+      }),
+    ]);
+
+    // Начальный остаток внутри периода учитывается отдельной строкой, чтобы
+    // сходилась арифметика: начало + нач. остаток + приход − расход = конец.
+    const openingInPeriod =
+      openingRow &&
+      (!params.dateFrom || openingRow.paymentDate >= new Date(params.dateFrom)) &&
+      (!params.dateTo || openingRow.paymentDate <= new Date(`${params.dateTo}T23:59:59.999`))
+        ? Number(openingRow.amount)
+        : 0;
+    const balance = {
+      start:
+        Number(dpSumBefore._sum.amount ?? 0) +
+        Number(cashSumBefore._sum.amount ?? 0) -
+        Number(advanceSumBefore[0]?.sum ?? 0) -
+        Number(payoutSumBefore._sum.amount ?? 0),
+      end:
+        Number(dpSumToEnd._sum.amount ?? 0) +
+        Number(cashSumToEnd._sum.amount ?? 0) -
+        Number(advanceSumToEnd[0]?.sum ?? 0) -
+        Number(payoutSumToEnd._sum.amount ?? 0),
+      income:
+        Number(dpSumPosInPeriod._sum.amount ?? 0) + Number(cashSumPosInPeriod._sum.amount ?? 0),
+      expense:
+        Math.abs(Number(dpSumNegInPeriod._sum.amount ?? 0)) +
+        Math.abs(Number(cashSumNegInPeriod._sum.amount ?? 0)) +
+        Number(advanceSumInPeriod[0]?.sum ?? 0) +
+        Number(payoutSumInPeriod._sum.amount ?? 0),
+      openingInPeriod,
+    };
+
     // Список «Все менеджеры» — справочник карточек, как в фильтре ДП: не зависит
     // от фильтров и данных кассы. Удалённые пользователи не показываются.
     const managers = directoryUserIds
@@ -486,6 +656,8 @@ export class CashBookService {
       totalSum,
       byManager,
       managers,
+      balance,
+      openingBalance: openingRow ? serializeOpeningBalance(openingRow) : null,
     };
   }
 
@@ -528,10 +700,60 @@ export class CashBookService {
         executorName: withExecutor ? dto.executorName?.trim() || null : null,
         basis: dto.basis.trim(),
         notes: dto.notes?.trim() || null,
+        kind: CASH_ENTRY_KIND_MANUAL,
         createdById: currentUserId,
       },
       include: ENTRY_INCLUDE,
     });
     return serializeCashBookEntry(row);
+  }
+
+  /**
+   * Фиксация начального остатка кассы (центра): спец-запись kind = OPENING с датой
+   * и фактической суммой наличных на эту дату. Запись одна — повторная фиксация
+   * перезаписывает её (дату, сумму, комментарий). В обороты периода не входит,
+   * в остатки на дату — входит; остатки пересчитываются автоматически.
+   */
+  async setOpeningBalance(dto: SetOpeningBalanceDto, currentUserId?: string) {
+    const paymentDate = new Date(`${dto.date}T00:00:00.000Z`);
+    if (
+      Number.isNaN(paymentDate.getTime()) ||
+      paymentDate.toISOString().slice(0, 10) !== dto.date
+    ) {
+      throw new BadRequestException('Указана несуществующая дата остатка');
+    }
+    const data = {
+      paymentDate,
+      performedAt: new Date(),
+      amount: dto.amount,
+      managerId: null,
+      direction: null,
+      contractNumber: null,
+      customerName: null,
+      executorName: null,
+      basis: OPENING_BALANCE_BASIS,
+      notes: dto.notes?.trim() || null,
+      kind: CASH_ENTRY_KIND_OPENING,
+      createdById: currentUserId ?? null,
+    };
+    const existing = await this.prisma.cashBookEntry.findFirst({
+      where: { kind: CASH_ENTRY_KIND_OPENING },
+    });
+    const row = existing
+      ? await this.prisma.cashBookEntry.update({
+          where: { id: existing.id },
+          data,
+          include: ENTRY_INCLUDE,
+        })
+      : await this.prisma.cashBookEntry.create({ data, include: ENTRY_INCLUDE });
+    return serializeOpeningBalance(row);
+  }
+
+  /** Удаление начального остатка: остатки снова считаются от нуля. */
+  async deleteOpeningBalance() {
+    const deleted = await this.prisma.cashBookEntry.deleteMany({
+      where: { kind: CASH_ENTRY_KIND_OPENING },
+    });
+    return { deleted: deleted.count > 0 };
   }
 }

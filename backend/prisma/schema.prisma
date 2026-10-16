@@ -3789,6 +3789,9 @@ model CashBookEntry {
   /// Основание: «Бытовые нужды», «Возврат излишка» и т.п.
   basis          String?  @db.Text
   notes          String?  @db.Text
+  /// Тип записи: MANUAL — ручная проводка, OPENING — начальный остаток кассы
+  /// (фиксируется супер-админом; в обороты периода не входит, в остатки входит).
+  kind           String   @default("MANUAL")
   /// Кем создана запись.
   createdById    String?
   createdAt      DateTime @default(now())
@@ -3799,6 +3802,7 @@ model CashBookEntry {
 
   @@index([paymentDate])
   @@index([managerId])
+  @@index([kind])
   @@index([createdById])
   @@map("cash_book_entries")
 }

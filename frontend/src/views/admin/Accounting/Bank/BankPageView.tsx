@@ -15,6 +15,7 @@ import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-worksp
 import { formatDateRu, formatMoneyRub } from '../accounting-invoices-page.utils';
 import { BankEntryModal } from './BankEntryModal';
 import styles from './BankPage.module.css';
+import { BankRulesInfoTip } from './BankRulesInfoTip';
 import {
   BANK_ENTRY_TYPE_LABELS,
   BANK_ENTRY_TYPE_OPTIONS,
@@ -328,6 +329,7 @@ export function BankPageView({ model }: BankPageViewProps) {
             <div className={cdHub.contractsHeaderTitleCluster}>
               <div className={cdHub.contractsListHeaderTitleGroup}>
                 <h1 className={cdHub.title}>Банк — поступления</h1>
+                <BankRulesInfoTip />
               </div>
               <span className={cdHub.contractsListCount} title={countTitle}>
                 <span className={cdHub.contractsListCountDesktop}>{countTitle}</span>
