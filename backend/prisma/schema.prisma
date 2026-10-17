@@ -183,6 +183,7 @@ model User {
   contractConcludedBellEvents             ContractConcludedBellEvent[]
   measurementBellEvents                   MeasurementBellEvent[]
   managerIncassationBellEvents            ManagerIncassationBellEvent[]
+  installerAdvanceSheetBellEvents         InstallerAdvanceSheetBellEvent[]
   salesTotalBellEvents                    SalesTotalBellEvent[]
   waybillTaskAttachmentsUploaded          WaybillTaskAttachment[]                   @relation("WaybillTaskAttachmentUploadedBy")
   driverDeliveryAvailability              DriverDeliveryAvailability?
@@ -2803,6 +2804,7 @@ model UserAdminNotificationOverride {
   notifyOnContractConcludedFurniture Boolean  @default(true) // Договор подписан — Мебель
   notifyOnIncassations               Boolean  @default(true) // Инкассации наличных (журнал ДП)
   notifyOnSalesTotals                Boolean  @default(true) // Итоги продаж — каждый 1 млн ₽ за месяц (журнал ДП)
+  notifyOnInstallerAdvanceSheets     Boolean  @default(true) // Ведомости авансов монтажников (создание новой ведомости)
   updatedAt                          DateTime @updatedAt
   user                               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -2890,6 +2892,7 @@ model AdminNotificationsBlock {
   notifyOnContractConcludedFurniture Boolean  @default(true) // Договор подписан — Мебель
   notifyOnIncassations               Boolean  @default(true) // Инкассации наличных (журнал ДП)
   notifyOnSalesTotals                Boolean  @default(true) // Итоги продаж — каждый 1 млн ₽ за месяц (журнал ДП)
+  notifyOnInstallerAdvanceSheets     Boolean  @default(true) // Ведомости авансов монтажников (создание новой ведомости)
   updatedAt                          DateTime @updatedAt
 
   @@map("admin_notifications_block")
@@ -3735,9 +3738,10 @@ model InstallerAdvanceSheet {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  installer InstallerMaster             @relation(fields: [installerId], references: [id], onDelete: Restrict)
-  createdBy User?                       @relation("InstallerAdvanceSheetCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  items     InstallerAdvanceSheetItem[]
+  installer  InstallerMaster                  @relation(fields: [installerId], references: [id], onDelete: Restrict)
+  createdBy  User?                            @relation("InstallerAdvanceSheetCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  items      InstallerAdvanceSheetItem[]
+  bellEvents InstallerAdvanceSheetBellEvent[]
 
   @@index([installerId])
   @@index([createdAt])
@@ -4042,6 +4046,24 @@ model ManagerIncassationBellEvent {
   @@index([recipientId, createdAt])
   @@index([incassationId])
   @@map("manager_incassation_bell_events")
+}
+
+/// Событие «Создана ведомость авансов монтажника» для колокольчика админки.
+model InstallerAdvanceSheetBellEvent {
+  id          String   @id @default(cuid())
+  recipientId String
+  sheetId     String
+  title       String
+  message     String   @db.Text
+  href        String
+  createdAt   DateTime @default(now())
+
+  recipient User                  @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  sheet     InstallerAdvanceSheet @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, createdAt])
+  @@index([sheetId])
+  @@map("installer_advance_sheet_bell_events")
 }
 
 /// События «Итоги продаж — N млн ₽» для колокольчика (при пересечении рубежа за месяц).

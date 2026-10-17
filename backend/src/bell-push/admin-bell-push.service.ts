@@ -37,6 +37,7 @@ export type AdminBellPushEvent =
   | 'contract_concluded_furniture'
   | 'incassation'
   | 'sales_totals'
+  | 'installer_advance_sheet'
   | 'calendar_event'
   | 'messenger_message'
   | 'kanban_card';
@@ -127,6 +128,7 @@ export class AdminBellPushService {
       notifyOnContractConcludedFurniture?: boolean;
       notifyOnIncassations?: boolean;
       notifyOnSalesTotals?: boolean;
+      notifyOnInstallerAdvanceSheets?: boolean;
     },
     role: string,
   ) {
@@ -190,6 +192,8 @@ export class AdminBellPushService {
         return settings.notifyOnIncassations !== false;
       case 'sales_totals':
         return settings.notifyOnSalesTotals !== false;
+      case 'installer_advance_sheet':
+        return settings.notifyOnInstallerAdvanceSheets !== false;
       case 'calendar_event':
         return true;
       case 'messenger_message':

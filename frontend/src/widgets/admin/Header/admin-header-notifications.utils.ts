@@ -1,4 +1,7 @@
-import type { AdminNotificationsSettings } from '@/shared/api/admin-notifications';
+import type {
+  AdminBellInstallerAdvanceSheetNotification,
+  AdminNotificationsSettings,
+} from '@/shared/api/admin-notifications';
 import type { AdminReview } from '@/shared/api/admin-reviews';
 import type { AdminSupportConversation } from '@/shared/api/admin-support';
 import type { LeadSource, UnifiedLeadItem } from '@/shared/api/crm/admin-leads';
@@ -24,6 +27,7 @@ export type AdminBellNotificationType =
   | 'contractSigning'
   | 'contractConcluded'
   | 'incassations'
+  | 'installerAdvanceSheets'
   | 'salesTotals'
   | 'calendar'
   | 'messenger'
@@ -462,6 +466,18 @@ export function salesTotalsToBellNotificationItem(
   };
 }
 
+export function installerAdvanceSheetToBellNotificationItem(
+  item: AdminBellInstallerAdvanceSheetNotification
+): AdminBellNotificationItem {
+  return {
+    type: 'installerAdvanceSheets',
+    id: item.id,
+    date: item.occurredAt,
+    link: item.href || '/admin/installer-advance-sheets',
+    text: item.message ? `${item.title}: ${item.message}` : item.title,
+  };
+}
+
 export function calendarToBellNotificationItem(
   item: AdminBellCalendarNotification
 ): AdminBellNotificationItem {
@@ -640,6 +656,11 @@ export function isNotificationItemEnabled(
     return isBellTypeEnabled(item.type, settings);
   }
 
+  if (item.type === 'installerAdvanceSheets') {
+    // Рассылка всем с включённым чекбоксом — без требования доступа к разделу.
+    return isBellTypeEnabled(item.type, settings);
+  }
+
   if (item.type === 'calendar') {
     return hasAccess('admin.calendar') && isBellTypeEnabled(item.type, settings);
   }
@@ -715,6 +736,8 @@ export function isBellTypeEnabled(
       );
     case 'incassations':
       return settings.notifyOnIncassations !== false;
+    case 'installerAdvanceSheets':
+      return settings.notifyOnInstallerAdvanceSheets !== false;
     case 'salesTotals':
       return settings.notifyOnSalesTotals !== false;
     case 'calendar':
@@ -841,6 +864,12 @@ export function buildDesktopNotification(item: AdminBellNotificationItem): {
     case 'incassations':
       return {
         title: 'Инкассация',
+        body: item.text,
+        tag,
+      };
+    case 'installerAdvanceSheets':
+      return {
+        title: 'Ведомость авансов',
         body: item.text,
         tag,
       };

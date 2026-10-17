@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InstallerAdvanceSheetItemStatus, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../database/prisma.service';
+import { InstallerAdvanceSheetNotifyService } from './installer-advance-sheet-notify.service';
 import {
   computeInstallerAccrual,
   isProductLikeKind,
@@ -27,7 +28,10 @@ const MAX_ADVANCES_PER_PACKAGE = 300;
 
 @Injectable()
 export class InstallerAdvanceSheetsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notify: InstallerAdvanceSheetNotifyService,
+  ) {}
 
   async findAll(params?: {
     status?: 'PENDING' | 'QUESTION' | 'PAID';
@@ -217,6 +221,17 @@ export class InstallerAdvanceSheetsService {
       },
       include: SHEET_INCLUDE,
     });
+
+    this.notify.onCreated(
+      {
+        id: created.id,
+        number: created.number,
+        installerName: installer.fullName,
+        totalAmount: round2(created.items.reduce((sum, item) => sum + item.amount.toNumber(), 0)),
+        itemCount: created.items.length,
+      },
+      createdById,
+    );
 
     return serializeSummary(created);
   }

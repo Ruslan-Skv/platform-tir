@@ -55,6 +55,7 @@ export const NOTIFY_EVENT_KEYS = [
   'notifyOnContractConcludedFurniture',
   'notifyOnIncassations',
   'notifyOnSalesTotals',
+  'notifyOnInstallerAdvanceSheets',
 ] as const;
 
 export type NotifyEventKey = (typeof NOTIFY_EVENT_KEYS)[number];
@@ -131,6 +132,7 @@ export class AdminNotificationsService {
       notifyOnContractConcludedFurniture: dto.notifyOnContractConcludedFurniture,
       notifyOnIncassations: dto.notifyOnIncassations,
       notifyOnSalesTotals: dto.notifyOnSalesTotals,
+      notifyOnInstallerAdvanceSheets: dto.notifyOnInstallerAdvanceSheets,
     };
     const updateData = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
     updateData.deliveryOnly = false;
@@ -172,6 +174,7 @@ export class AdminNotificationsService {
       notifyOnContractConcludedFurniture: dto.notifyOnContractConcludedFurniture ?? true,
       notifyOnIncassations: dto.notifyOnIncassations ?? true,
       notifyOnSalesTotals: dto.notifyOnSalesTotals ?? true,
+      notifyOnInstallerAdvanceSheets: dto.notifyOnInstallerAdvanceSheets ?? true,
     };
     return this.prisma.userAdminNotificationOverride.upsert({
       where: { userId },
@@ -372,6 +375,7 @@ export class AdminNotificationsService {
       notifyOnContractConcludedFurniture: dto.notifyOnContractConcludedFurniture,
       notifyOnIncassations: dto.notifyOnIncassations,
       notifyOnSalesTotals: dto.notifyOnSalesTotals,
+      notifyOnInstallerAdvanceSheets: dto.notifyOnInstallerAdvanceSheets,
     };
     const updateData = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
     const createData = {
@@ -411,6 +415,7 @@ export class AdminNotificationsService {
       notifyOnContractConcludedFurniture: dto.notifyOnContractConcludedFurniture ?? true,
       notifyOnIncassations: dto.notifyOnIncassations ?? true,
       notifyOnSalesTotals: dto.notifyOnSalesTotals ?? true,
+      notifyOnInstallerAdvanceSheets: dto.notifyOnInstallerAdvanceSheets ?? true,
     };
     if (role !== null) {
       return this.prisma.adminNotificationsBlock.upsert({

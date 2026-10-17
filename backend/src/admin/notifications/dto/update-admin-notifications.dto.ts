@@ -194,6 +194,11 @@ export class UpdateAdminNotificationsDto {
   @IsBoolean()
   notifyOnSalesTotals?: boolean;
 
+  @ApiPropertyOptional({ description: 'Ведомости авансов монтажников (создание новой ведомости)' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnInstallerAdvanceSheets?: boolean;
+
   @ApiPropertyOptional({
     description: 'Роль для профиля настроек (null/default = для всех, ADMIN, MODERATOR и т.д.)',
   })

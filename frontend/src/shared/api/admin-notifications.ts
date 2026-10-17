@@ -43,6 +43,7 @@ export interface AdminNotificationsSettings {
   notifyOnContractConcludedFurniture: boolean;
   notifyOnIncassations: boolean;
   notifyOnSalesTotals: boolean;
+  notifyOnInstallerAdvanceSheets: boolean;
   /** События, разрешённые для роли супер-админом; false — событие роли недоступно. */
   allowedEvents?: Partial<Record<MyNotifyEventKey, boolean>>;
 }
@@ -95,6 +96,7 @@ const MY_NOTIFY_EVENT_KEYS = [
   'notifyOnContractConcludedFurniture',
   'notifyOnIncassations',
   'notifyOnSalesTotals',
+  'notifyOnInstallerAdvanceSheets',
 ] as const;
 
 export type MyNotifyEventKey = (typeof MY_NOTIFY_EVENT_KEYS)[number];
@@ -293,6 +295,7 @@ export async function updateAdminNotificationsSettingsByUser(
     notifyOnContractConcludedFurniture: data.notifyOnContractConcludedFurniture,
     notifyOnIncassations: data.notifyOnIncassations,
     notifyOnSalesTotals: data.notifyOnSalesTotals,
+    notifyOnInstallerAdvanceSheets: data.notifyOnInstallerAdvanceSheets,
   };
   const res = await apiFetch(`${API_URL}/admin/notifications/settings/by-user/${userId}`, {
     method: 'PATCH',
@@ -358,6 +361,7 @@ export async function updateAdminNotificationsSettings(
     notifyOnContractConcludedFurniture: data.notifyOnContractConcludedFurniture,
     notifyOnIncassations: data.notifyOnIncassations,
     notifyOnSalesTotals: data.notifyOnSalesTotals,
+    notifyOnInstallerAdvanceSheets: data.notifyOnInstallerAdvanceSheets,
   };
   const res = await apiFetch(`${API_URL}/admin/notifications/settings`, {
     method: 'PATCH',
@@ -686,6 +690,31 @@ export type AdminBellIncassationNotification = {
   href: string;
   occurredAt: string;
 };
+
+export type AdminBellInstallerAdvanceSheetNotification = {
+  id: string;
+  sheetId: string;
+  title: string;
+  message: string;
+  href: string;
+  occurredAt: string;
+};
+
+export async function getAdminBellInstallerAdvanceSheetNotifications(
+  limit = 20
+): Promise<AdminBellInstallerAdvanceSheetNotification[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  const res = await apiFetch(
+    `${API_URL}/admin/notifications/bell/installer-advance-sheets?${params}`,
+    {
+      headers: getAdminAuthHeaders(),
+    }
+  );
+  if (!res.ok)
+    throw new Error('Не удалось загрузить уведомления по ведомостям авансов монтажников');
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
 
 export async function getAdminBellIncassationNotifications(
   limit = 20

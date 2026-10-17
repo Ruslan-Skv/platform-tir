@@ -30,6 +30,7 @@ import {
   getAdminBellFurnitureScheduleNotifications,
   getAdminBellIncassationNotifications,
   getAdminBellInstallationScheduleNotifications,
+  getAdminBellInstallerAdvanceSheetNotifications,
   getAdminBellKanbanNotifications,
   getAdminBellMeasurementNotifications,
   getAdminBellMessengerNotifications,
@@ -50,6 +51,7 @@ import type {
   AdminBellFurnitureScheduleNotification,
   AdminBellIncassationNotification,
   AdminBellInstallationScheduleNotification,
+  AdminBellInstallerAdvanceSheetNotification,
   AdminBellKanbanNotification,
   AdminBellMeasurementNotification,
   AdminBellMessengerNotification,
@@ -109,6 +111,7 @@ import {
   furnitureScheduleToBellNotificationItem,
   incassationToBellNotificationItem,
   installationScheduleToBellNotificationItem,
+  installerAdvanceSheetToBellNotificationItem,
   isBellTypeEnabled,
   isNotificationItemEnabled,
   kanbanToBellNotificationItem,
@@ -205,6 +208,9 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
   const [incassationNotifications, setIncassationNotifications] = useState<
     AdminBellIncassationNotification[]
   >([]);
+  const [installerAdvanceSheetNotifications, setInstallerAdvanceSheetNotifications] = useState<
+    AdminBellInstallerAdvanceSheetNotification[]
+  >([]);
   const [salesTotalsNotifications, setSalesTotalsNotifications] = useState<
     AdminBellSalesTotalsNotification[]
   >([]);
@@ -244,6 +250,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
     furnitureSchedules: number;
     measurements: number;
     incassations: number;
+    installerAdvanceSheets: number;
     salesTotals: number;
     calendar: number;
     messenger: number;
@@ -418,6 +425,10 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         settings?.notifyOnIncassations !== false
           ? getAdminBellIncassationNotifications(20)
           : Promise.resolve([] as AdminBellIncassationNotification[]);
+      const loadInstallerAdvanceSheets =
+        settings?.notifyOnInstallerAdvanceSheets !== false
+          ? getAdminBellInstallerAdvanceSheetNotifications(20)
+          : Promise.resolve([] as AdminBellInstallerAdvanceSheetNotification[]);
       const loadSalesTotals =
         settings?.notifyOnSalesTotals !== false
           ? getAdminBellSalesTotalsNotifications(20)
@@ -465,6 +476,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         furnitureSchedulesResult,
         measurementsResult,
         incassationsResult,
+        installerAdvanceSheetsResult,
         salesTotalsResult,
         calendarResult,
         messengerResult,
@@ -493,6 +505,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         loadFurnitureSchedules,
         loadMeasurements,
         loadIncassations,
+        loadInstallerAdvanceSheets,
         loadSalesTotals,
         loadCalendar,
         loadMessenger,
@@ -539,6 +552,10 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         measurementsResult.status === 'fulfilled' ? (measurementsResult.value ?? []) : [];
       const newIncassations =
         incassationsResult.status === 'fulfilled' ? (incassationsResult.value ?? []) : [];
+      const newInstallerAdvanceSheets =
+        installerAdvanceSheetsResult.status === 'fulfilled'
+          ? (installerAdvanceSheetsResult.value ?? [])
+          : [];
       const newSalesTotals =
         salesTotalsResult.status === 'fulfilled' ? (salesTotalsResult.value ?? []) : [];
       const newCalendar = calendarResult.status === 'fulfilled' ? (calendarResult.value ?? []) : [];
@@ -564,6 +581,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         furnitureSchedules: newFurnitureSchedules.length,
         measurements: newMeasurements.length,
         incassations: newIncassations.length,
+        installerAdvanceSheets: newInstallerAdvanceSheets.length,
         salesTotals: newSalesTotals.length,
         calendar: newCalendar.length,
         messenger: newMessenger.length,
@@ -585,6 +603,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         newFurnitureSchedules.length +
         newMeasurements.length +
         newIncassations.length +
+        newInstallerAdvanceSheets.length +
         newSalesTotals.length +
         newCalendar.length +
         newMessenger.length +
@@ -604,6 +623,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
           prev.furnitureSchedules +
           prev.measurements +
           prev.incassations +
+          prev.installerAdvanceSheets +
           prev.salesTotals +
           prev.calendar +
           prev.messenger +
@@ -656,6 +676,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
             ...newFurnitureSchedules.map(furnitureScheduleToBellNotificationItem),
             ...newMeasurements.map(measurementToBellNotificationItem),
             ...newIncassations.map(incassationToBellNotificationItem),
+            ...newInstallerAdvanceSheets.map(installerAdvanceSheetToBellNotificationItem),
             ...newSalesTotals.map(salesTotalsToBellNotificationItem),
             ...newCalendar.map(calendarToBellNotificationItem),
             ...newMessenger.map(messengerToBellNotificationItem),
@@ -685,6 +706,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
       setFurnitureScheduleNotifications(newFurnitureSchedules);
       setMeasurementNotifications(newMeasurements);
       setIncassationNotifications(newIncassations);
+      setInstallerAdvanceSheetNotifications(newInstallerAdvanceSheets);
       setSalesTotalsNotifications(newSalesTotals);
       setCalendarNotifications(newCalendar);
       setMessengerNotifications(newMessenger);
@@ -870,6 +892,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
     ...furnitureScheduleNotifications.map(furnitureScheduleToBellNotificationItem),
     ...measurementNotifications.map(measurementToBellNotificationItem),
     ...incassationNotifications.map(incassationToBellNotificationItem),
+    ...installerAdvanceSheetNotifications.map(installerAdvanceSheetToBellNotificationItem),
     ...salesTotalsNotifications.map(salesTotalsToBellNotificationItem),
     ...calendarNotifications.map(calendarToBellNotificationItem),
     ...messengerNotifications.map(messengerToBellNotificationItem),

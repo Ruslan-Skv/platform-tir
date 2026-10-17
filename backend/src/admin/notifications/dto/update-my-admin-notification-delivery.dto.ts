@@ -187,4 +187,11 @@ export class UpdateMyAdminNotificationDeliveryDto {
   @IsOptional()
   @IsBoolean()
   notifyOnIncassations?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Личное переопределение: ведомости авансов монтажников',
+  })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnInstallerAdvanceSheets?: boolean;
 }
