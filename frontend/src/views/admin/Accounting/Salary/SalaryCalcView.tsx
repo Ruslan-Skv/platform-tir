@@ -1090,7 +1090,7 @@ function ContractsTable({ result }: { result: SalaryCalcResult }) {
           },
           {
             key: 'prepaidReachedAt',
-            title: 'Мин. предоплата',
+            title: 'Предоплата',
             sortable: true,
             render: (r) =>
               r.awaitingPrepaid ? (
@@ -1114,9 +1114,16 @@ function ContractsTable({ result }: { result: SalaryCalcResult }) {
           },
           {
             key: 'baseAmount',
-            title: 'Стоимость договора',
+            title: 'Стоимость',
             sortable: true,
-            render: (r) => <span className={dpStyles.amountCell}>{formatMoney(r.baseAmount)}</span>,
+            render: (r) => (
+              <span
+                className={dpStyles.amountCell}
+                title="Стоимость договора (без доп. соглашений)"
+              >
+                {formatMoney(r.baseAmount)}
+              </span>
+            ),
           },
           {
             key: 'paidAmount',
