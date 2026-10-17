@@ -367,6 +367,7 @@ function MySalaryBody({ result }: { result: MySalaryResult }) {
               {
                 key: 'roles',
                 title: 'Моя роль',
+                sortable: true,
                 render: (c) => (
                   <span className={styles.mutedCell}>{c.roles.join(' + ') || '—'}</span>
                 ),

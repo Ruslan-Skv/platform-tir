@@ -1070,6 +1070,7 @@ function ContractsTable({ result }: { result: SalaryCalcResult }) {
           {
             key: 'customerName',
             title: 'Заказчик',
+            sortable: true,
             render: (r) => (
               <span className={styles.noteCell}>
                 {!r.surveyorHandled ? (
@@ -1095,7 +1096,7 @@ function ContractsTable({ result }: { result: SalaryCalcResult }) {
             render: (r) =>
               r.awaitingPrepaid ? (
                 <span
-                  className={styles.mutedCell}
+                  className={`${styles.statusBadge} ${styles.prepaidWaitBadge}`}
                   title={`Требуется предоплата ${r.minPrepaidPercent}% — з/п по договору пока не считается`}
                 >
                   ждёт {r.minPrepaidPercent}%
@@ -1151,6 +1152,8 @@ function ContractsTable({ result }: { result: SalaryCalcResult }) {
           {
             key: 'extraBills',
             title: 'Доп. согл.',
+            sortable: true,
+            sortKey: 'extraBills.length',
             render: (r) =>
               r.extraBills.length === 0 ? (
                 <span className={dpStyles.muted}>—</span>
@@ -1168,6 +1171,8 @@ function ContractsTable({ result }: { result: SalaryCalcResult }) {
           {
             key: 'managerPercent',
             title: '% мен',
+            sortable: true,
+            sortKey: 'percents.manager',
             render: (r) => formatPercent(r.percents.manager),
           },
           {

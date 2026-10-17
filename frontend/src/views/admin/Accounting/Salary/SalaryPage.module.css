@@ -335,6 +335,12 @@
   color: var(--admin-error-text-strong, #b91c1c);
 }
 
+.prepaidWaitBadge {
+  background: var(--admin-warning-bg-soft, #fffbeb);
+  border: 1px solid var(--admin-warning-border, #fcd34d);
+  color: var(--admin-warning-text, #b45309);
+}
+
 .statusInactive {
   background: var(--admin-surface-muted, #f3f4f6);
   border: 1px solid var(--admin-border, #e5e7eb);
