@@ -200,6 +200,24 @@ export function useBankPage() {
   const [deleteTarget, setDeleteTarget] = useState<BankEntry | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  /** Модалка импорта банковской выписки и сообщение о результате импорта. */
+  const [importOpen, setImportOpen] = useState(false);
+  const [importNotice, setImportNotice] = useState<string | null>(null);
+
+  const openImportModal = () => {
+    if (!canEdit) return;
+    setImportNotice(null);
+    setImportOpen(true);
+  };
+
+  const handleImported = useCallback(
+    async (message: string) => {
+      setImportNotice(message);
+      await load();
+    },
+    [load]
+  );
+
   const openCreateModal = () => {
     if (!canEdit) return;
     setEditing(null);
@@ -312,6 +330,12 @@ export function useBankPage() {
     setDeleteTarget,
     deleting,
     handleDelete,
+    importOpen,
+    openImportModal,
+    setImportOpen,
+    importNotice,
+    setImportNotice,
+    handleImported,
     canEdit,
     canDelete,
   };

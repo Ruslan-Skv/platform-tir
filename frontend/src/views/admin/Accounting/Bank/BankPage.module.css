@@ -94,3 +94,122 @@
   background: var(--admin-surface-muted, #111827);
   border-color: var(--admin-border, #374151);
 }
+
+/* Модалка импорта выписки */
+.importFileRow {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-md, 12px);
+  flex-wrap: wrap;
+  margin: var(--admin-space-sm, 8px) 0;
+  font-size: var(--admin-font-size-sm, 14px);
+}
+
+.importStatus {
+  color: var(--admin-text-secondary, #4b5563);
+}
+
+.importTableWrap {
+  max-height: 46vh;
+  overflow: auto;
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-md, 8px);
+  margin: var(--admin-space-sm, 8px) 0;
+}
+
+.importTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--admin-font-size-sm, 14px);
+}
+
+.importTable th,
+.importTable td {
+  padding: 6px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--admin-border, #e5e7eb);
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+.importTable th {
+  position: sticky;
+  top: 0;
+  background: var(--admin-surface-soft, #f9fafb);
+  font-weight: 600;
+  z-index: 1;
+}
+
+.importCounterpartyCell {
+  max-width: 260px;
+  white-space: normal;
+}
+
+.importNotesSubline {
+  display: block;
+  font-size: 12px;
+  color: var(--admin-text-secondary, #6b7280);
+}
+
+.importTotalHint {
+  margin: var(--admin-space-xs, 4px) 0 0;
+  font-size: var(--admin-font-size-sm, 14px);
+  color: var(--admin-text-secondary, #4b5563);
+}
+
+.importTotalHint strong {
+  color: var(--admin-text-primary, #111827);
+  font-variant-numeric: tabular-nums;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .importTable th {
+  background: var(--admin-surface-muted, #111827);
+}
+
+/* Кнопка «Импорт выписки» в шапке раздела */
+.importOpenBtn {
+  padding: 8px 14px;
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-md, 8px);
+  background: var(--admin-surface, #ffffff);
+  color: var(--admin-text-primary, #111827);
+  font-size: var(--admin-font-size-sm, 14px);
+  cursor: pointer;
+}
+
+.importOpenBtn:hover:not(:disabled) {
+  background: var(--admin-surface-soft, #f9fafb);
+}
+
+.importOpenBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .importOpenBtn {
+  background: var(--admin-surface-muted, #111827);
+  border-color: var(--admin-border, #374151);
+}
+
+/* Сообщение о результате импорта */
+.importNotice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-md, 12px);
+  padding: var(--admin-space-sm, 8px) var(--admin-space-md, 12px);
+  margin-bottom: var(--admin-space-sm, 8px);
+  border: 1px solid #86efac;
+  border-radius: var(--admin-radius-md, 8px);
+  background: #f0fdf4;
+  color: #166534;
+  font-size: var(--admin-font-size-sm, 14px);
+}
+
+.importNotice button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: inherit;
+}

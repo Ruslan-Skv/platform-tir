@@ -171,3 +171,69 @@ export async function deleteBankEntry(id: string): Promise<{ deleted: boolean }>
   if (!res.ok) throw new Error(await readError(res));
   return res.json();
 }
+
+/** Строка выписки, распознанная на бэкенде (превью импорта). */
+export interface ParsedStatementEntry {
+  entryDate: string;
+  entryType: BankEntryType;
+  amount: number;
+  fee: number;
+  refund: number;
+  counterparty: string | null;
+  notes: string | null;
+  docNumber: string | null;
+  /** Мерчант эквайринга (Сбер) или номер терминала (Альфа). */
+  merchant: string | null;
+}
+
+export interface ParsedStatement {
+  /** Банк выписки — определяется автоматически при распознавании. */
+  bank: BankCode;
+  entries: ParsedStatementEntry[];
+  account: string | null;
+  period: string | null;
+}
+
+export type StatementImportEntryInput = {
+  entryDate: string;
+  entryType: BankEntryType;
+  amount: number;
+  fee?: number;
+  refund?: number;
+  counterparty?: string;
+  notes?: string;
+};
+
+function getAdminUploadHeaders(): HeadersInit {
+  // Для multipart/form-data Content-Type задаёт сам fetch — иначе ломается boundary.
+  if (typeof window === 'undefined') return {};
+  const token = localStorage.getItem('admin_token') || localStorage.getItem('user_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+/** Распознавание xlsx-выписки (Сбер или Альфа) — превью строк перед внесением. */
+export async function parseBankStatement(file: File): Promise<ParsedStatement> {
+  const form = new FormData();
+  form.append('file', file);
+  const res = await apiFetch(`${getApiBaseUrl()}/admin/bank-entries/import/parse`, {
+    method: 'POST',
+    headers: getAdminUploadHeaders(),
+    body: form,
+  });
+  if (!res.ok) throw new Error(await readError(res));
+  return res.json();
+}
+
+/** Внесение выбранных строк распознанной выписки (дубли пропускаются). */
+export async function applyBankStatement(
+  bank: BankCode,
+  entries: StatementImportEntryInput[]
+): Promise<{ created: number; skippedDuplicates: number }> {
+  const res = await apiFetch(`${getApiBaseUrl()}/admin/bank-entries/import/apply`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify({ bank, entries }),
+  });
+  if (!res.ok) throw new Error(await readError(res));
+  return res.json();
+}

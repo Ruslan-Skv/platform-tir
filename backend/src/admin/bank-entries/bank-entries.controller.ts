@@ -10,14 +10,21 @@ import {
   Post,
   Query,
   Req,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import type { RequestWithUser } from '../../common/types/request-with-user.types';
 import { BankEntriesService } from './bank-entries.service';
+import {
+  BankStatementImportService,
+  type ImportStatementEntryInput,
+} from './bank-statement-import.service';
 import { QueryBankEntriesDto } from './dto/query-bank-entries.dto';
 import { CreateBankEntryDto, UpdateBankEntryDto } from './dto/create-bank-entry.dto';
 
@@ -40,7 +47,10 @@ const BANK_SECTION_ROLES = [
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(...BANK_SECTION_ROLES)
 export class BankEntriesController {
-  constructor(private readonly bankEntries: BankEntriesService) {}
+  constructor(
+    private readonly bankEntries: BankEntriesService,
+    private readonly statementImport: BankStatementImportService,
+  ) {}
 
   /** Список поступлений банка за период с итогами по банкам. */
   @Get()
@@ -74,5 +84,26 @@ export class BankEntriesController {
   @Roles('SUPER_ADMIN')
   remove(@Param('id') id: string) {
     return this.bankEntries.remove(id);
+  }
+
+  /**
+   * Распознавание xlsx-выписки (Сбер или Альфа, банк определяется автоматически):
+   * возвращает строки для превью перед внесением.
+   */
+  @Post('import/parse')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 15 * 1024 * 1024 } }))
+  parseStatement(@UploadedFile() file: Express.Multer.File) {
+    return this.statementImport.parse(file);
+  }
+
+  /** Внесение выбранных строк распознанной выписки (дубли пропускаются). */
+  @Post('import/apply')
+  @HttpCode(HttpStatus.CREATED)
+  applyStatement(@Body() body: { bank?: unknown; entries?: unknown }, @Req() req: RequestWithUser) {
+    return this.statementImport.apply(
+      body?.bank === 'ALFA' ? 'ALFA' : 'SBER',
+      Array.isArray(body?.entries) ? (body.entries as ImportStatementEntryInput[]) : [],
+      req.user?.id,
+    );
   }
 }

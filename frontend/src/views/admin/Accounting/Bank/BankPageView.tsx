@@ -14,6 +14,7 @@ import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-worksp
 
 import { formatDateRu, formatMoneyRub } from '../accounting-invoices-page.utils';
 import { BankEntryModal } from './BankEntryModal';
+import { BankImportModal } from './BankImportModal';
 import styles from './BankPage.module.css';
 import { BankRulesInfoTip } from './BankRulesInfoTip';
 import {
@@ -122,6 +123,12 @@ export function BankPageView({ model }: BankPageViewProps) {
     setDeleteTarget,
     deleting,
     handleDelete,
+    importOpen,
+    openImportModal,
+    setImportOpen,
+    importNotice,
+    setImportNotice,
+    handleImported,
     canEdit,
     canDelete,
   } = model;
@@ -352,6 +359,20 @@ export function BankPageView({ model }: BankPageViewProps) {
           <button
             data-admin-mutation
             type="button"
+            className={styles.importOpenBtn}
+            disabled={loading || !canEdit}
+            onClick={openImportModal}
+            title={
+              canEdit
+                ? 'Загрузить xlsx-выписку Сбербанка или Альфа-Банка и заполнить поступления автоматически'
+                : 'Нет прав на внесение записей'
+            }
+          >
+            Импорт выписки
+          </button>
+          <button
+            data-admin-mutation
+            type="button"
             className={cdChrome.contractsListHeaderAddBtn}
             disabled={loading || !canEdit}
             onClick={openCreateModal}
@@ -375,6 +396,15 @@ export function BankPageView({ model }: BankPageViewProps) {
         <div className={dpStyles.pageMessage}>
           <span>{error}</span>
           <button type="button" onClick={() => setError(null)} aria-label="Закрыть">
+            ×
+          </button>
+        </div>
+      ) : null}
+
+      {importNotice ? (
+        <div className={styles.importNotice} role="status">
+          <span>{importNotice}</span>
+          <button type="button" onClick={() => setImportNotice(null)} aria-label="Закрыть">
             ×
           </button>
         </div>
@@ -631,6 +661,14 @@ export function BankPageView({ model }: BankPageViewProps) {
         saving={saving}
         onSubmit={handleSubmit}
       />
+
+      {canEdit ? (
+        <BankImportModal
+          isOpen={importOpen}
+          onClose={() => setImportOpen(false)}
+          onImported={(message) => void handleImported(message)}
+        />
+      ) : null}
 
       <ConfirmModal
         isOpen={deleteTarget != null}
