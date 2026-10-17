@@ -12,6 +12,7 @@ import {
   toDateIso,
   toNum,
 } from '../salary.constants';
+import { loadPaidAmounts, loadPrepaidReachedDates } from './salary-prepaid.helper';
 
 /**
  * Расчёт з/п за период — перенос логики Google-таблицы «Новая таблица 2025».
@@ -50,6 +51,27 @@ export class SalaryCalculationService {
       throw new BadRequestException('Начало периода не может быть позже конца');
     }
 
+    // Фильтр по сотруднику — договоры, где он менеджер, замерщик или ведущий
+    // специалист направления (как «Менеджер» в ДП).
+    const employeeFilter = input.employeeId
+      ? [
+          {
+            OR: [
+              { managerId: input.employeeId },
+              { surveyorId: input.employeeId },
+              { category: { leadSpecialistUserId: input.employeeId } },
+            ],
+          },
+        ]
+      : [];
+    const CONTRACT_INCLUDE = {
+      office: { select: { id: true, name: true } },
+      category: true,
+      manager: { select: { id: true, firstName: true, lastName: true } },
+      surveyor: { select: { id: true, firstName: true, lastName: true } },
+      extraBills: { orderBy: { date: 'asc' as const } },
+    } as const;
+
     const [globalSetting, categories, rateRules, employeeSalaries, contracts] = await Promise.all([
       this.prisma.salaryGlobalSetting.findUnique({
         where: { id: 'singleton' },
@@ -80,31 +102,59 @@ export class SalaryCalculationService {
                 { prepaidReachedAt: { gte: from, lte: to } },
               ],
             },
-            // Фильтр по сотруднику — договоры, где он менеджер, замерщик или ведущий
-            // специалист направления (как «Менеджер» в ДП).
-            ...(input.employeeId
-              ? [
-                  {
-                    OR: [
-                      { managerId: input.employeeId },
-                      { surveyorId: input.employeeId },
-                      { category: { leadSpecialistUserId: input.employeeId } },
-                    ],
-                  },
-                ]
-              : []),
+            ...employeeFilter,
           ],
         },
-        include: {
-          office: { select: { id: true, name: true } },
-          category: true,
-          manager: { select: { id: true, firstName: true, lastName: true } },
-          surveyor: { select: { id: true, firstName: true, lastName: true } },
-          extraBills: { orderBy: { date: 'asc' } },
-        },
+        include: CONTRACT_INCLUDE,
         orderBy: [{ signedAt: 'asc' }, { createdAt: 'asc' }],
       }),
     ]);
+
+    // Авто-договоры, набравшие минимальную предоплату в периоде: актуальная дата
+    // живёт в оплатах пакета, поэтому выборка по датам записи могла их не взять.
+    const paidInPeriod = await this.prisma.contractDocumentPackagePayment.findMany({
+      where: { paymentDate: { gte: from, lte: to } },
+      select: { packageId: true },
+      distinct: ['packageId'],
+    });
+    if (paidInPeriod.length > 0) {
+      const fetchedIds = contracts.map((c) => c.id);
+      const extra = await this.prisma.salaryContract.findMany({
+        where: {
+          id: { notIn: fetchedIds },
+          officeId: input.officeId,
+          sourcePackageId: { in: paidInPeriod.map((p) => p.packageId) },
+          AND: employeeFilter,
+        },
+        include: CONTRACT_INCLUDE,
+      });
+      contracts.push(
+        ...extra.sort(
+          (a, b) =>
+            (a.signedAt?.getTime() ?? 0) - (b.signedAt?.getTime() ?? 0) ||
+            a.createdAt.getTime() - b.createdAt.getTime(),
+        ),
+      );
+    }
+
+    // Дата набора минимальной предоплаты для авто-договоров считается «на лету»
+    // по первичным оплатам пакета («Оплаты и Управление договором») — не по
+    // сохранённому при синхронизации полю, чтобы расчёт не зависел от её
+    // актуальности. Ручные договоры используют дату из записи (задаётся вручную).
+    const categoryById = new Map(categories.map((c) => [c.id, c]));
+    const prepaidEntries = contracts
+      .filter((c) => c.sourcePackageId != null)
+      .map((c) => ({
+        packageId: c.sourcePackageId as string,
+        baseAmount: toNum(c.baseAmount),
+        minPrepaidPercent: toNum(categoryById.get(c.categoryId)?.minPrepaidPercent ?? 0),
+      }));
+    const prepaidByPackage = await loadPrepaidReachedDates(this.prisma, prepaidEntries);
+    // Сколько реально оплачено по авто-договорам (для колонки «Оплачено»).
+    const paidByPackage = await loadPaidAmounts(
+      this.prisma,
+      contracts.filter((c) => c.sourcePackageId != null).map((c) => c.sourcePackageId as string),
+    );
 
     const taxPercent = toNum(globalSetting?.taxPercent ?? 8);
     const netFactor = round2((1 - taxPercent / 100) * 10000) / 10000;
@@ -164,11 +214,14 @@ export class SalaryCalculationService {
       // никому («бронь» без старта исполнения). После внесения доля «при заключении»
       // приходится на месяц даты набора предоплаты (а не дату подписания).
       const minPrepaidPercent = toNum(category.minPrepaidPercent);
+      const prepaidReachedAt = contract.sourcePackageId
+        ? (prepaidByPackage.get(contract.sourcePackageId) ?? null)
+        : contract.prepaidReachedAt;
       const requiresPrepaid = minPrepaidPercent > 0;
-      const prepaidOk = !requiresPrepaid || contract.prepaidReachedAt !== null;
+      const prepaidOk = !requiresPrepaid || prepaidReachedAt !== null;
       const signDate =
-        requiresPrepaid && contract.prepaidReachedAt
-          ? laterOf(contract.signedAt, contract.prepaidReachedAt)
+        requiresPrepaid && prepaidReachedAt
+          ? laterOf(contract.signedAt, prepaidReachedAt)
           : contract.signedAt;
 
       const signedIn = prepaidOk && inPeriod(signDate);
@@ -221,7 +274,7 @@ export class SalaryCalculationService {
         signedAt: toDateIso(contract.signedAt),
         closedAt: toDateIso(contract.closedAt),
         /** Дата внесения минимальной предоплаты (старт расчёта з/п); null — не требуется/не внесена. */
-        prepaidReachedAt: toDateIso(contract.prepaidReachedAt),
+        prepaidReachedAt: toDateIso(prepaidReachedAt),
         /** Минимальная предоплата направления, % (0 — не требуется). */
         minPrepaidPercent,
         /** Минимальная предоплата требуется, но ещё не внесена — з/п не считается. */
@@ -236,6 +289,15 @@ export class SalaryCalculationService {
         managerHandled: contract.managerHandled,
         surveyorHandled: contract.surveyorHandled,
         baseAmount: base,
+        /** Оплачено деньгами по договору (null — ручная запись без пакета). */
+        paidAmount: contract.sourcePackageId
+          ? (paidByPackage.get(contract.sourcePackageId) ?? 0)
+          : null,
+        /** Оплачено, % от стоимости договора (null — нет данных/нулевая стоимость). */
+        paidPercent:
+          contract.sourcePackageId && base > 0
+            ? round2(((paidByPackage.get(contract.sourcePackageId) ?? 0) / base) * 100)
+            : null,
         extraBillsAmount: round2(extraBase),
         extraBills: extraBillsInPeriod.map((b) => ({
           date: toDateIso(b.date),

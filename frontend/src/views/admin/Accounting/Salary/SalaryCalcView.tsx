@@ -1119,6 +1119,29 @@ function ContractsTable({ result }: { result: SalaryCalcResult }) {
             render: (r) => <span className={dpStyles.amountCell}>{formatMoney(r.baseAmount)}</span>,
           },
           {
+            key: 'paidAmount',
+            title: 'Оплачено',
+            sortable: true,
+            render: (r) =>
+              r.paidAmount == null ? (
+                <span className={styles.mutedCell}>—</span>
+              ) : (
+                <span
+                  className={dpStyles.amountCell}
+                  title={
+                    r.paidPercent != null
+                      ? `Оплачено ${r.paidPercent}% от стоимости договора`
+                      : undefined
+                  }
+                >
+                  {formatMoney(r.paidAmount)}{' '}
+                  <span className={styles.mutedCell}>
+                    ({r.paidPercent != null ? `${r.paidPercent}%` : '—'})
+                  </span>
+                </span>
+              ),
+          },
+          {
             key: 'extraBills',
             title: 'Доп. согл.',
             render: (r) =>

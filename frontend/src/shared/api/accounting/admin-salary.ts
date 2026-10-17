@@ -185,6 +185,10 @@ export interface SalaryCalcRow {
   managerHandled: boolean;
   surveyorHandled: boolean;
   baseAmount: number;
+  /** Оплачено деньгами по договору; null — ручная запись без пакета-источника. */
+  paidAmount: number | null;
+  /** Оплачено, % от стоимости договора; null — нет данных. */
+  paidPercent: number | null;
   /** Дата внесения минимальной предоплаты; null — не требуется или ещё не внесена. */
   prepaidReachedAt: string | null;
   /** Минимальная предоплата направления, % (0 — не требуется). */

@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { PrismaService } from '../../../database/prisma.service';
 import { fromDateIso, round2, toNum } from '../salary.constants';
+import { loadPrepaidReachedDates } from './salary-prepaid.helper';
 
 /**
  * Синхронизация договоров расчёта з/п из раздела «Договоры» (contract-document-packages).
@@ -85,33 +86,6 @@ export class SalaryContractsSyncService {
 
   // --- Внутреннее ---
 
-  /**
-   * Дата внесения минимальной предоплаты по договору: первый день, когда сумма
-   * оплат пакета в журнале ДП (без возвратов и ручных записей) достигла
-   * minPrepaidPercent от стоимости договора. null — порог не задан (0%) или
-   * ещё не набран.
-   */
-  private async computePrepaidReachedAt(
-    packageId: string,
-    baseAmount: number,
-    minPrepaidPercent: number,
-  ): Promise<Date | null> {
-    if (minPrepaidPercent <= 0) return null;
-    const movements = await this.prisma.moneyMovement.findMany({
-      where: { packageId, deletedAt: null, paymentType: { notIn: ['OTHER'] } },
-      select: { paymentDate: true, amount: true, paymentType: true },
-      orderBy: { paymentDate: 'asc' },
-    });
-    const required = (baseAmount * minPrepaidPercent) / 100;
-    if (required <= 0) return null;
-    let cumulative = 0;
-    for (const m of movements) {
-      cumulative += m.paymentType === 'REFUND' ? -toNum(m.amount) : toNum(m.amount);
-      if (cumulative >= required) return m.paymentDate;
-    }
-    return null;
-  }
-
   private async buildContext() {
     const [categories, offices, existing] = await Promise.all([
       this.prisma.salaryCategory.findMany({
@@ -180,11 +154,10 @@ export class SalaryContractsSyncService {
     const extraBills = collectSignedAddenda(fd, discountRaw);
     const signedDay = isoDayOrNull(fd?.contractConcludedAt);
     const closedDay = isoDayOrNull(fd?.repairContractCloseActSignedAt);
-    const prepaidReachedAt = await this.computePrepaidReachedAt(
-      pkg.id,
-      baseAmount,
-      toNum(category.minPrepaidPercent),
-    );
+    const prepaidMap = await loadPrepaidReachedDates(this.prisma, [
+      { packageId: pkg.id, baseAmount, minPrepaidPercent: toNum(category.minPrepaidPercent) },
+    ]);
+    const prepaidReachedAt = prepaidMap.get(pkg.id) ?? null;
 
     const data = {
       officeId,
