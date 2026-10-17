@@ -82,6 +82,13 @@ export function SalarySettingsView({
         render: (c: SalaryCategory) => formatPercent(c.brigadierPercent),
       },
       {
+        key: 'minPrepaidPercent',
+        title: 'Мин. предоплата, %',
+        sortable: true,
+        render: (c: SalaryCategory) =>
+          c.minPrepaidPercent > 0 ? formatPercent(c.minPrepaidPercent) : '—',
+      },
+      {
         key: 'isActive',
         title: 'Активна',
         sortable: true,

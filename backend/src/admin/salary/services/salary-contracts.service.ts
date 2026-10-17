@@ -94,6 +94,7 @@ export class SalaryContractsService {
         number: dto.number.trim(),
         signedAt: dto.signedAt ? fromDateIso(dto.signedAt) : null,
         closedAt: dto.closedAt ? fromDateIso(dto.closedAt) : null,
+        prepaidReachedAt: dto.prepaidReachedAt ? fromDateIso(dto.prepaidReachedAt) : null,
         customerName: dto.customerName ?? null,
         managerId: dto.managerId ?? null,
         managerName: dto.managerName ?? null,
@@ -144,6 +145,9 @@ export class SalaryContractsService {
     if (dto.number !== undefined) data.number = dto.number.trim();
     if (dto.signedAt !== undefined) data.signedAt = dto.signedAt ? fromDateIso(dto.signedAt) : null;
     if (dto.closedAt !== undefined) data.closedAt = dto.closedAt ? fromDateIso(dto.closedAt) : null;
+    if (dto.prepaidReachedAt !== undefined) {
+      data.prepaidReachedAt = dto.prepaidReachedAt ? fromDateIso(dto.prepaidReachedAt) : null;
+    }
     if (dto.customerName !== undefined) data.customerName = dto.customerName ?? null;
     if (dto.managerId !== undefined) data.managerId = dto.managerId ?? null;
     if (dto.managerName !== undefined) data.managerName = dto.managerName ?? null;
@@ -205,6 +209,7 @@ export class SalaryContractsService {
       number: contract.number,
       signedAt: toDateIso(contract.signedAt),
       closedAt: toDateIso(contract.closedAt),
+      prepaidReachedAt: toDateIso(contract.prepaidReachedAt),
       customerName: contract.customerName,
       managerId: contract.managerId,
       managerName:

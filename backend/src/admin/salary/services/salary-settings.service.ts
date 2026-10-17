@@ -233,6 +233,7 @@ export class SalarySettingsService {
         managerPercent: dto.managerPercent ?? 3,
         surveyorPercent: dto.surveyorPercent ?? 0,
         brigadierPercent: dto.brigadierPercent ?? 0,
+        minPrepaidPercent: dto.minPrepaidPercent ?? 0,
         leadSpecialistUserId: await this.resolveUserId(dto.leadSpecialistUserId),
         isActive: dto.isActive ?? true,
         sortOrder: dto.sortOrder ?? 0,
@@ -251,6 +252,7 @@ export class SalarySettingsService {
     if (dto.managerPercent !== undefined) data.managerPercent = dto.managerPercent;
     if (dto.surveyorPercent !== undefined) data.surveyorPercent = dto.surveyorPercent;
     if (dto.brigadierPercent !== undefined) data.brigadierPercent = dto.brigadierPercent;
+    if (dto.minPrepaidPercent !== undefined) data.minPrepaidPercent = dto.minPrepaidPercent;
     if (dto.leadSpecialistUserId !== undefined) {
       data.leadSpecialistUserId = await this.resolveUserId(dto.leadSpecialistUserId);
     }
@@ -361,6 +363,7 @@ export class SalarySettingsService {
     managerPercent: Prisma.Decimal;
     surveyorPercent: Prisma.Decimal;
     brigadierPercent: Prisma.Decimal;
+    minPrepaidPercent: Prisma.Decimal;
     leadSpecialistUserId: string | null;
     leadSpecialist?: { id: string; firstName: string | null; lastName: string | null } | null;
     isActive: boolean;
@@ -384,6 +387,7 @@ export class SalarySettingsService {
       managerPercent: toNum(category.managerPercent),
       surveyorPercent: toNum(category.surveyorPercent),
       brigadierPercent: toNum(category.brigadierPercent),
+      minPrepaidPercent: toNum(category.minPrepaidPercent),
       leadSpecialistUserId: category.leadSpecialistUserId,
       leadSpecialistName: userFullName(category.leadSpecialist),
       isActive: category.isActive,

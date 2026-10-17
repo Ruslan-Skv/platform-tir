@@ -72,6 +72,13 @@ export class CreateSalaryCategoryDto {
   @Max(100)
   brigadierPercent?: number;
 
+  /** Минимальная предоплата по договору для начала расчёта з/п, % (0 — без ограничения) */
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  minPrepaidPercent?: number;
+
   /** Пользователь — ведущий специалист направления (получатель з/п ВС); '' / null — не назначен. */
   @IsOptional()
   @IsString()

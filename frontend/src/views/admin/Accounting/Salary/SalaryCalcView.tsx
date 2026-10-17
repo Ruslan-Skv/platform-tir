@@ -950,6 +950,26 @@ function PeopleTables({ result }: { result: SalaryCalcResult }) {
 /** Оклады за период — отдельным блоком на всю ширину. */
 function SalariesTable({ result }: { result: SalaryCalcResult }) {
   if ((result.salaries ?? []).length === 0) return null;
+  // Подсказка-расшифровка удержаний: дата · основание (минуты) · сумма.
+  const deductionTooltip = (
+    s: NonNullable<SalaryCalcResult['salaries']>[number],
+    kinds: Array<'LATE' | 'EARLY_LEAVE' | 'AUTO_CLOSE' | 'TRUANCY'>
+  ) => {
+    const lines = (s.deductions ?? [])
+      .filter((d) => kinds.includes(d.kind))
+      .map((d) => {
+        const label =
+          d.kind === 'LATE'
+            ? `опоздание ${d.minutes ?? '?'} мин`
+            : d.kind === 'EARLY_LEAVE'
+              ? `уход раньше на ${d.minutes ?? '?'} мин`
+              : d.kind === 'AUTO_CLOSE'
+                ? 'автозакрытие дня'
+                : 'прогул';
+        return `${formatDate(d.date)} — ${label} (−${formatMoneyShort(d.amount)})`;
+      });
+    return lines.length > 0 ? lines.join('\n') : undefined;
+  };
   return (
     <div className={styles.tableBlock}>
       <h2 className={styles.sectionTitle}>Оклады</h2>
@@ -981,7 +1001,7 @@ function SalariesTable({ result }: { result: SalaryCalcResult }) {
             title: 'Нарушений режима',
             sortable: true,
             render: (s) => (
-              <span className={styles.numCell}>
+              <span className={styles.numCell} title={deductionTooltip(s, ['LATE', 'EARLY_LEAVE'])}>
                 {s.violationsCount
                   ? `${s.violationsCount} (−${formatMoneyShort(s.penalty ?? 0)})`
                   : '—'}
@@ -993,7 +1013,7 @@ function SalariesTable({ result }: { result: SalaryCalcResult }) {
             title: 'Автозакрытий',
             sortable: true,
             render: (s) => (
-              <span className={styles.numCell}>
+              <span className={styles.numCell} title={deductionTooltip(s, ['AUTO_CLOSE'])}>
                 {s.autoCloseCount
                   ? `${s.autoCloseCount} (−${formatMoneyShort(s.autoClosePenalty ?? 0)})`
                   : '—'}
@@ -1005,7 +1025,7 @@ function SalariesTable({ result }: { result: SalaryCalcResult }) {
             title: 'Прогулов',
             sortable: true,
             render: (s) => (
-              <span className={styles.numCell}>
+              <span className={styles.numCell} title={deductionTooltip(s, ['TRUANCY'])}>
                 {s.truancyDays
                   ? `${s.truancyDays} (−${formatMoneyShort(s.truancyDeduction ?? 0)})`
                   : '—'}
@@ -1067,6 +1087,24 @@ function ContractsTable({ result }: { result: SalaryCalcResult }) {
             title: 'Заключён',
             sortable: true,
             render: (r) => formatDate(r.signedAt),
+          },
+          {
+            key: 'prepaidReachedAt',
+            title: 'Мин. предоплата',
+            sortable: true,
+            render: (r) =>
+              r.awaitingPrepaid ? (
+                <span
+                  className={styles.mutedCell}
+                  title={`Требуется предоплата ${r.minPrepaidPercent}% — з/п по договору пока не считается`}
+                >
+                  ждёт {r.minPrepaidPercent}%
+                </span>
+              ) : r.prepaidReachedAt ? (
+                formatDate(r.prepaidReachedAt)
+              ) : (
+                <span className={styles.mutedCell}>—</span>
+              ),
           },
           {
             key: 'closedAt',

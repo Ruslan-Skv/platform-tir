@@ -27,6 +27,7 @@ interface CategoryFormState {
   managerPercent: string;
   surveyorPercent: string;
   brigadierPercent: string;
+  minPrepaidPercent: string;
   sortOrder: string;
   isActive: boolean;
 }
@@ -40,6 +41,7 @@ const EMPTY_FORM: CategoryFormState = {
   managerPercent: '3',
   surveyorPercent: '3',
   brigadierPercent: '3',
+  minPrepaidPercent: '0',
   sortOrder: '100',
   isActive: true,
 };
@@ -68,6 +70,7 @@ export function SalaryCategoryModal({
         managerPercent: String(category.managerPercent),
         surveyorPercent: String(category.surveyorPercent),
         brigadierPercent: String(category.brigadierPercent),
+        minPrepaidPercent: String(category.minPrepaidPercent),
         sortOrder: String(category.sortOrder),
         isActive: category.isActive,
       });
@@ -94,6 +97,7 @@ export function SalaryCategoryModal({
       managerPercent: parseDecimal(form.managerPercent),
       surveyorPercent: parseDecimal(form.surveyorPercent),
       brigadierPercent: parseDecimal(form.brigadierPercent),
+      minPrepaidPercent: parseDecimal(form.minPrepaidPercent),
       sortOrder: parseDecimal(form.sortOrder),
     };
     if (Object.values(numeric).some((v) => v === null)) {
@@ -221,6 +225,19 @@ export function SalaryCategoryModal({
               inputMode="decimal"
               value={form.brigadierPercent}
               onChange={(e) => patch({ brigadierPercent: e.target.value })}
+              disabled={saving}
+            />
+          </div>
+
+          <div data-modal-form-group>
+            <label htmlFor="salary_category_min_prepaid">Мин. предоплата, %</label>
+            <input
+              id="salary_category_min_prepaid"
+              type="text"
+              inputMode="decimal"
+              placeholder="50"
+              value={form.minPrepaidPercent}
+              onChange={(e) => patch({ minPrepaidPercent: e.target.value })}
               disabled={saving}
             />
           </div>

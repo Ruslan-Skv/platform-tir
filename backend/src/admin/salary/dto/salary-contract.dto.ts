@@ -63,6 +63,11 @@ export class CreateSalaryContractDto {
   @IsDateString()
   closedAt?: string | null;
 
+  /** Дата внесения минимальной предоплаты (старт расчёта з/п); null — ещё не внесена */
+  @IsOptional()
+  @IsDateString()
+  prepaidReachedAt?: string | null;
+
   @IsOptional()
   @IsString()
   @MaxLength(200)

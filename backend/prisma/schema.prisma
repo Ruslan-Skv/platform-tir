@@ -4698,6 +4698,10 @@ model SalaryCategory {
   /// Процент бригадира по умолчанию, % (ремонтные направления: 8.5)
   brigadierPercent Decimal @default(0) @db.Decimal(5, 2)
 
+  /// Минимальная предоплата по договору для начала расчёта з/п, % от стоимости
+  /// (0 — з/п считается с даты заключения без ограничения по предоплате)
+  minPrepaidPercent Decimal @default(0) @db.Decimal(5, 2)
+
   /// Пользователь — ведущий специалист направления, получающий з/п ВС по нему
   leadSpecialistUserId String?
   leadSpecialist       User?   @relation("SalaryCategoryLeadSpecialist", fields: [leadSpecialistUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
@@ -4746,12 +4750,17 @@ model SalaryContract {
   categoryId String
 
   /// № договора
-  number       String
+  number           String
   /// Дата заключения (может отсутствовать — как в таблице: договор без даты заключения не даёт долю «при заключении»)
-  signedAt     DateTime? @db.Date
+  signedAt         DateTime? @db.Date
   /// Дата закрытия (пусто — договор не закрыт)
-  closedAt     DateTime? @db.Date
-  customerName String?
+  closedAt         DateTime? @db.Date
+  /// Дата внесения минимальной предоплаты (старт исполнения договора и расчёта з/п):
+  /// для авто-записей вычисляется из журнала ДП по накопленным оплатам пакета,
+  /// для ручных — задаётся вручную. Пусто — минимальная предоплата ещё не внесена
+  /// (или не задана в направлении).
+  prepaidReachedAt DateTime? @db.Date
+  customerName     String?
 
   /// Менеджер, ведший договор (для личной з/п)
   managerId    String?

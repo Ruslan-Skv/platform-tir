@@ -80,7 +80,8 @@ export class SalaryMyService {
 
     const managerAmount = manager?.amount ?? 0;
     const surveyorNetAmount = roundNet(surveyor?.amount ?? 0);
-    const salary = full.salaries?.find((s) => s.userId === userId)?.amount ?? 0;
+    const salaryRow = full.salaries?.find((s) => s.userId === userId) ?? null;
+    const salary = salaryRow?.amount ?? 0;
     const sumMine = (list: Array<{ userId: string; amount: number }> = []) =>
       round2(list.reduce((sum, b) => (b.userId === userId ? sum + b.amount : sum), 0));
     const bonus = sumMine(full.salesBonuses);
@@ -118,6 +119,8 @@ export class SalaryMyService {
         ),
       },
       contracts,
+      /** Расшифровка удержаний из оклада (когда и за что). */
+      deductions: salaryRow?.deductions ?? [],
     };
   }
 }

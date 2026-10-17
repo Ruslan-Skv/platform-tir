@@ -100,6 +100,8 @@ export interface SalaryCategory {
   managerPercent: number;
   surveyorPercent: number;
   brigadierPercent: number;
+  /** Минимальная предоплата по договору для начала расчёта з/п, % (0 — не требуется). */
+  minPrepaidPercent: number;
   /** Пользователь — ведущий специалист направления (получатель з/п ВС); null — не назначен. */
   leadSpecialistUserId: string | null;
   leadSpecialistName: string | null;
@@ -143,6 +145,8 @@ export interface SalaryContract {
   managerHandled: boolean;
   surveyorHandled: boolean;
   baseAmount: number;
+  /** Дата внесения минимальной предоплаты (старт расчёта з/п); null — не внесена/не требуется. */
+  prepaidReachedAt: string | null;
   managerPercentOverride: number | null;
   surveyorPercentOverride: number | null;
   vsPercentOverride: number | null;
@@ -181,6 +185,14 @@ export interface SalaryCalcRow {
   managerHandled: boolean;
   surveyorHandled: boolean;
   baseAmount: number;
+  /** Дата внесения минимальной предоплаты; null — не требуется или ещё не внесена. */
+  prepaidReachedAt: string | null;
+  /** Минимальная предоплата направления, % (0 — не требуется). */
+  minPrepaidPercent: number;
+  /** Минимальная предоплата требуется, но ещё не внесена — з/п по договору не считается. */
+  awaitingPrepaid: boolean;
+  /** Дата, к которой отнесена доля «при заключении» (с учётом сдвига на предоплату). */
+  signDate: string | null;
   extraBillsAmount: number;
   /** Доп. соглашения, вошедшие в расчёт (дата в периоде) */
   extraBills: Array<{ date: string; amount: number }>;
@@ -238,6 +250,8 @@ export interface SalaryCalcResult {
     autoClosePenalty?: number;
     truancyDays?: number;
     truancyDeduction?: number;
+    /** Расшифровка удержаний по событиям (дата, основание, минуты, сумма). */
+    deductions?: MySalaryDeduction[];
     amount: number;
   }>;
   /** Премии за места по итогам продаж за завершённые месяцы (журнал ДП). */
@@ -487,6 +501,8 @@ export interface SalaryContractPayload {
   surveyorPercentOverride: number | null;
   vsPercentOverride: number | null;
   brigadierPercentOverride: number | null;
+  /** Дата внесения минимальной предоплаты (старт расчёта з/п); null — не внесена/не требуется. */
+  prepaidReachedAt: string | null;
   source: string | null;
   note: string | null;
   extraBills: Array<{ amount: number; date: string; note: string | null }>;
@@ -599,6 +615,19 @@ export interface MySalaryResult {
     total: number;
   };
   contracts: MySalaryContract[];
+  /** Расшифровка удержаний из оклада: дата, основание, минуты, сумма. */
+  deductions?: MySalaryDeduction[];
+}
+
+/** Одно удержание из оклада (контроль режима, автозакрытия, прогулы). */
+export interface MySalaryDeduction {
+  /** Дата события (YYYY-MM-DD). */
+  date: string;
+  /** Опоздание / ранний уход / автозакрытие дня / прогул. */
+  kind: 'LATE' | 'EARLY_LEAVE' | 'AUTO_CLOSE' | 'TRUANCY';
+  /** На сколько минут (для опоздания и раннего ухода). */
+  minutes: number | null;
+  amount: number;
 }
 
 export function getMySalary(params: { dateFrom: string; dateTo: string }): Promise<MySalaryResult> {

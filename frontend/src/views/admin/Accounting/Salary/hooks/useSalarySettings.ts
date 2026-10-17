@@ -62,6 +62,8 @@ export interface SalaryCategoryInput {
   managerPercent: number;
   surveyorPercent: number;
   brigadierPercent: number;
+  /** Минимальная предоплата для начала расчёта з/п, % (0 — не требуется). */
+  minPrepaidPercent: number;
   isActive: boolean;
   sortOrder: number;
 }

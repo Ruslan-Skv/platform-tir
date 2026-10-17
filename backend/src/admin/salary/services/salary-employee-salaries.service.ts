@@ -11,6 +11,17 @@ type EmployeeSalaryRow = {
   user: { lastName: string | null; firstName: string | null };
 };
 
+/** Расшифровка одного удержания из оклада: за что, когда и на какую сумму. */
+export type SalaryDeduction = {
+  /** Дата события (YYYY-MM-DD). */
+  date: string;
+  /** Опоздание / ранний уход / автозакрытие дня / прогул. */
+  kind: 'LATE' | 'EARLY_LEAVE' | 'AUTO_CLOSE' | 'TRUANCY';
+  /** На сколько минут (для опоздания и раннего ухода, уже за вычетом льготных 10 минут). */
+  minutes: number | null;
+  amount: number;
+};
+
 /** Оклад сотрудника за период: начисление по дням и удержания за нарушения режима. */
 export type SalaryEmployeePayout = {
   userId: string;
@@ -23,6 +34,8 @@ export type SalaryEmployeePayout = {
   autoClosePenalty: number;
   truancyDays: number;
   truancyDeduction: number;
+  /** Расшифровка удержаний по событиям (дата, основание, сумма). */
+  deductions: SalaryDeduction[];
   amount: number;
 };
 
@@ -63,6 +76,10 @@ export class SalaryEmployeeSalariesService {
     // и согласованные заявки). Считается только по дням, вошедшим в начисление
     // оклада (не позже сегодняшнего дня).
     const workModePenalties = new Map<string, number>();
+    const workModeEvents = new Map<
+      string,
+      Array<{ date: string; kind: 'LATE' | 'EARLY_LEAVE'; minutes: number }>
+    >();
     if (input.workModeEnforced && employeeSalaries.length > 0) {
       const penaltyUntil = new Date(
         Math.min(Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate()), todayUtc),
@@ -73,11 +90,19 @@ export class SalaryEmployeeSalariesService {
           workDate: { gte: from, lte: penaltyUntil },
           OR: [{ lateMinutes: { gt: 0 } }, { earlyLeaveMinutes: { gt: 0 } }],
         },
-        select: { userId: true, lateMinutes: true, earlyLeaveMinutes: true },
+        select: { userId: true, workDate: true, lateMinutes: true, earlyLeaveMinutes: true },
       });
       for (const v of violations) {
+        const events = workModeEvents.get(v.userId) ?? [];
+        const date = toDateIso(v.workDate);
+        if (date) {
+          if (v.lateMinutes > 0) events.push({ date, kind: 'LATE', minutes: v.lateMinutes });
+          if (v.earlyLeaveMinutes > 0)
+            events.push({ date, kind: 'EARLY_LEAVE', minutes: v.earlyLeaveMinutes });
+        }
         const count = (v.lateMinutes > 0 ? 1 : 0) + (v.earlyLeaveMinutes > 0 ? 1 : 0);
         workModePenalties.set(v.userId, (workModePenalties.get(v.userId) ?? 0) + count);
+        workModeEvents.set(v.userId, events);
       }
     }
 
@@ -86,6 +111,7 @@ export class SalaryEmployeeSalariesService {
     // из настроек. Как и контроль режима, считается только по дням,
     // вошедшим в начисление оклада (не позже сегодняшнего дня).
     const autoCloseCounts = new Map<string, number>();
+    const autoCloseDates = new Map<string, string[]>();
     if (input.autoCloseEnforced && employeeSalaries.length > 0) {
       const penaltyUntil = new Date(
         Math.min(Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate()), todayUtc),
@@ -96,10 +122,14 @@ export class SalaryEmployeeSalariesService {
           workDate: { gte: from, lte: penaltyUntil },
           status: 'AUTO_CLOSED',
         },
-        select: { userId: true },
+        select: { userId: true, workDate: true },
       });
       for (const day of autoClosed) {
         autoCloseCounts.set(day.userId, (autoCloseCounts.get(day.userId) ?? 0) + 1);
+        const dates = autoCloseDates.get(day.userId) ?? [];
+        const iso = toDateIso(day.workDate);
+        if (iso) dates.push(iso);
+        autoCloseDates.set(day.userId, dates);
       }
     }
 
@@ -165,6 +195,29 @@ export class SalaryEmployeeSalariesService {
       const autoClosePenalty = round2(autoCloseCount * input.autoClosePenaltyRub);
       const truancyDays = truancyByUser.get(s.userId) ?? [];
       const truancyDeduction = round2(truancyDays.reduce((sum, d) => sum + daySalary(d), 0));
+      // Расшифровка удержаний по событиям — в хронологическом порядке.
+      const deductions: SalaryDeduction[] = [
+        ...(workModeEvents.get(s.userId) ?? []).map((e) => ({
+          date: e.date,
+          kind: e.kind,
+          minutes: e.minutes,
+          amount: round2(input.workModePenaltyRub),
+        })),
+        ...(autoCloseDates.get(s.userId) ?? []).map((date) => ({
+          date,
+          kind: 'AUTO_CLOSE' as const,
+          minutes: null,
+          amount: round2(input.autoClosePenaltyRub),
+        })),
+        ...truancyDays.map((d) => ({
+          date: toDateIso(d) ?? '',
+          kind: 'TRUANCY' as const,
+          minutes: null,
+          amount: round2(daySalary(d)),
+        })),
+      ]
+        .filter((d) => d.date !== '')
+        .sort((a, b) => a.date.localeCompare(b.date));
       return {
         userId: s.userId,
         userName: [s.user.lastName, s.user.firstName].filter(Boolean).join(' ').trim() || null,
@@ -176,6 +229,7 @@ export class SalaryEmployeeSalariesService {
         autoClosePenalty,
         truancyDays: truancyDays.length,
         truancyDeduction,
+        deductions,
         amount: round2(Math.max(0, amount - penalty - autoClosePenalty - truancyDeduction)),
       };
     });

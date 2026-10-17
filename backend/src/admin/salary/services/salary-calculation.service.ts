@@ -75,6 +75,9 @@ export class SalaryCalculationService {
                 { signedAt: { gte: from, lte: to } },
                 { closedAt: { gte: from, lte: to } },
                 { extraBills: { some: { date: { gte: from, lte: to } } } },
+                // Договор, заключённый раньше, но набравший минимальную предоплату
+                // в периоде — з/п стартует с этой даты.
+                { prepaidReachedAt: { gte: from, lte: to } },
               ],
             },
             // Фильтр по сотруднику — договоры, где он менеджер, замерщик или ведущий
@@ -157,12 +160,25 @@ export class SalaryCalculationService {
       const splitClose = toNum(category.splitClose);
       const base = toNum(contract.baseAmount);
 
-      const signedIn = inPeriod(contract.signedAt);
-      const closedIn = inPeriod(contract.closedAt);
+      // Минимальная предоплата: пока она не внесена, з/п по договору не считается
+      // никому («бронь» без старта исполнения). После внесения доля «при заключении»
+      // приходится на месяц даты набора предоплаты (а не дату подписания).
+      const minPrepaidPercent = toNum(category.minPrepaidPercent);
+      const requiresPrepaid = minPrepaidPercent > 0;
+      const prepaidOk = !requiresPrepaid || contract.prepaidReachedAt !== null;
+      const signDate =
+        requiresPrepaid && contract.prepaidReachedAt
+          ? laterOf(contract.signedAt, contract.prepaidReachedAt)
+          : contract.signedAt;
+
+      const signedIn = prepaidOk && inPeriod(signDate);
+      const closedIn = prepaidOk && inPeriod(contract.closedAt);
 
       const signPart = signedIn ? base * (managerPercent / 100) * splitSign : 0;
       const closePart = closedIn ? base * (managerPercent / 100) * splitClose : 0;
-      const extraBillsInPeriod = contract.extraBills.filter((b) => inPeriod(b.date));
+      const extraBillsInPeriod = prepaidOk
+        ? contract.extraBills.filter((b) => inPeriod(b.date))
+        : [];
       const extraBase = extraBillsInPeriod.reduce((sum, b) => sum + toNum(b.amount), 0);
       const extraPart = extraBase * (managerPercent / 100);
 
@@ -204,6 +220,14 @@ export class SalaryCalculationService {
         number: contract.number,
         signedAt: toDateIso(contract.signedAt),
         closedAt: toDateIso(contract.closedAt),
+        /** Дата внесения минимальной предоплаты (старт расчёта з/п); null — не требуется/не внесена. */
+        prepaidReachedAt: toDateIso(contract.prepaidReachedAt),
+        /** Минимальная предоплата направления, % (0 — не требуется). */
+        minPrepaidPercent,
+        /** Минимальная предоплата требуется, но ещё не внесена — з/п не считается. */
+        awaitingPrepaid: requiresPrepaid && !prepaidOk,
+        /** Дата, к которой отнесена доля «при заключении» (с учётом сдвига на предоплату). */
+        signDate: toDateIso(signDate),
         customerName: contract.customerName,
         managerId: contract.managerId,
         managerName,
@@ -525,4 +549,11 @@ export class SalaryCalculationService {
 /** Полная стоимость договора с учётом всех доп. соглашений (для справки). */
 function contractSum(contract: { extraBills: Array<{ amount: Prisma.Decimal }> }): number {
   return contract.extraBills.reduce((s, b) => s + toNum(b.amount), 0);
+}
+
+/** Поздняя из двух дат (null-компоненты игнорируются). */
+function laterOf(a: Date | null, b: Date | null): Date | null {
+  if (!a) return b;
+  if (!b) return a;
+  return a.getTime() >= b.getTime() ? a : b;
 }

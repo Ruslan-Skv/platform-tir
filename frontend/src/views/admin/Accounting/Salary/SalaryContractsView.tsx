@@ -137,6 +137,17 @@ export function SalaryContractsView({
         render: (c: SalaryContract) => formatDate(c.signedAt),
       },
       {
+        key: 'prepaidReachedAt',
+        title: 'Мин. предоплата',
+        sortable: true,
+        render: (c: SalaryContract) =>
+          c.prepaidReachedAt ? (
+            formatDate(c.prepaidReachedAt)
+          ) : (
+            <span className={styles.mutedCell}>—</span>
+          ),
+      },
+      {
         key: 'closedAt',
         title: 'Закрыт',
         sortable: true,

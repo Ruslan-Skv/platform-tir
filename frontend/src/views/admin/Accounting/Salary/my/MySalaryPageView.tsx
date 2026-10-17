@@ -173,6 +173,14 @@ export function MySalaryPageView({ model }: Props) {
   );
 }
 
+/** Названия оснований удержаний из оклада. */
+const DEDUCTION_KIND_LABELS: Record<string, string> = {
+  LATE: 'Опоздание',
+  EARLY_LEAVE: 'Уход раньше графика',
+  AUTO_CLOSE: 'Автозакрытие рабочего дня',
+  TRUANCY: 'Прогул',
+};
+
 function MySalaryBody({ result }: { result: MySalaryResult }) {
   const p = result.payouts;
   const roles: ReactNode[] = [];
@@ -270,6 +278,51 @@ function MySalaryBody({ result }: { result: MySalaryResult }) {
         </div>
         {roles}
       </div>
+
+      {(result.deductions?.length ?? 0) > 0 ? (
+        <div className={styles.tableBlock}>
+          <h2 className={styles.sectionTitle}>Удержания из оклада ({result.deductions!.length})</h2>
+          <DataTable
+            data={result.deductions!}
+            columns={[
+              {
+                key: 'date',
+                title: 'Дата',
+                sortable: true,
+                render: (d) => formatDate(d.date),
+              },
+              {
+                key: 'kind',
+                title: 'Основание',
+                sortable: true,
+                render: (d) => DEDUCTION_KIND_LABELS[d.kind] ?? d.kind,
+              },
+              {
+                key: 'minutes',
+                title: 'На сколько',
+                render: (d) =>
+                  d.minutes != null ? (
+                    `${d.minutes} мин`
+                  ) : d.kind === 'AUTO_CLOSE' ? (
+                    <span className={styles.mutedCell}>день не закрыт вовремя</span>
+                  ) : (
+                    <span className={styles.mutedCell}>рабочий день</span>
+                  ),
+              },
+              {
+                key: 'amount',
+                title: 'Удержание',
+                sortable: true,
+                render: (d) => (
+                  <span className={dpStyles.amountCell}>−{formatMoney(d.amount)}</span>
+                ),
+              },
+            ]}
+            keyExtractor={(d) => `${d.date}|${d.kind}|${d.amount}`}
+            emptyMessage="Удержаний нет"
+          />
+        </div>
+      ) : null}
 
       {result.contracts.length === 0 ? (
         <div className={styles.hintBlock}>

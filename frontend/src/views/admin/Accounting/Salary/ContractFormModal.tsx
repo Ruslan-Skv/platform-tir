@@ -34,6 +34,7 @@ interface FormState {
   number: string;
   signedAt: string;
   closedAt: string;
+  prepaidReachedAt: string;
   customerName: string;
   managerId: string;
   surveyorId: string;
@@ -52,6 +53,7 @@ const EMPTY_FORM: FormState = {
   number: '',
   signedAt: '',
   closedAt: '',
+  prepaidReachedAt: '',
   customerName: '',
   managerId: '',
   surveyorId: '',
@@ -92,6 +94,7 @@ export function ContractFormModal({
         number: contract.number,
         signedAt: contract.signedAt,
         closedAt: contract.closedAt ?? '',
+        prepaidReachedAt: contract.prepaidReachedAt ?? '',
         customerName: contract.customerName ?? '',
         managerId: contract.managerId ?? '',
         surveyorId: contract.surveyorId ?? '',
@@ -155,6 +158,7 @@ export function ContractFormModal({
       number: form.number.trim(),
       signedAt: form.signedAt || null,
       closedAt: form.closedAt || null,
+      prepaidReachedAt: form.prepaidReachedAt || null,
       customerName: form.customerName.trim() || null,
       managerId: form.managerId || null,
       // Свободные имена и источник в форме больше не редактируются —
@@ -274,6 +278,22 @@ export function ContractFormModal({
               value={form.closedAt}
               onChange={(e) => patch({ closedAt: e.target.value })}
               disabled={saving}
+            />
+          </div>
+
+          <div data-modal-form-group>
+            <label htmlFor="salary_contract_prepaid">Дата мин. предоплаты</label>
+            <input
+              id="salary_contract_prepaid"
+              type="date"
+              value={form.prepaidReachedAt}
+              onChange={(e) => patch({ prepaidReachedAt: e.target.value })}
+              disabled={saving}
+              title={
+                selectedCategory && selectedCategory.minPrepaidPercent > 0
+                  ? `Дата внесения минимальной предоплаты (${selectedCategory.minPrepaidPercent}% от стоимости) — с неё стартует расчёт з/п. Для авто-записей вычисляется синхронизацией по журналу ДП.`
+                  : 'У направления не задана минимальная предоплата — дата не используется'
+              }
             />
           </div>
 
