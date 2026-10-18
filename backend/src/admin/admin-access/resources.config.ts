@@ -57,6 +57,11 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     path: '/admin/crm/repair-schedules/my',
   },
   {
+    id: 'admin.crm.odpzh-schedules',
+    label: 'План-график ОДПЖ',
+    path: '/admin/crm/odpzh-schedules',
+  },
+  {
     id: 'admin.crm.furniture-schedules',
     label: 'План-график мебели',
     path: '/admin/crm/furniture-schedules',

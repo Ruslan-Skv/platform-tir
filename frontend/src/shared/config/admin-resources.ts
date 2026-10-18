@@ -37,7 +37,7 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
   { id: 'admin.crm.installers', label: 'Мастера (монтажники)', path: '/admin/crm/installers' },
   {
     id: 'admin.crm.installation-schedules',
-    label: 'Графики монтажей',
+    label: 'График монтажей ОДПЖ',
     path: '/admin/crm/installation-schedules',
   },
   {
@@ -54,6 +54,11 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     id: 'admin.crm.repair-schedules.my',
     label: 'Мои ремонты',
     path: '/admin/crm/repair-schedules/my',
+  },
+  {
+    id: 'admin.crm.odpzh-schedules',
+    label: 'План-график ОДПЖ',
+    path: '/admin/crm/odpzh-schedules',
   },
   {
     id: 'admin.crm.furniture-schedules',

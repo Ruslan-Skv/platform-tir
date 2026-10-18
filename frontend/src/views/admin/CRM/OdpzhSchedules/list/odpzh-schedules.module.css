@@ -1,0 +1,140 @@
+.message {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-md);
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
+  border-radius: var(--admin-radius-md, 8px);
+  margin-bottom: var(--admin-space-2xl);
+  font-size: var(--admin-font-size-base);
+}
+
+.message button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
+  opacity: 0.75;
+}
+
+.messageerror {
+  background: var(--admin-error-bg);
+  color: var(--admin-error-text);
+}
+
+.tableWrap {
+  margin-top: var(--admin-space-lg);
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--admin-font-size-sm, 14px);
+}
+
+.table th,
+.table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--admin-border-color, #e5e7eb);
+  text-align: left;
+  vertical-align: top;
+}
+
+.table th {
+  font-weight: 600;
+  color: var(--admin-text-muted, #6b7280);
+  white-space: nowrap;
+}
+
+.table td.nowrap {
+  white-space: nowrap;
+}
+
+.nearestDate {
+  font-weight: 600;
+}
+
+.nearestDateSoon {
+  color: var(--admin-warning-text, #b45309);
+}
+
+.nearestDateToday {
+  color: var(--admin-error-text, #dc2626);
+}
+
+.sum {
+  white-space: nowrap;
+}
+
+.empty {
+  padding: var(--admin-space-2xl);
+  text-align: center;
+  color: var(--admin-text-muted, #6b7280);
+}
+
+.viewModeRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  margin: var(--admin-space-sm) 0 var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  overflow: hidden;
+  background: var(--admin-surface);
+}
+
+.viewModeBtn {
+  margin: 0;
+  padding: 0.35rem 0.85rem;
+  border: 0;
+  background: transparent;
+  color: var(--admin-text-muted);
+  font: inherit;
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.viewModeBtn + .viewModeBtn {
+  border-left: 1px solid var(--admin-border);
+}
+
+/* Only real hover devices — sticky :hover on touch overrides active otherwise */
+@media (hover: hover) and (pointer: fine) {
+  .viewModeBtn:hover {
+    color: var(--admin-text-primary);
+    background: var(--admin-surface-muted);
+  }
+}
+
+.viewModeBtn.viewModeBtnActive,
+.viewModeBtn.viewModeBtnActive:hover {
+  color: var(--admin-text-primary);
+  background: var(--admin-accent-soft, #eff6ff);
+}
+
+.statusSectionRow td {
+  background: var(--admin-surface-soft, #f8fafc);
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--admin-text-secondary);
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.statusSectionRow.statusSectionRowNEW td {
+  color: #7c3aed;
+}
+
+.statusSectionRow.statusSectionRowIN_PROGRESS td {
+  color: var(--admin-info, #2563eb);
+}
+
+.statusSectionRow.statusSectionRowCLOSED td {
+  color: var(--admin-success-deep, #15803d);
+}

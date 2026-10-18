@@ -187,7 +187,7 @@ const baseNavItems: NavItem[] = [
     resourceId: 'admin.crm.installers',
   },
   {
-    label: 'Графики монтажей',
+    label: 'График монтажей ОДПЖ',
     href: '/admin/crm/installation-schedules',
     icon: '📅',
     resourceId: 'admin.crm.installation-schedules',
@@ -209,6 +209,12 @@ const baseNavItems: NavItem[] = [
     href: '/admin/crm/repair-schedules/my',
     icon: '🔧',
     resourceId: 'admin.crm.repair-schedules.my',
+  },
+  {
+    label: 'План-график ОДПЖ',
+    href: '/admin/crm/odpzh-schedules',
+    icon: '🪟',
+    resourceId: 'admin.crm.odpzh-schedules',
   },
   {
     label: 'План-график мебели',

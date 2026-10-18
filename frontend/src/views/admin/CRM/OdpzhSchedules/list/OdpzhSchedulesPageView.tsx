@@ -1,0 +1,269 @@
+'use client';
+
+import { Fragment, useMemo } from 'react';
+
+import type { OdpzhScheduleStatus } from '@/shared/api/crm/admin-odpzh-schedules';
+import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
+import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
+import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
+import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
+
+import { OdpzhSchedulesGanttTimeline } from './OdpzhSchedulesGanttTimeline';
+import type { OdpzhSchedulesPageModel } from './hooks/useOdpzhSchedulesPage';
+import styles from './odpzh-schedules.module.css';
+
+const STATUS_TABS: Array<{ key: OdpzhSchedulesPageModel['statusFilter']; label: string }> = [
+  { key: 'ALL', label: 'Все' },
+  { key: 'NEW', label: 'Новые договора' },
+  { key: 'IN_PROGRESS', label: 'В работе' },
+  { key: 'CLOSED', label: 'Закрытые' },
+];
+
+const STATUS_BADGES: Record<OdpzhScheduleStatus, string> = {
+  NEW: 'Новый',
+  IN_PROGRESS: 'В работе',
+  CLOSED: 'Закрыт',
+};
+
+/** Порядок секций списка при фильтре «Все». */
+const STATUS_SECTIONS: Array<{ status: OdpzhScheduleStatus; label: string }> = [
+  { status: 'NEW', label: 'Новые договора' },
+  { status: 'IN_PROGRESS', label: 'В работе' },
+  { status: 'CLOSED', label: 'Закрытые' },
+];
+
+export const ODPZH_DIRECTION_LABELS: Record<string, string> = {
+  WINDOWS: 'Окна',
+  DOORS: 'Двери',
+  CEILINGS: 'Потолки',
+  BLINDS: 'Жалюзи',
+};
+
+const DIRECTION_FILTERS: Array<{ key: OdpzhSchedulesPageModel['directionFilter']; label: string }> =
+  [
+    { key: 'ALL', label: 'Все' },
+    { key: 'WINDOWS', label: 'Окна' },
+    { key: 'DOORS', label: 'Двери' },
+    { key: 'CEILINGS', label: 'Потолки' },
+    { key: 'BLINDS', label: 'Жалюзи' },
+  ];
+
+function chipClass(active: boolean): string {
+  return `${cdHub.contractsListChip}${active ? ` ${cdHub.contractsListChipActive}` : ''}`;
+}
+
+function formatDate(iso: string | null): string {
+  if (!iso) return '—';
+  const [y, m, d] = iso.slice(0, 10).split('-');
+  return `${d}.${m}.${y}`;
+}
+
+function formatSum(sum: number | null): string {
+  if (sum == null) return '—';
+  return `${sum.toLocaleString('ru-RU')} ₽`;
+}
+
+function nearestDateClass(iso: string | null): string {
+  if (!iso) return styles.nearestDate;
+  const today = new Date().toISOString().slice(0, 10);
+  if (iso <= today) return `${styles.nearestDate} ${styles.nearestDateToday}`;
+  if (iso <= new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)) {
+    return `${styles.nearestDate} ${styles.nearestDateSoon}`;
+  }
+  return styles.nearestDate;
+}
+
+export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageModel }) {
+  const {
+    statusFilter,
+    setStatusFilter,
+    viewMode,
+    setViewMode,
+    directionFilter,
+    setDirectionFilter,
+    search,
+    setSearch,
+    items,
+    loading,
+    message,
+    setMessage,
+    statusCounts,
+    refresh,
+  } = model;
+
+  const countTitle = `${items.length} в выборке`;
+
+  /** При фильтре «Все» — секции по статусам; иначе один плоский список. */
+  const sections = useMemo(() => {
+    if (statusFilter !== 'ALL') {
+      return [{ id: statusFilter, label: null as string | null, items }];
+    }
+    return STATUS_SECTIONS.map(({ status, label }) => ({
+      id: status,
+      label,
+      items: items.filter((item) => item.status === status),
+    })).filter((section) => section.items.length > 0);
+  }, [items, statusFilter]);
+
+  return (
+    <div className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdHub.contractsListPage}`}>
+      <div className={cdHub.editorHeader}>
+        <div className={cdHub.contractsListHeaderLeft}>
+          <div className={cdHub.contractsHeaderTitleRow}>
+            <div className={cdHub.contractsListHeaderTitleGroup}>
+              <h1 className={cdHub.title}>План-график ОДПЖ</h1>
+            </div>
+            <span className={cdHub.contractsListCount} title={countTitle}>
+              <span className={cdHub.contractsListCountDesktop}>{countTitle}</span>
+              <span className={cdHub.contractsListCountMobile}>{items.length}</span>
+            </span>
+          </div>
+        </div>
+        <div className={cdHub.contractsHeaderIconActionsDesktop}>
+          <AdminListRefreshButton
+            disabled={loading}
+            busy={loading}
+            title="Обновить"
+            aria-label="Обновить"
+            onClick={() => void refresh()}
+          />
+        </div>
+      </div>
+
+      <div className={styles.viewModeRow} role="group" aria-label="Режим отображения">
+        <button
+          type="button"
+          className={`${styles.viewModeBtn}${viewMode === 'list' ? ` ${styles.viewModeBtnActive}` : ''}`}
+          onClick={() => setViewMode('list')}
+        >
+          Список
+        </button>
+        <button
+          type="button"
+          className={`${styles.viewModeBtn}${viewMode === 'timeline' ? ` ${styles.viewModeBtnActive}` : ''}`}
+          onClick={() => setViewMode('timeline')}
+        >
+          Таймлайн
+        </button>
+      </div>
+
+      {message ? (
+        <div className={`${styles.message} ${styles.messageerror}`}>
+          <span>{message}</span>
+          <button type="button" onClick={() => setMessage(null)} aria-label="Закрыть">
+            ×
+          </button>
+        </div>
+      ) : null}
+
+      <div className={cdHub.contractsListFiltersPanel}>
+        <div className={cdHub.contractsListFiltersStack}>
+          <div className={cdHub.contractsListChipRow} role="group" aria-label="Статус">
+            <span className={cdHub.contractsListChipRowLabel}>Статус</span>
+            {STATUS_TABS.map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                disabled={loading || (viewMode === 'timeline' && key === 'CLOSED')}
+                className={chipClass(statusFilter === key)}
+                onClick={() => setStatusFilter(key)}
+              >
+                {label} ({statusCounts[key]})
+              </button>
+            ))}
+          </div>
+          <div className={cdHub.contractsListChipRow} role="group" aria-label="Направление">
+            <span className={cdHub.contractsListChipRowLabel}>Направление</span>
+            {DIRECTION_FILTERS.map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                disabled={loading}
+                className={chipClass(directionFilter === key)}
+                onClick={() => setDirectionFilter(key)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className={cdHub.contractsListFilters}>
+            <input
+              type="search"
+              className={
+                search.trim()
+                  ? `${cdHub.contractsListSearchInput} ${cdHub.contractsListFilterActive}`
+                  : cdHub.contractsListSearchInput
+              }
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              disabled={loading}
+              placeholder="Поиск по номеру договора, ФИО заказчика, адресу..."
+              aria-label="Поиск по номеру договора, ФИО заказчика, адресу"
+            />
+          </div>
+        </div>
+      </div>
+
+      {viewMode === 'timeline' ? (
+        <OdpzhSchedulesGanttTimeline items={items} loading={loading} />
+      ) : (
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>№ договора</th>
+                <th>Направление</th>
+                <th>Клиент</th>
+                <th>Адрес</th>
+                <th>Сумма</th>
+                <th>Монтажники</th>
+                <th>Ближайший монтаж</th>
+                <th>Кол-во монтажей</th>
+                <th>Статус</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sections.map((section) => (
+                <Fragment key={section.id}>
+                  {section.label ? (
+                    <tr
+                      className={`${styles.statusSectionRow} ${styles[`statusSectionRow${section.id}`]}`}
+                    >
+                      <td colSpan={9}>
+                        {section.label} ({section.items.length})
+                      </td>
+                    </tr>
+                  ) : null}
+                  {section.items.map((item) => (
+                    <tr key={item.id}>
+                      <td className={styles.nowrap}>{item.contractNumber ?? '—'}</td>
+                      <td className={styles.nowrap}>
+                        {ODPZH_DIRECTION_LABELS[item.kind] ?? item.kind}
+                      </td>
+                      <td>{item.customerName ?? '—'}</td>
+                      <td>{item.customerAddress ?? '—'}</td>
+                      <td className={styles.sum}>{formatSum(item.contractSum)}</td>
+                      <td>{item.installerNames.length ? item.installerNames.join(', ') : '—'}</td>
+                      <td className={nearestDateClass(item.nearestInstallationDate)}>
+                        {formatDate(item.nearestInstallationDate)}
+                      </td>
+                      <td className={styles.nowrap}>{item.entriesCount}</td>
+                      <td className={styles.nowrap}>{STATUS_BADGES[item.status]}</td>
+                    </tr>
+                  ))}
+                </Fragment>
+              ))}
+              {!loading && items.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className={styles.empty}>
+                    Нет договоров в этом разделе
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}

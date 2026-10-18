@@ -54,6 +54,7 @@ import { WaybillsModule } from './waybills/waybills.module';
 import { InstallationSchedulesModule } from './installation-schedules/installation-schedules.module';
 import { RepairSchedulesModule } from './repair-schedules/repair-schedules.module';
 import { FurnitureSchedulesModule } from './furniture-schedules/furniture-schedules.module';
+import { OdpzhSchedulesModule } from './odpzh-schedules/odpzh-schedules.module';
 import { JointObjectsModule } from './joint-objects/joint-objects.module';
 import { AdminAuthSettingsModule } from './auth-settings/admin-auth-settings.module';
 
@@ -70,6 +71,7 @@ import { AdminAuthSettingsModule } from './auth-settings/admin-auth-settings.mod
     WaybillsModule,
     InstallationSchedulesModule,
     RepairSchedulesModule,
+    OdpzhSchedulesModule,
     FurnitureSchedulesModule,
     JointObjectsModule,
     MeasurementsModule,
@@ -130,6 +132,7 @@ import { AdminAuthSettingsModule } from './auth-settings/admin-auth-settings.mod
     WaybillsModule,
     InstallationSchedulesModule,
     RepairSchedulesModule,
+    OdpzhSchedulesModule,
     FurnitureSchedulesModule,
     JointObjectsModule,
     MeasurementsModule,
