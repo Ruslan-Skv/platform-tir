@@ -18,6 +18,7 @@ import {
 } from '@/shared/api/crm/admin-installation-schedules';
 
 import {
+  INSTALLATION_SCHEDULE_DIRECTION_OPTIONS,
   type InstallationScheduleDirection,
   type ViewMode,
   emptyForm,
@@ -30,6 +31,50 @@ import {
 } from '../../shared/installation-schedules';
 import { isInstallationScheduleFormFilled } from '../../shared/installationScheduleFillPercent';
 
+const FILTERS_STORAGE_KEY = 'admin_installation_schedules_filters';
+
+type StoredFilters = {
+  search: string;
+  direction: InstallationScheduleDirection | 'ALL';
+  dateFrom: string;
+  dateTo: string;
+};
+
+const STORED_DIRECTION_VALUES = [
+  'ALL',
+  ...INSTALLATION_SCHEDULE_DIRECTION_OPTIONS.map((option) => option.value),
+] as const;
+
+function readStoredFilters(): Partial<StoredFilters> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = window.localStorage.getItem(FILTERS_STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as Partial<StoredFilters>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function isIsoDay(value: unknown): value is string {
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
+}
+
+function addDaysIso(iso: string, days: number): string {
+  const d = new Date(`${iso}T00:00:00`);
+  d.setDate(d.getDate() + days);
+  return d.toLocaleDateString('en-CA');
+}
+
+/**
+ * Сохранённый диапазон дат актуален, если он пересекается с «недавним»:
+ * сегодня попадает в [dateFrom − 30 дн., dateTo]. Полностью прошлогодний
+ * (или далёкий будущий) диапазон не восстанавливаем — открываем дефолт.
+ */
+function storedRangeIsFresh(dateFrom: string, dateTo: string, today: string): boolean {
+  if (dateTo < dateFrom) return false;
+  return today >= addDaysIso(dateFrom, -30) && today <= dateTo;
+}
+
 export function useInstallationSchedulesPage() {
   const today = todayIsoDate();
   const [viewModeState, setViewModeState] = useState<ViewMode>(() =>
@@ -38,9 +83,24 @@ export function useInstallationSchedulesPage() {
       ? 'calendar'
       : 'table'
   );
-  const [dateFrom, setDateFrom] = useState(today);
-  const [dateTo, setDateTo] = useState(() => weekAheadIsoDate(today));
-  const [direction, setDirection] = useState<InstallationScheduleDirection | 'ALL'>('ALL');
+  const [storedFilters] = useState(readStoredFilters);
+  const storedDirection = (STORED_DIRECTION_VALUES as readonly string[]).includes(
+    storedFilters.direction ?? ''
+  )
+    ? storedFilters.direction
+    : undefined;
+  const storedRangeFresh =
+    isIsoDay(storedFilters.dateFrom) &&
+    isIsoDay(storedFilters.dateTo) &&
+    storedRangeIsFresh(storedFilters.dateFrom, storedFilters.dateTo, today);
+  const [dateFrom, setDateFrom] = useState(storedRangeFresh ? storedFilters.dateFrom : today);
+  const [dateTo, setDateTo] = useState(
+    storedRangeFresh ? storedFilters.dateTo : weekAheadIsoDate(today)
+  );
+  const [direction, setDirection] = useState<InstallationScheduleDirection | 'ALL'>(
+    storedDirection ?? 'ALL'
+  );
+  const [search, setSearch] = useState(storedFilters.search ?? '');
   const [items, setItems] = useState<InstallationSchedule[]>([]);
   const [installers, setInstallers] = useState<InstallerMaster[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,6 +157,17 @@ export function useInstallationSchedulesPage() {
   useEffect(() => {
     void refreshTrashCount();
   }, [refreshTrashCount]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        FILTERS_STORAGE_KEY,
+        JSON.stringify({ search, direction, dateFrom, dateTo })
+      );
+    } catch {
+      /* ignore */
+    }
+  }, [search, direction, dateFrom, dateTo]);
 
   const setViewMode = useCallback(
     (mode: ViewMode) => {
@@ -223,6 +294,8 @@ export function useInstallationSchedulesPage() {
     setDateTo,
     direction,
     setDirection,
+    search,
+    setSearch,
     items,
     installers,
     loading,

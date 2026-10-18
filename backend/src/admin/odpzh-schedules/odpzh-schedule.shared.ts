@@ -1,11 +1,12 @@
 import { ContractDocumentPackageKind } from '@prisma/client';
 
 /** Статусы договоров план-графика ОДПЖ (паритет с frontend). */
-export type OdpzhScheduleStatus = 'NEW' | 'IN_PROGRESS' | 'CLOSED';
+export type OdpzhScheduleStatus = 'NEW' | 'IN_PROGRESS' | 'INSTALLATIONS_DONE' | 'CLOSED';
 
 export const ODPZH_SCHEDULE_STATUSES: readonly OdpzhScheduleStatus[] = [
   'NEW',
   'IN_PROGRESS',
+  'INSTALLATIONS_DONE',
   'CLOSED',
 ];
 

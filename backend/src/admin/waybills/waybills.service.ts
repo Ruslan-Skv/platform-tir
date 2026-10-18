@@ -6,6 +6,10 @@ import {
 } from '@nestjs/common';
 import { Prisma, WaybillTaskStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+import {
+  asFormDataRecord,
+  customerFromFormData,
+} from '../installation-schedules/installation-schedule.shared';
 import { WAYBILL_ATTACHMENT_SELECT } from './waybill-attachments.service';
 import { CompleteWaybillTaskDto } from './dto/complete-waybill-task.dto';
 import { CreateWaybillTaskDto } from './dto/create-waybill-task.dto';
@@ -38,6 +42,7 @@ const USER_SELECT = {
 const TASK_INCLUDE = {
   responsible: { select: USER_SELECT },
   driver: { select: USER_SELECT },
+  package: { select: { id: true, formData: true } },
   completedBy: { select: USER_SELECT },
   createdBy: { select: USER_SELECT },
   deletedBy: { select: USER_SELECT },
@@ -159,11 +164,51 @@ export class WaybillsService {
     return single ? [single] : [];
   }
 
+  /**
+   * Для задания, связанного с договором-пакетом, номер договора и данные
+   * заказчика всегда берутся из пакета — ручные значения клиента используются
+   * только для полей, которых в пакете нет (как в графике монтажей).
+   */
+  private async resolvePackageSnapshot(packageId: string): Promise<{
+    id: string;
+    contractNumber: string | null;
+    customerName: string | null;
+    customerAddress: string | null;
+    customerPhone: string | null;
+  }> {
+    const pkg = await this.prisma.contractDocumentPackage.findFirst({
+      where: { id: packageId, deletedAt: null },
+      select: { id: true, formData: true },
+    });
+    if (!pkg) throw new BadRequestException('Пакет документов не найден');
+    const snap = customerFromFormData(asFormDataRecord(pkg.formData));
+    return {
+      id: pkg.id,
+      contractNumber: snap.contractNumber,
+      customerName: snap.customerName,
+      customerAddress: snap.customerAddress,
+      customerPhone: snap.customerPhone,
+    };
+  }
+
   private async buildCreateData(dto: CreateWaybillTaskDto, createdById: string) {
-    const customerName = this.emptyToNull(dto.customerName) ?? null;
-    const customerAddress = this.emptyToNull(dto.customerAddress) ?? null;
-    const customerPhones = this.normalizeCustomerPhones(dto.customerPhones, dto.customerPhone);
+    let customerName = this.emptyToNull(dto.customerName) ?? null;
+    let customerAddress = this.emptyToNull(dto.customerAddress) ?? null;
+    let customerPhones = this.normalizeCustomerPhones(dto.customerPhones, dto.customerPhone);
     let customerInfoText = this.emptyToNull(dto.customerInfoText) ?? null;
+    let contractNumber = this.emptyToNull(dto.contractNumber) ?? null;
+
+    const packageId = this.emptyToNull(dto.packageId) ?? null;
+    let packageConnect: { id: string } | null = null;
+    if (packageId) {
+      const snap = await this.resolvePackageSnapshot(packageId);
+      packageConnect = { id: snap.id };
+      contractNumber = snap.contractNumber ?? contractNumber;
+      customerName = snap.customerName ?? customerName;
+      customerAddress = snap.customerAddress ?? customerAddress;
+      if (snap.customerPhone) customerPhones = [snap.customerPhone];
+      customerInfoText = null;
+    }
 
     const customerPhone = customerPhones[0] ?? null;
 
@@ -186,7 +231,8 @@ export class WaybillsService {
       customerAddress,
       customerPhone,
       customerPhones,
-      contractNumber: this.emptyToNull(dto.contractNumber) ?? null,
+      contractNumber,
+      packageId: packageConnect ? packageConnect.id : null,
       deliveryCost: this.decimalOrNull(dto.deliveryCost) ?? null,
       deliveryPayer: this.emptyToNull(dto.deliveryPayer) ?? null,
       moversCost: this.decimalOrNull(dto.moversCost) ?? null,
@@ -336,6 +382,48 @@ export class WaybillsService {
 
     if (dto.contractNumber !== undefined) {
       data.contractNumber = this.emptyToNull(dto.contractNumber) ?? null;
+    }
+
+    /*
+     * Связка с договором-пакетом: при установке/наличии packageId номер договора
+     * и данные заказчика всегда синхронизируются с пакетом (самовосстановление
+     * при каждом редактировании), ручные значения игнорируются.
+     */
+    let newPackageSnap: Awaited<ReturnType<WaybillsService['resolvePackageSnapshot']>> | null =
+      null;
+    if (dto.packageId !== undefined) {
+      const packageId = this.emptyToNull(dto.packageId) ?? null;
+      if (packageId) {
+        newPackageSnap = await this.resolvePackageSnapshot(packageId);
+        data.package = { connect: { id: newPackageSnap.id } };
+      } else {
+        data.package = { disconnect: true };
+      }
+    }
+    const effectiveSnap =
+      newPackageSnap ??
+      (dto.packageId === undefined && existing.packageId
+        ? customerFromFormData(asFormDataRecord(existing.package?.formData))
+        : null);
+    if (effectiveSnap) {
+      if (effectiveSnap.contractNumber) data.contractNumber = effectiveSnap.contractNumber;
+      if (effectiveSnap.customerName) data.customerName = effectiveSnap.customerName;
+      if (effectiveSnap.customerAddress) data.customerAddress = effectiveSnap.customerAddress;
+      const phone = effectiveSnap.customerPhone;
+      if (phone && phonesTouched) {
+        data.customerPhones = [phone];
+        data.customerPhone = phone;
+      }
+      const finalName = (data.customerName as string | null | undefined) ?? existing.customerName;
+      const finalAddress =
+        (data.customerAddress as string | null | undefined) ?? existing.customerAddress;
+      const finalPhones =
+        (data.customerPhones as string[] | undefined) ?? existing.customerPhones ?? [];
+      data.customerInfoText = this.composeCustomerInfoText({
+        customerName: finalName,
+        customerAddress: finalAddress,
+        customerPhones: finalPhones,
+      });
     }
     if (dto.deliveryCost !== undefined)
       data.deliveryCost = this.decimalOrNull(dto.deliveryCost) ?? null;

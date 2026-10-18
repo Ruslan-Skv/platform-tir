@@ -17,7 +17,7 @@ async function throwApiError(res: Response, fallback: string): Promise<never> {
   throw new Error(Array.isArray(body.message) ? body.message.join(', ') : body.message || fallback);
 }
 
-export type OdpzhScheduleStatus = 'NEW' | 'IN_PROGRESS' | 'CLOSED';
+export type OdpzhScheduleStatus = 'NEW' | 'IN_PROGRESS' | 'INSTALLATIONS_DONE' | 'CLOSED';
 
 /** Направления план-графика ОДПЖ (мебель — отдельный раздел). */
 export type OdpzhScheduleDirection = 'WINDOWS' | 'DOORS' | 'CEILINGS' | 'BLINDS';
@@ -31,6 +31,7 @@ export type OdpzhScheduleEntry = {
   status: 'PLANNED' | 'DONE' | 'FAILED';
   installerName: string | null;
   workOrderKey: string | null;
+  completedAt: string | null;
 };
 
 /** Уровень предупреждения по сроку договора (≤20 / ≤10 / ≤3 дн. или просрочка). */
@@ -57,6 +58,13 @@ export type OdpzhScheduleRow = {
   installerNames: string[];
   nearestInstallationDate: string | null;
   lastInstallationDate: string | null;
+  /** Сколько монтажей выполнено / всего. */
+  installationsDoneCount: number;
+  installationsTotalCount: number;
+  /** Все монтажи графика выполнены (договор ещё не закрыт по конвейеру). */
+  allInstallationsDone: boolean;
+  /** Дата последнего выполненного монтажа (ISO). */
+  lastCompletedInstallationDate: string | null;
   entriesCount: number;
   entries: OdpzhScheduleEntry[];
   createdAt: string;

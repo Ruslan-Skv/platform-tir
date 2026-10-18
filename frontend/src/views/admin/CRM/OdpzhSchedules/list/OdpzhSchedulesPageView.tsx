@@ -21,12 +21,14 @@ const STATUS_TABS: Array<{ key: OdpzhSchedulesPageModel['statusFilter']; label: 
   { key: 'ALL', label: 'Все' },
   { key: 'NEW', label: 'Новые договора' },
   { key: 'IN_PROGRESS', label: 'В работе' },
+  { key: 'INSTALLATIONS_DONE', label: 'Выполненные монтажи' },
   { key: 'CLOSED', label: 'Закрытые' },
 ];
 
 const STATUS_BADGES: Record<OdpzhScheduleStatus, string> = {
   NEW: 'Новый',
   IN_PROGRESS: 'В работе',
+  INSTALLATIONS_DONE: 'Монтажи выполнены',
   CLOSED: 'Закрыт',
 };
 
@@ -34,6 +36,7 @@ const STATUS_BADGES: Record<OdpzhScheduleStatus, string> = {
 const STATUS_SECTIONS: Array<{ status: OdpzhScheduleStatus; label: string }> = [
   { status: 'NEW', label: 'Новые договора' },
   { status: 'IN_PROGRESS', label: 'В работе' },
+  { status: 'INSTALLATIONS_DONE', label: 'Выполненные монтажи' },
   { status: 'CLOSED', label: 'Закрытые' },
 ];
 
@@ -367,8 +370,26 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
                           <td>
                             {item.installerNames.length ? item.installerNames.join(', ') : '—'}
                           </td>
-                          <td className={nearestDateClass(item.nearestInstallationDate)}>
-                            {formatDate(item.nearestInstallationDate)}
+                          <td className={styles.nowrap}>
+                            {item.allInstallationsDone ? (
+                              <span
+                                className={styles.doneBadge}
+                                title={`Все монтажи выполнены (${item.installationsDoneCount} из ${item.installationsTotalCount})`}
+                              >
+                                Монтаж выполнен {formatDate(item.lastCompletedInstallationDate)}
+                              </span>
+                            ) : (
+                              <span
+                                className={nearestDateClass(item.nearestInstallationDate)}
+                                title={
+                                  item.installationsDoneCount > 0
+                                    ? `Выполнено монтажей: ${item.installationsDoneCount} из ${item.installationsTotalCount}`
+                                    : undefined
+                                }
+                              >
+                                {formatDate(item.nearestInstallationDate)}
+                              </span>
+                            )}
                           </td>
                           <td className={styles.nowrap}>{item.entriesCount}</td>
                           <td className={styles.nowrap}>{STATUS_BADGES[item.status]}</td>

@@ -173,13 +173,16 @@ export class InstallationSchedulesService {
       });
       if (!pkg) throw new BadRequestException('Пакет документов не найден');
 
+      /*
+       * Для связанной записи номер договора и данные заказчика всегда берутся
+       * из пакета — ручные значения клиента игнорируются (если в пакете поля
+       * не заполнены, используются переданные вручную).
+       */
       const fromForm = customerFromFormData(asFormDataRecord(pkg.formData));
-      if (!contractNumber) contractNumber = fromForm.contractNumber;
-      if (!customerName) customerName = fromForm.customerName;
-      if (!customerAddress) customerAddress = fromForm.customerAddress;
-      if (customerPhones.length === 0 && fromForm.customerPhone) {
-        customerPhones = [fromForm.customerPhone];
-      }
+      contractNumber = fromForm.contractNumber ?? contractNumber;
+      customerName = fromForm.customerName ?? customerName;
+      customerAddress = fromForm.customerAddress ?? customerAddress;
+      if (fromForm.customerPhone) customerPhones = [fromForm.customerPhone];
     }
 
     const date = parseDateOnly(dto.date);
@@ -351,14 +354,16 @@ export class InstallationSchedulesService {
       data.installerName = resolved.installerName;
     }
 
+    let newPackageForm: Record<string, unknown> | null = null;
     if (dto.packageId !== undefined) {
       const packageId = emptyToNull(dto.packageId) ?? null;
       if (packageId) {
         const pkg = await this.prisma.contractDocumentPackage.findFirst({
           where: { id: packageId, deletedAt: null },
-          select: { id: true },
+          select: { id: true, formData: true },
         });
         if (!pkg) throw new BadRequestException('Пакет документов не найден');
+        newPackageForm = asFormDataRecord(pkg.formData);
         data.package = { connect: { id: packageId } };
       } else {
         data.package = { disconnect: true };
@@ -377,6 +382,27 @@ export class InstallationSchedulesService {
 
     if (dto.contactPersons !== undefined) {
       data.contactPersons = normalizeContactPersons(dto.contactPersons);
+    }
+
+    /*
+     * У записи, связанной с пакетом, номер договора и данные заказчика всегда
+     * синхронизируются с пакетом — ручные правки этих полей игнорируются
+     * (если в пакете поле не заполнено, остаётся переданное/текущее значение).
+     */
+    const effectivePackageForm =
+      newPackageForm ??
+      (dto.packageId === undefined && current.packageId
+        ? asFormDataRecord(current.package?.formData)
+        : null);
+    if (effectivePackageForm) {
+      const fromForm = customerFromFormData(effectivePackageForm);
+      if (fromForm.contractNumber) data.contractNumber = fromForm.contractNumber;
+      if (fromForm.customerName) data.customerName = fromForm.customerName;
+      if (fromForm.customerAddress) data.customerAddress = fromForm.customerAddress;
+      if (fromForm.customerPhone && phonesTouched) {
+        data.customerPhones = [fromForm.customerPhone];
+        data.customerPhone = fromForm.customerPhone;
+      }
     }
 
     const updated = await this.prisma.installationScheduleEntry.update({

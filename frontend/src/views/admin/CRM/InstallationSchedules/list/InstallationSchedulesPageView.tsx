@@ -71,6 +71,8 @@ export function InstallationSchedulesPageView({
     setDateTo,
     direction,
     setDirection,
+    search,
+    setSearch,
     items,
     installers,
     loading,
@@ -215,10 +217,32 @@ export function InstallationSchedulesPageView({
     [items]
   );
 
-  const filtered = useMemo(
-    () => (statusFilter === 'ALL' ? items : items.filter((item) => item.status === statusFilter)),
-    [items, statusFilter]
-  );
+  /** Поиск по договору/заказчику/адресу (как в план-графике ОДПЖ) — по загруженным записям. */
+  const searchNorm = search.trim().toLowerCase().replace(/\s+/g, ' ');
+
+  const filtered = useMemo(() => {
+    let rows =
+      statusFilter === 'ALL' ? items : items.filter((item) => item.status === statusFilter);
+    if (searchNorm) {
+      rows = rows.filter((item) =>
+        [
+          item.contractNumber,
+          item.workOrderLabel,
+          item.orderInfo,
+          item.customerName,
+          item.customerAddress,
+          item.installerName,
+          item.note,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+          .replace(/\s+/g, ' ')
+          .includes(searchNorm)
+      );
+    }
+    return rows;
+  }, [items, statusFilter, searchNorm]);
 
   const countTitle =
     statusFilter === 'ALL'
@@ -529,6 +553,22 @@ export function InstallationSchedulesPageView({
                 aria-label="Дата до"
               />
             </label>
+          </div>
+
+          <div className={cdHub.contractsListFilters}>
+            <input
+              type="search"
+              className={
+                search.trim()
+                  ? `${cdHub.contractsListSearchInput} ${cdHub.contractsListFilterActive}`
+                  : cdHub.contractsListSearchInput
+              }
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              disabled={loading}
+              placeholder="Поиск по номеру договора, ФИО заказчика, адресу..."
+              aria-label="Поиск по номеру договора, ФИО заказчика, адресу"
+            />
           </div>
         </div>
       </div>

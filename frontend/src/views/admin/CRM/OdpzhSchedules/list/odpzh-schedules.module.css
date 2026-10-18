@@ -160,3 +160,19 @@
   line-height: 1.25;
   white-space: nowrap;
 }
+
+/* Все монтажи договора выполнены — заметная зелёная метка. */
+.doneBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--admin-success-soft, #dcfce7);
+  color: var(--admin-success-deep, #15803d);
+  font-size: var(--admin-font-size-xs, 12px);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.statusSectionRow.statusSectionRowINSTALLATIONS_DONE td {
+  color: var(--admin-success-deep, #15803d);
+}

@@ -47,6 +47,11 @@ export function InstallationScheduleForm({ values, onChange, installers, error }
   const clearPackage = () => {
     const restore = packagePrevFieldsRef.current;
     packagePrevFieldsRef.current = null;
+    /*
+     * Данные заказа (номер договора, заказчик, адрес, телефоны) при снятии пакета
+     * не откатываются — они остаются от пакета, чтобы связанная с договором запись
+     * не могла получить номер, отличающийся от номера договора.
+     */
     update({
       packageId: '',
       packageSearch: '',
@@ -56,17 +61,8 @@ export function InstallationScheduleForm({ values, onChange, installers, error }
         ? {
             direction: restore.direction,
             installerIds: restore.installerIds,
-            contractNumber: restore.contractNumber,
-            customerName: restore.customerName,
-            customerAddress: restore.customerAddress,
-            customerPhones: restore.customerPhones.length > 0 ? restore.customerPhones : [''],
           }
-        : {
-            contractNumber: '',
-            customerName: '',
-            customerAddress: '',
-            customerPhones: [''],
-          }),
+        : {}),
     });
   };
 
@@ -328,8 +324,17 @@ export function InstallationScheduleForm({ values, onChange, installers, error }
                 id="is-contract"
                 value={values.contractNumber}
                 onChange={(e) => update({ contractNumber: e.target.value })}
+                readOnly={Boolean(values.packageId)}
+                title={
+                  values.packageId
+                    ? 'Номер берётся из выбранного договора и не редактируется'
+                    : undefined
+                }
                 required
               />
+              {values.packageId ? (
+                <span className={styles.fieldHint}>Номер — из выбранного договора</span>
+              ) : null}
             </div>
             <div className={`${styles.compactField} ${styles.compactFieldGrow}`}>
               <label htmlFor="is-customer">Заказчик *</label>
@@ -337,6 +342,12 @@ export function InstallationScheduleForm({ values, onChange, installers, error }
                 id="is-customer"
                 value={values.customerName}
                 onChange={(e) => update({ customerName: e.target.value })}
+                readOnly={Boolean(values.packageId)}
+                title={
+                  values.packageId
+                    ? 'Заказчик берётся из выбранного договора и не редактируется'
+                    : undefined
+                }
                 required
               />
             </div>
@@ -347,6 +358,12 @@ export function InstallationScheduleForm({ values, onChange, installers, error }
               id="is-address"
               value={values.customerAddress}
               onChange={(e) => update({ customerAddress: e.target.value })}
+              readOnly={Boolean(values.packageId)}
+              title={
+                values.packageId
+                  ? 'Адрес берётся из выбранного договора и не редактируется'
+                  : undefined
+              }
               required
             />
           </div>

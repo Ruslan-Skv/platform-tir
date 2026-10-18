@@ -317,8 +317,17 @@ export function WaybillTaskForm({
                 type="text"
                 value={values.contractNumber}
                 onChange={(e) => onChange({ ...values, contractNumber: e.target.value })}
+                readOnly={Boolean(values.packageId)}
+                title={
+                  values.packageId
+                    ? 'Номер берётся из выбранного договора и не редактируется'
+                    : undefined
+                }
                 placeholder="подставится из заказа или вручную"
               />
+              {values.packageId ? (
+                <span className={styles.fieldHint}>Номер — из выбранного договора</span>
+              ) : null}
             </div>
             <div className={`${sectionStyles.sectionField} ${sectionStyles.sectionFieldGrow}`}>
               <label htmlFor="wb-customer-name">ФИО *</label>
@@ -327,6 +336,12 @@ export function WaybillTaskForm({
                 type="text"
                 value={values.customerName}
                 onChange={(e) => onChange({ ...values, customerName: e.target.value })}
+                readOnly={Boolean(values.packageId)}
+                title={
+                  values.packageId
+                    ? 'Заказчик берётся из выбранного договора и не редактируется'
+                    : undefined
+                }
                 placeholder="Иванов Иван Иванович"
                 required
               />
@@ -338,6 +353,12 @@ export function WaybillTaskForm({
                 type="text"
                 value={values.customerAddress}
                 onChange={(e) => onChange({ ...values, customerAddress: e.target.value })}
+                readOnly={Boolean(values.packageId)}
+                title={
+                  values.packageId
+                    ? 'Адрес берётся из выбранного договора и не редактируется'
+                    : undefined
+                }
                 placeholder="Город, улица, дом…"
                 required
               />

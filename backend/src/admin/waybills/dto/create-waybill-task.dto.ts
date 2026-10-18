@@ -79,6 +79,12 @@ export class CreateWaybillTaskDto {
   @MaxLength(200)
   contractNumber?: string | null;
 
+  /** Привязка к договору-пакету: заказ-данные берутся из пакета. */
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  packageId?: string | null;
+
   @ApiPropertyOptional()
   @IsOptional()
   @Type(() => Number)

@@ -57,8 +57,10 @@ function clampPct(n: number): number {
   return Math.max(0, Math.min(100, n));
 }
 
-/** Полоса краснее, если ближайший запланированный монтаж уже прошёл или близко. */
-function barToneClass(nearest: string | null): string {
+/** Полоса: все монтажи выполнены — зелёная; краснее, если ближайший монтаж просрочен/близко. */
+function barToneClass(item: OdpzhScheduleRow): string {
+  if (item.allInstallationsDone) return styles.barDone;
+  const nearest = item.nearestInstallationDate;
   if (!nearest) return styles.barOk;
   const today = todayUtcMs();
   const ms = parseDayMs(nearest);
@@ -292,11 +294,11 @@ export function OdpzhSchedulesGanttTimeline({ items, loading }: Props) {
                 ) : null}
                 {row.ready ? (
                   <div
-                    className={`${styles.bar} ${barToneClass(row.item.nearestInstallationDate)}`}
+                    className={`${styles.bar} ${barToneClass(row.item)}`}
                     style={{ left: `${row.leftPct}%`, width: `${row.widthPct}%` }}
                     title={`${row.item.contractNumber || 'Договор'}: ${
                       row.item.entries.length
-                    } монтажей${
+                    } монтажей${row.item.allInstallationsDone ? ' — все выполнены' : ''}${
                       row.item.contractEndDate
                         ? ` · срок договора до ${formatDate(row.item.contractEndDate)}`
                         : ''

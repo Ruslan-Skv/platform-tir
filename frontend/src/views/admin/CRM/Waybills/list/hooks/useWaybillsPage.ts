@@ -257,8 +257,15 @@ export function useWaybillsPage() {
         customerAddress: customer.customerAddress,
         customerPhones: customer.customerPhones.length > 0 ? customer.customerPhones : [''],
         contractNumber: item.contractNumber ?? '',
-        packageId: '',
-        contractSearch: '',
+        packageId: item.packageId ?? '',
+        contractSearch: item.packageId
+          ? [
+              item.customerName?.trim(),
+              item.contractNumber?.trim() ? `№${item.contractNumber.trim()}` : '',
+            ]
+              .filter(Boolean)
+              .join(' · ')
+          : '',
         deliveryCost: item.deliveryCost != null ? String(item.deliveryCost) : '',
         deliveryPayer: item.deliveryPayer ?? '',
         moversCost: item.moversCost != null ? String(item.moversCost) : '',
@@ -300,6 +307,7 @@ export function useWaybillsPage() {
       customerPhone: phones[0] ?? null,
       customerPhones: phones,
       contractNumber: values.contractNumber.trim() || null,
+      packageId: values.packageId || null,
       deliveryCost: parseOptionalNumber(values.deliveryCost),
       deliveryPayer: values.deliveryPayer.trim() || null,
       moversCost: parseOptionalNumber(values.moversCost),
@@ -334,18 +342,17 @@ export function useWaybillsPage() {
     });
   }, []);
 
-  /** «Снять выбор»: очищает заказ и поля, заполненные им (возвращает прежние значения). */
+  /**
+   * «Снять выбор»: отвязывает заказ, но данные заказа (номер, заказчик, адрес,
+   * телефоны) не откатываются — задание, заполненное из договора, не может
+   * получить номер, отличающийся от номера договора (как в графике монтажей).
+   */
   const clearPackage = useCallback(() => {
-    const restore = packagePrevCustomerRef.current;
     packagePrevCustomerRef.current = null;
     setFormValues((prev) => ({
       ...prev,
       packageId: '',
       contractSearch: '',
-      customerName: restore?.customerName ?? '',
-      customerAddress: restore?.customerAddress ?? '',
-      customerPhones: restore && restore.customerPhones.length > 0 ? restore.customerPhones : [''],
-      contractNumber: restore?.contractNumber ?? '',
     }));
   }, []);
 

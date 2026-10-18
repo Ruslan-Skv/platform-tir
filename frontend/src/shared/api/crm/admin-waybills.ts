@@ -46,6 +46,8 @@ export interface WaybillTask {
   customerPhones?: string[];
   /** № договора из заказа (пакета) — для сверки и расчёта з/п водителя. */
   contractNumber?: string | null;
+  /** Привязка к договору-пакету; заказ-данные берутся из пакета. */
+  packageId?: string | null;
   deliveryCost: string | number | null;
   deliveryPayer: string | null;
   moversCost: string | number | null;
@@ -85,6 +87,7 @@ export type WaybillTaskInput = {
   customerPhone?: string | null;
   customerPhones?: string[] | null;
   contractNumber?: string | null;
+  packageId?: string | null;
   deliveryCost?: number | null;
   deliveryPayer?: string | null;
   moversCost?: number | null;

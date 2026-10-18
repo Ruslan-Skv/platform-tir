@@ -42,6 +42,13 @@ export type OdpzhScheduleRow = {
   nearestInstallationDate: string | null;
   /** Дата последнего монтажа по графику (dateEnd либо date). */
   lastInstallationDate: string | null;
+  /** Сколько монтажей выполнено / всего. */
+  installationsDoneCount: number;
+  installationsTotalCount: number;
+  /** Все монтажи графика выполнены (но договор ещё не закрыт по конвейеру). */
+  allInstallationsDone: boolean;
+  /** Дата последнего выполненного монтажа (completedAt ?? dateEnd ?? date). */
+  lastCompletedInstallationDate: string | null;
   entriesCount: number;
   /** Записи графика монтажей пакета (для таймлайна). */
   entries: OdpzhScheduleEntryRow[];
@@ -57,6 +64,7 @@ export type OdpzhScheduleEntryRow = {
   status: 'PLANNED' | 'DONE' | 'FAILED';
   installerName: string | null;
   workOrderKey: string | null;
+  completedAt: string | null;
 };
 
 /** Пакеты ОДПЖ со всем, что нужно для строк план-графика. */
@@ -81,6 +89,7 @@ const ODPZH_PACKAGE_SELECT = {
       installerName: true,
       installerIds: true,
       workOrderKey: true,
+      completedAt: true,
     },
     orderBy: { date: 'asc' as const },
   },
@@ -246,19 +255,35 @@ export class OdpzhSchedulesService {
 
       const entries = pkg.installationSchedules;
       /*
-       * В продуктовых направлениях нет акта начала работ:
-       * «В работе» = есть хотя бы одна запись в графике монтажей.
+       * В продуктовых направлениях нет акта начала работ: «В работе» = есть записи
+       * в графике монтажей. Все монтажи выполнены — отдельный раздел до закрытия
+       * договора по конвейеру (акт сдачи + полная оплата).
        */
       const status: OdpzhScheduleStatus =
-        pipeline === 'CLOSED' ? 'CLOSED' : entries.length > 0 ? 'IN_PROGRESS' : 'NEW';
+        pipeline === 'CLOSED'
+          ? 'CLOSED'
+          : entries.length > 0 && entries.every((e) => e.status === InstallationScheduleStatus.DONE)
+            ? 'INSTALLATIONS_DONE'
+            : entries.length > 0
+              ? 'IN_PROGRESS'
+              : 'NEW';
       if (params.status && params.status !== status) continue;
       if (params.direction && params.direction !== pkg.kind) continue;
 
       const today = todayIsoDay();
       let nearestInstallationDate: string | null = null;
       let lastInstallationDate: string | null = null;
+      let installationsDoneCount = 0;
+      let lastCompletedInstallationDate: string | null = null;
       const installerNames = new Set<string>();
       for (const entry of entries) {
+        if (entry.status === InstallationScheduleStatus.DONE) {
+          installationsDoneCount++;
+          const completedDay = toIsoDay(entry.completedAt ?? entry.dateEnd ?? entry.date);
+          if (!lastCompletedInstallationDate || completedDay > lastCompletedInstallationDate) {
+            lastCompletedInstallationDate = completedDay;
+          }
+        }
         if (
           entry.status === InstallationScheduleStatus.PLANNED &&
           toIsoDay(entry.date) >= today &&
@@ -314,6 +339,11 @@ export class OdpzhSchedulesService {
         installerNames: [...installerNames],
         nearestInstallationDate,
         lastInstallationDate,
+        installationsDoneCount,
+        installationsTotalCount: entries.length,
+        allInstallationsDone:
+          entries.length > 0 && entries.every((e) => e.status === InstallationScheduleStatus.DONE),
+        lastCompletedInstallationDate,
         entriesCount: entries.length,
         entries: entries.map((entry) => ({
           id: entry.id,
@@ -323,6 +353,7 @@ export class OdpzhSchedulesService {
           status: entry.status,
           installerName: entry.installerName,
           workOrderKey: entry.workOrderKey,
+          completedAt: entry.completedAt ? entry.completedAt.toISOString() : null,
         })),
         createdAt: pkg.createdAt,
         updatedAt: pkg.updatedAt,
@@ -331,7 +362,7 @@ export class OdpzhSchedulesService {
 
     rows.sort((a, b) => {
       if (a.status !== b.status) {
-        const rank = { NEW: 0, IN_PROGRESS: 1, CLOSED: 2 } as const;
+        const rank = { NEW: 0, IN_PROGRESS: 1, INSTALLATIONS_DONE: 2, CLOSED: 3 } as const;
         return rank[a.status] - rank[b.status];
       }
       if (a.status === 'CLOSED') return b.updatedAt.getTime() - a.updatedAt.getTime();

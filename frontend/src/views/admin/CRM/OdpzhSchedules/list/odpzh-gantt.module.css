@@ -340,3 +340,8 @@
   left: 50%;
   border-left: 2px dashed var(--admin-error-text, #dc2626);
 }
+
+/* Все монтажи договора выполнены. */
+.barDone {
+  background: linear-gradient(90deg, #34d399 0%, #16a34a 100%);
+}

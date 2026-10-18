@@ -85,13 +85,15 @@ export function useOdpzhSchedulesPage() {
   const statusCounts = useMemo(() => {
     let NEW = 0;
     let IN_PROGRESS = 0;
+    let INSTALLATIONS_DONE = 0;
     let CLOSED = 0;
     for (const i of items) {
       if (i.status === 'NEW') NEW++;
       else if (i.status === 'IN_PROGRESS') IN_PROGRESS++;
+      else if (i.status === 'INSTALLATIONS_DONE') INSTALLATIONS_DONE++;
       else CLOSED++;
     }
-    return { ALL: items.length, NEW, IN_PROGRESS, CLOSED };
+    return { ALL: items.length, NEW, IN_PROGRESS, INSTALLATIONS_DONE, CLOSED };
   }, [items]);
 
   const visibleItems = useMemo(
