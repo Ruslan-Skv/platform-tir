@@ -13,6 +13,7 @@ import {
 } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
 import panelStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
+import { CollapsibleFiltersPanel } from '@/views/admin/CRM/shared/CollapsibleFiltersPanel';
 import sectionStyles from '@/views/admin/CRM/shared/crmFormSections.module.css';
 import modalShellStyles from '@/views/admin/Catalog/Components/shared/ComponentCatalogModal.module.css';
 import { useListModalPresence } from '@/views/admin/ContractDocuments/packages/pages/contracts/list/useListModalPresence';
@@ -54,6 +55,20 @@ import { InstallationSchedulesRulesInfoTip } from './InstallationSchedulesRulesI
 import type { InstallationSchedulesPageModel } from './hooks/useInstallationSchedulesPage';
 
 type StatusFilter = 'ALL' | 'PLANNED' | 'DONE' | 'FAILED';
+
+const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
+  { value: 'ALL', label: 'Все' },
+  { value: 'PLANNED', label: 'В плане' },
+  { value: 'DONE', label: 'Выполнено' },
+  { value: 'FAILED', label: 'Не выполнено' },
+];
+
+const STATUS_FILTER_SUMMARY_LABELS: Record<StatusFilter, string> = {
+  ALL: 'Все',
+  PLANNED: 'В плане',
+  DONE: 'Выполнено',
+  FAILED: 'Не выполнено',
+};
 
 function statusChipClass(active: boolean): string {
   return `${cdHub.contractsListChip}${active ? ` ${cdHub.contractsListChipActive}` : ''}`;
@@ -352,17 +367,21 @@ export function InstallationSchedulesPageView({
   };
 
   const iconsDisabled = loading || submitting;
-  const statusOptions: { value: StatusFilter; label: string }[] = [
-    { value: 'ALL', label: 'Все' },
-    { value: 'PLANNED', label: 'В плане' },
-    { value: 'DONE', label: 'Выполнено' },
-    { value: 'FAILED', label: 'Не выполнено' },
-  ];
+  const statusOptions = STATUS_OPTIONS;
 
   const wrapAction = async (action: () => Promise<boolean>, success: string) => {
     const ok = await action();
     if (ok) flashSuccess(success);
   };
+
+  /** Чипы активных фильтров для свёрнутого состояния (как в журнале ДП). */
+  const filtersSummary = useMemo(() => {
+    const labels: string[] = [`Статус: ${STATUS_FILTER_SUMMARY_LABELS[statusFilter] ?? 'Все'}`];
+    if (direction !== 'ALL') labels.push(`Направление: ${DIRECTION_LABELS[direction]}`);
+    labels.push(`Период: ${dateFrom || '…'} — ${dateTo || '…'}`);
+    if (search.trim()) labels.push(`Поиск: ${search.trim()}`);
+    return labels;
+  }, [statusFilter, direction, dateFrom, dateTo, search]);
 
   return (
     <div className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdHub.contractsListPage}`}>
@@ -455,7 +474,11 @@ export function InstallationSchedulesPageView({
         </button>
       </div>
 
-      <div className={cdHub.contractsListFiltersPanel}>
+      <CollapsibleFiltersPanel
+        storageKey="admin_installation_schedules_filters_collapsed"
+        title="Фильтры графика монтажей"
+        summaryLabels={filtersSummary}
+      >
         <div className={cdHub.contractsListFiltersStack}>
           <div className={cdHub.contractsListChipRow} role="group" aria-label="Направление">
             <span className={cdHub.contractsListChipRowLabel}>Направление</span>
@@ -571,7 +594,7 @@ export function InstallationSchedulesPageView({
             />
           </div>
         </div>
-      </div>
+      </CollapsibleFiltersPanel>
 
       <div className={styles.viewPanels}>
         <div

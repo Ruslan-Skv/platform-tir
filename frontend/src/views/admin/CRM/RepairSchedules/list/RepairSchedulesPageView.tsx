@@ -9,6 +9,7 @@ import {
   AdminListRefreshButton,
   AdminToolbarTrashButton,
 } from '@/shared/ui/admin/AdminToolbarIconButton';
+import { CollapsibleFiltersPanel } from '@/views/admin/CRM/shared/CollapsibleFiltersPanel';
 import { PackageWorkOrdersHubListModal } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/PackageWorkOrdersHubListModal';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
@@ -105,6 +106,19 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
     setSuccessVisible(true);
     window.setTimeout(() => setSuccessVisible(false), 2800);
   };
+
+  /** Чипы активных фильтров для свёрнутого состояния (как в журнале ДП). */
+  const filtersSummary = useMemo(() => {
+    const labels: string[] = [];
+    if (statusFilter !== 'ALL') labels.push(`Статус: ${REPAIR_STATUS_LABELS[statusFilter]}`);
+    if (deadlineFilter !== 'ALL') {
+      const deadlineLabel = DEADLINE_FILTERS.find((f) => f.key === deadlineFilter)?.label;
+      if (deadlineLabel) labels.push(`Срок: ${deadlineLabel}`);
+    }
+    if (staleOnly) labels.push('Только без записи > 7 дн.');
+    if (search.trim()) labels.push(`Поиск: ${search.trim()}`);
+    return labels;
+  }, [statusFilter, deadlineFilter, staleOnly, search]);
 
   const objectGroups = useMemo(() => buildRepairObjectGroups(items), [items]);
   const clusterCount = objectGroups.filter((g) => g.isCluster).length;
@@ -217,7 +231,11 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
         </button>
       </div>
 
-      <div className={cdHub.contractsListFiltersPanel}>
+      <CollapsibleFiltersPanel
+        storageKey="admin_repair_schedules_filters_collapsed"
+        title="Фильтры план-графика"
+        summaryLabels={filtersSummary}
+      >
         <div className={cdHub.contractsListFiltersStack}>
           <div className={cdHub.contractsListChipRow} role="group" aria-label="Статус">
             <span className={cdHub.contractsListChipRowLabel}>Статус</span>
@@ -285,7 +303,7 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
             </label>
           </div>
         </div>
-      </div>
+      </CollapsibleFiltersPanel>
 
       <div className={styles.viewPanels}>
         <div

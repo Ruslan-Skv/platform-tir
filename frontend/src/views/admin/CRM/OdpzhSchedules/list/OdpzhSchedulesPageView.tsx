@@ -9,6 +9,7 @@ import type {
 } from '@/shared/api/crm/admin-odpzh-schedules';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import dataTableStyles from '@/shared/ui/admin/DataTable/DataTable.module.css';
+import { CollapsibleFiltersPanel } from '@/views/admin/CRM/shared/CollapsibleFiltersPanel';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
 import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
@@ -201,6 +202,19 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
 
   useEffect(() => stopScrolling, [stopScrolling]);
 
+  /** Чипы активных фильтров для свёрнутого состояния (как в журнале ДП). */
+  const filtersSummary = useMemo(() => {
+    const labels: string[] = [];
+    const statusLabel = STATUS_TABS.find((tab) => tab.key === statusFilter)?.label;
+    if (statusFilter !== 'ALL' && statusLabel) labels.push(`Статус: ${statusLabel}`);
+    if (directionFilter !== 'ALL') {
+      const directionLabel = DIRECTION_FILTERS.find((tab) => tab.key === directionFilter)?.label;
+      if (directionLabel) labels.push(`Направление: ${directionLabel}`);
+    }
+    if (search.trim()) labels.push(`Поиск: ${search.trim()}`);
+    return labels;
+  }, [statusFilter, directionFilter, search]);
+
   return (
     <div className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdHub.contractsListPage}`}>
       <div className={cdHub.editorHeader}>
@@ -252,7 +266,11 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
         </div>
       ) : null}
 
-      <div className={cdHub.contractsListFiltersPanel}>
+      <CollapsibleFiltersPanel
+        storageKey="admin_odpzh_schedules_filters_collapsed"
+        title="Фильтры план-графика"
+        summaryLabels={filtersSummary}
+      >
         <div className={cdHub.contractsListFiltersStack}>
           <div className={cdHub.contractsListChipRow} role="group" aria-label="Статус">
             <span className={cdHub.contractsListChipRowLabel}>Статус</span>
@@ -298,7 +316,7 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
             />
           </div>
         </div>
-      </div>
+      </CollapsibleFiltersPanel>
 
       {viewMode === 'timeline' ? (
         <OdpzhSchedulesGanttTimeline items={items} loading={loading} />
@@ -367,7 +385,10 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
                           >
                             <DeadlineCell item={item} />
                           </td>
-                          <td>
+                          <td
+                            className={styles.installerCell}
+                            title={item.installerNames.join(', ')}
+                          >
                             {item.installerNames.length ? item.installerNames.join(', ') : '—'}
                           </td>
                           <td className={styles.nowrap}>

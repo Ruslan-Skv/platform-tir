@@ -6,6 +6,7 @@ import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { Modal } from '@/shared/ui/Modal';
 import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
+import { CollapsibleFiltersPanel } from '@/views/admin/CRM/shared/CollapsibleFiltersPanel';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
 import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.module.css';
@@ -91,6 +92,23 @@ export function FurnitureSchedulesPageView({ model }: { model: FurnitureSchedule
   };
 
   const objectGroups = useMemo(() => buildRepairObjectGroups(items), [items]);
+
+  /** Чипы активных фильтров для свёрнутого состояния (как в журнале ДП). */
+  const filtersSummary = useMemo(() => {
+    const labels: string[] = [];
+    if (statusFilter !== 'ALL' && statusFilter in FURNITURE_STATUS_LABELS) {
+      labels.push(
+        `Статус: ${FURNITURE_STATUS_LABELS[statusFilter as keyof typeof FURNITURE_STATUS_LABELS]}`
+      );
+    }
+    if (deadlineFilter !== 'ALL') {
+      const deadlineLabel = DEADLINE_FILTERS.find((f) => f.key === deadlineFilter)?.label;
+      if (deadlineLabel) labels.push(`Срок: ${deadlineLabel}`);
+    }
+    if (staleOnly) labels.push('Только без записи > 7 дн.');
+    if (search.trim()) labels.push(`Поиск: ${search.trim()}`);
+    return labels;
+  }, [statusFilter, deadlineFilter, staleOnly, search]);
   const clusterCount = objectGroups.filter((g) => g.isCluster).length;
   const countTitle =
     clusterCount > 0
@@ -187,7 +205,11 @@ export function FurnitureSchedulesPageView({ model }: { model: FurnitureSchedule
         </button>
       </div>
 
-      <div className={cdHub.contractsListFiltersPanel}>
+      <CollapsibleFiltersPanel
+        storageKey="admin_furniture_schedules_filters_collapsed"
+        title="Фильтры план-графика"
+        summaryLabels={filtersSummary}
+      >
         <div className={cdHub.contractsListFiltersStack}>
           <div className={cdHub.contractsListChipRow} role="group" aria-label="Статус">
             <span className={cdHub.contractsListChipRowLabel}>Статус</span>
@@ -261,7 +283,7 @@ export function FurnitureSchedulesPageView({ model }: { model: FurnitureSchedule
             </label>
           </div>
         </div>
-      </div>
+      </CollapsibleFiltersPanel>
 
       <div className={styles.viewPanels}>
         <div
