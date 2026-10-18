@@ -26,7 +26,6 @@
 
 .tableWrap {
   margin-top: var(--admin-space-lg);
-  overflow-x: auto;
 }
 
 .table {
@@ -37,7 +36,7 @@
 
 .table th,
 .table td {
-  padding: 10px 12px;
+  padding: 7px 8px;
   border-bottom: 1px solid var(--admin-border-color, #e5e7eb);
   text-align: left;
   vertical-align: top;
@@ -152,4 +151,12 @@
 .deadlineUrgent {
   color: var(--admin-error-text, #dc2626);
   font-weight: 600;
+}
+
+/* «Срок договора» — две строки, чтобы колонка была узкой. */
+.deadlineCol {
+  display: grid;
+  gap: 2px;
+  line-height: 1.25;
+  white-space: nowrap;
 }

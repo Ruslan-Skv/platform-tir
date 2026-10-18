@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useMemo } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type {
   OdpzhDeadlineWarningLevel,
@@ -8,6 +8,7 @@ import type {
   OdpzhScheduleStatus,
 } from '@/shared/api/crm/admin-odpzh-schedules';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
+import dataTableStyles from '@/shared/ui/admin/DataTable/DataTable.module.css';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
 import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
@@ -86,14 +87,20 @@ function deadlineCellClass(warning: OdpzhDeadlineWarningLevel | null): string {
   return styles.deadline;
 }
 
-/** «до 21.10.2026 · осталось 3 дн.» / «просрочен 5 дн.». */
-function formatDeadline(item: OdpzhScheduleRow): string {
-  if (!item.contractEndDate) return '—';
+/** «до 21.10.2026 · осталось 3 дн.» / «просрочен 5 дн.» — двумя строками. */
+function DeadlineCell({ item }: { item: OdpzhScheduleRow }) {
+  if (!item.contractEndDate) return <>—</>;
   const days = item.deadlineDaysLeft;
-  if (days == null) return `до ${formatDate(item.contractEndDate)}`;
-  if (days < 0) return `просрочен ${Math.abs(days)} дн.`;
-  if (days === 0) return `до ${formatDate(item.contractEndDate)} · сегодня`;
-  return `до ${formatDate(item.contractEndDate)} · осталось ${days} дн.`;
+  let second: string | null = null;
+  if (days != null && days < 0) second = `просрочен ${Math.abs(days)} дн.`;
+  else if (days === 0) second = 'сегодня';
+  else if (days != null) second = `осталось ${days} дн.`;
+  return (
+    <div className={styles.deadlineCol}>
+      <div>до {formatDate(item.contractEndDate)}</div>
+      {second ? <div>{second}</div> : null}
+    </div>
+  );
 }
 
 export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageModel }) {
@@ -127,6 +134,69 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
       items: items.filter((item) => item.status === status),
     })).filter((section) => section.items.length > 0);
   }, [items, statusFilter]);
+
+  /*
+   * Горизонтальный скролл со стрелками — как у таблицы «Договоры в расчёте»
+   * (общий DataTable): наведение на стрелку плавно прокручивает таблицу.
+   */
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const scrollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(false);
+
+  const stopScrolling = useCallback(() => {
+    if (scrollIntervalRef.current) {
+      clearInterval(scrollIntervalRef.current);
+      scrollIntervalRef.current = null;
+    }
+  }, []);
+
+  const startScrolling = useCallback(
+    (direction: 'left' | 'right') => {
+      stopScrolling();
+      scrollIntervalRef.current = setInterval(() => {
+        const container = scrollContainerRef.current;
+        if (!container) {
+          stopScrolling();
+          return;
+        }
+        const maxScroll = container.scrollWidth - container.clientWidth;
+        if (direction === 'left') {
+          container.scrollLeft = Math.max(0, container.scrollLeft - 10);
+          if (container.scrollLeft === 0) stopScrolling();
+        } else {
+          container.scrollLeft = Math.min(maxScroll, container.scrollLeft + 10);
+          if (container.scrollLeft >= maxScroll - 1) stopScrolling();
+        }
+      }, 16);
+    },
+    [stopScrolling]
+  );
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const checkScrollability = () => {
+      const hasHorizontalScroll = container.scrollWidth > container.clientWidth;
+      const maxScrollLeft = container.scrollWidth - container.clientWidth;
+      setShowLeftArrow(hasHorizontalScroll && container.scrollLeft > 5);
+      setShowRightArrow(hasHorizontalScroll && container.scrollLeft < maxScrollLeft - 5);
+    };
+
+    checkScrollability();
+    container.addEventListener('scroll', checkScrollability, { passive: true });
+    window.addEventListener('resize', checkScrollability);
+    const timeouts = [0, 100].map((delay) => setTimeout(checkScrollability, delay));
+
+    return () => {
+      container.removeEventListener('scroll', checkScrollability);
+      window.removeEventListener('resize', checkScrollability);
+      timeouts.forEach(clearTimeout);
+    };
+  }, [items, viewMode]);
+
+  useEffect(() => stopScrolling, [stopScrolling]);
 
   return (
     <div className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdHub.contractsListPage}`}>
@@ -231,75 +301,101 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
         <OdpzhSchedulesGanttTimeline items={items} loading={loading} />
       ) : (
         <div className={styles.tableWrap}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>№ договора</th>
-                <th>Направление</th>
-                <th>Клиент</th>
-                <th>Адрес</th>
-                <th>Сумма</th>
-                <th>Срок договора</th>
-                <th>Монтажники</th>
-                <th>Ближайший монтаж</th>
-                <th>Кол-во монтажей</th>
-                <th>Статус</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sections.map((section) => (
-                <Fragment key={section.id}>
-                  {section.label ? (
-                    <tr
-                      className={`${styles.statusSectionRow} ${styles[`statusSectionRow${section.id}`]}`}
-                    >
-                      <td colSpan={10}>
-                        {section.label} ({section.items.length})
+          <div className={dataTableStyles.tableWrapper}>
+            {showLeftArrow ? (
+              <div
+                className={`${dataTableStyles.scrollArrow} ${dataTableStyles.scrollArrowLeft}`}
+                onMouseEnter={() => startScrolling('left')}
+                onMouseLeave={stopScrolling}
+              >
+                ←
+              </div>
+            ) : null}
+            <div className={dataTableStyles.scrollContainer} ref={scrollContainerRef}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>№</th>
+                    <th>Дата</th>
+                    <th>Направление</th>
+                    <th>Клиент</th>
+                    <th>Адрес</th>
+                    <th>Сумма</th>
+                    <th>Срок договора</th>
+                    <th>Монтажники</th>
+                    <th>Монтаж</th>
+                    <th>Кол-во</th>
+                    <th>Статус</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sections.map((section) => (
+                    <Fragment key={section.id}>
+                      {section.label ? (
+                        <tr
+                          className={`${styles.statusSectionRow} ${styles[`statusSectionRow${section.id}`]}`}
+                        >
+                          <td colSpan={11}>
+                            {section.label} ({section.items.length})
+                          </td>
+                        </tr>
+                      ) : null}
+                      {section.items.map((item) => (
+                        <tr key={item.id}>
+                          <td className={styles.nowrap}>{item.contractNumber ?? '—'}</td>
+                          <td className={styles.nowrap}>{formatDate(item.contractDate)}</td>
+                          <td className={styles.nowrap}>
+                            {ODPZH_DIRECTION_LABELS[item.kind] ?? item.kind}
+                          </td>
+                          <td>{item.customerName ?? '—'}</td>
+                          <td>{item.customerAddress ?? '—'}</td>
+                          <td className={styles.sum}>{formatSum(item.contractSum)}</td>
+                          <td
+                            className={deadlineCellClass(item.deadlineWarning)}
+                            title={
+                              item.contractDate
+                                ? `Договор от ${formatDate(item.contractDate)}${
+                                    item.workPeriodDays != null
+                                      ? ` · срок ${item.workPeriodDays} раб. дн.`
+                                      : ''
+                                  }`
+                                : undefined
+                            }
+                          >
+                            <DeadlineCell item={item} />
+                          </td>
+                          <td>
+                            {item.installerNames.length ? item.installerNames.join(', ') : '—'}
+                          </td>
+                          <td className={nearestDateClass(item.nearestInstallationDate)}>
+                            {formatDate(item.nearestInstallationDate)}
+                          </td>
+                          <td className={styles.nowrap}>{item.entriesCount}</td>
+                          <td className={styles.nowrap}>{STATUS_BADGES[item.status]}</td>
+                        </tr>
+                      ))}
+                    </Fragment>
+                  ))}
+                  {!loading && items.length === 0 ? (
+                    <tr>
+                      <td colSpan={11} className={styles.empty}>
+                        Нет договоров в этом разделе
                       </td>
                     </tr>
                   ) : null}
-                  {section.items.map((item) => (
-                    <tr key={item.id}>
-                      <td className={styles.nowrap}>{item.contractNumber ?? '—'}</td>
-                      <td className={styles.nowrap}>
-                        {ODPZH_DIRECTION_LABELS[item.kind] ?? item.kind}
-                      </td>
-                      <td>{item.customerName ?? '—'}</td>
-                      <td>{item.customerAddress ?? '—'}</td>
-                      <td className={styles.sum}>{formatSum(item.contractSum)}</td>
-                      <td
-                        className={deadlineCellClass(item.deadlineWarning)}
-                        title={
-                          item.contractDate
-                            ? `Договор от ${formatDate(item.contractDate)}${
-                                item.workPeriodDays != null
-                                  ? ` · срок ${item.workPeriodDays} раб. дн.`
-                                  : ''
-                              }`
-                            : undefined
-                        }
-                      >
-                        {formatDeadline(item)}
-                      </td>
-                      <td>{item.installerNames.length ? item.installerNames.join(', ') : '—'}</td>
-                      <td className={nearestDateClass(item.nearestInstallationDate)}>
-                        {formatDate(item.nearestInstallationDate)}
-                      </td>
-                      <td className={styles.nowrap}>{item.entriesCount}</td>
-                      <td className={styles.nowrap}>{STATUS_BADGES[item.status]}</td>
-                    </tr>
-                  ))}
-                </Fragment>
-              ))}
-              {!loading && items.length === 0 ? (
-                <tr>
-                  <td colSpan={10} className={styles.empty}>
-                    Нет договоров в этом разделе
-                  </td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
+                </tbody>
+              </table>
+            </div>
+            {showRightArrow ? (
+              <div
+                className={`${dataTableStyles.scrollArrow} ${dataTableStyles.scrollArrowRight}`}
+                onMouseEnter={() => startScrolling('right')}
+                onMouseLeave={stopScrolling}
+              >
+                →
+              </div>
+            ) : null}
+          </div>
         </div>
       )}
     </div>

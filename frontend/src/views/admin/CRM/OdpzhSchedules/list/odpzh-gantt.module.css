@@ -324,9 +324,19 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 0;
-  border-left: 2px dashed var(--admin-error-text, #dc2626);
+  /* зона наведения — чтобы title-подсказка ловилась по всей высоте */
+  width: 10px;
   transform: translateX(-50%);
-  z-index: 2;
-  pointer-events: none;
+  z-index: 3;
+  cursor: help;
+  pointer-events: auto;
+}
+
+.deadlineLine::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  border-left: 2px dashed var(--admin-error-text, #dc2626);
 }

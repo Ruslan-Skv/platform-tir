@@ -258,7 +258,8 @@ export function OdpzhSchedulesGanttTimeline({ items, loading }: Props) {
                 title={row.item.contractNumber || undefined}
               >
                 <strong className={styles.labelContract}>
-                  {row.item.contractNumber || 'Без номера'}
+                  {(row.item.contractNumber || 'Без номера') +
+                    (row.item.contractDate ? ` · от ${formatDate(row.item.contractDate)}` : '')}
                 </strong>
                 <span className={styles.labelMaster}>{row.item.customerName?.trim() || '—'}</span>
                 <span className={styles.labelAddress}>
@@ -282,9 +283,9 @@ export function OdpzhSchedulesGanttTimeline({ items, loading }: Props) {
                   <div
                     className={styles.deadlineLine}
                     style={{ left: `${chart.toPct(row.deadlineMs)}%` }}
-                    title={`Срок договора: ${formatDate(row.item.contractEndDate)}${
+                    title={`Срок договора до ${formatDate(row.item.contractEndDate)}${
                       row.item.deadlineDaysLeft != null && row.item.deadlineDaysLeft < 0
-                        ? ` (просрочен ${Math.abs(row.item.deadlineDaysLeft)} дн.)`
+                        ? ` · просрочен ${Math.abs(row.item.deadlineDaysLeft)} дн.`
                         : ''
                     }`}
                   />
