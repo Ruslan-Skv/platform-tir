@@ -385,11 +385,14 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
                           >
                             <DeadlineCell item={item} />
                           </td>
-                          <td
-                            className={styles.installerCell}
-                            title={item.installerNames.join(', ')}
-                          >
-                            {item.installerNames.length ? item.installerNames.join(', ') : '—'}
+                          <td className={styles.installerCell}>
+                            {item.installerNames.length
+                              ? item.installerNames.map((name) => (
+                                  <span key={name} className={styles.installerName} title={name}>
+                                    {name}
+                                  </span>
+                                ))
+                              : '—'}
                           </td>
                           <td className={styles.nowrap}>
                             {item.allInstallationsDone ? (

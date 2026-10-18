@@ -52,12 +52,16 @@
   white-space: nowrap;
 }
 
-/* ФИО монтажников: без переносов, длинное — с многоточием (полностью — в title). */
+/* Монтажники: каждый на своей строке, длинное ФИО — с многоточием (полностью — в title). */
 .table td.installerCell {
+  max-width: 220px;
+}
+
+.table td.installerCell .installerName {
+  display: block;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 220px;
 }
 
 .nearestDate {
