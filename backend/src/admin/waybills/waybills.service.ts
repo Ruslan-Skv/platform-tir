@@ -18,18 +18,18 @@ import { FailWaybillTaskDto } from './dto/fail-waybill-task.dto';
 import { RescheduleWaybillTaskDto } from './dto/reschedule-waybill-task.dto';
 import { UpdateWaybillTaskDto } from './dto/update-waybill-task.dto';
 import { WaybillNotifyService } from './waybill-notify.service';
-
-const PLANNER_ROLES = new Set([
-  'SUPER_ADMIN',
-  'ADMIN',
-  'MODERATOR',
-  'SUPPORT',
-  'MANAGER',
-  'TECHNOLOGIST',
-  'BRIGADIER',
-  'LEAD_SPECIALIST_FURNITURE',
-  'LEAD_SPECIALIST_WINDOWS_DOORS',
-]);
+import {
+  WAYBILL_TRASH_RETENTION_DAYS,
+  WAYBILL_TRASH_RETENTION_MS,
+  composeCustomerInfoText,
+  decimalOrNull,
+  emptyToNull,
+  isWaybillPlanner,
+  normalizeCustomerPhones,
+  parseWaybillDateOnly,
+  resolveWaybillPackageSnapshot,
+  waybillTodayDateOnly,
+} from './waybills.shared';
 
 const USER_SELECT = {
   id: true,
@@ -52,10 +52,6 @@ const TASK_INCLUDE = {
     select: WAYBILL_ATTACHMENT_SELECT,
   },
 } as const;
-
-/** Срок хранения задания в корзине до безвозвратного удаления. */
-export const WAYBILL_TRASH_RETENTION_DAYS = 30;
-const WAYBILL_TRASH_RETENTION_MS = WAYBILL_TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class WaybillsService {
@@ -80,43 +76,12 @@ export class WaybillsService {
     }
   }
 
-  private parseDateOnly(dateStr: string): Date {
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr.trim());
-    if (!m) {
-      throw new BadRequestException('date must be YYYY-MM-DD');
-    }
-    return new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
-  }
-
-  private todayDateOnly(): string {
-    const now = new Date();
-    const y = now.getFullYear();
-    const mo = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    return `${y}-${mo}-${d}`;
-  }
-
-  private isPlanner(role: string): boolean {
-    return PLANNER_ROLES.has(role);
-  }
-
-  private permanentDeleteAtIso(deletedAt: Date): string {
-    return new Date(deletedAt.getTime() + WAYBILL_TRASH_RETENTION_MS).toISOString();
-  }
-
   /** Безвозвратно удаляет задания из корзины, лежащие дольше срока хранения. */
   private async purgeExpiredTrashedWaybillTasks(): Promise<void> {
     const cutoff = new Date(Date.now() - WAYBILL_TRASH_RETENTION_MS);
     await this.prisma.waybillTask.deleteMany({
       where: { deletedAt: { lt: cutoff } },
     });
-  }
-
-  private emptyToNull(value?: string | null): string | null | undefined {
-    if (value === undefined) return undefined;
-    if (value === null) return null;
-    const trimmed = value.trim();
-    return trimmed === '' ? null : trimmed;
   }
 
   /** Задание, закрытое расчётом з/п, неизменяемо. */
@@ -126,82 +91,21 @@ export class WaybillsService {
     }
   }
 
-  private decimalOrNull(value?: number | null): Prisma.Decimal | null | undefined {
-    if (value === undefined) return undefined;
-    if (value === null) return null;
-    return new Prisma.Decimal(value);
-  }
-
-  private composeCustomerInfoText(parts: {
-    customerName?: string | null;
-    customerAddress?: string | null;
-    customerPhones?: string[];
-  }): string | null {
-    const text = [parts.customerName, parts.customerAddress, ...(parts.customerPhones ?? [])]
-      .map((v) => v?.trim())
-      .filter(Boolean)
-      .join('        ');
-    return text || null;
-  }
-
-  private normalizeCustomerPhones(
-    phones?: string[] | null,
-    fallbackPhone?: string | null,
-  ): string[] {
-    const fromList = (phones ?? []).map((p) => p?.trim()).filter((p): p is string => Boolean(p));
-    if (fromList.length > 0) {
-      const seen = new Set<string>();
-      const unique: string[] = [];
-      for (const p of fromList) {
-        const key = p.replace(/\D/g, '');
-        if (key && seen.has(key)) continue;
-        if (key) seen.add(key);
-        unique.push(p);
-      }
-      return unique;
-    }
-    const single = fallbackPhone?.trim();
-    return single ? [single] : [];
-  }
-
-  /**
-   * Для задания, связанного с договором-пакетом, номер договора и данные
-   * заказчика всегда берутся из пакета — ручные значения клиента используются
-   * только для полей, которых в пакете нет (как в графике монтажей).
-   */
-  private async resolvePackageSnapshot(packageId: string): Promise<{
-    id: string;
-    contractNumber: string | null;
-    customerName: string | null;
-    customerAddress: string | null;
-    customerPhone: string | null;
-  }> {
-    const pkg = await this.prisma.contractDocumentPackage.findFirst({
-      where: { id: packageId, deletedAt: null },
-      select: { id: true, formData: true },
-    });
-    if (!pkg) throw new BadRequestException('Пакет документов не найден');
-    const snap = customerFromFormData(asFormDataRecord(pkg.formData));
-    return {
-      id: pkg.id,
-      contractNumber: snap.contractNumber,
-      customerName: snap.customerName,
-      customerAddress: snap.customerAddress,
-      customerPhone: snap.customerPhone,
-    };
+  private permanentDeleteAtIso(deletedAt: Date): string {
+    return new Date(deletedAt.getTime() + WAYBILL_TRASH_RETENTION_MS).toISOString();
   }
 
   private async buildCreateData(dto: CreateWaybillTaskDto, createdById: string) {
-    let customerName = this.emptyToNull(dto.customerName) ?? null;
-    let customerAddress = this.emptyToNull(dto.customerAddress) ?? null;
-    let customerPhones = this.normalizeCustomerPhones(dto.customerPhones, dto.customerPhone);
-    let customerInfoText = this.emptyToNull(dto.customerInfoText) ?? null;
-    let contractNumber = this.emptyToNull(dto.contractNumber) ?? null;
+    let customerName = emptyToNull(dto.customerName) ?? null;
+    let customerAddress = emptyToNull(dto.customerAddress) ?? null;
+    let customerPhones = normalizeCustomerPhones(dto.customerPhones, dto.customerPhone);
+    let customerInfoText = emptyToNull(dto.customerInfoText) ?? null;
+    let contractNumber = emptyToNull(dto.contractNumber) ?? null;
 
-    const packageId = this.emptyToNull(dto.packageId) ?? null;
+    const packageId = emptyToNull(dto.packageId) ?? null;
     let packageConnect: { id: string } | null = null;
     if (packageId) {
-      const snap = await this.resolvePackageSnapshot(packageId);
+      const snap = await resolveWaybillPackageSnapshot(this.prisma, packageId);
       packageConnect = { id: snap.id };
       contractNumber = snap.contractNumber ?? contractNumber;
       customerName = snap.customerName ?? customerName;
@@ -213,7 +117,7 @@ export class WaybillsService {
     const customerPhone = customerPhones[0] ?? null;
 
     if (!customerInfoText) {
-      customerInfoText = this.composeCustomerInfoText({
+      customerInfoText = composeCustomerInfoText({
         customerName,
         customerAddress,
         customerPhones,
@@ -221,10 +125,10 @@ export class WaybillsService {
     }
 
     return {
-      date: this.parseDateOnly(dto.date),
-      timeFrom: this.emptyToNull(dto.timeFrom) ?? null,
-      timeTo: this.emptyToNull(dto.timeTo) ?? null,
-      direction: this.emptyToNull(dto.direction) ?? null,
+      date: parseWaybillDateOnly(dto.date),
+      timeFrom: emptyToNull(dto.timeFrom) ?? null,
+      timeTo: emptyToNull(dto.timeTo) ?? null,
+      direction: emptyToNull(dto.direction) ?? null,
       taskText: dto.taskText.trim(),
       customerInfoText,
       customerName,
@@ -233,12 +137,12 @@ export class WaybillsService {
       customerPhones,
       contractNumber,
       packageId: packageConnect ? packageConnect.id : null,
-      deliveryCost: this.decimalOrNull(dto.deliveryCost) ?? null,
-      deliveryPayer: this.emptyToNull(dto.deliveryPayer) ?? null,
-      moversCost: this.decimalOrNull(dto.moversCost) ?? null,
-      moversPayer: this.emptyToNull(dto.moversPayer) ?? null,
-      responsibleUserId: this.emptyToNull(dto.responsibleUserId) ?? null,
-      driverUserId: this.emptyToNull(dto.driverUserId) ?? null,
+      deliveryCost: decimalOrNull(dto.deliveryCost) ?? null,
+      deliveryPayer: emptyToNull(dto.deliveryPayer) ?? null,
+      moversCost: decimalOrNull(dto.moversCost) ?? null,
+      moversPayer: emptyToNull(dto.moversPayer) ?? null,
+      responsibleUserId: emptyToNull(dto.responsibleUserId) ?? null,
+      driverUserId: emptyToNull(dto.driverUserId) ?? null,
       createdById,
     };
   }
@@ -262,10 +166,10 @@ export class WaybillsService {
     const fromStr = params.dateFrom?.trim();
     const toStr = params.dateTo?.trim();
     const dateFilter: Prisma.DateTimeFilter = {};
-    if (fromStr) dateFilter.gte = this.parseDateOnly(fromStr);
-    if (toStr) dateFilter.lte = this.parseDateOnly(toStr);
+    if (fromStr) dateFilter.gte = parseWaybillDateOnly(fromStr);
+    if (toStr) dateFilter.lte = parseWaybillDateOnly(toStr);
     if (!fromStr && !toStr) {
-      const today = this.parseDateOnly(this.todayDateOnly());
+      const today = parseWaybillDateOnly(waybillTodayDateOnly());
       dateFilter.gte = today;
       dateFilter.lte = today;
     }
@@ -278,7 +182,7 @@ export class WaybillsService {
   }
 
   findMyByDate(userId: string, dateStr?: string) {
-    const date = dateStr?.trim() || this.todayDateOnly();
+    const date = dateStr?.trim() || waybillTodayDateOnly();
     return this.findMyByDateRange(userId, { dateFrom: date, dateTo: date });
   }
 
@@ -286,10 +190,10 @@ export class WaybillsService {
     const fromStr = params.dateFrom?.trim();
     const toStr = params.dateTo?.trim();
     const dateFilter: Prisma.DateTimeFilter = {};
-    if (fromStr) dateFilter.gte = this.parseDateOnly(fromStr);
-    if (toStr) dateFilter.lte = this.parseDateOnly(toStr);
+    if (fromStr) dateFilter.gte = parseWaybillDateOnly(fromStr);
+    if (toStr) dateFilter.lte = parseWaybillDateOnly(toStr);
     if (!fromStr && !toStr) {
-      const today = this.parseDateOnly(this.todayDateOnly());
+      const today = parseWaybillDateOnly(waybillTodayDateOnly());
       dateFilter.gte = today;
       dateFilter.lte = today;
     }
@@ -322,27 +226,27 @@ export class WaybillsService {
     const data: Prisma.WaybillTaskUpdateInput = {};
 
     if (dto.date !== undefined) {
-      data.date = this.parseDateOnly(dto.date);
+      data.date = parseWaybillDateOnly(dto.date);
     }
-    if (dto.timeFrom !== undefined) data.timeFrom = this.emptyToNull(dto.timeFrom) ?? null;
-    if (dto.timeTo !== undefined) data.timeTo = this.emptyToNull(dto.timeTo) ?? null;
-    if (dto.direction !== undefined) data.direction = this.emptyToNull(dto.direction) ?? null;
+    if (dto.timeFrom !== undefined) data.timeFrom = emptyToNull(dto.timeFrom) ?? null;
+    if (dto.timeTo !== undefined) data.timeTo = emptyToNull(dto.timeTo) ?? null;
+    if (dto.direction !== undefined) data.direction = emptyToNull(dto.direction) ?? null;
     if (dto.taskText !== undefined) data.taskText = dto.taskText.trim();
 
     if (dto.customerName !== undefined) {
-      data.customerName = this.emptyToNull(dto.customerName) ?? null;
+      data.customerName = emptyToNull(dto.customerName) ?? null;
     }
     if (dto.customerAddress !== undefined) {
-      data.customerAddress = this.emptyToNull(dto.customerAddress) ?? null;
+      data.customerAddress = emptyToNull(dto.customerAddress) ?? null;
     }
 
     const phonesTouched = dto.customerPhones !== undefined || dto.customerPhone !== undefined;
     let nextPhones: string[] | undefined;
     if (phonesTouched) {
       if (dto.customerPhones !== undefined) {
-        nextPhones = this.normalizeCustomerPhones(dto.customerPhones, null);
+        nextPhones = normalizeCustomerPhones(dto.customerPhones, null);
       } else {
-        nextPhones = this.normalizeCustomerPhones(null, dto.customerPhone);
+        nextPhones = normalizeCustomerPhones(null, dto.customerPhone);
       }
       data.customerPhones = nextPhones;
       data.customerPhone = nextPhones[0] ?? null;
@@ -365,23 +269,23 @@ export class WaybillsService {
           : current?.customerPhone
             ? [current.customerPhone]
             : []);
-      data.customerInfoText = this.composeCustomerInfoText({
+      data.customerInfoText = composeCustomerInfoText({
         customerName:
           dto.customerName !== undefined
-            ? (this.emptyToNull(dto.customerName) ?? null)
+            ? (emptyToNull(dto.customerName) ?? null)
             : current?.customerName,
         customerAddress:
           dto.customerAddress !== undefined
-            ? (this.emptyToNull(dto.customerAddress) ?? null)
+            ? (emptyToNull(dto.customerAddress) ?? null)
             : current?.customerAddress,
         customerPhones: phones,
       });
     } else if (dto.customerInfoText !== undefined) {
-      data.customerInfoText = this.emptyToNull(dto.customerInfoText) ?? null;
+      data.customerInfoText = emptyToNull(dto.customerInfoText) ?? null;
     }
 
     if (dto.contractNumber !== undefined) {
-      data.contractNumber = this.emptyToNull(dto.contractNumber) ?? null;
+      data.contractNumber = emptyToNull(dto.contractNumber) ?? null;
     }
 
     /*
@@ -389,12 +293,11 @@ export class WaybillsService {
      * и данные заказчика всегда синхронизируются с пакетом (самовосстановление
      * при каждом редактировании), ручные значения игнорируются.
      */
-    let newPackageSnap: Awaited<ReturnType<WaybillsService['resolvePackageSnapshot']>> | null =
-      null;
+    let newPackageSnap: Awaited<ReturnType<typeof resolveWaybillPackageSnapshot>> | null = null;
     if (dto.packageId !== undefined) {
-      const packageId = this.emptyToNull(dto.packageId) ?? null;
+      const packageId = emptyToNull(dto.packageId) ?? null;
       if (packageId) {
-        newPackageSnap = await this.resolvePackageSnapshot(packageId);
+        newPackageSnap = await resolveWaybillPackageSnapshot(this.prisma, packageId);
         data.package = { connect: { id: newPackageSnap.id } };
       } else {
         data.package = { disconnect: true };
@@ -419,19 +322,18 @@ export class WaybillsService {
         (data.customerAddress as string | null | undefined) ?? existing.customerAddress;
       const finalPhones =
         (data.customerPhones as string[] | undefined) ?? existing.customerPhones ?? [];
-      data.customerInfoText = this.composeCustomerInfoText({
+      data.customerInfoText = composeCustomerInfoText({
         customerName: finalName,
         customerAddress: finalAddress,
         customerPhones: finalPhones,
       });
     }
-    if (dto.deliveryCost !== undefined)
-      data.deliveryCost = this.decimalOrNull(dto.deliveryCost) ?? null;
+    if (dto.deliveryCost !== undefined) data.deliveryCost = decimalOrNull(dto.deliveryCost) ?? null;
     if (dto.deliveryPayer !== undefined) {
-      data.deliveryPayer = this.emptyToNull(dto.deliveryPayer) ?? null;
+      data.deliveryPayer = emptyToNull(dto.deliveryPayer) ?? null;
     }
-    if (dto.moversCost !== undefined) data.moversCost = this.decimalOrNull(dto.moversCost) ?? null;
-    if (dto.moversPayer !== undefined) data.moversPayer = this.emptyToNull(dto.moversPayer) ?? null;
+    if (dto.moversCost !== undefined) data.moversCost = decimalOrNull(dto.moversCost) ?? null;
+    if (dto.moversPayer !== undefined) data.moversPayer = emptyToNull(dto.moversPayer) ?? null;
     if (dto.responsibleUserId !== undefined) {
       data.responsible = dto.responsibleUserId
         ? { connect: { id: dto.responsibleUserId } }
@@ -545,7 +447,7 @@ export class WaybillsService {
   }
 
   private assertCanComplete(task: { driverUserId: string | null }, userId: string, role: string) {
-    if (this.isPlanner(role)) return;
+    if (isWaybillPlanner(role)) return;
     if (task.driverUserId && task.driverUserId === userId) return;
     throw new ForbiddenException('Нет прав отметить выполнение этого задания');
   }
@@ -558,7 +460,7 @@ export class WaybillsService {
       where: { id },
       data: {
         status: WaybillTaskStatus.DONE,
-        completionNote: this.emptyToNull(dto.note) ?? null,
+        completionNote: emptyToNull(dto.note) ?? null,
         completedAt: new Date(),
         completedById: userId,
       },
@@ -588,7 +490,7 @@ export class WaybillsService {
 
   /** Копия задания на новую дату/время. Оригинал не меняется — статус «Не выполнено» ставится вручную. */
   async reschedule(id: string, dto: RescheduleWaybillTaskDto, actorUserId: string, role: string) {
-    if (!this.isPlanner(role)) {
+    if (!isWaybillPlanner(role)) {
       throw new ForbiddenException('Переносить задание может только планировщик');
     }
     const source = await this.findOne(id);
@@ -602,15 +504,14 @@ export class WaybillsService {
 
     const newDate = dto.date.trim();
     const timeFrom =
-      dto.timeFrom === undefined ? source.timeFrom : (this.emptyToNull(dto.timeFrom) ?? null);
-    const timeTo =
-      dto.timeTo === undefined ? source.timeTo : (this.emptyToNull(dto.timeTo) ?? null);
+      dto.timeFrom === undefined ? source.timeFrom : (emptyToNull(dto.timeFrom) ?? null);
+    const timeTo = dto.timeTo === undefined ? source.timeTo : (emptyToNull(dto.timeTo) ?? null);
 
     await this.assertDriverAcceptsDeliveriesOnDate(source.driverUserId, newDate);
 
     const copy = await this.prisma.waybillTask.create({
       data: {
-        date: this.parseDateOnly(newDate),
+        date: parseWaybillDateOnly(newDate),
         timeFrom,
         timeTo,
         direction: source.direction,
@@ -638,7 +539,7 @@ export class WaybillsService {
   }
 
   async reopen(id: string, role: string) {
-    if (!this.isPlanner(role)) {
+    if (!isWaybillPlanner(role)) {
       throw new ForbiddenException('Только ответственный может вернуть задание в план');
     }
     const task = await this.findOne(id);
