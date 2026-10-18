@@ -8,11 +8,13 @@ import {
 } from '../contract-document-packages/list-pipeline/package-list-pipeline-status';
 import {
   asFormDataRecord,
-  customerFromFormData,
   selectedInstallerIds,
 } from '../installation-schedules/installation-schedule.shared';
+import { addWorkingDaysExcludingWeekends } from '../repair-schedules/repair-schedule.shared';
 import {
   ODPZH_SCHEDULE_KINDS,
+  buildOdpzhDeadlineWarning,
+  type OdpzhDeadlineWarningLevel,
   type OdpzhScheduleKind,
   type OdpzhScheduleStatus,
 } from './odpzh-schedule.shared';
@@ -26,6 +28,15 @@ export type OdpzhScheduleRow = {
   customerAddress: string | null;
   customerPhone: string | null;
   contractSum: number | null;
+  /** Дата договора (formData.contract.date, DD.MM.YYYY → ISO). */
+  contractDate: string | null;
+  /** Срок договора в рабочих днях (formData.contract.workPeriod). */
+  workPeriodDays: number | null;
+  /** Контрольная дата окончания договора: дата договора + срок (рабочие дни). */
+  contractEndDate: string | null;
+  /** Календарных дней до срока; < 0 — просрочен. */
+  deadlineDaysLeft: number | null;
+  deadlineWarning: OdpzhDeadlineWarningLevel | null;
   installerNames: string[];
   /** Ближайший запланированный монтаж (сегодня или позже). */
   nearestInstallationDate: string | null;
@@ -83,28 +94,91 @@ function todayIsoDay(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-/** Сумма договора из formData (contract.totalAmount либо расчёт продуктовых направлений). */
-function contractSumFromFormData(formData: Record<string, unknown>): number | null {
-  const asObj = (v: unknown): Record<string, unknown> | null =>
-    v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
-  const num = (raw: unknown): number | null => {
-    if (typeof raw === 'number' && Number.isFinite(raw) && raw >= 0) return raw;
-    if (typeof raw === 'string' && raw.trim()) {
-      const n = Number.parseFloat(raw.replace(/\s+/g, '').replace(',', '.'));
-      if (Number.isFinite(n) && n >= 0) return n;
+function asObj(v: unknown): Record<string, unknown> | null {
+  return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
+}
+
+function str(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function num(raw: unknown): number | null {
+  if (typeof raw === 'number' && Number.isFinite(raw) && raw >= 0) return raw;
+  if (typeof raw === 'string' && raw.trim()) {
+    const n = Number.parseFloat(raw.replace(/\s+/g, '').replace(',', '.'));
+    if (Number.isFinite(n) && n >= 0) return n;
+  }
+  return null;
+}
+
+/** DD.MM.YYYY либо ISO → YYYY-MM-DD. */
+function parseFlexibleDateOnly(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const t = value.trim();
+  const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(t);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  const ru = /^(\d{2})\.(\d{2})\.(\d{4})/.exec(t);
+  if (ru) return `${ru[3]}-${ru[2]}-${ru[1]}`;
+  return null;
+}
+
+/**
+ * Данные договора/клиента из formData пакетов продуктовых направлений
+ * (окна / двери / потолки / жалюзи): блоки contract / customer / object.
+ */
+function odpzhPackageSnapshot(formData: Record<string, unknown>): {
+  contractNumber: string | null;
+  contractDate: string | null;
+  workPeriodDays: number | null;
+  contractSum: number | null;
+  customerName: string | null;
+  customerAddress: string | null;
+  customerPhone: string | null;
+} {
+  const contract = asObj(formData.contract);
+  const customer = asObj(formData.customer);
+  const object = asObj(formData.object);
+
+  const customerType = customer?.type;
+  const customerName =
+    customerType === 'COMPANY' || customerType === 'ENTREPRENEUR'
+      ? str(customer?.organizationName)
+      : str(customer?.fullName);
+  const phone = str(customer?.phone) ?? firstPhone(customer?.phones);
+  const address = str(customer?.address) ?? str(object?.objectAddress) ?? str(object?.address);
+
+  const workPeriodRaw = contract?.workPeriod;
+  const workPeriodDays =
+    typeof workPeriodRaw === 'number' && Number.isFinite(workPeriodRaw)
+      ? Math.trunc(workPeriodRaw)
+      : typeof workPeriodRaw === 'string' && /^\d+$/.test(workPeriodRaw.trim())
+        ? parseInt(workPeriodRaw.trim(), 10)
+        : null;
+
+  return {
+    contractNumber: str(contract?.number),
+    contractDate: parseFlexibleDateOnly(contract?.date),
+    workPeriodDays: workPeriodDays != null && workPeriodDays >= 1 ? workPeriodDays : null,
+    contractSum:
+      num(contract?.totalAmount) ??
+      num(asObj(formData.estimate)?.total) ??
+      num(asObj(asObj(formData.estimate)?.snapshot)?.total) ??
+      num(formData.productSpecificationAmount),
+    customerName,
+    customerAddress: address,
+    customerPhone: phone,
+  };
+}
+
+function firstPhone(raw: unknown): string | null {
+  if (Array.isArray(raw)) {
+    for (const item of raw) {
+      const s = str(item);
+      if (s) return s;
     }
     return null;
-  };
-
-  const contract = asObj(formData.contract);
-  const fromContract = num(contract?.totalAmount);
-  if (fromContract != null) return fromContract;
-
-  const estimate = asObj(formData.estimate);
-  const fromEstimate = num(asObj(estimate?.snapshot)?.total);
-  if (fromEstimate != null) return fromEstimate;
-
-  return num(formData.productSpecificationAmount);
+  }
+  return str(raw);
 }
 
 /**
@@ -212,16 +286,31 @@ export class OdpzhSchedulesService {
         }
       }
 
-      const customer = customerFromFormData(formData);
+      const snapshot = odpzhPackageSnapshot(formData);
+      // Контрольная дата: дата договора + срок в рабочих днях (как «Срок дог.» в договорах).
+      const contractEndDate =
+        snapshot.contractDate && snapshot.workPeriodDays != null
+          ? addWorkingDaysExcludingWeekends(snapshot.contractDate, snapshot.workPeriodDays)
+          : null;
+      const { deadlineDaysLeft, deadlineWarning } = buildOdpzhDeadlineWarning({
+        contractEndDate,
+        status,
+      });
+
       rows.push({
         id: pkg.id,
-        contractNumber: customer.contractNumber,
+        contractNumber: snapshot.contractNumber,
         kind: pkg.kind as OdpzhScheduleKind,
         status,
-        customerName: customer.customerName,
-        customerAddress: customer.customerAddress,
-        customerPhone: customer.customerPhone,
-        contractSum: contractSumFromFormData(formData),
+        customerName: snapshot.customerName,
+        customerAddress: snapshot.customerAddress,
+        customerPhone: snapshot.customerPhone,
+        contractSum: snapshot.contractSum,
+        contractDate: snapshot.contractDate,
+        workPeriodDays: snapshot.workPeriodDays,
+        contractEndDate,
+        deadlineDaysLeft,
+        deadlineWarning,
         installerNames: [...installerNames],
         nearestInstallationDate,
         lastInstallationDate,

@@ -33,6 +33,9 @@ export type OdpzhScheduleEntry = {
   workOrderKey: string | null;
 };
 
+/** Уровень предупреждения по сроку договора (≤20 / ≤10 / ≤3 дн. или просрочка). */
+export type OdpzhDeadlineWarningLevel = 'D20' | 'D10' | 'D3' | 'OVERDUE';
+
 export type OdpzhScheduleRow = {
   id: string;
   contractNumber: string | null;
@@ -42,6 +45,15 @@ export type OdpzhScheduleRow = {
   customerAddress: string | null;
   customerPhone: string | null;
   contractSum: number | null;
+  /** Дата договора (ISO). */
+  contractDate: string | null;
+  /** Срок договора в рабочих днях. */
+  workPeriodDays: number | null;
+  /** Контрольная дата окончания договора (ISO). */
+  contractEndDate: string | null;
+  /** Календарных дней до срока; < 0 — просрочен. */
+  deadlineDaysLeft: number | null;
+  deadlineWarning: OdpzhDeadlineWarningLevel | null;
   installerNames: string[];
   nearestInstallationDate: string | null;
   lastInstallationDate: string | null;

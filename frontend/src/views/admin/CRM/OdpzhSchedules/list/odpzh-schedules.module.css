@@ -123,6 +123,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  text-align: center;
   color: var(--admin-text-secondary);
   border-bottom: 1px solid var(--admin-border);
 }
@@ -137,4 +138,18 @@
 
 .statusSectionRow.statusSectionRowCLOSED td {
   color: var(--admin-success-deep, #15803d);
+}
+
+.deadline {
+  white-space: nowrap;
+}
+
+.deadlineWarn {
+  color: var(--admin-warning-text, #b45309);
+  font-weight: 600;
+}
+
+.deadlineUrgent {
+  color: var(--admin-error-text, #dc2626);
+  font-weight: 600;
 }

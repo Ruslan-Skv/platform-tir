@@ -2,7 +2,11 @@
 
 import { Fragment, useMemo } from 'react';
 
-import type { OdpzhScheduleStatus } from '@/shared/api/crm/admin-odpzh-schedules';
+import type {
+  OdpzhDeadlineWarningLevel,
+  OdpzhScheduleRow,
+  OdpzhScheduleStatus,
+} from '@/shared/api/crm/admin-odpzh-schedules';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
@@ -71,6 +75,25 @@ function nearestDateClass(iso: string | null): string {
     return `${styles.nearestDate} ${styles.nearestDateSoon}`;
   }
   return styles.nearestDate;
+}
+
+/** Ячейка «Срок договора»: цвет — по уровню предупреждения. */
+function deadlineCellClass(warning: OdpzhDeadlineWarningLevel | null): string {
+  if (warning === 'OVERDUE' || warning === 'D3') {
+    return `${styles.deadline} ${styles.deadlineUrgent}`;
+  }
+  if (warning === 'D10' || warning === 'D20') return `${styles.deadline} ${styles.deadlineWarn}`;
+  return styles.deadline;
+}
+
+/** «до 21.10.2026 · осталось 3 дн.» / «просрочен 5 дн.». */
+function formatDeadline(item: OdpzhScheduleRow): string {
+  if (!item.contractEndDate) return '—';
+  const days = item.deadlineDaysLeft;
+  if (days == null) return `до ${formatDate(item.contractEndDate)}`;
+  if (days < 0) return `просрочен ${Math.abs(days)} дн.`;
+  if (days === 0) return `до ${formatDate(item.contractEndDate)} · сегодня`;
+  return `до ${formatDate(item.contractEndDate)} · осталось ${days} дн.`;
 }
 
 export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageModel }) {
@@ -216,6 +239,7 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
                 <th>Клиент</th>
                 <th>Адрес</th>
                 <th>Сумма</th>
+                <th>Срок договора</th>
                 <th>Монтажники</th>
                 <th>Ближайший монтаж</th>
                 <th>Кол-во монтажей</th>
@@ -229,7 +253,7 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
                     <tr
                       className={`${styles.statusSectionRow} ${styles[`statusSectionRow${section.id}`]}`}
                     >
-                      <td colSpan={9}>
+                      <td colSpan={10}>
                         {section.label} ({section.items.length})
                       </td>
                     </tr>
@@ -243,6 +267,20 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
                       <td>{item.customerName ?? '—'}</td>
                       <td>{item.customerAddress ?? '—'}</td>
                       <td className={styles.sum}>{formatSum(item.contractSum)}</td>
+                      <td
+                        className={deadlineCellClass(item.deadlineWarning)}
+                        title={
+                          item.contractDate
+                            ? `Договор от ${formatDate(item.contractDate)}${
+                                item.workPeriodDays != null
+                                  ? ` · срок ${item.workPeriodDays} раб. дн.`
+                                  : ''
+                              }`
+                            : undefined
+                        }
+                      >
+                        {formatDeadline(item)}
+                      </td>
                       <td>{item.installerNames.length ? item.installerNames.join(', ') : '—'}</td>
                       <td className={nearestDateClass(item.nearestInstallationDate)}>
                         {formatDate(item.nearestInstallationDate)}
@@ -255,7 +293,7 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
               ))}
               {!loading && items.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className={styles.empty}>
+                  <td colSpan={10} className={styles.empty}>
                     Нет договоров в этом разделе
                   </td>
                 </tr>

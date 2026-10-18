@@ -84,6 +84,9 @@ export function OdpzhSchedulesGanttTimeline({ items, loading }: Props) {
         if (start != null) starts.push(start);
         if (end != null) ends.push(end);
       }
+      // Срок договора тоже должен попадать в диапазон оси.
+      const deadline = parseDayMs(item.contractEndDate);
+      if (deadline != null) ends.push(deadline);
     }
 
     let rangeStart = starts.length ? Math.min(...starts) : today;
@@ -166,6 +169,7 @@ export function OdpzhSchedulesGanttTimeline({ items, loading }: Props) {
             leftPct: 0,
             widthPct: 0,
             marks: [] as EntryMark[],
+            deadlineMs: parseDayMs(item.contractEndDate),
           };
         }
         const startMs = Math.min(...entryDays.map((e) => e.start));
@@ -195,6 +199,7 @@ export function OdpzhSchedulesGanttTimeline({ items, loading }: Props) {
           leftPct: left,
           widthPct: width,
           marks,
+          deadlineMs: parseDayMs(item.contractEndDate),
         };
       });
 
@@ -202,6 +207,7 @@ export function OdpzhSchedulesGanttTimeline({ items, loading }: Props) {
       rangeStart,
       rangeEnd,
       todayPct: toPct(today),
+      toPct,
       ticks,
       rows,
     };
@@ -254,12 +260,15 @@ export function OdpzhSchedulesGanttTimeline({ items, loading }: Props) {
                 <strong className={styles.labelContract}>
                   {row.item.contractNumber || 'Без номера'}
                 </strong>
-                <span className={styles.labelMaster}>
-                  {ODPZH_DIRECTION_LABELS[row.item.kind] ?? row.item.kind}
-                  {row.item.installerNames.length ? ` · ${row.item.installerNames.join(', ')}` : ''}
-                </span>
+                <span className={styles.labelMaster}>{row.item.customerName?.trim() || '—'}</span>
                 <span className={styles.labelAddress}>
-                  {row.item.customerAddress?.trim() || '—'}
+                  {[
+                    ODPZH_DIRECTION_LABELS[row.item.kind] ?? row.item.kind,
+                    row.item.customerAddress?.trim() || '',
+                    row.item.installerNames.length ? row.item.installerNames.join(', ') : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
                 </span>
               </div>
 
@@ -269,13 +278,28 @@ export function OdpzhSchedulesGanttTimeline({ items, loading }: Props) {
                   style={{ left: `${chart.todayPct}%` }}
                   aria-hidden
                 />
+                {row.deadlineMs != null ? (
+                  <div
+                    className={styles.deadlineLine}
+                    style={{ left: `${chart.toPct(row.deadlineMs)}%` }}
+                    title={`Срок договора: ${formatDate(row.item.contractEndDate)}${
+                      row.item.deadlineDaysLeft != null && row.item.deadlineDaysLeft < 0
+                        ? ` (просрочен ${Math.abs(row.item.deadlineDaysLeft)} дн.)`
+                        : ''
+                    }`}
+                  />
+                ) : null}
                 {row.ready ? (
                   <div
                     className={`${styles.bar} ${barToneClass(row.item.nearestInstallationDate)}`}
                     style={{ left: `${row.leftPct}%`, width: `${row.widthPct}%` }}
                     title={`${row.item.contractNumber || 'Договор'}: ${
                       row.item.entries.length
-                    } монтажей`}
+                    } монтажей${
+                      row.item.contractEndDate
+                        ? ` · срок договора до ${formatDate(row.item.contractEndDate)}`
+                        : ''
+                    }`}
                   >
                     {row.marks.map((mark) => (
                       <span
