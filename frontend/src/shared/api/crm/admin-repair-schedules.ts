@@ -73,6 +73,8 @@ export type RepairScheduleProject = {
   customerAddress: string | null;
   customerPhone: string | null;
   contractSum: string | number | null;
+  /** Сколько процентов договора оплачено (журнал оплат пакета / всё к оплате); null — пакета нет. */
+  paidPercent?: number | null;
   payoutSum: string | number | null;
   furnitureInfo: string | null;
   workPeriodDays: number | null;

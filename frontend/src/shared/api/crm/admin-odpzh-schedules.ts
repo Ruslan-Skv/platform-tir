@@ -50,6 +50,8 @@ export type OdpzhScheduleRow = {
   /** «Примечание» менеджера из карточки договора. */
   managerNote: string | null;
   contractSum: number | null;
+  /** Сколько процентов договора оплачено (журнал оплат / всё к оплате); null — суммы нет. */
+  paidPercent: number | null;
   /** Дата договора (ISO). */
   contractDate: string | null;
   /** Срок договора в рабочих днях. */

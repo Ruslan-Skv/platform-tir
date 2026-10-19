@@ -3,6 +3,7 @@ import { ContractDocumentPackageKind, ContractDocumentPackageStatus } from '@pri
 import {
   computePackageEffectiveManagerUserId,
   computePackageListPipelineStatus,
+  computePackagePaidPercent,
   packageMatchesDateRange,
   packageMatchesListSearch,
 } from './package-list-pipeline-status';
@@ -111,6 +112,69 @@ describe('computePackageListPipelineStatus', () => {
         payments: [],
       }),
     ).toBe('SIGNED');
+  });
+});
+
+describe('computePackagePaidPercent', () => {
+  const base = {
+    kind: ContractDocumentPackageKind.REPAIR,
+    status: ContractDocumentPackageStatus.CONTRACT_CONCLUDED as ContractDocumentPackageStatus,
+  };
+
+  it('counts payments share of payable total, refunds subtracted', () => {
+    expect(
+      computePackagePaidPercent({
+        ...base,
+        formData: { contract: { totalAmount: '100000' } },
+        payments: [{ amount: '25000', paymentType: 'PREPAYMENT' }],
+      }),
+    ).toBe(25);
+
+    expect(
+      computePackagePaidPercent({
+        ...base,
+        formData: { contract: { totalAmount: '100000' } },
+        payments: [
+          { amount: '50000', paymentType: 'PREPAYMENT' },
+          { amount: '10000', paymentType: 'REFUND' },
+        ],
+      }),
+    ).toBe(40);
+  });
+
+  it('includes addendum payments and addendum totals in the share', () => {
+    expect(
+      computePackagePaidPercent({
+        ...base,
+        formData: {
+          contract: { totalAmount: '100000' },
+          addendumSlotCount: 1,
+          addendumSlots: [{ snapshot: { total: 50000 } }],
+        },
+        payments: [
+          { amount: '100000', paymentType: 'FINAL' },
+          { amount: '25000', paymentType: 'AMENDMENT', addendumNumber: 1 },
+        ],
+      }),
+    ).toBe(83);
+  });
+
+  it('rounds to whole percent and returns null without payable base', () => {
+    expect(
+      computePackagePaidPercent({
+        ...base,
+        formData: { contract: { totalAmount: '30000' } },
+        payments: [{ amount: '10000', paymentType: 'PREPAYMENT' }],
+      }),
+    ).toBe(33);
+
+    expect(
+      computePackagePaidPercent({
+        ...base,
+        formData: {},
+        payments: [{ amount: '10000', paymentType: 'PREPAYMENT' }],
+      }),
+    ).toBeNull();
   });
 });
 

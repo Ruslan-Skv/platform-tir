@@ -2,9 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { ContractDocumentPackageStatus, InstallationScheduleStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import {
-  computePackageListPipelineStatus,
-  type PackageListPaymentRow,
+  explainPackageListPipelineStatus,
   packageMatchesListSearch,
+  packagePaidPercentFromExplain,
+  type PackageListPaymentRow,
 } from '../contract-document-packages/list-pipeline/package-list-pipeline-status';
 import {
   asFormDataRecord,
@@ -32,6 +33,8 @@ export type OdpzhScheduleRow = {
   /** «Примечание» менеджера из карточки договора (formData.object.managerNote). */
   managerNote: string | null;
   contractSum: number | null;
+  /** Сколько процентов договора оплачено (журнал оплат / всё к оплате); null — суммы нет. */
+  paidPercent: number | null;
   /** Дата договора (formData.contract.date, DD.MM.YYYY → ISO). */
   contractDate: string | null;
   /** Срок договора в рабочих днях (formData.contract.workPeriod). */
@@ -125,12 +128,13 @@ export function buildOdpzhScheduleRow(
     addendumNumber: p.addendumNumber,
     paymentDate: p.paymentDate,
   }));
-  const pipeline = computePackageListPipelineStatus({
+  const explain = explainPackageListPipelineStatus({
     kind: pkg.kind,
     status: pkg.status,
     formData: pkg.formData,
     payments,
   });
+  const pipeline = explain.status;
 
   const entries = pkg.installationSchedules;
   /*
@@ -210,6 +214,7 @@ export function buildOdpzhScheduleRow(
     objectDescription: snapshot.objectDescription,
     managerNote: snapshot.managerNote,
     contractSum: snapshot.contractSum,
+    paidPercent: packagePaidPercentFromExplain(explain),
     contractDate: snapshot.contractDate,
     workPeriodDays: snapshot.workPeriodDays,
     contractEndDate,

@@ -1,7 +1,16 @@
 import { BadRequestException } from '@nestjs/common';
-import { Prisma, RepairScheduleEntryKind, RepairScheduleProjectStatus } from '@prisma/client';
+import {
+  ContractDocumentPackageKind,
+  ContractDocumentPackageStatus,
+  Prisma,
+  RepairScheduleEntryKind,
+  RepairScheduleProjectStatus,
+} from '@prisma/client';
 
-import type { PackageListPipelineStatus } from '../contract-document-packages/list-pipeline/package-list-pipeline-status';
+import {
+  computePackagePaidPercent,
+  type PackageListPipelineStatus,
+} from '../contract-document-packages/list-pipeline/package-list-pipeline-status';
 
 /** Проекты «В работе» без записи за это число дней считаются «протухшими». */
 export const REPAIR_SCHEDULE_STALE_DAYS = 7;
@@ -25,6 +34,9 @@ export const PROJECT_INCLUDE: Prisma.RepairScheduleProjectInclude = {
       title: true,
       status: true,
       formData: true,
+      payments: {
+        select: { amount: true, paymentType: true, addendumNumber: true, paymentDate: true },
+      },
     },
   },
   createdBy: { select: USER_SELECT },
@@ -599,7 +611,15 @@ export function withDerived<
     workStartActDate?: Date | null;
     workCloseActDate?: Date | null;
     package?: {
+      kind?: ContractDocumentPackageKind | null;
+      status?: ContractDocumentPackageStatus | string | null;
       formData?: unknown;
+      payments?: Array<{
+        amount: unknown;
+        paymentType?: string | null;
+        addendumNumber?: number | null;
+        paymentDate?: Date | string | null;
+      }>;
     } | null;
     entries: Array<{ date: Date; text: string; kind: RepairScheduleEntryKind; id: string }>;
   },
@@ -609,6 +629,24 @@ export function withDerived<
     project.status === RepairScheduleProjectStatus.IN_PROGRESS &&
     (!latestEntry ||
       Date.now() - latestEntry.date.getTime() > REPAIR_SCHEDULE_STALE_DAYS * 24 * 60 * 60 * 1000);
+
+  const pkg = project.package;
+  const paidPercent =
+    pkg && pkg.kind
+      ? computePackagePaidPercent({
+          kind: pkg.kind,
+          status: pkg.status ?? null,
+          formData: pkg.formData,
+          payments: Array.isArray(pkg.payments)
+            ? pkg.payments.map((p) => ({
+                amount: String(p.amount ?? ''),
+                paymentType: p.paymentType ?? null,
+                addendumNumber: p.addendumNumber ?? null,
+                paymentDate: p.paymentDate ?? null,
+              }))
+            : [],
+        })
+      : null;
 
   const contractMeta = buildRepairContractMeta({
     workPeriodDays: project.workPeriodDays,
@@ -633,6 +671,8 @@ export function withDerived<
     staleDays: REPAIR_SCHEDULE_STALE_DAYS,
     ...contractMeta,
     ...deadline,
+    /** Сколько процентов договора оплачено (журнал оплат пакета / всё к оплате); null — пакета нет. */
+    paidPercent,
     syncedFromPackage: Boolean(project.package),
     /** Эффективные поля для UI: live из пакета или сохранённые на проекте. */
     workPeriodDays: contractMeta.workPeriodDays,

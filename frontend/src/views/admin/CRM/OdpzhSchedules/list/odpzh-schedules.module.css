@@ -173,6 +173,19 @@
   white-space: nowrap;
 }
 
+/* «Стоимость»: сумма + «оплачено N%» второй строкой. */
+.sumCol {
+  display: grid;
+  gap: 2px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.sumCol .subline {
+  color: var(--admin-text-muted, #6b7280);
+  font-size: var(--admin-font-size-xs, 12px);
+}
+
 /* «№ договора»: номер + «Описание работ» из карточки договора второй строкой.
    Min-width не даёт авто-раскладке сжать колонку до узкого столбика (в режиме
    «Все» строк много и без него колонка падает до ширины номера). */

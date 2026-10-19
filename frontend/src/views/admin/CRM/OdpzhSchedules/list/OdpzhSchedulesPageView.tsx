@@ -324,6 +324,8 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
             ))}
           </div>
           <div className={cdHub.contractsListFilters}>
+            {/* Не блокируем поле при загрузке: disabled снимает фокус
+                (поиск перезагружает список во время набора). */}
             <input
               type="search"
               className={
@@ -333,7 +335,6 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
               }
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              disabled={loading}
               placeholder="Поиск по номеру договора, ФИО заказчика, адресу..."
               aria-label="Поиск по номеру договора, ФИО заказчика, адресу"
             />
@@ -364,7 +365,7 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
                     <th>Направление</th>
                     <th>Клиент</th>
                     <th>Адрес</th>
-                    <th>Сумма</th>
+                    <th>Стоимость</th>
                     <th>Срок договора</th>
                     <th>Монтажники</th>
                     <th>Монтаж</th>
@@ -404,7 +405,14 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
                           </td>
                           <td>{item.customerName ?? '—'}</td>
                           <td>{item.customerAddress ?? '—'}</td>
-                          <td className={styles.sum}>{formatSum(item.contractSum)}</td>
+                          <td className={styles.sum}>
+                            <div className={styles.sumCol}>
+                              <div>{formatSum(item.contractSum)}</div>
+                              {item.paidPercent != null ? (
+                                <div className={styles.subline}>оплачено {item.paidPercent}%</div>
+                              ) : null}
+                            </div>
+                          </td>
                           <td
                             className={deadlineCellClass(item.deadlineWarning)}
                             title={

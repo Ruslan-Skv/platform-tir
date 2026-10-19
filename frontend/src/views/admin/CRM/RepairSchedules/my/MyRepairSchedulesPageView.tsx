@@ -210,6 +210,8 @@ export function MyRepairSchedulesPageView({ model }: { model: MyRepairSchedulesP
             )}
           </div>
           <div className={cdHub.contractsListFilters}>
+            {/* Не блокируем поле при загрузке: disabled снимает фокус
+                (поиск перезагружает список во время набора). */}
             <input
               type="search"
               className={searchFieldClass(
@@ -219,7 +221,6 @@ export function MyRepairSchedulesPageView({ model }: { model: MyRepairSchedulesP
               )}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              disabled={loading}
               placeholder="Поиск по номеру договора, адресу..."
               aria-label="Поиск"
             />

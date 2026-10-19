@@ -525,6 +525,23 @@ export function computePackageListPipelineStatus(input: {
   return explainPackageListPipelineStatus(input).status;
 }
 
+/** Доля оплат журнала (вкл. допники, за вычетом возвратов) от суммы к оплате, %; null — базы нет. */
+export function packagePaidPercentFromExplain(explain: PackageListPipelineExplain): number | null {
+  const total = explain.payable.grandTotalRub;
+  if (total == null || !Number.isFinite(total) || total <= 0) return null;
+  return Math.max(0, Math.round((explain.allocations.journalTotalRub / total) * 100));
+}
+
+/** Сколько процентов договора оплачено (журнал оплат / всё к оплате, вкл. допники). */
+export function computePackagePaidPercent(input: {
+  kind: ContractDocumentPackageKind;
+  status: ContractDocumentPackageStatus | string | null | undefined;
+  formData: unknown;
+  payments?: PackageListPaymentRow[] | null;
+}): number | null {
+  return packagePaidPercentFromExplain(explainPackageListPipelineStatus(input));
+}
+
 /** Id ответственного для фильтров: responsibleManagerId → signatory → createdBy. */
 export function computePackageEffectiveManagerUserId(input: {
   responsibleManagerId?: string | null;

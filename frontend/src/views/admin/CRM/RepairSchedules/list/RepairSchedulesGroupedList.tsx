@@ -276,7 +276,14 @@ export function RepairSchedulesGroupedList({
             </div>
           )}
         </td>
-        <td>{formatMoney(item.contractSum)}</td>
+        <td>
+          <div className={styles.cellMain}>
+            <div>{formatMoney(item.contractSum)}</div>
+            {item.paidPercent != null ? (
+              <span className={styles.subline}>оплачено {item.paidPercent}%</span>
+            ) : null}
+          </div>
+        </td>
         <td>
           <div className={styles.cellMain}>
             <div>{formatDate(item.calculatedEndDate)}</div>
