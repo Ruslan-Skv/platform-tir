@@ -432,7 +432,11 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
                           <td className={styles.noteCell} title={item.managerNote ?? undefined}>
                             {item.managerNote ?? '—'}
                           </td>
-                          <td className={styles.statusCell}>{STATUS_BADGES[item.status]}</td>
+                          <td className={styles.statusCell}>
+                            <span className={`${styles.badge} ${styles[`badge${item.status}`]}`}>
+                              {STATUS_BADGES[item.status]}
+                            </span>
+                          </td>
                         </tr>
                       ))}
                     </Fragment>

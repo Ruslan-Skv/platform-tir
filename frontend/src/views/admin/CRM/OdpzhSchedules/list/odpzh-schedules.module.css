@@ -227,6 +227,56 @@
   max-width: 112px;
 }
 
+/* Статусы — бейджи, как в план-графике ремонта. */
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: var(--admin-font-size-sm);
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.badgeNEW {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.badgeIN_PROGRESS {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.badgeINSTALLATIONS_DONE {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.badgeCLOSED {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .badgeNEW {
+  background: rgb(30 64 175 / 0.35);
+  color: #bfdbfe;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .badgeIN_PROGRESS {
+  background: rgb(37 99 235 / 0.3);
+  color: #bfdbfe;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .badgeINSTALLATIONS_DONE {
+  background: rgb(180 83 9 / 0.3);
+  color: #fde68a;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .badgeCLOSED {
+  background: rgb(22 101 52 / 0.35);
+  color: #bbf7d0;
+}
+
 .statusSectionRow.statusSectionRowINSTALLATIONS_DONE td {
   color: var(--admin-success-deep, #15803d);
 }
