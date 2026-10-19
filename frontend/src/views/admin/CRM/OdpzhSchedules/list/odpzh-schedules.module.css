@@ -257,6 +257,16 @@
   color: #2e7d32;
 }
 
+/* «Закрыт» + дата закрытия двумя строками — колонка статуса остаётся узкой. */
+.badgeStacked {
+  display: inline-grid;
+  gap: 1px;
+  line-height: 1.25;
+  padding: 2px 8px;
+  text-align: center;
+  white-space: nowrap;
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .badgeNEW {
   background: rgb(30 64 175 / 0.35);
   color: #bfdbfe;

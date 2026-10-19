@@ -31,14 +31,11 @@ export function SupplierPriceListsPageView({ model }: SupplierPriceListsPageView
           </p>
         </div>
         <div className={styles.headerActions}>
-          <Link href="/admin/catalog/suppliers" className={styles.backLink}>
-            ← К списку поставщиков
+          <Link href={`/admin/suppliers/${model.supplierId}`} className={styles.backLink}>
+            ← Карточка поставщика
           </Link>
-          <Link
-            href={`/admin/catalog/suppliers/${model.supplierId}/edit`}
-            className={styles.secondaryLink}
-          >
-            Карточка поставщика
+          <Link href="/admin/suppliers" className={styles.secondaryLink}>
+            Поставщики
           </Link>
           <Link href="/admin/catalog/components" className={styles.secondaryLink}>
             Комплектующие

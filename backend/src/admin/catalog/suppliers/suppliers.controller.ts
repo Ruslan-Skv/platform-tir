@@ -1,34 +1,17 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  Query,
-  UseGuards,
-  Req,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Query, UseGuards } from '@nestjs/common';
 import { SuppliersService } from './suppliers.service';
-import { CreateSupplierDto } from './dto/create-supplier.dto';
-import { SaveSettlementsDto } from './dto/save-settlements.dto';
 import { JwtAuthGuard } from '../../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
-import type { RequestWithUser } from '../../../common/types/request-with-user.types';
 
+/** Каталожные API поставщиков: справочник для товаров (селекты, привязка товаров,
+ *  синхронизация, прайс-листы). Реквизиты и ведомость расчётов живут в разделе
+ *  «Поставщики» (admin/suppliers) — см. backend/src/admin/suppliers. */
 @Controller('admin/catalog/suppliers')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN', 'CONTENT_MANAGER')
 export class SuppliersController {
   constructor(private readonly suppliersService: SuppliersService) {}
-
-  @Post()
-  create(@Body() createSupplierDto: CreateSupplierDto) {
-    return this.suppliersService.create(createSupplierDto);
-  }
 
   @Get()
   findAll(
@@ -47,52 +30,9 @@ export class SuppliersController {
     });
   }
 
-  @Get('settlement-totals')
-  getSettlementTotals() {
-    return this.suppliersService.getSettlementTotals();
-  }
-
-  @Get(':id/settlements')
-  getSettlements(@Param('id') id: string) {
-    return this.suppliersService.getSettlements(id);
-  }
-
-  @Put(':id/settlements')
-  saveSettlements(
-    @Param('id') id: string,
-    @Body() dto: SaveSettlementsDto,
-    @Req() req: RequestWithUser,
-  ) {
-    return this.suppliersService.saveSettlements(id, dto.rows, req.user?.id);
-  }
-
-  @Get(':id/settlements/history')
-  getSettlementHistory(@Param('id') id: string) {
-    return this.suppliersService.getSettlementHistory(id);
-  }
-
-  @Post(':id/settlements/rollback/:historyId')
-  rollbackSettlement(
-    @Param('id') id: string,
-    @Param('historyId') historyId: string,
-    @Req() req: RequestWithUser,
-  ) {
-    return this.suppliersService.rollbackSettlement(id, historyId, req.user.id);
-  }
-
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.suppliersService.findOne(id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() data: Partial<CreateSupplierDto>) {
-    return this.suppliersService.update(id, data);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.suppliersService.remove(id);
   }
 
   // Sync

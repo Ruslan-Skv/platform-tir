@@ -1,0 +1,157 @@
+/* Карточка поставщика: баланс-карточка, чипы-вкладки, карточки реквизитов.
+   Плитки и каркас — из MoneyMovements/ContractDocuments, здесь — только специфика. */
+
+/* Шапка: назад + наименование */
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--admin-font-size-sm, 13px);
+  font-weight: 600;
+  color: var(--admin-text-secondary, #6b7280);
+  text-decoration: none;
+  margin-bottom: 6px;
+}
+
+.backLink:hover {
+  color: var(--admin-primary, #2563eb);
+}
+
+/* Заглушки «Загрузка…» / «не найден» / пустые реквизиты */
+.emptyMessage {
+  margin: 12px 0;
+  font-size: var(--admin-font-size-sm, 13px);
+  color: var(--admin-text-secondary, #6b7280);
+}
+
+/* Чипы-вкладки «Ведомость | Реквизиты» — как в разделе «Расчёт з/п» */
+.tabBar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 4px 0 12px;
+}
+
+.tabChip {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--admin-border, #e5e7eb);
+  background: var(--admin-surface, #fff);
+  color: var(--admin-text-secondary, #4b5563);
+  font-size: var(--admin-font-size-sm, 13px);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tabChip:hover:not(:disabled) {
+  border-color: var(--admin-primary, #2563eb);
+  color: var(--admin-primary, #2563eb);
+}
+
+.tabChipActive,
+.tabChipActive:hover:not(:disabled) {
+  border-color: var(--admin-info, #2563eb);
+  background: var(--admin-info-bg-soft, rgb(37 99 235 / 8%));
+  color: var(--admin-info-strong, #1d4ed8);
+}
+
+/* Карточки блоков реквизитов */
+.requisitesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 12px;
+}
+
+.requisiteCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-md, 8px);
+  background: var(--admin-surface, #fff);
+}
+
+.requisiteCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.requisiteCardName {
+  margin: 0;
+  font-size: var(--admin-font-size-md, 15px);
+  font-weight: 700;
+  color: var(--admin-text, #111827);
+  overflow-wrap: anywhere;
+}
+
+.requisiteFields {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+}
+
+.requisiteField {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: var(--admin-font-size-sm, 13px);
+}
+
+.requisiteFieldLabel {
+  color: var(--admin-text-secondary, #6b7280);
+  white-space: nowrap;
+}
+
+.requisiteFieldValue {
+  font-family: var(--admin-font-mono, ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', monospace);
+  color: var(--admin-text, #111827);
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.requisiteNote {
+  margin: 0;
+  font-size: var(--admin-font-size-xs, 12px);
+  color: var(--admin-text-secondary, #6b7280);
+}
+
+.copyBtn {
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--admin-text-secondary, #9ca3af);
+  font-size: var(--admin-font-size-2xs, 11px);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.copyBtn:hover:not(:disabled) {
+  border-color: var(--admin-primary, #2563eb);
+  color: var(--admin-primary, #2563eb);
+}
+
+/* Контактная строка под баланс-карточкой */
+.contactsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: var(--admin-font-size-sm, 13px);
+  color: var(--admin-text-secondary, #6b7280);
+}
+
+.contactsRow a {
+  color: var(--admin-primary, #2563eb);
+  text-decoration: none;
+}
+
+.contactsRow a:hover {
+  text-decoration: underline;
+}

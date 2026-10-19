@@ -24,6 +24,7 @@ import { WeatherstripsModule } from './catalog/weatherstrips/weatherstrips.modul
 import { ComponentCatalogModule } from './catalog/component-catalog/component-catalog.module';
 import { AttributesModule } from './catalog/attributes/attributes.module';
 import { SuppliersModule } from './catalog/suppliers/suppliers.module';
+import { SuppliersModule as AdminSuppliersModule } from './suppliers/suppliers.module';
 import { PartnersModule } from './partners/partners.module';
 import { AdminProductsModule } from './catalog/products/admin-products.module';
 import { AdminOrdersModule } from './orders/admin-orders.module';
@@ -99,6 +100,7 @@ import { AdminAuthSettingsModule } from './auth-settings/admin-auth-settings.mod
     ComponentCatalogModule,
     AttributesModule,
     SuppliersModule,
+    AdminSuppliersModule,
     PartnersModule,
     AdminProductsModule,
     // Orders

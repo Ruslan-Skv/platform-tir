@@ -14,7 +14,7 @@ import {
 export const ADMIN_RESOURCE_PARENT: Readonly<Record<string, string>> = {
   // CRM
   // admin.crm.dp — топ-пункт сайдбара («ДП»), не наследует DENY от admin.crm
-  'admin.crm.supplier-settlements': 'admin.crm',
+  // admin.suppliers — топ-пункт сайдбара («Поставщики»), не имеет родителя
   'admin.crm.offices': 'admin.crm',
   // admin.forms / admin.forms.director / admin.support / admin.crm.my-work-day — топ-пункты сайдбара
   'admin.crm.funnel': 'admin.crm',

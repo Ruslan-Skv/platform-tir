@@ -1,2 +1,1 @@
-export { SuppliersPage } from './list/SuppliersPage';
-export { SupplierEditPage } from './edit/SupplierEditPage';
+export { SupplierPriceListsPage } from './price-lists/SupplierPriceListsPage';

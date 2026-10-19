@@ -1,0 +1,140 @@
+/* Раздел «Поставщики»: специфичные элементы сводного списка — плитки итогов
+   раскрашиваются из MoneyMovements (dpStyles), здесь — ячейка поставщика,
+   цветные сальдо, бейджи статусов. Каркас — стили контрактов и журнала ДП. */
+
+/* Ячейка поставщика: юридическое наименование + коммерческое и ИНН под ним */
+.supplierCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.supplierCellName {
+  font-weight: 600;
+  color: var(--admin-text, #111827);
+  overflow-wrap: anywhere;
+}
+
+.supplierCellSub {
+  font-size: var(--admin-font-size-xs, 12px);
+  color: var(--admin-text-secondary, #6b7280);
+  overflow-wrap: anywhere;
+}
+
+/* Сальдо: положительное — «к оплате» (оранжево-красный), отрицательное — переплата (синий) */
+.balancePayable {
+  color: #b45309;
+}
+
+.balanceOverpay {
+  color: #1d4ed8;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .balancePayable {
+  color: #fbbf24;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .balanceOverpay {
+  color: #93c5fd;
+}
+
+.balanceSettled {
+  color: var(--admin-text-secondary, #6b7280);
+}
+
+/* Бейджи статусов расчётов и строк ведомости */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: var(--admin-font-size-xs, 12px);
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.badgePayable {
+  border-color: #f59e0b;
+  background: rgb(245 158 11 / 12%);
+  color: #b45309;
+}
+
+.badgeSettled {
+  border-color: #16a34a;
+  background: rgb(22 163 74 / 12%);
+  color: #15803d;
+}
+
+.badgeOverpay {
+  border-color: #3b82f6;
+  background: rgb(59 130 246 / 12%);
+  color: #1d4ed8;
+}
+
+.badgeUnpaid {
+  border-color: #dc2626;
+  background: rgb(220 38 38 / 10%);
+  color: #b91c1c;
+}
+
+.badgePartial {
+  border-color: #f59e0b;
+  background: rgb(245 158 11 / 12%);
+  color: #b45309;
+}
+
+.badgeNeutral {
+  border-color: var(--admin-border, #e5e7eb);
+  background: var(--admin-surface-soft, #f9fafb);
+  color: var(--admin-text-secondary, #6b7280);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .badgePayable {
+  color: #fbbf24;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .badgeOverpay {
+  color: #93c5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .badgeSettled {
+  color: #4ade80;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .badgeUnpaid {
+  color: #f87171;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .badgeNeutral {
+  color: #9ca3af;
+}
+
+/* Кнопки-действия в строках таблицы */
+.rowActions {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.rowActionBtn {
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--admin-border, #e5e7eb);
+  background: var(--admin-surface, #fff);
+  color: var(--admin-text-secondary, #4b5563);
+  font-size: var(--admin-font-size-xs, 12px);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.rowActionBtn:hover:not(:disabled) {
+  border-color: var(--admin-primary, #2563eb);
+  color: var(--admin-primary, #2563eb);
+}
+
+.rowActionBtn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

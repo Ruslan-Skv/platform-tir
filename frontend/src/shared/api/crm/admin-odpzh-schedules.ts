@@ -69,6 +69,8 @@ export type OdpzhScheduleRow = {
   allInstallationsDone: boolean;
   /** Дата последнего выполненного монтажа (ISO). */
   lastCompletedInstallationDate: string | null;
+  /** Дата закрытия договора — дата акта сдачи (ISO). */
+  closedAt: string | null;
   entriesCount: number;
   entries: OdpzhScheduleEntry[];
   createdAt: string;

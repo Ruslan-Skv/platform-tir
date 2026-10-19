@@ -106,6 +106,8 @@ const ADMIN_API_ROUTE_RESOURCE_PREFIXES_RAW: ReadonlyArray<{
   { prefix: '/api/v1/admin/catalog/products', resourceId: 'admin.catalog.products' },
   { prefix: '/api/v1/admin/catalog/suppliers', resourceId: 'admin.catalog.suppliers' },
   { prefix: '/api/v1/admin/catalog/attributes', resourceId: 'admin.catalog.attributes' },
+  // Поставщики — реквизиты и ведомость расчётов (счета/оплаты)
+  { prefix: '/api/v1/admin/suppliers', resourceId: 'admin.suppliers' },
   // Контент — главная
   {
     prefix: '/api/v1/admin/home/featured-products',

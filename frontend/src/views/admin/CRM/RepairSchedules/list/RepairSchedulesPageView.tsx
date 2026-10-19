@@ -17,7 +17,7 @@ import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.modul
 import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
 
 import styles from '../shared/RepairSchedules.module.css';
-import { REPAIR_STATUS_LABELS, repairStatusChangeTexts } from '../shared/repair-schedules';
+import { REPAIR_STATUS_GROUP_LABELS, repairStatusChangeTexts } from '../shared/repair-schedules';
 import { buildRepairObjectGroups } from '../shared/repairObjectGroups';
 import { RepairProjectForm } from './RepairProjectForm';
 import { RepairScheduleImportModal } from './RepairScheduleImportModal';
@@ -110,7 +110,9 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
   /** Чипы активных фильтров для свёрнутого состояния (как в журнале ДП). */
   const filtersSummary = useMemo(() => {
     const labels: string[] = [];
-    if (statusFilter !== 'ALL') labels.push(`Статус: ${REPAIR_STATUS_LABELS[statusFilter]}`);
+    if (statusFilter !== 'ALL') {
+      labels.push(`Статус: ${REPAIR_STATUS_GROUP_LABELS[statusFilter]}`);
+    }
     if (deadlineFilter !== 'ALL') {
       const deadlineLabel = DEADLINE_FILTERS.find((f) => f.key === deadlineFilter)?.label;
       if (deadlineLabel) labels.push(`Срок: ${deadlineLabel}`);
@@ -247,19 +249,21 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
             >
               Все ({statusCounts.ALL})
             </button>
-            {(Object.keys(REPAIR_STATUS_LABELS) as Array<keyof typeof REPAIR_STATUS_LABELS>).map(
-              (key) => (
-                <button
-                  key={key}
-                  type="button"
-                  disabled={loading || (viewMode === 'timeline' && key !== 'IN_PROGRESS')}
-                  className={chipClass(statusFilter === key)}
-                  onClick={() => setStatusFilter(key)}
-                >
-                  {REPAIR_STATUS_LABELS[key]} ({statusCounts[key]})
-                </button>
-              )
-            )}
+            {(
+              Object.keys(REPAIR_STATUS_GROUP_LABELS) as Array<
+                keyof typeof REPAIR_STATUS_GROUP_LABELS
+              >
+            ).map((key) => (
+              <button
+                key={key}
+                type="button"
+                disabled={loading || (viewMode === 'timeline' && key !== 'IN_PROGRESS')}
+                className={chipClass(statusFilter === key)}
+                onClick={() => setStatusFilter(key)}
+              >
+                {REPAIR_STATUS_GROUP_LABELS[key]} ({statusCounts[key]})
+              </button>
+            ))}
           </div>
           <div className={cdHub.contractsListChipRow} role="group" aria-label="Срок окончания">
             <span className={cdHub.contractsListChipRowLabel}>Срок</span>

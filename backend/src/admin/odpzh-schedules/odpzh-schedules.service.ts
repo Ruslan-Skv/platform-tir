@@ -53,6 +53,11 @@ export type OdpzhScheduleRow = {
   allInstallationsDone: boolean;
   /** Дата последнего выполненного монтажа (completedAt ?? dateEnd ?? date). */
   lastCompletedInstallationDate: string | null;
+  /**
+   * Дата закрытия договора: дата акта сдачи либо (без отметки акта) дата
+   * последней оплаты — закрытие = полная оплата + акт, берём более позднюю.
+   */
+  closedAt: string | null;
   entriesCount: number;
   /** Записи графика монтажей пакета (для таймлайна). */
   entries: OdpzhScheduleEntryRow[];
@@ -101,6 +106,22 @@ const ODPZH_PACKAGE_SELECT = {
 
 function toIsoDay(date: Date): string {
   return date.toISOString().slice(0, 10);
+}
+
+/** Дата закрытия: акт сдачи и оплаты — договор закрыт, когда есть оба, берём позднюю. */
+function closedAtIsoDay(
+  formData: Record<string, unknown>,
+  payments: Array<{ paymentDate: Date | null }>,
+): string | null {
+  const days = [parseFlexibleDateOnly(formData.repairContractCloseActSignedAt)];
+  for (const p of payments) {
+    if (p.paymentDate) days.push(toIsoDay(p.paymentDate));
+  }
+  let max: string | null = null;
+  for (const day of days) {
+    if (day && (!max || day > max)) max = day;
+  }
+  return max;
 }
 
 function todayIsoDay(): string {
@@ -354,6 +375,7 @@ export class OdpzhSchedulesService {
         allInstallationsDone:
           entries.length > 0 && entries.every((e) => e.status === InstallationScheduleStatus.DONE),
         lastCompletedInstallationDate,
+        closedAt: status === 'CLOSED' ? closedAtIsoDay(formData, pkg.payments) : null,
         entriesCount: entries.length,
         entries: entries.map((entry) => ({
           id: entry.id,

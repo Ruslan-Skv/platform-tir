@@ -102,7 +102,7 @@ model User {
   measurementHistory                      MeasurementHistory[]                      @relation("MeasurementHistoryChangedBy")
   complexObjectHistory                    ComplexObjectHistory[]                    @relation("ComplexObjectHistoryChangedBy")
   officeHistory                           OfficeHistory[]                           @relation("OfficeHistoryChangedBy")
-  supplierSettlementHistory               SupplierSettlementHistory[]               @relation("SupplierSettlementHistoryChangedBy")
+  supplierLedgerEntriesCreated            SupplierLedgerEntry[]                     @relation("SupplierLedgerEntryCreatedBy")
   supplierPriceListSnapshotsUploaded      SupplierPriceListSnapshot[]               @relation("SupplierPriceListUploadedBy")
   taskHistory                             TaskHistory[]                             @relation("TaskHistoryChangedBy")
   customerHistory                         CustomerHistory[]                         @relation("CustomerHistoryChangedBy")
@@ -1776,17 +1776,67 @@ model Supplier {
   syncEnabled            Boolean                       @default(false)
   syncSchedule           String?
   lastSyncAt             DateTime?
+  openingBalance         Decimal?                      @db.Decimal(14, 2) // Сальдо начальное (+ = должны поставщику, − = переплата)
+  openingBalanceDate     DateTime? // Дата, на которую зафиксировано сальдо начальное
   createdAt              DateTime                      @default(now())
   updatedAt              DateTime                      @updatedAt
   products               ProductSupplier[]
   syncLogs               SupplierSyncLog[]
-  settlementRows         SupplierSettlementRow[]
-  settlementHistory      SupplierSettlementHistory[]
+  requisites             SupplierRequisite[]
+  ledgerEntries          SupplierLedgerEntry[]
   componentCatalogSeries ComponentCatalogSeries[]
   priceListSnapshots     SupplierPriceListSnapshot[]
   priceListRowMappings   SupplierPriceListRowMapping[]
 
   @@map("suppliers")
+}
+
+/// Банковские реквизиты поставщика (у одного поставщика может быть несколько юрлиц/счетов)
+model SupplierRequisite {
+  id          String   @id @default(cuid())
+  supplierId  String
+  name        String // Наименование блока: «ИП Ермаков», «Реквизиты до 2021» и т.п.
+  bankName    String? // Банк
+  bankAccount String? // Расчетный счет (р/сч)
+  bankBik     String? // БИК
+  corrAccount String? // Корреспондентский счет
+  inn         String? // ИНН (если отличается от ИНН поставщика)
+  kpp         String?
+  note        String?  @db.Text
+  isDefault   Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  supplier Supplier              @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  entries  SupplierLedgerEntry[]
+
+  @@index([supplierId])
+  @@map("supplier_requisites")
+}
+
+/// Строка ведомости расчётов с поставщиком: счёт (начисление) и/или оплата
+model SupplierLedgerEntry {
+  id          String   @id @default(cuid())
+  supplierId  String
+  requisiteId String?
+  date        DateTime // Дата счёта/оплаты
+  documentNo  String? // «№ 71 от 14 октября 2026 г.» — свободной строкой, как в таблице
+  amount      Decimal? @db.Decimal(14, 2) // Сумма счёта (начисление)
+  payment     Decimal? @db.Decimal(14, 2) // Оплата
+  note        String?  @db.Text // Примечание (№ договора и т.п.)
+  vatRate     Decimal? @db.Decimal(5, 2) // НДС: null — не указано, 0 — без НДС, 22 — 22%
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  supplier  Supplier           @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  requisite SupplierRequisite? @relation(fields: [requisiteId], references: [id], onDelete: SetNull)
+  createdBy User?              @relation("SupplierLedgerEntryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([supplierId, date])
+  @@index([requisiteId])
+  @@map("supplier_ledger_entries")
 }
 
 /// Категория сверки прайс-листа поставщика
@@ -1858,39 +1908,6 @@ model SupplierPriceListRowMapping {
   @@unique([supplierId, rowKey])
   @@index([catalogItemId])
   @@map("supplier_price_list_row_mappings")
-}
-
-model SupplierSettlementRow {
-  id         String   @id @default(cuid())
-  supplierId String
-  date       String? // YYYY-MM-DD
-  invoice    String?
-  amount     Decimal? @db.Decimal(12, 2)
-  payment    Decimal? @db.Decimal(12, 2)
-  note       String?  @db.Text
-  sortOrder  Int      @default(0)
-
-  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-
-  @@index([supplierId])
-  @@map("supplier_settlement_rows")
-}
-
-model SupplierSettlementHistory {
-  id            String   @id @default(cuid())
-  supplierId    String
-  snapshot      Json // Массив строк { rows: [...] }
-  changedFields String[] @default([])
-  action        String // UPDATE | ROLLBACK
-  changedById   String
-  changedAt     DateTime @default(now())
-
-  supplier  Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-  changedBy User     @relation("SupplierSettlementHistoryChangedBy", fields: [changedById], references: [id], onDelete: Restrict)
-
-  @@index([supplierId])
-  @@index([changedAt])
-  @@map("supplier_settlement_history")
 }
 
 model ProductSupplier {

@@ -67,6 +67,34 @@ function deadlineRowTint(warning: RepairScheduleProject['deadlineWarning']): str
   return '';
 }
 
+/** Дата в бейдже «Закрыт» — с полным годом. */
+function formatBadgeDate(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  return m ? `${m[3]}.${m[2]}.${m[1]}` : iso.slice(0, 10);
+}
+
+/** Бейдж статуса договора; для «Закрыт» дата закрытия — второй строкой (как в ОДПЖ). */
+function StatusBadge({ item }: { item: RepairScheduleProject }) {
+  const closedDay = item.workCloseActDate || item.closedAt;
+  const closedDate = item.status === 'CLOSED' && closedDay ? formatBadgeDate(closedDay) : null;
+  return (
+    <span
+      className={`${styles.badge} ${styles[`badge${item.status}`]}${
+        closedDate ? ` ${styles.badgeStacked}` : ''
+      }`}
+    >
+      {closedDate ? (
+        <>
+          <span>{REPAIR_STATUS_LABELS[item.status]}</span>
+          <span>{closedDate}</span>
+        </>
+      ) : (
+        REPAIR_STATUS_LABELS[item.status]
+      )}
+    </span>
+  );
+}
+
 function deadlineCardTint(warning: RepairScheduleProject['deadlineWarning']): string {
   if (warning === 'OVERDUE' || warning === 'D3') return styles.deadlineCardUrgent;
   if (warning === 'D10') return styles.deadlineCardHigh;
@@ -277,9 +305,7 @@ export function RepairSchedulesGroupedList({
           {managerNote ?? '—'}
         </td>
         <td>
-          <span className={`${styles.badge} ${styles[`badge${item.status}`]}`}>
-            {REPAIR_STATUS_LABELS[item.status]}
-          </span>
+          <StatusBadge item={item} />
         </td>
         <td>{renderActions(item)}</td>
       </>
@@ -309,9 +335,7 @@ export function RepairSchedulesGroupedList({
               </div>
             ) : null}
           </div>
-          <span className={`${styles.badge} ${styles[`badge${item.status}`]}`}>
-            {REPAIR_STATUS_LABELS[item.status]}
-          </span>
+          <StatusBadge item={item} />
         </div>
         {item.customerName || item.customerAddress ? (
           <div className={styles.mobileCardMeta}>

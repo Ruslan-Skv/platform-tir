@@ -29,11 +29,6 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     label: 'Расчётники мастеров',
     path: '/admin/installer-advance-sheets',
   },
-  {
-    id: 'admin.crm.supplier-settlements',
-    label: 'Расчёты с поставщиками',
-    path: '/admin/crm/supplier-settlements',
-  },
   { id: 'admin.crm.offices', label: 'Офисы', path: '/admin/crm/offices' },
   { id: 'admin.crm.installers', label: 'Мастера (монтажники)', path: '/admin/crm/installers' },
   {
@@ -234,7 +229,12 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     path: '/admin/service-catalog/items',
   },
   { id: 'admin.partners', label: 'Партнёры', path: '/admin/partners' },
-  { id: 'admin.catalog.suppliers', label: 'Поставщики', path: '/admin/catalog/suppliers' },
+  { id: 'admin.suppliers', label: 'Поставщики', path: '/admin/suppliers' },
+  {
+    id: 'admin.catalog.suppliers',
+    label: 'Прайс-листы поставщиков',
+    path: '/admin/catalog/suppliers',
+  },
   { id: 'admin.orders', label: 'Заказы', path: '/admin/orders' },
   {
     id: 'admin.orders.checkout-info',

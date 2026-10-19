@@ -1,6 +1,14 @@
 import type { ContractDocumentPackage } from '@/shared/api/admin-contract-document-packages';
 
+/** Подпись статуса одного договора (бейдж в строке, форма, карточка). */
 export const REPAIR_STATUS_LABELS = {
+  NEW: 'Новый',
+  IN_PROGRESS: 'В работе',
+  CLOSED: 'Закрыт',
+} as const;
+
+/** Подписи фильтров/секций списка — во множественном числе (с счётчиком). */
+export const REPAIR_STATUS_GROUP_LABELS = {
   NEW: 'Новые договора',
   IN_PROGRESS: 'В работе',
   CLOSED: 'Закрытые',
@@ -30,14 +38,14 @@ export function repairStatusChangeTexts(
   if (target === 'CLOSED') {
     return {
       title: 'Закрыть договор?',
-      message: `Договор «${name}» будет переведён в статус «Закрытые».`,
+      message: `Договор «${name}» будет переведён в статус «Закрыт».`,
       confirmText: 'Закрыть',
       successText: 'Договор закрыт',
     };
   }
   return {
     title: 'Вернуть в работу?',
-    message: `Договор «${name}» будет возвращён в работу из «Закрытых».`,
+    message: `Договор «${name}» будет возвращён в работу из статуса «Закрыт».`,
     confirmText: 'Вернуть в работу',
     successText: 'Проект снова в работе',
   };

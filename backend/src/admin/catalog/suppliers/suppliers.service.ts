@@ -1,33 +1,13 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
-import { CreateSupplierDto } from './dto/create-supplier.dto';
 import { Prisma } from '@prisma/client';
 
+/** Каталожный справочник поставщиков (товары, синхронизация, прайс-листы).
+ *  Создание/редактирование карточек и ведомость расчётов — в разделе
+ *  «Поставщики» (backend/src/admin/suppliers). */
 @Injectable()
 export class SuppliersService {
   constructor(private prisma: PrismaService) {}
-
-  async create(createSupplierDto: CreateSupplierDto) {
-    // Check if INN is unique (if provided)
-    if (createSupplierDto.inn) {
-      const existingByInn = await this.prisma.supplier.findUnique({
-        where: { inn: createSupplierDto.inn },
-      });
-
-      if (existingByInn) {
-        throw new ConflictException(`Supplier with INN "${createSupplierDto.inn}" already exists`);
-      }
-    }
-
-    return this.prisma.supplier.create({
-      data: {
-        ...createSupplierDto,
-        priceMarkup: createSupplierDto.priceMarkup
-          ? new Prisma.Decimal(createSupplierDto.priceMarkup)
-          : new Prisma.Decimal(0),
-      },
-    });
-  }
 
   async findAll(params?: {
     search?: string;
@@ -139,55 +119,6 @@ export class SuppliersService {
         products: productsCount,
       },
     };
-  }
-
-  async update(id: string, data: Partial<CreateSupplierDto>) {
-    const supplier = await this.findOne(id);
-
-    // Check if INN is unique (if provided and changed)
-    if (data.inn && data.inn !== supplier.inn) {
-      const existingByInn = await this.prisma.supplier.findUnique({
-        where: { inn: data.inn },
-      });
-
-      if (existingByInn) {
-        throw new ConflictException(`Supplier with INN "${data.inn}" already exists`);
-      }
-    }
-
-    const updateData: Prisma.SupplierUpdateInput = {
-      name: data.name,
-      legalName: data.legalName,
-      commercialName: data.commercialName,
-      website: data.website,
-      legalAddress: data.legalAddress,
-      inn: data.inn,
-      bankName: data.bankName,
-      bankAccount: data.bankAccount,
-      bankBik: data.bankBik,
-      apiUrl: data.apiUrl,
-      apiKey: data.apiKey,
-      isActive: data.isActive,
-      syncEnabled: data.syncEnabled,
-      syncSchedule: data.syncSchedule,
-      email: data.email,
-      phone: data.phone,
-    };
-    if (data.priceMarkup !== undefined) {
-      updateData.priceMarkup = new Prisma.Decimal(data.priceMarkup);
-    }
-
-    return this.prisma.supplier.update({
-      where: { id },
-      data: updateData,
-    });
-  }
-
-  async remove(id: string) {
-    await this.findOne(id);
-    return this.prisma.supplier.delete({
-      where: { id },
-    });
   }
 
   // Sync functionality
@@ -359,175 +290,5 @@ export class SuppliersService {
         },
       },
     });
-  }
-
-  // Settlements
-  async getSettlementTotals() {
-    const rows = await this.prisma.supplierSettlementRow.findMany({
-      select: {
-        supplierId: true,
-        amount: true,
-        payment: true,
-      },
-    });
-    const totals: Record<string, { amountSum: number; paymentSum: number; total: number }> = {};
-    for (const r of rows) {
-      if (!totals[r.supplierId]) {
-        totals[r.supplierId] = { amountSum: 0, paymentSum: 0, total: 0 };
-      }
-      const amount = r.amount != null ? Number(r.amount) : 0;
-      const payment = r.payment != null ? Number(r.payment) : 0;
-      totals[r.supplierId].amountSum += amount;
-      totals[r.supplierId].paymentSum += payment;
-    }
-    for (const id of Object.keys(totals)) {
-      totals[id].total = totals[id].amountSum - totals[id].paymentSum;
-    }
-    return totals;
-  }
-
-  async getSettlements(supplierId: string) {
-    await this.findOne(supplierId);
-    const rows = await this.prisma.supplierSettlementRow.findMany({
-      where: { supplierId },
-      orderBy: { sortOrder: 'asc' },
-    });
-    return rows.map((r) => ({
-      id: r.id,
-      date: r.date ?? '',
-      invoice: r.invoice ?? '',
-      amount: r.amount != null ? Number(r.amount) : null,
-      payment: r.payment != null ? Number(r.payment) : null,
-      note: r.note ?? '',
-      sortOrder: r.sortOrder,
-    }));
-  }
-
-  async saveSettlements(
-    supplierId: string,
-    rows: Array<{
-      id?: string;
-      date?: string;
-      invoice?: string;
-      amount?: number | null;
-      payment?: number | null;
-      note?: string;
-      sortOrder?: number;
-    }>,
-    changedById?: string,
-  ) {
-    await this.findOne(supplierId);
-
-    const currentRows = await this.prisma.supplierSettlementRow.findMany({
-      where: { supplierId },
-      orderBy: { sortOrder: 'asc' },
-    });
-
-    const snapshot = {
-      rows: currentRows.map((r) => ({
-        id: r.id,
-        date: r.date,
-        invoice: r.invoice,
-        amount: r.amount != null ? Number(r.amount) : null,
-        payment: r.payment != null ? Number(r.payment) : null,
-        note: r.note,
-        sortOrder: r.sortOrder,
-      })),
-    };
-
-    if (changedById) {
-      await this.prisma.supplierSettlementHistory.create({
-        data: {
-          supplierId,
-          snapshot: snapshot as object,
-          changedFields: ['rows'],
-          action: 'UPDATE',
-          changedById,
-        },
-      });
-    }
-
-    await this.prisma.supplierSettlementRow.deleteMany({
-      where: { supplierId },
-    });
-
-    if (rows.length > 0) {
-      await this.prisma.supplierSettlementRow.createMany({
-        data: rows.map((r, i) => ({
-          supplierId,
-          date: r.date ?? null,
-          invoice: r.invoice ?? null,
-          amount: r.amount != null ? new Prisma.Decimal(r.amount) : null,
-          payment: r.payment != null ? new Prisma.Decimal(r.payment) : null,
-          note: r.note ?? null,
-          sortOrder: r.sortOrder ?? i,
-        })),
-      });
-    }
-
-    return this.getSettlements(supplierId);
-  }
-
-  async getSettlementHistory(supplierId: string) {
-    await this.findOne(supplierId);
-    const history = await this.prisma.supplierSettlementHistory.findMany({
-      where: { supplierId },
-      include: {
-        changedBy: { select: { id: true, firstName: true, lastName: true, email: true } },
-      },
-      orderBy: { changedAt: 'desc' },
-    });
-    return history.map((h) => ({
-      id: h.id,
-      action: h.action,
-      changedAt: h.changedAt,
-      changedBy: h.changedBy,
-      changedFields: h.changedFields,
-      snapshot: h.snapshot,
-    }));
-  }
-
-  async rollbackSettlement(supplierId: string, historyId: string, userId: string) {
-    await this.findOne(supplierId);
-    const entry = await this.prisma.supplierSettlementHistory.findFirst({
-      where: { id: historyId, supplierId },
-    });
-    if (!entry) {
-      throw new NotFoundException(
-        `History entry ${historyId} not found for supplier ${supplierId}`,
-      );
-    }
-    const snapshot = entry.snapshot as { rows: Array<Record<string, unknown>> };
-
-    await this.prisma.supplierSettlementHistory.create({
-      data: {
-        supplierId,
-        snapshot: entry.snapshot as object,
-        changedFields: [],
-        action: 'ROLLBACK',
-        changedById: userId,
-      },
-    });
-
-    await this.prisma.supplierSettlementRow.deleteMany({
-      where: { supplierId },
-    });
-
-    const rows = snapshot.rows ?? [];
-    if (rows.length > 0) {
-      await this.prisma.supplierSettlementRow.createMany({
-        data: rows.map((r: Record<string, unknown>, i: number) => ({
-          supplierId,
-          date: (r.date as string) ?? null,
-          invoice: (r.invoice as string) ?? null,
-          amount: r.amount != null ? new Prisma.Decimal(Number(r.amount)) : null,
-          payment: r.payment != null ? new Prisma.Decimal(Number(r.payment)) : null,
-          note: (r.note as string) ?? null,
-          sortOrder: (r.sortOrder as number) ?? i,
-        })),
-      });
-    }
-
-    return this.getSettlements(supplierId);
   }
 }

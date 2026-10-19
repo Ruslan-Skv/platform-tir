@@ -28,11 +28,6 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     label: 'Расчётники мастеров',
     path: '/admin/installer-advance-sheets',
   },
-  {
-    id: 'admin.crm.supplier-settlements',
-    label: 'Расчёты с поставщиками',
-    path: '/admin/crm/supplier-settlements',
-  },
   { id: 'admin.crm.offices', label: 'Офисы', path: '/admin/crm/offices' },
   { id: 'admin.crm.installers', label: 'Мастера (монтажники)', path: '/admin/crm/installers' },
   {
@@ -225,7 +220,12 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     path: '/admin/service-catalog/items',
   },
   { id: 'admin.partners', label: 'Партнёры', path: '/admin/partners' },
-  { id: 'admin.catalog.suppliers', label: 'Поставщики', path: '/admin/catalog/suppliers' },
+  { id: 'admin.suppliers', label: 'Поставщики', path: '/admin/suppliers' },
+  {
+    id: 'admin.catalog.suppliers',
+    label: 'Прайс-листы поставщиков',
+    path: '/admin/catalog/suppliers',
+  },
   { id: 'admin.orders', label: 'Заказы', path: '/admin/orders' },
   {
     id: 'admin.orders.checkout-info',
@@ -468,20 +468,11 @@ export function isAdminEditRoute(pathname: string): boolean {
   if (/^\/admin\/orders\/service-orders\/[^/]+$/.test(pathname)) return true;
   if (/^\/admin\/orders\/[^/]+$/.test(pathname)) return true;
 
-  if (pathname === '/admin/crm/supplier-settlements') return false;
-  if (/^\/admin\/crm\/supplier-settlements\/[^/]+$/.test(pathname)) return true;
-
   if (/^\/admin\/contract-documents\/contracts\/[^/]+$/.test(pathname)) return true;
   if (/^\/admin\/contract-documents\/repair\/[^/]+$/.test(pathname)) return true;
   if (/^\/admin\/contract-documents\/estimates\/[^/]+$/.test(pathname)) return true;
 
   if (/^\/admin\/catalog\/categories\/[^/]+\/attributes$/.test(pathname)) return true;
-  if (
-    /^\/admin\/catalog\/suppliers\/[^/]+$/.test(pathname) &&
-    pathname !== '/admin/catalog/suppliers'
-  ) {
-    return true;
-  }
   if (/^\/admin\/partners\/[^/]+$/.test(pathname) && pathname !== '/admin/partners') return true;
 
   if (
@@ -540,9 +531,7 @@ export function adminEditRouteRedirectTarget(pathname: string): string | null {
   if (/^\/admin\/orders\/service-orders\/[^/]+$/.test(pathname))
     return '/admin/orders/service-orders';
   if (/^\/admin\/orders\/[^/]+$/.test(pathname)) return '/admin/orders';
-  if (/^\/admin\/crm\/supplier-settlements\/[^/]+$/.test(pathname)) {
-    return '/admin/crm/supplier-settlements';
-  }
+  if (/^\/admin\/suppliers\/[^/]+$/.test(pathname)) return '/admin/suppliers';
   if (/^\/admin\/contract-documents\/contracts\/[^/]+$/.test(pathname)) {
     return '/admin/contract-documents/contracts';
   }
@@ -556,9 +545,8 @@ export function adminEditRouteRedirectTarget(pathname: string): string | null {
     return '/admin/catalog/categories';
   }
   if (/^\/admin\/catalog\/suppliers\/[^/]+\/(edit|price-lists)$/.test(pathname)) {
-    return '/admin/catalog/suppliers';
+    return '/admin/suppliers';
   }
-  if (/^\/admin\/catalog\/suppliers\/[^/]+$/.test(pathname)) return '/admin/catalog/suppliers';
   if (/^\/admin\/partners\/[^/]+$/.test(pathname)) return '/admin/partners';
   if (/^\/admin\/catalog\/categories\/[^/]+$/.test(pathname)) return '/admin/catalog/categories';
 

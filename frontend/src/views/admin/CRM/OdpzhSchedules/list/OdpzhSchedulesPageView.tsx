@@ -108,6 +108,27 @@ function DeadlineCell({ item }: { item: OdpzhScheduleRow }) {
   );
 }
 
+/** Бейдж статуса; для «Закрыт» дата закрытия — второй строкой. */
+function StatusBadge({ item }: { item: OdpzhScheduleRow }) {
+  const closedDate = item.status === 'CLOSED' && item.closedAt ? formatDate(item.closedAt) : null;
+  return (
+    <span
+      className={`${styles.badge} ${styles[`badge${item.status}`]}${
+        closedDate ? ` ${styles.badgeStacked}` : ''
+      }`}
+    >
+      {closedDate ? (
+        <>
+          <span>{STATUS_BADGES[item.status]}</span>
+          <span>{closedDate}</span>
+        </>
+      ) : (
+        STATUS_BADGES[item.status]
+      )}
+    </span>
+  );
+}
+
 export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageModel }) {
   const {
     statusFilter,
@@ -433,9 +454,7 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
                             {item.managerNote ?? '—'}
                           </td>
                           <td className={styles.statusCell}>
-                            <span className={`${styles.badge} ${styles[`badge${item.status}`]}`}>
-                              {STATUS_BADGES[item.status]}
-                            </span>
+                            <StatusBadge item={item} />
                           </td>
                         </tr>
                       ))}
