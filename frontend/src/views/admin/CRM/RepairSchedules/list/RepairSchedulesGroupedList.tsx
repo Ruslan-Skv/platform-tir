@@ -231,7 +231,7 @@ export function RepairSchedulesGroupedList({
                 className={styles.subline}
                 title="Мастера, прикреплённые в модалке «Заказ-наряды» договора"
               >
-                Заказ-наряды: {item.attachedInstallers!.map((m) => m.fullName).join(', ')}
+                {item.attachedInstallers!.map((m) => m.fullName).join(', ')}
               </span>
             ) : null}
           </div>
@@ -305,7 +305,7 @@ export function RepairSchedulesGroupedList({
             </div>
             {(item.attachedInstallers ?? []).length > 0 ? (
               <div className={styles.mobileCardMeta}>
-                Заказ-наряды: {item.attachedInstallers!.map((m) => m.fullName).join(', ')}
+                {item.attachedInstallers!.map((m) => m.fullName).join(', ')}
               </div>
             ) : null}
           </div>
