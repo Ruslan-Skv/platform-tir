@@ -9,6 +9,7 @@ import type {
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import dataTableStyles from '@/shared/ui/admin/DataTable/DataTable.module.css';
 import { DeleteIcon, EditIcon, PublishIcon } from '@/shared/ui/icons';
+import { PaidPercentBadge } from '@/views/admin/CRM/shared/PaidPercentBadge';
 import { PackageWorkOrdersHubIcon } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/PackageWorkOrdersHubIcon';
 import { formatPackageWorkOrderHubModalTitle } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/packageWorkOrderHubTabs';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
@@ -279,9 +280,7 @@ export function RepairSchedulesGroupedList({
         <td>
           <div className={styles.cellMain}>
             <div>{formatMoney(item.contractSum)}</div>
-            {item.paidPercent != null ? (
-              <span className={styles.subline}>оплачено {item.paidPercent}%</span>
-            ) : null}
+            {item.paidPercent != null ? <PaidPercentBadge percent={item.paidPercent} /> : null}
           </div>
         </td>
         <td>

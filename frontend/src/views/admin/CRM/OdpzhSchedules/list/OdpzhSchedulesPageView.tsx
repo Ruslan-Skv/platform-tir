@@ -10,6 +10,7 @@ import type {
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import dataTableStyles from '@/shared/ui/admin/DataTable/DataTable.module.css';
 import { CollapsibleFiltersPanel } from '@/views/admin/CRM/shared/CollapsibleFiltersPanel';
+import { PaidPercentBadge } from '@/views/admin/CRM/shared/PaidPercentBadge';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
 import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
@@ -409,7 +410,7 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
                             <div className={styles.sumCol}>
                               <div>{formatSum(item.contractSum)}</div>
                               {item.paidPercent != null ? (
-                                <div className={styles.subline}>оплачено {item.paidPercent}%</div>
+                                <PaidPercentBadge percent={item.paidPercent} />
                               ) : null}
                             </div>
                           </td>

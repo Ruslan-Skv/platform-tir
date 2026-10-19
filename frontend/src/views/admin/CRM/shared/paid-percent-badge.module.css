@@ -1,0 +1,54 @@
+/* Бейдж «опл. N%» (колонка «Стоимость» план-графиков): фон — по размеру оплаты. */
+.badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: var(--admin-font-size-xs, 12px);
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+/* 0% — оплат не было. */
+.badgeNone {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+/* 1–69% — ниже порога начала работ (70%). */
+.badgePart {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+/* 70–99% — порог начала работ пройден. */
+.badgeMost {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+/* 100% — оплачен полностью. */
+.badgeFull {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .badgeNone {
+  background: rgb(107 114 128 / 0.25);
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .badgePart {
+  background: rgb(180 83 9 / 0.3);
+  color: #fde68a;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .badgeMost {
+  background: rgb(37 99 235 / 0.3);
+  color: #bfdbfe;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .badgeFull {
+  background: rgb(21 128 61 / 0.3);
+  color: #bbf7d0;
+}
