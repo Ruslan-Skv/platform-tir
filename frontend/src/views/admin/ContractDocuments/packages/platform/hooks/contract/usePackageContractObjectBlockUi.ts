@@ -4,6 +4,7 @@ import cdBase from '../../../../styles/base.module.css';
 import cdDataTab from '../../../../styles/data-tab.module.css';
 import cdEstimateTab from '../../../../styles/estimate-tab.module.css';
 import {
+  CONTRACT_OBJECT_FIELDS_EDITABLE_WHEN_SIGNED,
   type PackageContractObjectBlockFieldId,
   snapshotPackageContractObjectBlockFields,
 } from '../../editor/shared/packageContractObjectBlock';
@@ -21,7 +22,7 @@ export function usePackageContractObjectBlockUi({
   contractObjectBlockBaseline,
 }: UsePackageContractObjectBlockUiOptions) {
   const contractObjectBlockEditedFlags = useMemo(() => {
-    if (!contractObjectBlockBaseline || signedDocsLocked) {
+    if (!contractObjectBlockBaseline) {
       return {} as Partial<Record<PackageContractObjectBlockFieldId, boolean>>;
     }
     const current = snapshotPackageContractObjectBlockFields(form);
@@ -32,11 +33,12 @@ export function usePackageContractObjectBlockUi({
       flags[fieldId] = contractObjectBlockBaseline[fieldId] !== current[fieldId];
     }
     return flags;
-  }, [form, contractObjectBlockBaseline, signedDocsLocked]);
+  }, [form, contractObjectBlockBaseline]);
 
   const contractObjectBlockFieldClassName = useCallback(
     (fieldId: PackageContractObjectBlockFieldId): string | undefined => {
-      if (signedDocsLocked) {
+      // Поля, редактируемые и в подписанном пакете, подсвечиваем как обычно.
+      if (signedDocsLocked && !CONTRACT_OBJECT_FIELDS_EDITABLE_WHEN_SIGNED.has(fieldId)) {
         return `${cdBase.autoFilledInput} ${cdDataTab.autoFilledInput} ${cdEstimateTab.autoFilledInput}`;
       }
       if (contractObjectBlockEditedFlags[fieldId]) {

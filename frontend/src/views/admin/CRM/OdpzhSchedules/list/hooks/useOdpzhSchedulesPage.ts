@@ -44,7 +44,7 @@ function readStoredFilters(): Partial<StoredFilters> {
 export function useOdpzhSchedulesPage() {
   const [stored] = useState(readStoredFilters);
   const [statusFilter, setStatusFilter] = useState<OdpzhScheduleStatusFilter>(
-    stored.statusFilter ?? 'IN_PROGRESS'
+    stored.statusFilter ?? 'ALL'
   );
   const [directionFilter, setDirectionFilter] = useState<OdpzhScheduleDirection | 'ALL'>(
     stored.directionFilter ?? 'ALL'

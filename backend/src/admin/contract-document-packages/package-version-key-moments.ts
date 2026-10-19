@@ -60,7 +60,8 @@ const EXECUTOR_FIELD_LABELS: Record<string, string> = {
 const OBJECT_FIELD_LABELS: Record<string, string> = {
   objectAddress: 'адрес объекта',
   objectFloor: 'этаж',
-  objectDescription: 'описание объекта',
+  objectDescription: 'краткое описание работ',
+  managerNote: 'примечание',
 };
 
 const CONTRACT_FIELD_LABELS: Record<string, string> = {

@@ -45,6 +45,10 @@ export type OdpzhScheduleRow = {
   customerName: string | null;
   customerAddress: string | null;
   customerPhone: string | null;
+  /** «Описание работ» из карточки договора. */
+  objectDescription: string | null;
+  /** «Примечание» менеджера из карточки договора. */
+  managerNote: string | null;
   contractSum: number | null;
   /** Дата договора (ISO). */
   contractDate: string | null;

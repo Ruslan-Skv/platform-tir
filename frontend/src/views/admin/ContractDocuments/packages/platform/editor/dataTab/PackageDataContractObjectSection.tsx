@@ -98,7 +98,7 @@ export function PackageDataContractObjectSection({
         <div className={styles.packageDataPartySectionTitleRow}>
           <h3 className={DATA_SECTION_TITLE}>Договор и объект</h3>
           {signedDocsLocked ? (
-            <PackageDataSectionLockInline title="Договор подписан: блок «Договор и объект» только для просмотра" />
+            <PackageDataSectionLockInline title="Договор подписан: блок «Договор и объект» закрыт для правок, кроме полей «Краткое описание работ» и «Примечание»" />
           ) : null}
         </div>
         <div className={DATA_CONTRACT_COMPACT}>
@@ -213,13 +213,22 @@ export function PackageDataContractObjectSection({
             className={`${cdDataTab.contractInlineRow} ${cdDataTab.contractObjectDescDiscountRow}`}
           >
             <div className={`${DATA_FIELD} ${cdDataTab.contractInlineField}`}>
-              <label htmlFor="o_desc">Описание работ / объекта</label>
+              <label htmlFor="o_desc">Краткое описание работ</label>
               <textarea
                 id="o_desc"
                 value={form.object.objectDescription}
                 onChange={(e) => updateObject('objectDescription', e.target.value)}
-                disabled={signedDocsLocked}
                 className={contractObjectBlockFieldClassName('object.objectDescription')}
+              />
+            </div>
+            <div className={`${DATA_FIELD} ${cdDataTab.contractInlineField}`}>
+              <label htmlFor="o_note">Примечание</label>
+              <textarea
+                id="o_note"
+                value={form.object.managerNote}
+                onChange={(e) => updateObject('managerNote', e.target.value)}
+                placeholder="Планируемый срок начала работ, пометки по договору"
+                className={contractObjectBlockFieldClassName('object.managerNote')}
               />
             </div>
           </div>

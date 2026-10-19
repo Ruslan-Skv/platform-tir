@@ -159,6 +159,18 @@ function isoDateInput(value: unknown): string {
   return m ? `${m[1]}-${m[2]}-${m[3]}` : '';
 }
 
+/** «Описание работ» и «Примечание» менеджера из formData пакета договора (для план-графика). */
+export function packageObjectTexts(
+  pkg: { formData?: Record<string, unknown> } | null | undefined
+): { objectDescription: string | null; managerNote: string | null } {
+  const formObject = asRecord(asRecord(pkg?.formData)?.object);
+  if (!formObject) return { objectDescription: null, managerNote: null };
+  return {
+    objectDescription: strField(formObject.objectDescription) || null,
+    managerNote: strField(formObject.managerNote) || null,
+  };
+}
+
 /** Подтягивает поля проекта из пакета/договора CRM и formData. */
 export function fieldsFromPackage(pkg: ContractDocumentPackage): Partial<RepairProjectFormValues> {
   const form = asRecord(pkg.formData) ?? {};

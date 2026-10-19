@@ -288,9 +288,9 @@
   min-width: 0;
 }
 
-/* Описание работ / объекта — на всю ширину строки */
+/* Описание работ + Примечание — в одной строке, равной ширины */
 .contractObjectDescDiscountRow {
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   column-gap: var(--admin-space-xl);
   align-items: start;
 }

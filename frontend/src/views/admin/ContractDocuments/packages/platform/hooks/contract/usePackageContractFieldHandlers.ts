@@ -4,6 +4,7 @@ import { useCallback, useEffect } from 'react';
 
 import { amountToRussianWords } from '../../../../core/amountToRussianWords';
 import { formatPackageMoneyValue } from '../../editor/estimateTab/estimateTabUi';
+import { CONTRACT_OBJECT_FIELDS_EDITABLE_WHEN_SIGNED } from '../../editor/shared/packageContractObjectBlock';
 import {
   applyPackageContractDiscountToAmount,
   packageEstimateTotalToContractFields,
@@ -36,7 +37,10 @@ export function usePackageContractFieldHandlers({
 }: UsePackageContractFieldHandlersOptions) {
   const updateObject = useCallback(
     <K extends keyof PackageFormData['object']>(key: K, value: string) => {
-      if (signedDocsLocked) return;
+      // «Краткое описание работ» и «Примечание» правим и в подписанном пакете.
+      if (signedDocsLocked && !CONTRACT_OBJECT_FIELDS_EDITABLE_WHEN_SIGNED.has(`object.${key}`)) {
+        return;
+      }
       setForm((p) => ({ ...p, object: { ...p.object, [key]: value } }));
       touchPackageData();
     },

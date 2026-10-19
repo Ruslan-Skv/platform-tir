@@ -16,7 +16,12 @@ import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.mod
 
 import { RepairDeadlineWarningBadge } from '../shared/RepairDeadlineWarningBadge';
 import styles from '../shared/RepairSchedules.module.css';
-import { REPAIR_STATUS_LABELS, formatDate, formatMoney } from '../shared/repair-schedules';
+import {
+  REPAIR_STATUS_LABELS,
+  formatDate,
+  formatMoney,
+  packageObjectTexts,
+} from '../shared/repair-schedules';
 import {
   buildRepairObjectGroups,
   compareRepairProjectsByAge,
@@ -38,7 +43,7 @@ type Props = {
   canDeleteProject: (item: RepairScheduleProject) => boolean;
 };
 
-const COL_SPAN = 8;
+const COL_SPAN = 9;
 
 /** Порядок секций при фильтре «Все»: в работе → новые → закрытые. */
 const STATUS_SECTIONS: Array<{ status: RepairScheduleProjectStatus; label: string }> = [
@@ -199,134 +204,160 @@ export function RepairSchedulesGroupedList({
     );
   };
 
-  const renderProjectCells = (item: RepairScheduleProject, hideCustomer: boolean) => (
-    <>
-      <td>
-        <button type="button" className={styles.contractCell} onClick={() => openProject(item.id)}>
-          <strong>{item.contractNumber || 'Без номера'}</strong>
-          {item.workScope ? <span className={styles.subline}>{item.workScope}</span> : null}
-        </button>
-      </td>
-      <td>
-        <div className={styles.cellMain}>
-          <div>{item.installerName || '—'}</div>
-          {(item.attachedInstallers ?? []).length > 0 ? (
-            <span
-              className={styles.subline}
-              title="Мастера, прикреплённые в модалке «Заказ-наряды» договора"
-            >
-              Заказ-наряды: {item.attachedInstallers!.map((m) => m.fullName).join(', ')}
-            </span>
-          ) : null}
-        </div>
-      </td>
-      <td>
-        {hideCustomer ? (
-          <span className={styles.subline}>—</span>
-        ) : (
-          <div className={styles.customerCell}>
-            <div>{item.customerName || '—'}</div>
-            {item.customerAddress ? (
-              <span className={styles.subline}>{item.customerAddress}</span>
-            ) : null}
-          </div>
-        )}
-      </td>
-      <td>{formatMoney(item.contractSum)}</td>
-      <td>
-        <div className={styles.cellMain}>
-          <div>{formatDate(item.calculatedEndDate)}</div>
-          <RepairDeadlineWarningBadge
-            level={item.deadlineWarning}
-            daysLeft={item.deadlineDaysLeft}
-          />
-        </div>
-      </td>
-      <td>
-        <div className={styles.cellMain}>
-          {item.latestEntry ? (
-            <>
-              <div>{formatDate(item.latestEntry.date)}</div>
-              <span className={styles.subline}>{item.latestEntry.text.slice(0, 80)}</span>
-            </>
-          ) : (
-            '—'
-          )}
-          {item.stale ? (
-            <div className={styles.stale}>Нет записи &gt; {item.staleDays} дн.</div>
-          ) : null}
-        </div>
-      </td>
-      <td>
-        <span className={`${styles.badge} ${styles[`badge${item.status}`]}`}>
-          {REPAIR_STATUS_LABELS[item.status]}
-        </span>
-      </td>
-      <td>{renderActions(item)}</td>
-    </>
-  );
-
-  const renderMobileCard = (item: RepairScheduleProject) => (
-    <article
-      key={item.id}
-      className={`${styles.mobileCard} ${deadlineCardTint(item.deadlineWarning)}`}
-    >
-      <div className={styles.mobileCardTop}>
-        <div>
-          <div className={styles.mobileCardName}>{item.contractNumber || 'Без номера'}</div>
-          <div className={styles.mobileCardMeta}>
-            {item.installerName || 'Без мастера'}
-            {item.workScope ? ` · ${item.workScope}` : ''}
-          </div>
-          {(item.attachedInstallers ?? []).length > 0 ? (
-            <div className={styles.mobileCardMeta}>
-              Заказ-наряды: {item.attachedInstallers!.map((m) => m.fullName).join(', ')}
-            </div>
-          ) : null}
-        </div>
-        <span className={`${styles.badge} ${styles[`badge${item.status}`]}`}>
-          {REPAIR_STATUS_LABELS[item.status]}
-        </span>
-      </div>
-      {item.customerName || item.customerAddress ? (
-        <div className={styles.mobileCardMeta}>
-          {[item.customerName, item.customerAddress].filter(Boolean).join(' · ')}
-        </div>
-      ) : null}
-      {item.latestEntry ? (
-        <div className={styles.mobileCardMeta}>
-          {formatDate(item.latestEntry.date)}: {item.latestEntry.text.slice(0, 100)}
-        </div>
-      ) : null}
-      {item.calculatedEndDate ? (
-        <div className={styles.mobileCardMeta}>Срок: {formatDate(item.calculatedEndDate)}</div>
-      ) : null}
-      <RepairDeadlineWarningBadge level={item.deadlineWarning} daysLeft={item.deadlineDaysLeft} />
-      {item.stale ? <div className={styles.stale}>Нет записи &gt; {item.staleDays} дн.</div> : null}
-      <div className={styles.mobileCardActions}>
-        <div className={styles.actions}>
-          <AdminTableIconButton
-            aria-label="Открыть"
-            title="Открыть"
+  const renderProjectCells = (item: RepairScheduleProject, hideCustomer: boolean) => {
+    const { objectDescription, managerNote } = packageObjectTexts(item.package);
+    return (
+      <>
+        <td>
+          <button
+            type="button"
+            className={styles.contractCell}
             onClick={() => openProject(item.id)}
           >
-            <EditIcon />
-          </AdminTableIconButton>
-          {item.packageId ? (
-            <AdminTableIconButton
-              aria-label="Заказ-наряды"
-              title={formatPackageWorkOrderHubModalTitle(item.contractNumber ?? undefined)}
-              onClick={() => {
-                if (item.packageId) onOpenWorkOrdersHub(item.packageId);
-              }}
-            >
-              <PackageWorkOrdersHubIcon />
-            </AdminTableIconButton>
-          ) : null}
+            <strong>{item.contractNumber || 'Без номера'}</strong>
+            {objectDescription ? (
+              <span className={styles.subline} title={objectDescription}>
+                {objectDescription}
+              </span>
+            ) : null}
+            {item.workScope ? <span className={styles.subline}>{item.workScope}</span> : null}
+          </button>
+        </td>
+        <td>
+          <div className={styles.cellMain}>
+            <div>{item.installerName || '—'}</div>
+            {(item.attachedInstallers ?? []).length > 0 ? (
+              <span
+                className={styles.subline}
+                title="Мастера, прикреплённые в модалке «Заказ-наряды» договора"
+              >
+                Заказ-наряды: {item.attachedInstallers!.map((m) => m.fullName).join(', ')}
+              </span>
+            ) : null}
+          </div>
+        </td>
+        <td>
+          {hideCustomer ? (
+            <span className={styles.subline}>—</span>
+          ) : (
+            <div className={styles.customerCell}>
+              <div>{item.customerName || '—'}</div>
+              {item.customerAddress ? (
+                <span className={styles.subline}>{item.customerAddress}</span>
+              ) : null}
+            </div>
+          )}
+        </td>
+        <td>{formatMoney(item.contractSum)}</td>
+        <td>
+          <div className={styles.cellMain}>
+            <div>{formatDate(item.calculatedEndDate)}</div>
+            <RepairDeadlineWarningBadge
+              level={item.deadlineWarning}
+              daysLeft={item.deadlineDaysLeft}
+            />
+          </div>
+        </td>
+        <td>
+          <div className={styles.cellMain}>
+            {item.latestEntry ? (
+              <>
+                <div>{formatDate(item.latestEntry.date)}</div>
+                <span className={styles.subline}>{item.latestEntry.text.slice(0, 80)}</span>
+              </>
+            ) : (
+              '—'
+            )}
+            {item.stale ? (
+              <div className={styles.stale}>Нет записи &gt; {item.staleDays} дн.</div>
+            ) : null}
+          </div>
+        </td>
+        <td className={styles.noteCell} title={managerNote ?? undefined}>
+          {managerNote ?? '—'}
+        </td>
+        <td>
+          <span className={`${styles.badge} ${styles[`badge${item.status}`]}`}>
+            {REPAIR_STATUS_LABELS[item.status]}
+          </span>
+        </td>
+        <td>{renderActions(item)}</td>
+      </>
+    );
+  };
+
+  const renderMobileCard = (item: RepairScheduleProject) => {
+    const { objectDescription, managerNote } = packageObjectTexts(item.package);
+    return (
+      <article
+        key={item.id}
+        className={`${styles.mobileCard} ${deadlineCardTint(item.deadlineWarning)}`}
+      >
+        <div className={styles.mobileCardTop}>
+          <div>
+            <div className={styles.mobileCardName}>{item.contractNumber || 'Без номера'}</div>
+            {objectDescription ? (
+              <div className={styles.mobileCardMeta}>{objectDescription}</div>
+            ) : null}
+            <div className={styles.mobileCardMeta}>
+              {item.installerName || 'Без мастера'}
+              {item.workScope ? ` · ${item.workScope}` : ''}
+            </div>
+            {(item.attachedInstallers ?? []).length > 0 ? (
+              <div className={styles.mobileCardMeta}>
+                Заказ-наряды: {item.attachedInstallers!.map((m) => m.fullName).join(', ')}
+              </div>
+            ) : null}
+          </div>
+          <span className={`${styles.badge} ${styles[`badge${item.status}`]}`}>
+            {REPAIR_STATUS_LABELS[item.status]}
+          </span>
         </div>
-      </div>
-    </article>
-  );
+        {item.customerName || item.customerAddress ? (
+          <div className={styles.mobileCardMeta}>
+            {[item.customerName, item.customerAddress].filter(Boolean).join(' · ')}
+          </div>
+        ) : null}
+        {managerNote ? (
+          <div className={styles.mobileCardMeta}>Примечание: {managerNote}</div>
+        ) : null}
+        {item.latestEntry ? (
+          <div className={styles.mobileCardMeta}>
+            {formatDate(item.latestEntry.date)}: {item.latestEntry.text.slice(0, 100)}
+          </div>
+        ) : null}
+        {item.calculatedEndDate ? (
+          <div className={styles.mobileCardMeta}>Срок: {formatDate(item.calculatedEndDate)}</div>
+        ) : null}
+        <RepairDeadlineWarningBadge level={item.deadlineWarning} daysLeft={item.deadlineDaysLeft} />
+        {item.stale ? (
+          <div className={styles.stale}>Нет записи &gt; {item.staleDays} дн.</div>
+        ) : null}
+        <div className={styles.mobileCardActions}>
+          <div className={styles.actions}>
+            <AdminTableIconButton
+              aria-label="Открыть"
+              title="Открыть"
+              onClick={() => openProject(item.id)}
+            >
+              <EditIcon />
+            </AdminTableIconButton>
+            {item.packageId ? (
+              <AdminTableIconButton
+                aria-label="Заказ-наряды"
+                title={formatPackageWorkOrderHubModalTitle(item.contractNumber ?? undefined)}
+                onClick={() => {
+                  if (item.packageId) onOpenWorkOrdersHub(item.packageId);
+                }}
+              >
+                <PackageWorkOrdersHubIcon />
+              </AdminTableIconButton>
+            ) : null}
+          </div>
+        </div>
+      </article>
+    );
+  };
 
   if (loading && items.length === 0) {
     return (
@@ -423,6 +454,7 @@ export function RepairSchedulesGroupedList({
                   <th>Стоимость</th>
                   <th>Срок окончания</th>
                   <th>Последняя запись</th>
+                  <th>Примечание</th>
                   <th>Статус</th>
                   <th>Действия</th>
                 </tr>

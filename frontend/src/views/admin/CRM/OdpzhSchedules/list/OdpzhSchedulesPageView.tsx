@@ -15,6 +15,7 @@ import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.mod
 import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
 
 import { OdpzhSchedulesGanttTimeline } from './OdpzhSchedulesGanttTimeline';
+import { OdpzhSchedulesRulesInfoTip } from './OdpzhSchedulesRulesInfoTip';
 import type { OdpzhSchedulesPageModel } from './hooks/useOdpzhSchedulesPage';
 import styles from './odpzh-schedules.module.css';
 
@@ -29,7 +30,7 @@ const STATUS_TABS: Array<{ key: OdpzhSchedulesPageModel['statusFilter']; label: 
 const STATUS_BADGES: Record<OdpzhScheduleStatus, string> = {
   NEW: 'Новый',
   IN_PROGRESS: 'В работе',
-  INSTALLATIONS_DONE: 'Монтажи выполнены',
+  INSTALLATIONS_DONE: 'Выполнен',
   CLOSED: 'Закрыт',
 };
 
@@ -222,6 +223,7 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
           <div className={cdHub.contractsHeaderTitleRow}>
             <div className={cdHub.contractsListHeaderTitleGroup}>
               <h1 className={cdHub.title}>План-график ОДПЖ</h1>
+              <OdpzhSchedulesRulesInfoTip />
             </div>
             <span className={cdHub.contractsListCount} title={countTitle}>
               <span className={cdHub.contractsListCountDesktop}>{countTitle}</span>
@@ -345,7 +347,7 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
                     <th>Срок договора</th>
                     <th>Монтажники</th>
                     <th>Монтаж</th>
-                    <th>Кол-во</th>
+                    <th>Примечание</th>
                     <th>Статус</th>
                   </tr>
                 </thead>
@@ -363,7 +365,18 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
                       ) : null}
                       {section.items.map((item) => (
                         <tr key={item.id}>
-                          <td className={styles.nowrap}>{item.contractNumber ?? '—'}</td>
+                          <td>
+                            <div className={styles.contractCol}>
+                              <div className={styles.contractNumber}>
+                                {item.contractNumber ?? '—'}
+                              </div>
+                              {item.objectDescription ? (
+                                <div className={styles.subline} title={item.objectDescription}>
+                                  {item.objectDescription}
+                                </div>
+                              ) : null}
+                            </div>
+                          </td>
                           <td className={styles.nowrap}>{formatDate(item.contractDate)}</td>
                           <td className={styles.nowrap}>
                             {ODPZH_DIRECTION_LABELS[item.kind] ?? item.kind}
@@ -394,13 +407,14 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
                                 ))
                               : '—'}
                           </td>
-                          <td className={styles.nowrap}>
+                          <td className={styles.installCell}>
                             {item.allInstallationsDone ? (
                               <span
                                 className={styles.doneBadge}
                                 title={`Все монтажи выполнены (${item.installationsDoneCount} из ${item.installationsTotalCount})`}
                               >
-                                Монтаж выполнен {formatDate(item.lastCompletedInstallationDate)}
+                                <span>Монтаж выполнен</span>
+                                <span>{formatDate(item.lastCompletedInstallationDate)}</span>
                               </span>
                             ) : (
                               <span
@@ -415,8 +429,10 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
                               </span>
                             )}
                           </td>
-                          <td className={styles.nowrap}>{item.entriesCount}</td>
-                          <td className={styles.nowrap}>{STATUS_BADGES[item.status]}</td>
+                          <td className={styles.noteCell} title={item.managerNote ?? undefined}>
+                            {item.managerNote ?? '—'}
+                          </td>
+                          <td className={styles.statusCell}>{STATUS_BADGES[item.status]}</td>
                         </tr>
                       ))}
                     </Fragment>

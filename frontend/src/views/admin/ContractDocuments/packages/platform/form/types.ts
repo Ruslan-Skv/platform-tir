@@ -66,6 +66,8 @@ export interface PackageObjectBlock {
   objectAddress: string;
   objectFloor: string;
   objectDescription: string;
+  /** Примечание менеджера: плановые сроки начала работ и другие пометки по договору. */
+  managerNote: string;
 }
 
 export interface PackageContractBlock {

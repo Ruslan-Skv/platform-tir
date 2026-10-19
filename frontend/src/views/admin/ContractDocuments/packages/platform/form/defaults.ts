@@ -109,6 +109,7 @@ export function defaultPackageFormData(): PackageFormData {
       objectAddress: '',
       objectFloor: '',
       objectDescription: '',
+      managerNote: '',
     },
     contract: {
       number: '',

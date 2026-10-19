@@ -27,6 +27,10 @@ export type OdpzhScheduleRow = {
   customerName: string | null;
   customerAddress: string | null;
   customerPhone: string | null;
+  /** «Описание работ» из карточки договора (formData.object.objectDescription). */
+  objectDescription: string | null;
+  /** «Примечание» менеджера из карточки договора (formData.object.managerNote). */
+  managerNote: string | null;
   contractSum: number | null;
   /** Дата договора (formData.contract.date, DD.MM.YYYY → ISO). */
   contractDate: string | null;
@@ -143,6 +147,8 @@ function odpzhPackageSnapshot(formData: Record<string, unknown>): {
   customerName: string | null;
   customerAddress: string | null;
   customerPhone: string | null;
+  objectDescription: string | null;
+  managerNote: string | null;
 } {
   const contract = asObj(formData.contract);
   const customer = asObj(formData.customer);
@@ -176,6 +182,8 @@ function odpzhPackageSnapshot(formData: Record<string, unknown>): {
     customerName,
     customerAddress: address,
     customerPhone: phone,
+    objectDescription: str(object?.objectDescription),
+    managerNote: str(object?.managerNote),
   };
 }
 
@@ -330,6 +338,8 @@ export class OdpzhSchedulesService {
         customerName: snapshot.customerName,
         customerAddress: snapshot.customerAddress,
         customerPhone: snapshot.customerPhone,
+        objectDescription: snapshot.objectDescription,
+        managerNote: snapshot.managerNote,
         contractSum: snapshot.contractSum,
         contractDate: snapshot.contractDate,
         workPeriodDays: snapshot.workPeriodDays,

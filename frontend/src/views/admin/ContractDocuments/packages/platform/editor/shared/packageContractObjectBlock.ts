@@ -9,8 +9,18 @@ export type PackageContractObjectBlockFieldId =
   | 'object.objectAddress'
   | 'object.objectFloor'
   | 'object.objectDescription'
+  | 'object.managerNote'
   | 'executor.selectedProfileTitle'
   | 'executor.selectedSignatoryProfileTitle';
+
+/**
+ * Поля, которые остаются редактируемыми и после подписания пакета:
+ * краткое описание работ и примечание менеджера.
+ */
+export const CONTRACT_OBJECT_FIELDS_EDITABLE_WHEN_SIGNED: ReadonlySet<string> = new Set([
+  'object.objectDescription',
+  'object.managerNote',
+]);
 
 export function snapshotPackageContractObjectBlockFields(
   data: PackageFormData
@@ -23,6 +33,7 @@ export function snapshotPackageContractObjectBlockFields(
     'object.objectAddress': data.object.objectAddress ?? '',
     'object.objectFloor': data.object.objectFloor ?? '',
     'object.objectDescription': data.object.objectDescription ?? '',
+    'object.managerNote': data.object.managerNote ?? '',
     'executor.selectedProfileTitle': data.executor.selectedProfileTitle ?? '',
     'executor.selectedSignatoryProfileTitle': data.executor.selectedSignatoryProfileTitle ?? '',
   };

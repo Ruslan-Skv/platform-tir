@@ -105,7 +105,8 @@ export const PACKAGE_CONTRACT_PLACEHOLDER_GROUPS: PackageContractPlaceholderGrou
     items: [
       { path: 'object.objectAddress', label: 'Адрес объекта' },
       { path: 'object.objectFloor', label: 'Этаж' },
-      { path: 'object.objectDescription', label: 'Описание работ / объекта' },
+      { path: 'object.objectDescription', label: 'Краткое описание работ' },
+      { path: 'object.managerNote', label: 'Примечание' },
     ],
   },
   {
