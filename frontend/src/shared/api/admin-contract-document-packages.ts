@@ -1529,6 +1529,59 @@ export async function getContractDocumentEstimatePresetExport(
   return res.json();
 }
 
+/**
+ * Диагностическая выгрузка договора (только суперадмин): сырые formData/оплаты/монтажи
+ * плюс расчёт статусов конвейера и план-графика ОДПЖ со всеми промежуточными значениями —
+ * для расследования расхождений статусов между разделами.
+ */
+export type ContractDocumentPackageDiagnosticExport = {
+  format: 'tir-contract-package-diagnostic';
+  version: number;
+  exportedAt: string;
+  packageId: string;
+  package: Record<string, unknown>;
+  formData: Record<string, unknown>;
+  payments: Array<Record<string, unknown>>;
+  installationSchedules: Array<Record<string, unknown>>;
+  listPipeline: {
+    status: 'IN_PROJECT' | 'SIGNED' | 'WORK_IN_PROGRESS' | 'CLOSED' | 'REFUSED';
+    payable: {
+      mainContractRub: number | null;
+      addendumTotalsRub: Array<{ slotIndex1: number; totalRub: number | null }>;
+      grandTotalRub: number | null;
+    };
+    allocations: {
+      contractPaidRub: number;
+      journalTotalRub: number;
+      byAddendum: Array<{ slotIndex1: number; paidRub: number }>;
+    };
+    addendumCards: Array<Record<string, unknown>>;
+    flags: Record<string, unknown>;
+  };
+  odpzhSchedule: {
+    appliesToKind: boolean;
+    includedInSchedule: boolean;
+    exclusionReason: string | null;
+    row: Record<string, unknown> | null;
+  };
+};
+
+/** Экспорт диагностического JSON договора (только суперадмин). */
+export async function getContractDocumentPackageDiagnosticExport(
+  packageId: string
+): Promise<ContractDocumentPackageDiagnosticExport> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/${encodeURIComponent(
+      packageId
+    )}/diagnostic-export`,
+    { headers: getAdminAuthHeaders() }
+  );
+  if (!res.ok) {
+    throw new Error(await readAdminContractPackagesError(res));
+  }
+  return res.json();
+}
+
 /** Импорт файла переноса расчёта в текущую базу (только суперадмин). */
 export async function postContractDocumentEstimatePresetImport(
   file: File

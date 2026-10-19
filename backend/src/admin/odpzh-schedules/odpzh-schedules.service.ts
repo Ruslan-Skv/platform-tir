@@ -77,7 +77,7 @@ export type OdpzhScheduleEntryRow = {
 };
 
 /** Пакеты ОДПЖ со всем, что нужно для строк план-графика. */
-const ODPZH_PACKAGE_SELECT = {
+export const ODPZH_PACKAGE_SELECT = {
   id: true,
   kind: true,
   status: true,
@@ -103,6 +103,142 @@ const ODPZH_PACKAGE_SELECT = {
     orderBy: { date: 'asc' as const },
   },
 } satisfies Prisma.ContractDocumentPackageSelect;
+
+/** Запись пакета в форме селекта ODPZH_PACKAGE_SELECT. */
+export type OdpzhPackageRecord = Prisma.ContractDocumentPackageGetPayload<{
+  select: typeof ODPZH_PACKAGE_SELECT;
+}>;
+
+/**
+ * Строка план-графика ОДПЖ по одному пакету (чистая функция — используется и списком
+ * план-графика, и диагностической выгрузкой пакета, чтобы обе стороны видели одинаково).
+ */
+export function buildOdpzhScheduleRow(
+  pkg: OdpzhPackageRecord,
+  installerNamesById: Map<string, string>,
+): OdpzhScheduleRow {
+  const formData = asFormDataRecord(pkg.formData);
+
+  const payments: PackageListPaymentRow[] = pkg.payments.map((p) => ({
+    amount: p.amount.toString(),
+    paymentType: p.paymentType,
+    addendumNumber: p.addendumNumber,
+    paymentDate: p.paymentDate,
+  }));
+  const pipeline = computePackageListPipelineStatus({
+    kind: pkg.kind,
+    status: pkg.status,
+    formData: pkg.formData,
+    payments,
+  });
+
+  const entries = pkg.installationSchedules;
+  /*
+   * В продуктовых направлениях нет акта начала работ: «В работе» = есть записи
+   * в графике монтажей. Все монтажи выполнены — отдельный раздел до закрытия
+   * договора по конвейеру (акт сдачи + полная оплата).
+   */
+  const status: OdpzhScheduleStatus =
+    pipeline === 'CLOSED'
+      ? 'CLOSED'
+      : entries.length > 0 && entries.every((e) => e.status === InstallationScheduleStatus.DONE)
+        ? 'INSTALLATIONS_DONE'
+        : entries.length > 0
+          ? 'IN_PROGRESS'
+          : 'NEW';
+
+  const today = todayIsoDay();
+  let nearestInstallationDate: string | null = null;
+  let lastInstallationDate: string | null = null;
+  let installationsDoneCount = 0;
+  let lastCompletedInstallationDate: string | null = null;
+  const installerNames = new Set<string>();
+  for (const entry of entries) {
+    if (entry.status === InstallationScheduleStatus.DONE) {
+      installationsDoneCount++;
+      const completedDay = toIsoDay(entry.completedAt ?? entry.dateEnd ?? entry.date);
+      if (!lastCompletedInstallationDate || completedDay > lastCompletedInstallationDate) {
+        lastCompletedInstallationDate = completedDay;
+      }
+    }
+    if (
+      entry.status === InstallationScheduleStatus.PLANNED &&
+      toIsoDay(entry.date) >= today &&
+      !nearestInstallationDate
+    ) {
+      nearestInstallationDate = toIsoDay(entry.date);
+    }
+    const lastDay = toIsoDay(entry.dateEnd ?? entry.date);
+    if (!lastInstallationDate || lastDay > lastInstallationDate) {
+      lastInstallationDate = lastDay;
+    }
+    for (const part of (entry.installerName ?? '').split(',')) {
+      const name = part.trim();
+      if (name) installerNames.add(name);
+    }
+    for (const id of entry.installerIds) {
+      const name = installerNamesById.get(id);
+      if (name) installerNames.add(name);
+    }
+  }
+  if (installerNames.size === 0) {
+    for (const id of selectedInstallerIds(formData)) {
+      const name = installerNamesById.get(id);
+      if (name) installerNames.add(name);
+    }
+  }
+
+  const snapshot = odpzhPackageSnapshot(formData);
+  // Контрольная дата: дата договора + срок в рабочих днях (как «Срок дог.» в договорах).
+  const contractEndDate =
+    snapshot.contractDate && snapshot.workPeriodDays != null
+      ? addWorkingDaysExcludingWeekends(snapshot.contractDate, snapshot.workPeriodDays)
+      : null;
+  const { deadlineDaysLeft, deadlineWarning } = buildOdpzhDeadlineWarning({
+    contractEndDate,
+    status,
+  });
+
+  return {
+    id: pkg.id,
+    contractNumber: snapshot.contractNumber,
+    kind: pkg.kind as OdpzhScheduleKind,
+    status,
+    customerName: snapshot.customerName,
+    customerAddress: snapshot.customerAddress,
+    customerPhone: snapshot.customerPhone,
+    objectDescription: snapshot.objectDescription,
+    managerNote: snapshot.managerNote,
+    contractSum: snapshot.contractSum,
+    contractDate: snapshot.contractDate,
+    workPeriodDays: snapshot.workPeriodDays,
+    contractEndDate,
+    deadlineDaysLeft,
+    deadlineWarning,
+    installerNames: [...installerNames],
+    nearestInstallationDate,
+    lastInstallationDate,
+    installationsDoneCount,
+    installationsTotalCount: entries.length,
+    allInstallationsDone:
+      entries.length > 0 && entries.every((e) => e.status === InstallationScheduleStatus.DONE),
+    lastCompletedInstallationDate,
+    closedAt: status === 'CLOSED' ? closedAtIsoDay(formData, pkg.payments) : null,
+    entriesCount: entries.length,
+    entries: entries.map((entry) => ({
+      id: entry.id,
+      date: toIsoDay(entry.date),
+      dateEnd: entry.dateEnd ? toIsoDay(entry.dateEnd) : null,
+      direction: entry.direction,
+      status: entry.status,
+      installerName: entry.installerName,
+      workOrderKey: entry.workOrderKey,
+      completedAt: entry.completedAt ? entry.completedAt.toISOString() : null,
+    })),
+    createdAt: pkg.createdAt,
+    updatedAt: pkg.updatedAt,
+  };
+}
 
 function toIsoDay(date: Date): string {
   return date.toISOString().slice(0, 10);
@@ -266,130 +402,11 @@ export class OdpzhSchedulesService {
 
     const rows: OdpzhScheduleRow[] = [];
     for (const pkg of packages) {
-      const formData = asFormDataRecord(pkg.formData);
       if (searchNorm && !packageMatchesListSearch(pkg.formData, searchNorm)) continue;
-
-      const payments: PackageListPaymentRow[] = pkg.payments.map((p) => ({
-        amount: p.amount.toString(),
-        paymentType: p.paymentType,
-        addendumNumber: p.addendumNumber,
-        paymentDate: p.paymentDate,
-      }));
-      const pipeline = computePackageListPipelineStatus({
-        kind: pkg.kind,
-        status: pkg.status,
-        formData: pkg.formData,
-        payments,
-      });
-
-      const entries = pkg.installationSchedules;
-      /*
-       * В продуктовых направлениях нет акта начала работ: «В работе» = есть записи
-       * в графике монтажей. Все монтажи выполнены — отдельный раздел до закрытия
-       * договора по конвейеру (акт сдачи + полная оплата).
-       */
-      const status: OdpzhScheduleStatus =
-        pipeline === 'CLOSED'
-          ? 'CLOSED'
-          : entries.length > 0 && entries.every((e) => e.status === InstallationScheduleStatus.DONE)
-            ? 'INSTALLATIONS_DONE'
-            : entries.length > 0
-              ? 'IN_PROGRESS'
-              : 'NEW';
-      if (params.status && params.status !== status) continue;
-      if (params.direction && params.direction !== pkg.kind) continue;
-
-      const today = todayIsoDay();
-      let nearestInstallationDate: string | null = null;
-      let lastInstallationDate: string | null = null;
-      let installationsDoneCount = 0;
-      let lastCompletedInstallationDate: string | null = null;
-      const installerNames = new Set<string>();
-      for (const entry of entries) {
-        if (entry.status === InstallationScheduleStatus.DONE) {
-          installationsDoneCount++;
-          const completedDay = toIsoDay(entry.completedAt ?? entry.dateEnd ?? entry.date);
-          if (!lastCompletedInstallationDate || completedDay > lastCompletedInstallationDate) {
-            lastCompletedInstallationDate = completedDay;
-          }
-        }
-        if (
-          entry.status === InstallationScheduleStatus.PLANNED &&
-          toIsoDay(entry.date) >= today &&
-          !nearestInstallationDate
-        ) {
-          nearestInstallationDate = toIsoDay(entry.date);
-        }
-        const lastDay = toIsoDay(entry.dateEnd ?? entry.date);
-        if (!lastInstallationDate || lastDay > lastInstallationDate) {
-          lastInstallationDate = lastDay;
-        }
-        for (const part of (entry.installerName ?? '').split(',')) {
-          const name = part.trim();
-          if (name) installerNames.add(name);
-        }
-        for (const id of entry.installerIds) {
-          const name = installerNamesById.get(id);
-          if (name) installerNames.add(name);
-        }
-      }
-      if (installerNames.size === 0) {
-        for (const id of selectedInstallerIds(formData)) {
-          const name = installerNamesById.get(id);
-          if (name) installerNames.add(name);
-        }
-      }
-
-      const snapshot = odpzhPackageSnapshot(formData);
-      // Контрольная дата: дата договора + срок в рабочих днях (как «Срок дог.» в договорах).
-      const contractEndDate =
-        snapshot.contractDate && snapshot.workPeriodDays != null
-          ? addWorkingDaysExcludingWeekends(snapshot.contractDate, snapshot.workPeriodDays)
-          : null;
-      const { deadlineDaysLeft, deadlineWarning } = buildOdpzhDeadlineWarning({
-        contractEndDate,
-        status,
-      });
-
-      rows.push({
-        id: pkg.id,
-        contractNumber: snapshot.contractNumber,
-        kind: pkg.kind as OdpzhScheduleKind,
-        status,
-        customerName: snapshot.customerName,
-        customerAddress: snapshot.customerAddress,
-        customerPhone: snapshot.customerPhone,
-        objectDescription: snapshot.objectDescription,
-        managerNote: snapshot.managerNote,
-        contractSum: snapshot.contractSum,
-        contractDate: snapshot.contractDate,
-        workPeriodDays: snapshot.workPeriodDays,
-        contractEndDate,
-        deadlineDaysLeft,
-        deadlineWarning,
-        installerNames: [...installerNames],
-        nearestInstallationDate,
-        lastInstallationDate,
-        installationsDoneCount,
-        installationsTotalCount: entries.length,
-        allInstallationsDone:
-          entries.length > 0 && entries.every((e) => e.status === InstallationScheduleStatus.DONE),
-        lastCompletedInstallationDate,
-        closedAt: status === 'CLOSED' ? closedAtIsoDay(formData, pkg.payments) : null,
-        entriesCount: entries.length,
-        entries: entries.map((entry) => ({
-          id: entry.id,
-          date: toIsoDay(entry.date),
-          dateEnd: entry.dateEnd ? toIsoDay(entry.dateEnd) : null,
-          direction: entry.direction,
-          status: entry.status,
-          installerName: entry.installerName,
-          workOrderKey: entry.workOrderKey,
-          completedAt: entry.completedAt ? entry.completedAt.toISOString() : null,
-        })),
-        createdAt: pkg.createdAt,
-        updatedAt: pkg.updatedAt,
-      });
+      const row = buildOdpzhScheduleRow(pkg, installerNamesById);
+      if (params.status && params.status !== row.status) continue;
+      if (params.direction && params.direction !== row.kind) continue;
+      rows.push(row);
     }
 
     rows.sort((a, b) => {

@@ -30,6 +30,7 @@ import { ContractDocumentPaymentInvoiceEpService } from './invoices/contract-doc
 import { ContractDocumentPackagePaymentsService } from './payments/contract-document-package-payments.service';
 import { ContractDocumentPackageInstallerAdvancesService } from './payments/contract-document-package-installer-advances.service';
 import { ContractDocumentPackagesService } from './contract-document-packages.service';
+import { ContractDocumentPackageDiagnosticExportService } from './contract-document-package-diagnostic-export.service';
 import { ContractDocumentNumberingService } from '../../contract-document-numbering/contract-document-numbering.service';
 import { CreateContractDocumentPaymentInvoiceDto } from './dto/invoices/create-contract-document-payment-invoice.dto';
 import { CreateFreePaymentInvoiceDto } from './dto/invoices/create-free-payment-invoice.dto';
@@ -224,6 +225,7 @@ export class ContractDocumentPackagesController {
     private readonly paymentInvoices: ContractDocumentPaymentInvoicesService,
     private readonly paymentInvoiceEp: ContractDocumentPaymentInvoiceEpService,
     private readonly contractNumbering: ContractDocumentNumberingService,
+    private readonly diagnosticExport: ContractDocumentPackageDiagnosticExportService,
   ) {}
 
   @Post()
@@ -893,6 +895,17 @@ export class ContractDocumentPackagesController {
   @Get(':id/payment-invoices')
   listPackagePaymentInvoices(@Param('id') id: string) {
     return this.paymentInvoices.listForPackage(id);
+  }
+
+  /**
+   * Диагностическая выгрузка договора в JSON (сырые formData/оплаты/монтажи + расчёт
+   * статусов конвейера и план-графика ОДПЖ со всеми промежуточными значениями) —
+   * только супер-админ, для расследования расхождений статусов между разделами.
+   */
+  @Get(':id/diagnostic-export')
+  @Roles('SUPER_ADMIN')
+  exportDiagnostic(@Param('id') id: string) {
+    return this.diagnosticExport.export(id);
   }
 
   @Post(':id/payment-invoices')

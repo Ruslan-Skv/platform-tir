@@ -25,10 +25,51 @@ export type PackageListPaymentRow = {
   paymentDate?: string | Date | null;
 };
 
-type PayableBreakdown = {
+export type PayableBreakdown = {
   mainContractRub: number | null;
   addendumTotalsRub: Array<{ slotIndex1: number; totalRub: number | null }>;
   grandTotalRub: number | null;
+};
+
+/** Промежуточные значения расчёта статуса — для диагностической выгрузки пакета. */
+export type PackageListPipelineExplain = {
+  status: PackageListPipelineStatus;
+  payable: PayableBreakdown;
+  allocations: {
+    contractPaidRub: number;
+    journalTotalRub: number;
+    byAddendum: Array<{ slotIndex1: number; paidRub: number }>;
+  };
+  addendumCards: Array<{
+    slotIndex1: number;
+    hasData: boolean;
+    slotStatus: string;
+    paidRub: number;
+    totalRub: number | null;
+    fullyPaid: boolean;
+  }>;
+  flags: {
+    isRefused: boolean;
+    /** Упрощённый конвейер (мебель и др.): оплаты и акты не влияют на статус. */
+    simplifiedPipeline: boolean;
+    isProductKind: boolean;
+    hasAddendumsInPackage: boolean;
+    contractFullyPaid: boolean;
+    allAddendumsFullyPaid: boolean;
+    hasPositiveGrand: boolean;
+    allPaymentsComplete: boolean;
+    workStartPaymentReady: boolean;
+    workStartActDone: boolean;
+    workStarted: boolean;
+    closeActDone: boolean;
+    closeActChecks: {
+      hasCloseActSignedAt: boolean;
+      hasCloseActPhotoUrl: boolean;
+      repairContractClosedFlag: boolean;
+      contractClosedFlag: boolean;
+    };
+    contractClosed: boolean;
+  };
 };
 
 function asObj(v: unknown): Record<string, unknown> | null {
@@ -337,30 +378,23 @@ function deriveListPipelineStatus(input: {
 }
 
 /**
- * Статус колонки списка договоров — паритет с frontend `packageListPipelineStatusFromPackage`.
+ * Полный расчёт статуса конвейера со всеми промежуточными значениями —
+ * для диагностической выгрузки пакета (когда статус в списке/хабе и в план-графике
+ * расходится, по этому объекту видно, какая именно проверка не прошла).
  */
-export function computePackageListPipelineStatus(input: {
+export function explainPackageListPipelineStatus(input: {
   kind: ContractDocumentPackageKind;
   status: ContractDocumentPackageStatus | string | null | undefined;
   formData: unknown;
   payments?: PackageListPaymentRow[] | null;
-}): PackageListPipelineStatus {
+}): PackageListPipelineExplain {
   const formData = asObj(input.formData) ?? {};
   const dbStatus = String(input.status ?? ContractDocumentPackageStatus.IN_PROGRESS);
-
-  if (
+  const product = isProductKind(input.kind);
+  const simplifiedPipeline = input.kind !== ContractDocumentPackageKind.REPAIR && !product;
+  const isRefused =
     dbStatus === ContractDocumentPackageStatus.REFUSED ||
-    formData.repairContractClientRefused === true
-  ) {
-    return 'REFUSED';
-  }
-
-  // Упрощённый конвейер для направлений без полного UI (мебель и т.п.).
-  if (input.kind !== ContractDocumentPackageKind.REPAIR && !isProductKind(input.kind)) {
-    if (dbStatus === ContractDocumentPackageStatus.REFUSED) return 'REFUSED';
-    if (dbStatus === ContractDocumentPackageStatus.CONTRACT_CONCLUDED) return 'SIGNED';
-    return 'IN_PROJECT';
-  }
+    formData.repairContractClientRefused === true;
 
   const packageFlowStatus: ContractDocumentPackageStatus =
     dbStatus === ContractDocumentPackageStatus.CONTRACT_CONCLUDED
@@ -369,26 +403,37 @@ export function computePackageListPipelineStatus(input: {
 
   const payments = input.payments ?? [];
   const payable = computePayableBreakdown(input.kind, formData);
-  const allocations = computePaymentAllocations(payments);
+  const allocationsRaw = computePaymentAllocations(payments);
   const slots = readAddendumSlots(formData);
   const count = resolveAddendumSlotCount(formData);
 
-  const addendumCards: Array<{ slotStatus: string; paidRub: number; totalRub: number | null }> = [];
+  const addendumCards: Array<{
+    slotIndex1: number;
+    hasData: boolean;
+    slotStatus: string;
+    paidRub: number;
+    totalRub: number | null;
+    fullyPaid: boolean;
+  }> = [];
   for (let i = 0; i < count; i++) {
     const slot = slots[i];
     if (!addendumSlotHasData(slot)) continue;
     const ordinal = i + 1;
     const totalRub =
       payable.addendumTotalsRub.find((a) => a.slotIndex1 === ordinal)?.totalRub ?? null;
+    const paidRub = allocationsRaw.byAddendum.get(ordinal) ?? 0;
     addendumCards.push({
+      slotIndex1: ordinal,
+      hasData: true,
       slotStatus: String(slot?.status ?? 'OPEN'),
-      paidRub: allocations.byAddendum.get(ordinal) ?? 0,
+      paidRub,
       totalRub,
+      fullyPaid: isFullyPaidRub(paidRub, totalRub),
     });
   }
 
   const hasAddendumsInPackage = addendumCards.length > 0;
-  const contractFullyPaid = isFullyPaidRub(allocations.contractPaidRub, payable.mainContractRub);
+  const contractFullyPaid = isFullyPaidRub(allocationsRaw.contractPaidRub, payable.mainContractRub);
   const allAddendumsFullyPaid = addendumCards.every((c) => isFullyPaidRub(c.paidRub, c.totalRub));
   const hasPositiveGrand =
     payable.grandTotalRub != null &&
@@ -398,18 +443,23 @@ export function computePackageListPipelineStatus(input: {
     hasPositiveGrand && contractFullyPaid && (!hasAddendumsInPackage || allAddendumsFullyPaid);
 
   const workStartPaymentReady = isPaidAtLeastPct(
-    allocations.journalTotal,
+    allocationsRaw.journalTotal,
     payable.grandTotalRub,
     PACKAGE_WORK_START_MIN_CONTRACT_PAY_PCT,
   );
 
-  const product = isProductKind(input.kind);
   const windowsStart = product
     ? inferWindowsPrepayment70StartDate(payments, payable.grandTotalRub)
     : null;
   const workStartActDone = product
     ? workStartPaymentReady && Boolean(windowsStart)
     : isFormWorkStartActComplete(formData);
+  const closeActChecks = {
+    hasCloseActSignedAt: Boolean(String(formData.repairContractCloseActSignedAt ?? '').trim()),
+    hasCloseActPhotoUrl: Boolean(String(formData.repairContractCloseActPhotoUrl ?? '').trim()),
+    repairContractClosedFlag: formData.repairContractClosed === true,
+    contractClosedFlag: formData.contractClosed === true,
+  };
   const closeActDone = closeActComplete(formData);
   /*
    * «В работе» — этап только направления «Ремонт» (после подписания Акта начала работ).
@@ -419,12 +469,60 @@ export function computePackageListPipelineStatus(input: {
   const workStarted = !product && workStartPaymentReady && workStartActDone;
   const contractClosed = allPaymentsComplete && closeActDone;
 
-  return deriveListPipelineStatus({
-    packageFlowStatus,
-    isRefused: false,
-    workStarted,
-    contractClosed,
-  });
+  const status: PackageListPipelineStatus = isRefused
+    ? 'REFUSED'
+    : simplifiedPipeline
+      ? dbStatus === ContractDocumentPackageStatus.CONTRACT_CONCLUDED
+        ? 'SIGNED'
+        : 'IN_PROJECT'
+      : deriveListPipelineStatus({
+          packageFlowStatus,
+          isRefused: false,
+          workStarted,
+          contractClosed,
+        });
+
+  return {
+    status,
+    payable,
+    allocations: {
+      contractPaidRub: allocationsRaw.contractPaidRub,
+      journalTotalRub: allocationsRaw.journalTotal,
+      byAddendum: [...allocationsRaw.byAddendum.entries()].map(([slotIndex1, paidRub]) => ({
+        slotIndex1,
+        paidRub,
+      })),
+    },
+    addendumCards,
+    flags: {
+      isRefused,
+      simplifiedPipeline,
+      isProductKind: product,
+      hasAddendumsInPackage,
+      contractFullyPaid,
+      allAddendumsFullyPaid,
+      hasPositiveGrand,
+      allPaymentsComplete,
+      workStartPaymentReady,
+      workStartActDone,
+      workStarted,
+      closeActDone,
+      closeActChecks,
+      contractClosed,
+    },
+  };
+}
+
+/**
+ * Статус колонки списка договоров — паритет с frontend `packageListPipelineStatusFromPackage`.
+ */
+export function computePackageListPipelineStatus(input: {
+  kind: ContractDocumentPackageKind;
+  status: ContractDocumentPackageStatus | string | null | undefined;
+  formData: unknown;
+  payments?: PackageListPaymentRow[] | null;
+}): PackageListPipelineStatus {
+  return explainPackageListPipelineStatus(input).status;
 }
 
 /** Id ответственного для фильтров: responsibleManagerId → signatory → createdBy. */

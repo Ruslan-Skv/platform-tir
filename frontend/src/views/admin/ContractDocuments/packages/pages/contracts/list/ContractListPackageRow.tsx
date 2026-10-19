@@ -1,8 +1,15 @@
 'use client';
 
+import { useState } from 'react';
+
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 
+import { useAuth } from '@/features/auth';
 import type { ContractDocumentPackage } from '@/shared/api/admin-contract-document-packages';
+import {
+  type ContractDocumentPackageDiagnosticExport,
+  getContractDocumentPackageDiagnosticExport,
+} from '@/shared/api/admin-contract-document-packages';
 import type { CrmUser } from '@/shared/api/admin-crm';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
@@ -58,6 +65,27 @@ import {
   isPackageDraftDeletionAllowed,
   sumPackagePaymentsRub,
 } from './contractsListUtils';
+
+function downloadPackageDiagnosticFile(
+  payload: ContractDocumentPackageDiagnosticExport,
+  contractLabel: string
+) {
+  const safeTitle =
+    contractLabel
+      .trim()
+      .replace(/[^\p{L}\p{N}_-]+/gu, '_')
+      .slice(0, 60) || 'договор';
+  const day = new Date().toISOString().slice(0, 10);
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `договор-${safeTitle}-диагностика-${day}.json`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
 
 export type ContractListPackageRowProps = {
   pkg: ContractDocumentPackage;
@@ -130,6 +158,21 @@ export function ContractListPackageRow({
   const copyBusy = copyingPackageId === pkg.id;
   const deleteBusy = deletingPackageId === pkg.id;
   const canDeleteDraft = isPackageDraftDeletionAllowed(pkg);
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const [diagnosticExporting, setDiagnosticExporting] = useState(false);
+
+  const handleDiagnosticExport = async () => {
+    setDiagnosticExporting(true);
+    try {
+      const payload = await getContractDocumentPackageDiagnosticExport(pkg.id);
+      downloadPackageDiagnosticFile(payload, num);
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : 'Не удалось выгрузить договор');
+    } finally {
+      setDiagnosticExporting(false);
+    }
+  };
   const {
     status: pipelineStatus,
     signedPaymentDue,
@@ -393,6 +436,44 @@ export function ContractListPackageRow({
               <span className={cdEstimatesList.contractsListActionsIconPlaceholder} aria-hidden />
             )}
           </div>
+          {isSuperAdmin ? (
+            <div className={cdEstimatesList.contractsListActionsSlot}>
+              <AdminTableIconButton
+                disabled={
+                  loading ||
+                  creating ||
+                  copyingPackageId !== null ||
+                  deletingPackageId !== null ||
+                  diagnosticExporting
+                }
+                aria-busy={diagnosticExporting}
+                aria-label={
+                  diagnosticExporting
+                    ? 'Выгрузка диагностики договора…'
+                    : `Выгрузить диагностику договора ${num} в JSON`
+                }
+                title="Выгрузить договор в JSON: formData, оплаты, монтажи и расчёт статусов (реестр, план-график ОДПЖ) — только для супер-админа"
+                onClick={() => void handleDiagnosticExport()}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width={14}
+                  height={14}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+              </AdminTableIconButton>
+            </div>
+          ) : null}
         </div>
       </td>
     </tr>
