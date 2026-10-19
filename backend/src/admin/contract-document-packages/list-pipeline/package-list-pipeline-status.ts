@@ -39,14 +39,28 @@ export type PackageListPipelineExplain = {
     contractPaidRub: number;
     journalTotalRub: number;
     byAddendum: Array<{ slotIndex1: number; paidRub: number }>;
+    /** Сумма договора за вычетом уменьшений от отрицательных Д/с. */
+    effectiveMainRub: number | null;
+    /** На сколько отрицательные Д/с уменьшили сумму договора. */
+    reductionRub: number;
+    /** Покрыто оплатами по договору (не больше effectiveMainRub). */
+    mainCoveredRub: number;
   };
   addendumCards: Array<{
     slotIndex1: number;
     hasData: boolean;
     slotStatus: string;
-    paidRub: number;
+    /** Итог Д/с из сводки; может быть отрицательным («уменьшение договора»). */
     totalRub: number | null;
+    /** Сколько нужно доплатить по Д/с: null — итог неизвестен, 0 — платить нечего. */
+    payableRub: number | null;
+    /** Собственные проводки по основанию этого Д/с. */
+    ownPaidRub: number;
+    /** Покрыто всего: собственные проводки + перелив из оплат по договору. */
+    coveredRub: number;
     fullyPaid: boolean;
+    /** Отрицательный Д/с уменьшает сумму, которую клиент должен по договору. */
+    reducesContract: boolean;
   }>;
   flags: {
     isRefused: boolean;
@@ -54,7 +68,8 @@ export type PackageListPipelineExplain = {
     simplifiedPipeline: boolean;
     isProductKind: boolean;
     hasAddendumsInPackage: boolean;
-    contractFullyPaid: boolean;
+    /** Эффективная сумма договора покрыта оплатами по договору. */
+    mainFullyCovered: boolean;
     allAddendumsFullyPaid: boolean;
     hasPositiveGrand: boolean;
     allPaymentsComplete: boolean;
@@ -168,7 +183,11 @@ function addendumSlotHasData(slot: Record<string, unknown> | null): boolean {
   const excluded = slot.excludedSelectedPresetIds;
   if (Array.isArray(selected) && selected.length > 0) return true;
   if (Array.isArray(excluded) && excluded.length > 0) return true;
-  return false;
+  // Д/с продуктовых направлений может состоять только из строк «Изменений в Спецификации».
+  return (
+    productAddendumSpecLinesHaveContent(slot.specificationAddedLines) ||
+    productAddendumSpecLinesHaveContent(slot.specificationExcludedLines)
+  );
 }
 
 function readAddendumSlots(
@@ -202,6 +221,40 @@ function lineQtyPrice(qtyRaw: unknown, priceRaw: unknown): number {
   return qty * price;
 }
 
+/** Сумма строк «Изменений в Спецификации» Д/с: qty × price, только строки с данными. */
+function sumProductAddendumSpecLines(raw: unknown): number {
+  if (!Array.isArray(raw)) return 0;
+  let sum = 0;
+  for (const item of raw) {
+    const line = asObj(item);
+    if (!line) continue;
+    const amount = lineQtyPrice(line.quantity, line.price);
+    const price = parseRubAmount(line.price);
+    const hasContent =
+      String(line.name ?? '').trim() || (price != null && price !== 0) || amount !== 0;
+    if (hasContent) sum += amount;
+  }
+  return sum;
+}
+
+/** Есть ли в списке строк «Изменений в Спецификации» Д/с хотя бы одна с данными. */
+function productAddendumSpecLinesHaveContent(raw: unknown): boolean {
+  if (!Array.isArray(raw)) return false;
+  for (const item of raw) {
+    const line = asObj(item);
+    if (!line) continue;
+    const price = parseRubAmount(line.price);
+    if (
+      String(line.name ?? '').trim() ||
+      (price != null && price !== 0) ||
+      lineQtyPrice(line.quantity, line.price) !== 0
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function sumDoorsProducts(formData: Record<string, unknown>): number {
   const lines = formData.doorsSpecificationLines;
   if (!Array.isArray(lines)) return 0;
@@ -231,6 +284,7 @@ function sumCeilingsProducts(formData: Record<string, unknown>): number {
   if (!spec) return 0;
   const ceilings = Array.isArray(spec.ceilings) ? spec.ceilings : [];
   let gross = 0;
+  let goodsTotal = 0;
   for (const cRaw of ceilings) {
     const c = asObj(cRaw);
     if (!c) continue;
@@ -241,12 +295,25 @@ function sumCeilingsProducts(formData: Record<string, unknown>): number {
         if (!row) continue;
         if (key === 'fabrics') gross += lineQtyPrice(row.qtyM2, row.unitPrice);
         else if (key === 'tapes') gross += lineQtyPrice(row.qtyM, row.unitPrice);
-        else gross += lineQtyPrice(row.qty, row.unitPrice);
+        else {
+          const line = lineQtyPrice(row.qty, row.unitPrice);
+          gross += line;
+          if (key === 'goods') goodsTotal += line;
+        }
       }
     }
   }
   const withMarkupPct = parseMarkupPercent(spec.extraMarkupPercent);
-  const withMarkup = withMarkupPct > 0 ? gross * (1 + withMarkupPct / 100) : gross;
+  /*
+   * Доп. наценка не применяется к блоку «Товар (светильники, LED…)» при
+   * goodsNoMarkup — паритет с frontend-расчётом спецификации потолков
+   * (ceilingsSpecification.ts). Без учёта флага итог завышается, и полностью
+   * оплаченный договор не признаётся закрытым (план-график ОДПЖ, фильтры списка).
+   */
+  const noMarkupTotal = spec.goodsNoMarkup === true ? goodsTotal : 0;
+  const markupable = gross - noMarkupTotal;
+  const withMarkup =
+    withMarkupPct > 0 ? markupable * (1 + withMarkupPct / 100) + noMarkupTotal : gross;
   return applyDiscount(withMarkup, parseDiscountPercent(spec.discountPercent));
 }
 
@@ -296,7 +363,31 @@ function computePayableBreakdown(
     const snap = asObj(slot?.snapshot);
     const rawTotal =
       typeof snap?.total === 'number' && Number.isFinite(snap.total) ? snap.total : null;
-    const totalRub = rawTotal != null ? applyDiscount(rawTotal, discountPct) : null;
+    let totalRub: number | null;
+    if (isProductKind(kind)) {
+      /*
+       * Паритет с frontend `computeWindowsAddendumTotals`: строки спецификации
+       * (добавления − исключения) + счёт-заказ за вычетом исключённого, скидка —
+       * только с положительной части. Итог может быть отрицательным — такое Д/с
+       * уменьшает сумму договора, платить по нему не нужно.
+       */
+      const excludedSnap = asObj(slot?.excludedSnapshot);
+      const rawExcluded =
+        typeof excludedSnap?.total === 'number' && Number.isFinite(excludedSnap.total)
+          ? excludedSnap.total
+          : 0;
+      const accountGrossNet = (rawTotal ?? 0) - rawExcluded;
+      const accountNetAfterDiscount =
+        discountPct > 0 && accountGrossNet > 0
+          ? applyDiscount(accountGrossNet, discountPct)
+          : accountGrossNet;
+      const specNetTotal =
+        sumProductAddendumSpecLines(slot?.specificationAddedLines) -
+        sumProductAddendumSpecLines(slot?.specificationExcludedLines);
+      totalRub = specNetTotal + accountNetAfterDiscount;
+    } else {
+      totalRub = rawTotal != null ? applyDiscount(rawTotal, discountPct) : null;
+    }
     addendumTotalsRub.push({ slotIndex1: i + 1, totalRub });
     if (totalRub != null) addendumSumKnown += totalRub;
   }
@@ -407,40 +498,81 @@ export function explainPackageListPipelineStatus(input: {
   const slots = readAddendumSlots(formData);
   const count = resolveAddendumSlotCount(formData);
 
-  const addendumCards: Array<{
-    slotIndex1: number;
-    hasData: boolean;
-    slotStatus: string;
-    paidRub: number;
-    totalRub: number | null;
-    fullyPaid: boolean;
-  }> = [];
+  /*
+   * Модель покрытия оплат — паритет с frontend `packagePaymentCoverage.ts`:
+   * — отрицательные Д/с уменьшают сумму по договору (effectiveMainRub);
+   * — оплаты по основаниям договора сначала закрывают effectiveMainRub, остаток
+   *   «переливается» на непокрытые положительные Д/с по порядку номеров — поэтому
+   *   окончательный расчёт одной суммой закрывает и договор, и Д/с;
+   * — оплаты по основаниям Д/с идут только на свой Д/с;
+   * — Д/с с нулевым/отрицательным итогом платить не нужно; с неизвестным — не оплачен.
+   */
+  let reductionRub = 0;
+  for (const a of payable.addendumTotalsRub) {
+    if (a.totalRub != null && Number.isFinite(a.totalRub) && a.totalRub < 0) {
+      reductionRub += Math.abs(a.totalRub);
+    }
+  }
+  const mainRaw = payable.mainContractRub;
+  const effectiveMainRub =
+    mainRaw != null && Number.isFinite(mainRaw) ? Math.max(0, mainRaw - reductionRub) : null;
+  const mainCoveredRub =
+    effectiveMainRub != null
+      ? Math.min(Math.max(0, allocationsRaw.contractPaidRub), effectiveMainRub)
+      : 0;
+  const mainFullyCovered =
+    effectiveMainRub != null &&
+    (effectiveMainRub <= PACKAGE_PAYMENT_TOLERANCE_RUB ||
+      isFullyPaidRub(mainCoveredRub, effectiveMainRub));
+
+  let spillRemainingRub =
+    effectiveMainRub != null ? Math.max(0, allocationsRaw.contractPaidRub - effectiveMainRub) : 0;
+
+  const addendumCards: PackageListPipelineExplain['addendumCards'] = [];
   for (let i = 0; i < count; i++) {
     const slot = slots[i];
     if (!addendumSlotHasData(slot)) continue;
     const ordinal = i + 1;
     const totalRub =
       payable.addendumTotalsRub.find((a) => a.slotIndex1 === ordinal)?.totalRub ?? null;
-    const paidRub = allocationsRaw.byAddendum.get(ordinal) ?? 0;
+    const payableRub = totalRub != null ? Math.max(0, totalRub) : null;
+    const ownPaidRub = allocationsRaw.byAddendum.get(ordinal) ?? 0;
+    let coveredRub = 0;
+    let fullyPaid = false;
+    let reducesContract = false;
+    if (payableRub == null) {
+      fullyPaid = false;
+    } else if (payableRub <= PACKAGE_PAYMENT_TOLERANCE_RUB) {
+      fullyPaid = true;
+      reducesContract = (totalRub ?? 0) < 0;
+    } else {
+      const ownEffectiveRub = Math.min(Math.max(0, ownPaidRub), payableRub);
+      const spillRub = Math.min(payableRub - ownEffectiveRub, spillRemainingRub);
+      spillRemainingRub -= spillRub;
+      coveredRub = ownEffectiveRub + spillRub;
+      fullyPaid = isFullyPaidRub(coveredRub, payableRub);
+    }
     addendumCards.push({
       slotIndex1: ordinal,
       hasData: true,
       slotStatus: String(slot?.status ?? 'OPEN'),
-      paidRub,
       totalRub,
-      fullyPaid: isFullyPaidRub(paidRub, totalRub),
+      payableRub,
+      ownPaidRub,
+      coveredRub,
+      fullyPaid,
+      reducesContract,
     });
   }
 
   const hasAddendumsInPackage = addendumCards.length > 0;
-  const contractFullyPaid = isFullyPaidRub(allocationsRaw.contractPaidRub, payable.mainContractRub);
-  const allAddendumsFullyPaid = addendumCards.every((c) => isFullyPaidRub(c.paidRub, c.totalRub));
+  const allAddendumsFullyPaid = addendumCards.every((c) => c.fullyPaid);
   const hasPositiveGrand =
     payable.grandTotalRub != null &&
     Number.isFinite(payable.grandTotalRub) &&
     payable.grandTotalRub > 0;
   const allPaymentsComplete =
-    hasPositiveGrand && contractFullyPaid && (!hasAddendumsInPackage || allAddendumsFullyPaid);
+    hasPositiveGrand && mainFullyCovered && (!hasAddendumsInPackage || allAddendumsFullyPaid);
 
   const workStartPaymentReady = isPaidAtLeastPct(
     allocationsRaw.journalTotal,
@@ -492,6 +624,9 @@ export function explainPackageListPipelineStatus(input: {
         slotIndex1,
         paidRub,
       })),
+      effectiveMainRub,
+      reductionRub,
+      mainCoveredRub,
     },
     addendumCards,
     flags: {
@@ -499,7 +634,7 @@ export function explainPackageListPipelineStatus(input: {
       simplifiedPipeline,
       isProductKind: product,
       hasAddendumsInPackage,
-      contractFullyPaid,
+      mainFullyCovered,
       allAddendumsFullyPaid,
       hasPositiveGrand,
       allPaymentsComplete,

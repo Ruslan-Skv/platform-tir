@@ -113,6 +113,126 @@ describe('computePackageListPipelineStatus', () => {
       }),
     ).toBe('SIGNED');
   });
+
+  it('closes fully paid contract when one final payment covers the addendum too (spillover)', () => {
+    const formData = {
+      contract: { totalAmount: '100000' },
+      addendumSlotCount: 1,
+      addendumSlots: [{ snapshot: { total: 20000 } }],
+      repairContractCloseActSignedAt: '2026-10-15',
+      repairContractCloseActPhotoUrl: '/uploads/close.jpg',
+    };
+    // Окончательный расчёт одной суммой 120 000: 100 000 закрывают договор,
+    // остаток 20 000 переливается на Д/с №1 — договор закрыт.
+    expect(
+      computePackageListPipelineStatus({
+        kind: ContractDocumentPackageKind.REPAIR,
+        status: ContractDocumentPackageStatus.CONTRACT_CONCLUDED,
+        formData,
+        payments: [{ amount: '120000', paymentType: 'FINAL', paymentDate: '2026-10-14' }],
+      }),
+    ).toBe('CLOSED');
+
+    // Недостаточная сумма: перелив 10 000 не покрывает Д/с 20 000 — не закрыт.
+    expect(
+      computePackageListPipelineStatus({
+        kind: ContractDocumentPackageKind.REPAIR,
+        status: ContractDocumentPackageStatus.CONTRACT_CONCLUDED,
+        formData,
+        payments: [{ amount: '110000', paymentType: 'FINAL', paymentDate: '2026-10-14' }],
+      }),
+    ).toBe('SIGNED');
+  });
+
+  it('closes with dedicated AMENDMENT payments as before', () => {
+    expect(
+      computePackageListPipelineStatus({
+        kind: ContractDocumentPackageKind.REPAIR,
+        status: ContractDocumentPackageStatus.CONTRACT_CONCLUDED,
+        formData: {
+          contract: { totalAmount: '100000' },
+          addendumSlotCount: 1,
+          addendumSlots: [{ snapshot: { total: 20000 } }],
+          repairContractCloseActSignedAt: '2026-10-15',
+          repairContractCloseActPhotoUrl: '/uploads/close.jpg',
+        },
+        payments: [
+          { amount: '100000', paymentType: 'FINAL', paymentDate: '2026-10-14' },
+          {
+            amount: '20000',
+            paymentType: 'AMENDMENT',
+            addendumNumber: 1,
+            paymentDate: '2026-10-14',
+          },
+        ],
+      }),
+    ).toBe('CLOSED');
+  });
+
+  it('reduces payable by negative addendum (уменьшение договора)', () => {
+    expect(
+      computePackageListPipelineStatus({
+        kind: ContractDocumentPackageKind.WINDOWS,
+        status: ContractDocumentPackageStatus.CONTRACT_CONCLUDED,
+        formData: {
+          estimate: { snapshot: { total: 100000 } },
+          contract: { discountPercent: '' },
+          addendumSlotCount: 1,
+          addendumSlots: [{ snapshot: { total: -5000 } }],
+          repairContractCloseActSignedAt: '2026-10-15',
+          repairContractCloseActPhotoUrl: '/uploads/close.jpg',
+        },
+        // Отрицательное Д/с (исключено больше, чем добавлено) уменьшило сумму до 95 000.
+        payments: [{ amount: '95000', paymentType: 'FINAL', paymentDate: '2026-10-14' }],
+      }),
+    ).toBe('CLOSED');
+  });
+
+  it('closes fully paid ceilings contract when goodsNoMarkup keeps «Товар» out of extra markup', () => {
+    const ceilingsSpecification = {
+      extraMarkupPercent: '70',
+      discountPercent: '',
+      goodsNoMarkup: true,
+      ceilings: [
+        {
+          fabrics: [{ qtyM2: '10', unitPrice: '100' }],
+          goods: [{ qty: '2', unitPrice: '500' }],
+          tapes: [],
+          profiles: [],
+          extras: [],
+        },
+      ],
+    };
+    const formData = {
+      estimate: { snapshot: { total: 500 } },
+      contract: { discountPercent: '' },
+      ceilingsSpecification,
+      repairContractCloseActSignedAt: '2026-10-15',
+      repairContractCloseActPhotoUrl: '/uploads/close.jpg',
+    };
+    // Итог как в карточке договора: работы 500 + ткани 1000×1.7 + товар 1000 без наценки = 3200.
+    expect(
+      computePackageListPipelineStatus({
+        kind: ContractDocumentPackageKind.CEILINGS,
+        status: ContractDocumentPackageStatus.CONTRACT_CONCLUDED,
+        formData,
+        payments: [{ amount: '3200', paymentType: 'FINAL', paymentDate: '2026-10-10' }],
+      }),
+    ).toBe('CLOSED');
+
+    // Без флага товар наценяется: payable 3900, оплата 3200 — договор не закрыт.
+    expect(
+      computePackageListPipelineStatus({
+        kind: ContractDocumentPackageKind.CEILINGS,
+        status: ContractDocumentPackageStatus.CONTRACT_CONCLUDED,
+        formData: {
+          ...formData,
+          ceilingsSpecification: { ...ceilingsSpecification, goodsNoMarkup: false },
+        },
+        payments: [{ amount: '3200', paymentType: 'FINAL', paymentDate: '2026-10-10' }],
+      }),
+    ).toBe('SIGNED');
+  });
 });
 
 describe('computePackagePaidPercent', () => {

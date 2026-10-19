@@ -1554,6 +1554,11 @@ export type ContractDocumentPackageDiagnosticExport = {
       contractPaidRub: number;
       journalTotalRub: number;
       byAddendum: Array<{ slotIndex1: number; paidRub: number }>;
+      /** Сумма договора за вычетом уменьшений от отрицательных Д/с. */
+      effectiveMainRub: number | null;
+      reductionRub: number;
+      /** Покрыто оплатами по договору (не больше effectiveMainRub). */
+      mainCoveredRub: number;
     };
     addendumCards: Array<Record<string, unknown>>;
     flags: Record<string, unknown>;
