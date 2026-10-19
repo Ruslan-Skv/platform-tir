@@ -500,9 +500,8 @@ export function SupplierDetailPageView({ model }: SupplierDetailPageViewProps) {
       {tab === 'ledger' ? (
         <>
           <section
-            className={cdHub.contractsListFiltersPanel}
+            className={`${cdHub.contractsListFiltersPanel} ${styles.ledgerFiltersPanel}`}
             aria-label="Фильтры ведомости"
-            style={{ padding: '10px 12px' }}
           >
             <div className={cdHub.contractsListFilters}>
               <input
@@ -631,7 +630,7 @@ export function SupplierDetailPageView({ model }: SupplierDetailPageViewProps) {
       />
 
       {canEdit ? (
-        <div style={{ marginTop: 16 }}>
+        <div className={styles.dangerZoneRow}>
           <button
             type="button"
             data-admin-mutation

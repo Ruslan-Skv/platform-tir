@@ -155,3 +155,13 @@
 .contactsRow a:hover {
   text-decoration: underline;
 }
+
+/* Компактная панель поиска по ведомости (без сворачивания) */
+.ledgerFiltersPanel {
+  padding: 10px 12px;
+}
+
+/* Ряд опасного действия внизу карточки (удаление поставщика) */
+.dangerZoneRow {
+  margin-top: 16px;
+}
