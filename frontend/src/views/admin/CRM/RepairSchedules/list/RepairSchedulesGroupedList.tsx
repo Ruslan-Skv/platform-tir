@@ -44,7 +44,7 @@ type Props = {
   canDeleteProject: (item: RepairScheduleProject) => boolean;
 };
 
-const COL_SPAN = 9;
+const COL_SPAN = 10;
 
 /** Порядок секций при фильтре «Все»: в работе → новые → закрытые. */
 const STATUS_SECTIONS: Array<{ status: RepairScheduleProjectStatus; label: string }> = [
@@ -244,6 +244,11 @@ export function RepairSchedulesGroupedList({
             onClick={() => openProject(item.id)}
           >
             <strong>{item.contractNumber || 'Без номера'}</strong>
+            {item.contractDate ? (
+              <span className={styles.contractNumberDate} title="Дата подписания договора">
+                от {formatDate(item.contractDate)}
+              </span>
+            ) : null}
             {objectDescription ? (
               <span className={styles.subline} title={objectDescription}>
                 {objectDescription}
@@ -283,6 +288,11 @@ export function RepairSchedulesGroupedList({
             {item.paidPercent != null ? <PaidPercentBadge percent={item.paidPercent} /> : null}
           </div>
         </td>
+        <td title="Дата подписания акта начала работ">
+          <div className={styles.cellMain}>
+            <div>{formatDate(item.workStartActDate)}</div>
+          </div>
+        </td>
         <td>
           <div className={styles.cellMain}>
             <div>{formatDate(item.calculatedEndDate)}</div>
@@ -308,7 +318,7 @@ export function RepairSchedulesGroupedList({
           </div>
         </td>
         <td className={styles.noteCell} title={managerNote ?? undefined}>
-          {managerNote ?? '—'}
+          {managerNote ? <span className={styles.noteText}>{managerNote}</span> : '—'}
         </td>
         <td>
           <StatusBadge item={item} />
@@ -327,7 +337,15 @@ export function RepairSchedulesGroupedList({
       >
         <div className={styles.mobileCardTop}>
           <div>
-            <div className={styles.mobileCardName}>{item.contractNumber || 'Без номера'}</div>
+            <div className={styles.mobileCardName}>
+              {item.contractNumber || 'Без номера'}
+              {item.contractDate ? (
+                <span className={styles.mobileCardNameDate}>
+                  {' '}
+                  от {formatDate(item.contractDate)}
+                </span>
+              ) : null}
+            </div>
             {objectDescription ? (
               <div className={styles.mobileCardMeta}>{objectDescription}</div>
             ) : null}
@@ -355,6 +373,9 @@ export function RepairSchedulesGroupedList({
           <div className={styles.mobileCardMeta}>
             {formatDate(item.latestEntry.date)}: {item.latestEntry.text.slice(0, 100)}
           </div>
+        ) : null}
+        {item.workStartActDate ? (
+          <div className={styles.mobileCardMeta}>АНР: {formatDate(item.workStartActDate)}</div>
         ) : null}
         {item.calculatedEndDate ? (
           <div className={styles.mobileCardMeta}>Срок: {formatDate(item.calculatedEndDate)}</div>
@@ -482,6 +503,7 @@ export function RepairSchedulesGroupedList({
                   <th>Мастер</th>
                   <th>Заказчик / адрес</th>
                   <th>Стоимость</th>
+                  <th title="Дата подписания акта начала работ">Дата АНР</th>
                   <th>Срок окончания</th>
                   <th>Последняя запись</th>
                   <th>Примечание</th>
