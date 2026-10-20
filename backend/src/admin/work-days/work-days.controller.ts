@@ -33,6 +33,7 @@ import { WorkDayExcusesService } from './work-day-excuses.service';
 import { WorkDayLeavesService } from './work-day-leaves.service';
 import { WorkDayOfficesService } from './work-day-offices.service';
 import { WorkDayRequestsService } from './work-day-requests.service';
+import { WorkDayUsersService } from './work-day-users.service';
 import { WorkDaysService } from './work-days.service';
 
 function extractMeta(req: Request) {
@@ -54,6 +55,7 @@ export class WorkDaysController {
     private readonly workDayOffices: WorkDayOfficesService,
     private readonly workDayLeaves: WorkDayLeavesService,
     private readonly workDayExcuses: WorkDayExcusesService,
+    private readonly workDayUsers: WorkDayUsersService,
   ) {}
 
   @Get('settings')
@@ -83,13 +85,13 @@ export class WorkDaysController {
   @Get('users')
   @Roles(UserRole.SUPER_ADMIN)
   listUsers() {
-    return this.workDaysService.listTrackedUsers();
+    return this.workDayUsers.listTrackedUsers();
   }
 
   @Patch('users/:userId')
   @Roles(UserRole.SUPER_ADMIN)
   updateUser(@Param('userId') userId: string, @Body() dto: UpdateUserWorkScheduleDto) {
-    return this.workDaysService.updateUserWorkSchedule(userId, dto);
+    return this.workDayUsers.updateUserWorkSchedule(userId, dto);
   }
 
   @Get('my/offices')

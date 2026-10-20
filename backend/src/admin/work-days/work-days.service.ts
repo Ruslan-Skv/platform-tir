@@ -16,12 +16,10 @@ import {
   type WorkDaySettings,
 } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
-import { ADMIN_ROLES } from '../../common/config/admin-roles.config';
 import {
   CloseForgottenWorkDayDto,
   StartAbsenceDto,
   StartWorkDayDto,
-  UpdateUserWorkScheduleDto,
   UpdateWorkDaySettingsDto,
 } from './dto/work-day.dto';
 import {
@@ -40,7 +38,6 @@ import {
   resolveDaySchedule,
   resolveWorkSchedule,
 } from './utils/work-day.utils';
-import { type WeeklySchedule } from './utils/weekly-schedule.types';
 import { WorkDayNotifyService } from './services/work-day-notify.service';
 import { dateKey } from './services/work-day-journal-rows';
 import {
@@ -49,10 +46,6 @@ import {
 } from './services/work-day-journal.service';
 import { WorkDayRequestsService } from './work-day-requests.service';
 import { DEFAULT_WORK_DAY_SETTINGS, WORK_DAY_RECORD_INCLUDE } from './work-day.constants';
-import {
-  USER_WORK_SCHEDULE_SELECT,
-  legacyFieldsFromWeeklySchedule,
-} from './work-day-schedule.helpers';
 
 type RequestMeta = {
   userAgent?: string;
@@ -577,43 +570,5 @@ export class WorkDaysService implements OnModuleInit {
       this.prisma.workDay.delete({ where: { id: workDayId } }),
     ]);
     return { id: workDayId };
-  }
-
-  async updateUserWorkSchedule(userId: string, dto: UpdateUserWorkScheduleDto) {
-    await this.getUserWithOffice(userId);
-    const data: Record<string, unknown> = {};
-    if (dto.officeId !== undefined) data.officeId = dto.officeId;
-    if (dto.workDayTrackingEnabled !== undefined) {
-      data.workDayTrackingEnabled = dto.workDayTrackingEnabled;
-    }
-    if (dto.useCustomWorkSchedule !== undefined)
-      data.useCustomWorkSchedule = dto.useCustomWorkSchedule;
-    if (dto.workDayStartTime !== undefined) data.workDayStartTime = dto.workDayStartTime;
-    if (dto.workDayEndTime !== undefined) data.workDayEndTime = dto.workDayEndTime;
-    if (dto.workDaysOfWeek !== undefined) data.workDaysOfWeek = dto.workDaysOfWeek;
-    if (dto.gracePeriodMinutes !== undefined) data.gracePeriodMinutes = dto.gracePeriodMinutes;
-    if (dto.workDayWeeklySchedule !== undefined) {
-      data.workDayWeeklySchedule = dto.workDayWeeklySchedule;
-      Object.assign(
-        data,
-        legacyFieldsFromWeeklySchedule(dto.workDayWeeklySchedule as WeeklySchedule),
-      );
-    }
-    return this.prisma.user.update({
-      where: { id: userId },
-      data,
-      select: USER_WORK_SCHEDULE_SELECT,
-    });
-  }
-
-  async listTrackedUsers() {
-    return this.prisma.user.findMany({
-      where: {
-        isActive: true,
-        role: { in: ADMIN_ROLES.filter((r) => r !== UserRole.SUPER_ADMIN) },
-      },
-      select: USER_WORK_SCHEDULE_SELECT,
-      orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
-    });
   }
 }

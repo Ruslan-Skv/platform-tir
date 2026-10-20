@@ -8,6 +8,7 @@ import { WorkDayExcusesService } from './work-day-excuses.service';
 import { WorkDayLeavesService } from './work-day-leaves.service';
 import { WorkDayOfficesService } from './work-day-offices.service';
 import { WorkDayRequestsService } from './work-day-requests.service';
+import { WorkDayUsersService } from './work-day-users.service';
 import { WorkDaysController } from './work-days.controller';
 import { WorkDaysService } from './work-days.service';
 
@@ -22,6 +23,7 @@ import { WorkDaysService } from './work-days.service';
     WorkDayJournalService,
     WorkDayLeavesService,
     WorkDayExcusesService,
+    WorkDayUsersService,
   ],
   exports: [WorkDaysService, WorkDayRequestsService, WorkDayJournalService],
 })
