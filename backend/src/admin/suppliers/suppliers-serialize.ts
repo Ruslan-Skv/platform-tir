@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 export const USER_BRIEF_SELECT = {
@@ -38,6 +39,15 @@ export function roundMoney(value: number): number {
 /** Date → «ГГГГ-ММ-ДД» (даты ведомости храним как полночь UTC). */
 export function toIsoDate(value: Date): string {
   return value.toISOString().slice(0, 10);
+}
+
+/** Дата приходит строкой «ГГГГ-ММ-ДД»; проверяем Round-trip, как в остатках кассы. */
+export function parseDateOrThrow(value: string, fieldLabel: string): Date {
+  const date = new Date(`${value}T00:00:00.000Z`);
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
+    throw new BadRequestException(`${fieldLabel}: указана несуществующая дата`);
+  }
+  return date;
 }
 
 /** Статус расчётов по знаку сальдо: >0 — должны, <0 — переплата, 0 — расчёты завершены. */

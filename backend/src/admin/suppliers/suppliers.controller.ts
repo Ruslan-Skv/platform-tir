@@ -18,6 +18,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import type { RequestWithUser } from '../../common/types/request-with-user.types';
 import { SuppliersService } from './suppliers.service';
+import { SuppliersLedgerService } from './suppliers-ledger.service';
 import { QuerySuppliersSummaryDto } from './dto/query-suppliers-summary.dto';
 import { QuerySupplierLedgerDto } from './dto/query-supplier-ledger.dto';
 import { SaveSupplierDto } from './dto/save-supplier.dto';
@@ -45,7 +46,10 @@ const SUPPLIERS_SECTION_ROLES = [
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(...SUPPLIERS_SECTION_ROLES)
 export class SuppliersController {
-  constructor(private readonly suppliers: SuppliersService) {}
+  constructor(
+    private readonly suppliers: SuppliersService,
+    private readonly ledger: SuppliersLedgerService,
+  ) {}
 
   /** Сводный список поставщиков с сальдо — итоговая вкладка для руководителя. */
   @Get('summary')
@@ -78,7 +82,7 @@ export class SuppliersController {
   /** Ведомость расчётов: счета (начисления) и оплаты поставщика. */
   @Get(':id/ledger')
   getLedger(@Param('id') id: string, @Query() query: QuerySupplierLedgerDto) {
-    return this.suppliers.getLedger(id, query);
+    return this.ledger.getLedger(id, query);
   }
 
   @Post(':id/ledger')
@@ -88,7 +92,7 @@ export class SuppliersController {
     @Body() dto: SaveSupplierLedgerEntryDto,
     @Req() req: RequestWithUser,
   ) {
-    return this.suppliers.createEntry(id, dto, {
+    return this.ledger.createEntry(id, dto, {
       id: req.user?.id,
       role: req.user?.role,
     });
@@ -100,7 +104,7 @@ export class SuppliersController {
     @Body() dto: SaveSupplierLedgerEntryDto,
     @Req() req: RequestWithUser,
   ) {
-    return this.suppliers.updateEntry(entryId, dto, {
+    return this.ledger.updateEntry(entryId, dto, {
       id: req.user?.id,
       role: req.user?.role,
     });
@@ -108,7 +112,7 @@ export class SuppliersController {
 
   @Delete('ledger/:entryId')
   deleteEntry(@Param('entryId') entryId: string, @Req() req: RequestWithUser) {
-    return this.suppliers.deleteEntry(entryId, { role: req.user?.role });
+    return this.ledger.deleteEntry(entryId, { role: req.user?.role });
   }
 
   /** Банковские реквизиты поставщика (блоков может быть несколько). */
