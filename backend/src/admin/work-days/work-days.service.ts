@@ -8,6 +8,7 @@ import {
 import {
   UserRole,
   WorkDayCloseReason,
+  WorkDayExcuseKind,
   WorkDayStatus,
   type Office,
   type User,
@@ -41,6 +42,7 @@ import {
 } from './utils/work-day.utils';
 import { type WeeklySchedule } from './utils/weekly-schedule.types';
 import { WorkDayNotifyService } from './services/work-day-notify.service';
+import { dateKey } from './services/work-day-journal-rows';
 import {
   type WorkDayJournalListRow,
   WorkDayJournalService,
@@ -244,6 +246,17 @@ export class WorkDaysService implements OnModuleInit {
     const approvedLateArrival = await this.workDayRequests.hasApprovedLateArrival(userId, today);
     const isWorkDayToday = todaySchedule.isWorkDay && !approvedDayOff;
 
+    // Прощённые нарушения скрываем от сотрудника и здесь (например, опоздание
+    // текущего дня, прощённое суперадмином из-за сбоя приложения).
+    const excuseKinds = await this.workDayJournal.excuseKindsForUser(userId, [
+      today,
+      ...(openPrevious ? [openPrevious.workDate] : []),
+    ]);
+    const todayExcused = excuseKinds.get(dateKey(today)) ?? new Set<WorkDayExcuseKind>();
+    const previousExcused = openPrevious
+      ? (excuseKinds.get(dateKey(openPrevious.workDate)) ?? new Set<WorkDayExcuseKind>())
+      : new Set<WorkDayExcuseKind>();
+
     return {
       tracked,
       settings: {
@@ -256,8 +269,12 @@ export class WorkDaysService implements OnModuleInit {
       approvedDayOff,
       approvedEarlyLeave,
       approvedLateArrival,
-      todayWorkDay: todayDay,
-      forgottenOpenDay: openPrevious,
+      todayWorkDay: todayDay
+        ? this.workDayJournal.sanitizeRecordForEmployee(todayDay, todayExcused)
+        : null,
+      forgottenOpenDay: openPrevious
+        ? this.workDayJournal.sanitizeRecordForEmployee(openPrevious, previousExcused)
+        : null,
       hasOpenAbsence: todayDay?.absences.some((a) => !a.endedAt) ?? false,
       canRestartToday: todayDay ? canRestartWorkDay(todayDay, today) : false,
       remainingRestartsToday: remainingRestartsToday(todayDay),
@@ -487,7 +504,9 @@ export class WorkDaysService implements OnModuleInit {
 
   async listMyWorkDays(userId: string, params: { dateFrom?: string; dateTo?: string }) {
     const rows = await this.listWorkDays({ ...params, userId });
-    return { records: rows, summary: this.workDayJournal.summarizeMyRows(rows) };
+    // Прощённые нарушения сотрудник не видит: ни нарушение, ни пометку о прощении.
+    const visible = this.workDayJournal.sanitizeRowsForEmployee(rows);
+    return { records: visible, summary: this.workDayJournal.summarizeMyRows(visible) };
   }
 
   async listWorkDays(params: {
@@ -540,12 +559,23 @@ export class WorkDaysService implements OnModuleInit {
   async deleteWorkDay(workDayId: string) {
     const existing = await this.prisma.workDay.findUnique({
       where: { id: workDayId },
-      select: { id: true },
+      select: { id: true, userId: true, workDate: true },
     });
     if (!existing) {
       throw new NotFoundException('Запись рабочего дня не найдена');
     }
-    await this.prisma.workDay.delete({ where: { id: workDayId } });
+    await this.prisma.$transaction([
+      // Прощения привязаны к нарушениям удаляемой записи; после удаления они
+      // теряют смысл. TRUANCY не трогаем — день без записи может стать прогулом.
+      this.prisma.workDayExcuse.deleteMany({
+        where: {
+          userId: existing.userId,
+          workDate: existing.workDate,
+          kind: { in: ['LATE', 'EARLY_LEAVE', 'AUTO_CLOSE'] },
+        },
+      }),
+      this.prisma.workDay.delete({ where: { id: workDayId } }),
+    ]);
     return { id: workDayId };
   }
 

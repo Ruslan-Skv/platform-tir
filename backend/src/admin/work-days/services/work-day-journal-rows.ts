@@ -6,6 +6,7 @@ import {
   WorkDayStatus,
   type WorkDay,
   type WorkDayAbsence,
+  type WorkDayExcuseKind,
   type WorkDayLeave,
   type WorkDayRequest,
 } from '@prisma/client';
@@ -17,6 +18,14 @@ export type WorkDayRequestBadge = {
   status: WorkDayRequestStatus;
   requestDate: string;
   proposedEndTime: string | null;
+  comment: string | null;
+  createdAt: Date;
+};
+
+/** Короткая карточка прощённого суперадмином нарушения для строк журнала. */
+export type WorkDayExcuseBadge = {
+  id: string;
+  kind: WorkDayExcuseKind;
   comment: string | null;
   createdAt: Date;
 };
@@ -67,6 +76,8 @@ export type WorkDayJournalRow = WorkDay & {
   office: { id: string; name: string } | null;
   absences: WorkDayAbsence[];
   requests: WorkDayRequestBadge[];
+  /** Прощённые суперадмином нарушения этой даты (пометки видны только в журнале суперадмина). */
+  excuses?: WorkDayExcuseBadge[];
   dayOffOnly?: false;
   truancyOnly?: false;
   leaveOnly?: false;
@@ -104,6 +115,7 @@ export type WorkDayDayOffRow = {
   user: WorkDayJournalUser | null;
   absences: [];
   requests: WorkDayRequestBadge[];
+  excuses?: WorkDayExcuseBadge[];
 };
 
 /** Строка журнала за прошедший рабочий день по графику без явки и без согласованного выходного. */
@@ -133,6 +145,8 @@ export type WorkDayTruancyRow = {
   user: WorkDayJournalUser | null;
   absences: [];
   requests: WorkDayRequestBadge[];
+  /** Прощённый прогул — строка скрывается из «Моего рабочего дня» сотрудника. */
+  excuses?: WorkDayExcuseBadge[];
 };
 
 /** Строка журнала за день отпуска или больничного, отмеченных суперадмином (в т.ч. задним числом). */
@@ -165,6 +179,7 @@ export type WorkDayLeaveRow = {
   user: WorkDayJournalUser | null;
   absences: [];
   requests: WorkDayRequestBadge[];
+  excuses?: WorkDayExcuseBadge[];
 };
 
 export type WorkDayJournalListRow =
@@ -210,6 +225,7 @@ export function buildTruancyRow(
   user: ScheduleJournalUser,
   date: Date,
   requests: WorkDayRequestBadge[],
+  excuses: WorkDayExcuseBadge[] = [],
 ): WorkDayTruancyRow {
   return {
     id: `truancy-${user.id}-${dateKey(date)}`,
@@ -234,6 +250,7 @@ export function buildTruancyRow(
     user: toJournalUser(user),
     absences: [],
     requests,
+    excuses,
   };
 }
 

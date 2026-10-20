@@ -15,6 +15,17 @@ function getAdminAuthHeaders(): HeadersInit {
 
 export type WorkDayStatus = 'OPEN' | 'CLOSED' | 'AUTO_CLOSED';
 
+/** Вид нарушения режима, которое можно простить (не считать нарушением). */
+export type WorkDayExcuseKind = 'LATE' | 'EARLY_LEAVE' | 'AUTO_CLOSE' | 'TRUANCY';
+
+/** Короткая карточка прощённого нарушения в строках журнала. */
+export interface WorkDayExcuseBadge {
+  id: string;
+  kind: WorkDayExcuseKind;
+  comment: string | null;
+  createdAt: string;
+}
+
 export interface DayScheduleEntry {
   enabled: boolean;
   startTime: string;
@@ -59,6 +70,8 @@ export interface WorkDayRecord {
   };
   /** Запросы (выходной / уйти пораньше / прийти попозже) на дату записи. */
   requests?: WorkDayRequestBadge[];
+  /** Прощённые суперадмином нарушения этой даты (видны только в журнале суперадмина). */
+  excuses?: WorkDayExcuseBadge[];
   dayOffOnly?: false;
   truancyOnly?: false;
   leaveOnly?: false;
@@ -101,6 +114,7 @@ export interface WorkDayDayOffRow {
     role: string;
   } | null;
   requests: WorkDayRequestBadge[];
+  excuses?: WorkDayExcuseBadge[];
 }
 
 /** Строка журнала за прошедший рабочий день по графику без явки и без согласованного выходного. */
@@ -128,6 +142,8 @@ export interface WorkDayTruancyRow {
     role: string;
   } | null;
   requests: WorkDayRequestBadge[];
+  /** Прощённый прогул — сотруднику строка не показывается. */
+  excuses?: WorkDayExcuseBadge[];
 }
 
 export type WorkDayLeaveType = 'VACATION' | 'SICK';
@@ -160,6 +176,7 @@ export interface WorkDayLeaveRow {
     role: string;
   } | null;
   requests: WorkDayRequestBadge[];
+  excuses?: WorkDayExcuseBadge[];
 }
 
 export type WorkDayJournalRow =
@@ -479,6 +496,90 @@ export async function deleteWorkDayLeave(id: string): Promise<{ id: string }> {
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || 'Не удалось удалить отметку');
+  }
+  return res.json();
+}
+
+/** Прощённое суперадмином нарушение режима за конкретную дату сотрудника. */
+export interface WorkDayExcuse {
+  id: string;
+  userId: string;
+  workDate: string;
+  kind: WorkDayExcuseKind;
+  comment: string | null;
+  createdById: string | null;
+  createdAt: string;
+  updatedAt: string;
+  user?: {
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+    role: string;
+    officeId: string | null;
+    office?: { id: string; name: string } | null;
+  };
+  createdBy?: {
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+  } | null;
+}
+
+/** Прощённые нарушения за период (только суперадмин). */
+export async function getWorkDayExcuses(params?: {
+  dateFrom?: string;
+  dateTo?: string;
+  userId?: string;
+  officeId?: string;
+}): Promise<WorkDayExcuse[]> {
+  const search = new URLSearchParams();
+  if (params?.dateFrom) search.set('dateFrom', params.dateFrom);
+  if (params?.dateTo) search.set('dateTo', params.dateTo);
+  if (params?.userId) search.set('userId', params.userId);
+  if (params?.officeId) search.set('officeId', params.officeId);
+  const qs = search.toString();
+  const res = await apiFetch(`${API_URL}/admin/work-days/excuses${qs ? `?${qs}` : ''}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить прощённые нарушения');
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+/**
+ * Простить нарушения за дату сотрудника: нарушение перестаёт учитываться
+ * при расчёте удержаний и скрывается из «Моего рабочего дня» сотрудника.
+ */
+export async function createWorkDayExcuse(body: {
+  userId: string;
+  workDate: string;
+  kinds: WorkDayExcuseKind[];
+  comment?: string;
+}): Promise<WorkDayExcuse[]> {
+  const res = await apiFetch(`${API_URL}/admin/work-days/excuses`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось простить нарушение');
+  }
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+/** Отменить прощение — нарушение снова учитывается. */
+export async function deleteWorkDayExcuse(id: string): Promise<{ id: string }> {
+  const res = await apiFetch(`${API_URL}/admin/work-days/excuses/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось отменить прощение');
   }
   return res.json();
 }

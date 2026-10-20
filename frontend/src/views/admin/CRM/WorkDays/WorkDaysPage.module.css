@@ -302,6 +302,51 @@
   cursor: not-allowed;
 }
 
+.actionsButtons {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.excusedBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--admin-space-md);
+  border-radius: var(--admin-radius-3xl);
+  border: 1px solid transparent;
+  background: var(--admin-success-bg-soft, #ecfdf5);
+  color: var(--admin-success-text, #047857);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.iconExcuseButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+  color: var(--admin-success-text, #047857);
+  cursor: pointer;
+}
+
+.iconExcuseButton:hover:not(:disabled) {
+  border-color: var(--admin-success-text, #047857);
+  background: var(--admin-success-bg-soft, #ecfdf5);
+}
+
+.iconExcuseButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statChip {
   background: var(--admin-text-secondary);
   color: var(--admin-text-muted);
@@ -374,6 +419,16 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .requestBadgePending {
   background: rgb(245 158 11 / 0.16);
   color: rgb(252 211 77);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .excusedBadge {
+  background: rgb(16 185 129 / 0.18);
+  color: rgb(110 231 183);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .iconExcuseButton {
+  background: var(--admin-surface-muted);
+  color: rgb(110 231 183);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .leaveChip {

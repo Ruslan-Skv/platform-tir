@@ -1,5 +1,6 @@
 import type {
   WorkDayDayOffRow,
+  WorkDayExcuseKind,
   WorkDayJournalRow,
   WorkDayLeaveRow,
   WorkDayLeaveType,
@@ -69,12 +70,81 @@ export function workDayRowClassName(
     return row.leaveType === 'VACATION' ? styles.rowLeaveVacation : styles.rowLeaveSick;
   }
   if (row.dayOffOnly === true) return styles.rowDayOff;
-  if (row.truancyOnly === true) return styles.rowTruancy;
+  // Прощённое нарушение строку не подсвечивает — оно больше не считается нарушением.
+  if (row.truancyOnly === true) {
+    return hasWorkDayExcuse(row, 'TRUANCY') ? undefined : styles.rowTruancy;
+  }
   if (row.isDayOffWork) return styles.rowDayOffWork;
-  if (row.status === 'AUTO_CLOSED') return styles.rowAuto;
-  if (row.lateMinutes > 0) return styles.rowLate;
-  if (row.earlyLeaveMinutes > 0) return styles.rowEarly;
+  if (row.status === 'AUTO_CLOSED' && !hasWorkDayExcuse(row, 'AUTO_CLOSE')) {
+    return styles.rowAuto;
+  }
+  if (row.lateMinutes > 0 && !hasWorkDayExcuse(row, 'LATE')) return styles.rowLate;
+  if (row.earlyLeaveMinutes > 0 && !hasWorkDayExcuse(row, 'EARLY_LEAVE')) {
+    return styles.rowEarly;
+  }
   return undefined;
+}
+
+export function workDayExcuseLabel(kind: WorkDayExcuseKind): string {
+  switch (kind) {
+    case 'LATE':
+      return 'Опоздание';
+    case 'EARLY_LEAVE':
+      return 'Ранний уход';
+    case 'AUTO_CLOSE':
+      return 'Автозакрытие';
+    case 'TRUANCY':
+      return 'Прогул';
+    default:
+      return kind;
+  }
+}
+
+export function hasWorkDayExcuse(row: WorkDayJournalRow, kind: WorkDayExcuseKind): boolean {
+  return (row.excuses ?? []).some((excuse) => excuse.kind === kind);
+}
+
+/** Нарушение строки журнала, за которое начисляется удержание из оклада. */
+export type WorkDayRowViolation = {
+  kind: WorkDayExcuseKind;
+  /** Минуты — для опоздания и раннего ухода. */
+  minutes: number | null;
+  excused: boolean;
+};
+
+/** Нарушения этой строки журнала (опоздание, ранний уход, автозакрытие, прогул). */
+export function workDayRowViolations(row: WorkDayJournalRow): WorkDayRowViolation[] {
+  if (row.truancyOnly === true) {
+    return [{ kind: 'TRUANCY', minutes: null, excused: hasWorkDayExcuse(row, 'TRUANCY') }];
+  }
+  const violations: WorkDayRowViolation[] = [];
+  if (row.lateMinutes > 0) {
+    violations.push({
+      kind: 'LATE',
+      minutes: row.lateMinutes,
+      excused: hasWorkDayExcuse(row, 'LATE'),
+    });
+  }
+  if (row.earlyLeaveMinutes > 0) {
+    violations.push({
+      kind: 'EARLY_LEAVE',
+      minutes: row.earlyLeaveMinutes,
+      excused: hasWorkDayExcuse(row, 'EARLY_LEAVE'),
+    });
+  }
+  if (!isWorkDayDayOffRow(row) && !isWorkDayLeaveRow(row) && row.status === 'AUTO_CLOSED') {
+    violations.push({
+      kind: 'AUTO_CLOSE',
+      minutes: null,
+      excused: hasWorkDayExcuse(row, 'AUTO_CLOSE'),
+    });
+  }
+  return violations;
+}
+
+/** Есть ли на строке нарушение, которое ещё не прощено. */
+export function hasUnexcusedWorkDayViolations(row: WorkDayJournalRow): boolean {
+  return workDayRowViolations(row).some((violation) => !violation.excused);
 }
 
 export function workDayLeaveLabel(type: WorkDayLeaveType): string {

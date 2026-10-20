@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import {
   UserRole,
+  WorkDayCloseReason,
+  WorkDayExcuseKind,
   WorkDayLeaveType,
   WorkDayRequestStatus,
   WorkDayRequestType,
@@ -19,6 +21,7 @@ import {
 } from '../utils/work-day.utils';
 import {
   type ApprovedDayOffRequestRow,
+  type WorkDayExcuseBadge,
   type WorkDayLeaveMarker,
   type WorkDayJournalListRow,
   type WorkDayJournalRow,
@@ -36,6 +39,7 @@ export type {
   ApprovedDayOffRequestRow,
   ScheduleJournalUser,
   WorkDayDayOffRow,
+  WorkDayExcuseBadge,
   WorkDayJournalListRow,
   WorkDayJournalRow,
   WorkDayJournalUser,
@@ -62,6 +66,19 @@ function toRequestBadge(row: WorkDayRequest): WorkDayRequestBadge {
     comment: row.comment,
     createdAt: row.createdAt,
   };
+}
+
+function toExcuseBadge(row: {
+  id: string;
+  kind: WorkDayExcuseKind;
+  comment: string | null;
+  createdAt: Date;
+}): WorkDayExcuseBadge {
+  return { id: row.id, kind: row.kind, comment: row.comment, createdAt: row.createdAt };
+}
+
+function excuseKindsOf(row: { excuses?: WorkDayExcuseBadge[] }): Set<WorkDayExcuseKind> {
+  return new Set((row.excuses ?? []).map((excuse) => excuse.kind));
 }
 
 /** Сводка личного журнала сотрудника за период. */
@@ -130,6 +147,67 @@ export class WorkDayJournalService {
       vacationDays: leaveRows.filter((r) => r.leaveType === WorkDayLeaveType.VACATION).length,
       sickDays: leaveRows.filter((r) => r.leaveType === WorkDayLeaveType.SICK).length,
     };
+  }
+
+  /**
+   * Скрывает прощённые нарушения от сотрудника («Мой рабочий день»):
+   * опоздание и ранний уход обнуляются, автозакрытие показывается обычным
+   * закрытием дня, строка прощённого прогула убирается совсем. Пометки
+   * «прощено» остаются только в журнале суперадмина, поэтому поле excuses
+   * из ответа также удаляется.
+   */
+  sanitizeRowsForEmployee(rows: WorkDayJournalListRow[]): WorkDayJournalListRow[] {
+    const visible: WorkDayJournalListRow[] = [];
+    for (const row of rows) {
+      const kinds = excuseKindsOf(row);
+      const rest: WorkDayJournalListRow = { ...row };
+      delete rest.excuses;
+      if (rest.truancyOnly === true && kinds.has('TRUANCY')) continue;
+      if (rest.truancyOnly === true || rest.dayOffOnly === true || rest.leaveOnly === true) {
+        visible.push(rest);
+        continue;
+      }
+      visible.push(this.sanitizeRecordForEmployee(rest, kinds));
+    }
+    return visible;
+  }
+
+  /** Запись рабочего дня без прощённых нарушений — для «Моего рабочего дня». */
+  sanitizeRecordForEmployee<T extends WorkDay>(record: T, kinds: Set<WorkDayExcuseKind>): T {
+    return {
+      ...record,
+      lateMinutes: kinds.has('LATE') ? 0 : record.lateMinutes,
+      earlyLeaveMinutes: kinds.has('EARLY_LEAVE') ? 0 : record.earlyLeaveMinutes,
+      status:
+        kinds.has('AUTO_CLOSE') && record.status === WorkDayStatus.AUTO_CLOSED
+          ? WorkDayStatus.CLOSED
+          : record.status,
+      closeReason:
+        kinds.has('AUTO_CLOSE') && record.closeReason === WorkDayCloseReason.AUTO_AT_DEADLINE
+          ? null
+          : record.closeReason,
+      autoClosedAt: kinds.has('AUTO_CLOSE') ? null : record.autoClosedAt,
+    };
+  }
+
+  /** Виды прощённых нарушений сотрудника по датам — для санитизации «Моего рабочего дня». */
+  async excuseKindsForUser(
+    userId: string,
+    dates: Date[],
+  ): Promise<Map<string, Set<WorkDayExcuseKind>>> {
+    if (dates.length === 0) return new Map();
+    const rows = await this.prisma.workDayExcuse.findMany({
+      where: { userId, workDate: { in: dates } },
+      select: { workDate: true, kind: true },
+    });
+    const map = new Map<string, Set<WorkDayExcuseKind>>();
+    for (const row of rows) {
+      const key = dateKey(row.workDate);
+      const kinds = map.get(key) ?? new Set<WorkDayExcuseKind>();
+      kinds.add(row.kind);
+      map.set(key, kinds);
+    }
+    return map;
   }
 
   async attachRequests(
@@ -203,9 +281,15 @@ export class WorkDayJournalService {
       requestsByKey.set(key, list);
     }
 
+    // Прощённые нарушения: прикрепляются к строкам журнала (записям и прогулам),
+    // чтобы журнал суперадмина показывал пометку «прощено», а «Мой рабочий день»
+    // мог скрыть прощённые нарушения от сотрудника.
+    const excuseByKey = await this.buildExcuseMap(bounds.from, bounds.to, params);
+
     const enrichedRows: WorkDayJournalListRow[] = records.map((record) => ({
       ...record,
       requests: requestsByKey.get(`${record.userId}|${dateKey(record.workDate)}`) ?? [],
+      excuses: excuseByKey.get(`${record.userId}|${dateKey(record.workDate)}`) ?? [],
     }));
 
     const recordKeys = new Set(
@@ -233,6 +317,7 @@ export class WorkDayJournalService {
       approvedDayOffKeys,
       approvedDayOffRows,
       requestsByKey,
+      excuseByKey,
     });
 
     return enrichedRows;
@@ -252,6 +337,7 @@ export class WorkDayJournalService {
       approvedDayOffKeys: Set<string>;
       approvedDayOffRows: ApprovedDayOffRequestRow[];
       requestsByKey: Map<string, WorkDayRequestBadge[]>;
+      excuseByKey: Map<string, WorkDayExcuseBadge[]>;
     },
   ): Promise<void> {
     const settingsRow = await this.prisma.workDaySettings.findUnique({ where: { id: 'main' } });
@@ -313,12 +399,52 @@ export class WorkDayJournalService {
         );
         if (schedule.isWorkDay) {
           if (date > lastMissedDate) continue;
-          rows.push(buildTruancyRow(user, date, ctx.requestsByKey.get(key) ?? []));
+          rows.push(
+            buildTruancyRow(
+              user,
+              date,
+              ctx.requestsByKey.get(key) ?? [],
+              ctx.excuseByKey.get(key) ?? [],
+            ),
+          );
         } else {
           rows.push(buildScheduleDayOffRow(user, date, ctx.requestsByKey.get(key) ?? []));
         }
       }
     }
+  }
+
+  /**
+   * Прощённые нарушения за период: ключ «userId|дата» → карточки прощений.
+   * Диапазон расширяется до сегодняшнего дня: синтетические строки (прогулы)
+   * строятся по графику вплоть до вчера, даже если записи заканчиваются раньше.
+   */
+  private async buildExcuseMap(
+    from: Date | null,
+    to: Date | null,
+    params: WorkDayJournalParams,
+  ): Promise<Map<string, WorkDayExcuseBadge[]>> {
+    const today = getTodayDateInTimezone();
+    const effectiveTo = !to || to.getTime() < today.getTime() ? today : to;
+    const excuses = await this.prisma.workDayExcuse.findMany({
+      where: {
+        workDate: {
+          ...(from ? { gte: from } : {}),
+          lte: effectiveTo,
+        },
+        ...(params.userId ? { userId: params.userId } : {}),
+        ...(params.officeId ? { user: { officeId: params.officeId } } : {}),
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+    const map = new Map<string, WorkDayExcuseBadge[]>();
+    for (const excuse of excuses) {
+      const key = `${excuse.userId}|${dateKey(excuse.workDate)}`;
+      const list = map.get(key) ?? [];
+      list.push(toExcuseBadge(excuse));
+      map.set(key, list);
+    }
+    return map;
   }
 
   /** Отпуска/больничные за период: ключ «userId|дата» → отметка. */

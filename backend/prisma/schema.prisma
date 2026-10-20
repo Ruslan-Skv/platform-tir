@@ -169,6 +169,8 @@ model User {
   workDayRequestsReviewed                 WorkDayRequest[]                          @relation("WorkDayRequestReviewedBy")
   workDayLeaves                           WorkDayLeave[]                            @relation("WorkDayLeaveUser")
   workDayLeavesCreated                    WorkDayLeave[]                            @relation("WorkDayLeaveCreatedBy")
+  workDayExcuses                          WorkDayExcuse[]                           @relation("WorkDayExcuseUser")
+  workDayExcusesCreated                   WorkDayExcuse[]                           @relation("WorkDayExcuseCreatedBy")
   contractDocumentNumberCounters          ContractDocumentNumberCounter[]
   contractDocumentNumberHolds             ContractDocumentNumberHold[]
   waybillTasksAsResponsible               WaybillTask[]                             @relation("WaybillTaskResponsible")
@@ -5287,6 +5289,37 @@ model WorkDayLeave {
   @@index([dateFrom])
   @@index([dateTo])
   @@map("work_day_leaves")
+}
+
+/// Вид нарушения режима работы, которое можно простить (не считать нарушением).
+enum WorkDayExcuseKind {
+  LATE
+  EARLY_LEAVE
+  AUTO_CLOSE
+  TRUANCY
+}
+
+/// Прощённое суперадмином нарушение режима за конкретную дату сотрудника:
+/// факт нарушения в журнале остаётся, но удержание из оклада не начисляется
+/// и в счётчики нарушений оно не попадает. Прогул хранится здесь же, т.к.
+/// записи WorkDay за него не существует.
+model WorkDayExcuse {
+  id          String            @id @default(cuid())
+  userId      String
+  workDate    DateTime          @db.Date
+  kind        WorkDayExcuseKind
+  comment     String?           @db.Text
+  createdById String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  user      User  @relation("WorkDayExcuseUser", fields: [userId], references: [id], onDelete: Cascade)
+  createdBy User? @relation("WorkDayExcuseCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([userId, workDate, kind])
+  @@index([userId])
+  @@index([workDate])
+  @@map("work_day_excuses")
 }
 
 enum KanbanCardPriority {

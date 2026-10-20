@@ -4,6 +4,7 @@ import { DatabaseModule } from '../../database/database.module';
 import { ExternalNotifyModule } from '../../external-notify/external-notify.module';
 import { WorkDayJournalService } from './services/work-day-journal.service';
 import { WorkDayNotifyService } from './services/work-day-notify.service';
+import { WorkDayExcusesService } from './work-day-excuses.service';
 import { WorkDayLeavesService } from './work-day-leaves.service';
 import { WorkDayOfficesService } from './work-day-offices.service';
 import { WorkDayRequestsService } from './work-day-requests.service';
@@ -20,6 +21,7 @@ import { WorkDaysService } from './work-days.service';
     WorkDayOfficesService,
     WorkDayJournalService,
     WorkDayLeavesService,
+    WorkDayExcusesService,
   ],
   exports: [WorkDaysService, WorkDayRequestsService, WorkDayJournalService],
 })

@@ -1,8 +1,14 @@
 'use client';
 
+import { ShieldCheck } from 'lucide-react';
+
 import { useState } from 'react';
 
-import type { WorkDayJournalRow, WorkDayLeave } from '@/shared/api/crm/admin-work-days';
+import type {
+  WorkDayExcuse,
+  WorkDayJournalRow,
+  WorkDayLeave,
+} from '@/shared/api/crm/admin-work-days';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
@@ -12,6 +18,7 @@ import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.mod
 import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.module.css';
 import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
 
+import { WorkDayExcuseModal } from './WorkDayExcuseModal';
 import { WorkDayLeaveModal } from './WorkDayLeaveModal';
 import styles from './WorkDaysPage.module.css';
 import type { WorkDaysPageModel } from './hooks/useWorkDaysPage';
@@ -19,11 +26,14 @@ import {
   formatWorkDayAbsenceInterval,
   formatWorkDayDate,
   formatWorkDayTime,
+  hasUnexcusedWorkDayViolations,
+  hasWorkDayExcuse,
   isWorkDayDayOffRow,
   isWorkDayLeaveRow,
   isWorkDaySyntheticRow,
   isWorkDayTruancyRow,
   workDayAbsenceMinutes,
+  workDayExcuseLabel,
   workDayLeaveLabel,
   workDayRequestBadgeLabel,
   workDayRowClassName,
@@ -83,10 +93,49 @@ function leaveUserName(leave: WorkDayLeave): string {
   return name || user.email;
 }
 
+function excuseUserName(excuse: WorkDayExcuse): string {
+  const user = excuse.user;
+  if (!user) return '—';
+  const name = [user.lastName, user.firstName].filter(Boolean).join(' ');
+  return name || user.email;
+}
+
 function LeaveTypeBadge({ type }: { type: 'VACATION' | 'SICK' }) {
   return (
     <span className={type === 'VACATION' ? styles.leaveBadgeVacation : styles.leaveBadgeSick}>
       {workDayLeaveLabel(type)}
+    </span>
+  );
+}
+
+/** Пометка «прощено» рядом с нарушением (видна только суперадмину). */
+function ExcusedBadge({ comment }: { comment?: string | null }) {
+  return (
+    <span className={styles.excusedBadge} title={comment ? `Прощено: ${comment}` : 'Прощено'}>
+      прощено
+    </span>
+  );
+}
+
+/** Ячейка «Опозд.» / «Ранний уход»: минуты + пометка, если нарушение прощено. */
+function ViolationMinutesCell({
+  row,
+  minutes,
+  kind,
+}: {
+  row: WorkDayJournalRow;
+  minutes: number;
+  kind: 'LATE' | 'EARLY_LEAVE';
+}) {
+  if (minutes <= 0) return <>—</>;
+  const excused = hasWorkDayExcuse(row, kind);
+  const badge = excused ? (
+    <ExcusedBadge comment={(row.excuses ?? []).find((e) => e.kind === kind)?.comment} />
+  ) : null;
+  return (
+    <span className={styles.statusCell}>
+      <span>{minutes} мин</span>
+      {badge}
     </span>
   );
 }
@@ -105,7 +154,14 @@ function RowStatusCell({ row }: { row: WorkDayJournalRow }) {
     );
   }
   if (isWorkDayTruancyRow(row)) {
-    return <span className={styles.truancyBadge}>Прогул</span>;
+    return (
+      <div className={styles.statusCell}>
+        <span className={styles.truancyBadge}>Прогул</span>
+        {hasWorkDayExcuse(row, 'TRUANCY') ? (
+          <ExcusedBadge comment={(row.excuses ?? []).find((e) => e.kind === 'TRUANCY')?.comment} />
+        ) : null}
+      </div>
+    );
   }
   if (isWorkDayDayOffRow(row)) {
     return <>Выходной</>;
@@ -113,6 +169,9 @@ function RowStatusCell({ row }: { row: WorkDayJournalRow }) {
   return (
     <div className={styles.statusCell}>
       <span>{workDayStatusLabel(row.status)}</span>
+      {row.status === 'AUTO_CLOSED' && hasWorkDayExcuse(row, 'AUTO_CLOSE') ? (
+        <ExcusedBadge comment={(row.excuses ?? []).find((e) => e.kind === 'AUTO_CLOSE')?.comment} />
+      ) : null}
       {row.isDayOffWork ? <span className={styles.dayOffWorkBadge}>Работа в выходной</span> : null}
     </div>
   );
@@ -130,23 +189,31 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
     offices,
     trackedUsers,
     leaves,
+    excuses,
     loading,
     deletingId,
     canDelete,
     canManageLeaves,
+    canManageExcuses,
     savingLeave,
     deletingLeaveId,
+    savingExcuse,
+    deletingExcuseId,
     error,
     stats,
     load,
     handleDelete,
     handleCreateLeave,
     handleDeleteLeave,
+    handleCreateExcuse,
+    handleDeleteExcuse,
   } = model;
 
   const [deleteTarget, setDeleteTarget] = useState<WorkDayJournalRow | null>(null);
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
   const [deleteLeaveTarget, setDeleteLeaveTarget] = useState<WorkDayLeave | null>(null);
+  const [excuseTarget, setExcuseTarget] = useState<WorkDayJournalRow | null>(null);
+  const [deleteExcuseTarget, setDeleteExcuseTarget] = useState<WorkDayExcuse | null>(null);
   const colSpan = canDelete ? 11 : 10;
   const todayIso = new Date().toISOString().slice(0, 10);
 
@@ -272,6 +339,9 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
         {stats.truancy > 0 ? (
           <span className={styles.statChip}>Прогулов: {stats.truancy}</span>
         ) : null}
+        {stats.excused > 0 ? (
+          <span className={styles.statChip}>Прощённых нарушений: {stats.excused}</span>
+        ) : null}
       </div>
 
       {canManageLeaves && leaves.length > 0 ? (
@@ -296,6 +366,36 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
                 title={deletingLeaveId === leave.id ? 'Удаление…' : 'Удалить отметку'}
                 aria-label="Удалить отметку об отпуске/больничном"
                 onClick={() => setDeleteLeaveTarget(leave)}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      {canManageExcuses && excuses.length > 0 ? (
+        <div className={styles.leaves}>
+          {excuses.map((excuse) => (
+            <span key={excuse.id} className={styles.leaveChip}>
+              <span className={styles.excusedBadge}>{workDayExcuseLabel(excuse.kind)}</span>
+              <span className={styles.leaveChipName}>{excuseUserName(excuse)}</span>
+              <span className={styles.leaveChipDates}>{formatWorkDayDate(excuse.workDate)}</span>
+              {excuse.comment ? (
+                <span className={styles.leaveChipComment} title={excuse.comment}>
+                  {excuse.comment}
+                </span>
+              ) : null}
+              <button
+                data-admin-mutation
+                type="button"
+                className={styles.leaveChipDelete}
+                disabled={deletingExcuseId === excuse.id}
+                title={
+                  deletingExcuseId === excuse.id ? 'Отмена…' : 'Отменить прощение (снова учитывать)'
+                }
+                aria-label="Отменить прощение нарушения"
+                onClick={() => setDeleteExcuseTarget(excuse)}
               >
                 ×
               </button>
@@ -344,8 +444,16 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
                   <td>{row.office?.name ?? '—'}</td>
                   <td>{row.startedAt ? formatWorkDayTime(row.startedAt) : '—'}</td>
                   <td>{row.endedAt ? formatWorkDayTime(row.endedAt) : '—'}</td>
-                  <td>{row.lateMinutes > 0 ? `${row.lateMinutes} мин` : '—'}</td>
-                  <td>{row.earlyLeaveMinutes > 0 ? `${row.earlyLeaveMinutes} мин` : '—'}</td>
+                  <td>
+                    <ViolationMinutesCell row={row} minutes={row.lateMinutes} kind="LATE" />
+                  </td>
+                  <td>
+                    <ViolationMinutesCell
+                      row={row}
+                      minutes={row.earlyLeaveMinutes}
+                      kind="EARLY_LEAVE"
+                    />
+                  </td>
                   <td>
                     <AbsenceCell row={row} />
                   </td>
@@ -357,21 +465,36 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
                   </td>
                   {canDelete ? (
                     <td className={styles.actionsCol}>
-                      {isWorkDaySyntheticRow(row) ? null : (
-                        <button
-                          data-admin-mutation
-                          type="button"
-                          className={styles.iconDeleteButton}
-                          disabled={deletingId === row.id}
-                          title={deletingId === row.id ? 'Удаление…' : 'Удалить запись'}
-                          aria-label={
-                            deletingId === row.id ? 'Удаление…' : 'Удалить запись рабочего дня'
-                          }
-                          onClick={() => setDeleteTarget(row)}
-                        >
-                          <DeleteIcon size={16} tone="inherit" />
-                        </button>
-                      )}
+                      <span className={styles.actionsButtons}>
+                        {canManageExcuses && hasUnexcusedWorkDayViolations(row) ? (
+                          <button
+                            data-admin-mutation
+                            type="button"
+                            className={styles.iconExcuseButton}
+                            disabled={savingExcuse}
+                            title="Простить нарушение (не считать нарушением)"
+                            aria-label="Простить нарушение"
+                            onClick={() => setExcuseTarget(row)}
+                          >
+                            <ShieldCheck size={16} />
+                          </button>
+                        ) : null}
+                        {isWorkDaySyntheticRow(row) ? null : (
+                          <button
+                            data-admin-mutation
+                            type="button"
+                            className={styles.iconDeleteButton}
+                            disabled={deletingId === row.id}
+                            title={deletingId === row.id ? 'Удаление…' : 'Удалить запись'}
+                            aria-label={
+                              deletingId === row.id ? 'Удаление…' : 'Удалить запись рабочего дня'
+                            }
+                            onClick={() => setDeleteTarget(row)}
+                          >
+                            <DeleteIcon size={16} tone="inherit" />
+                          </button>
+                        )}
+                      </span>
                     </td>
                   ) : null}
                 </tr>
@@ -396,6 +519,19 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
                     </strong>
                     <span className={styles.mobileCardStatusWrap}>
                       <RowStatusCell row={row} />
+                      {canManageExcuses && hasUnexcusedWorkDayViolations(row) ? (
+                        <button
+                          data-admin-mutation
+                          type="button"
+                          className={styles.iconExcuseButton}
+                          disabled={savingExcuse}
+                          title="Простить нарушение (не считать нарушением)"
+                          aria-label="Простить нарушение"
+                          onClick={() => setExcuseTarget(row)}
+                        >
+                          <ShieldCheck size={16} />
+                        </button>
+                      ) : null}
                       {canDelete && !isWorkDaySyntheticRow(row) ? (
                         <button
                           data-admin-mutation
@@ -434,12 +570,18 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
                         </div>
                         <div className={styles.mobileCardRow}>
                           <dt>Опоздание</dt>
-                          <dd>{row.lateMinutes > 0 ? `${row.lateMinutes} мин` : '—'}</dd>
+                          <dd>
+                            <ViolationMinutesCell row={row} minutes={row.lateMinutes} kind="LATE" />
+                          </dd>
                         </div>
                         <div className={styles.mobileCardRow}>
                           <dt>Ранний уход</dt>
                           <dd>
-                            {row.earlyLeaveMinutes > 0 ? `${row.earlyLeaveMinutes} мин` : '—'}
+                            <ViolationMinutesCell
+                              row={row}
+                              minutes={row.earlyLeaveMinutes}
+                              kind="EARLY_LEAVE"
+                            />
                           </dd>
                         </div>
                         <div className={styles.mobileCardRow}>
@@ -497,6 +639,13 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
         onSubmit={handleCreateLeave}
       />
 
+      <WorkDayExcuseModal
+        target={excuseTarget}
+        busy={savingExcuse}
+        onClose={() => setExcuseTarget(null)}
+        onSubmit={handleCreateExcuse}
+      />
+
       {deleteLeaveTarget ? (
         <ConfirmModal
           isOpen
@@ -509,6 +658,22 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
           }}
           onClose={() => setDeleteLeaveTarget(null)}
           confirmText={deletingLeaveId === deleteLeaveTarget.id ? 'Удаление…' : 'Удалить'}
+          variant="danger"
+        />
+      ) : null}
+
+      {deleteExcuseTarget ? (
+        <ConfirmModal
+          isOpen
+          title="Отменить прощение нарушения?"
+          message={`Нарушение «${workDayExcuseLabel(deleteExcuseTarget.kind)} — ${excuseUserName(deleteExcuseTarget)} за ${formatWorkDayDate(deleteExcuseTarget.workDate)}» снова будет считаться нарушением: удержание из оклада вернётся, а сотрудник увидит его в «Моём рабочем дне».`}
+          onConfirm={() => {
+            const target = deleteExcuseTarget;
+            setDeleteExcuseTarget(null);
+            void handleDeleteExcuse(target.id);
+          }}
+          onClose={() => setDeleteExcuseTarget(null)}
+          confirmText={deletingExcuseId === deleteExcuseTarget.id ? 'Отмена…' : 'Отменить прощение'}
           variant="danger"
         />
       ) : null}

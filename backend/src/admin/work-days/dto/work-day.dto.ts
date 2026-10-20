@@ -1,4 +1,5 @@
 import {
+  ArrayNotEmpty,
   IsArray,
   IsBoolean,
   IsEnum,
@@ -12,7 +13,7 @@ import {
   Max,
   Min,
 } from 'class-validator';
-import { UserRole } from '@prisma/client';
+import { UserRole, WorkDayExcuseKind } from '@prisma/client';
 
 export class UpdateWorkDaySettingsDto {
   @IsOptional()
@@ -200,6 +201,25 @@ export class CreateWorkDayLeaveDto {
   @IsString()
   @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Дата окончания должна быть в формате ГГГГ-ММ-ДД' })
   dateTo: string;
+
+  @IsOptional()
+  @IsString()
+  comment?: string;
+}
+
+export class CreateWorkDayExcuseDto {
+  @IsString()
+  @IsNotEmpty({ message: 'Выберите сотрудника' })
+  userId: string;
+
+  @IsString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Дата должна быть в формате ГГГГ-ММ-ДД' })
+  workDate: string;
+
+  @IsArray()
+  @ArrayNotEmpty({ message: 'Выберите хотя бы одно нарушение' })
+  @IsEnum(WorkDayExcuseKind, { each: true })
+  kinds: WorkDayExcuseKind[];
 
   @IsOptional()
   @IsString()

@@ -5,23 +5,29 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/features/auth';
 import { getOffices } from '@/shared/api/admin-crm';
 import {
+  type WorkDayExcuse,
+  type WorkDayExcuseKind,
   type WorkDayJournalRow,
   type WorkDayLeave,
   type WorkDayUserSchedule,
+  createWorkDayExcuse,
   createWorkDayLeave,
   deleteWorkDay,
+  deleteWorkDayExcuse,
   deleteWorkDayLeave,
+  getWorkDayExcuses,
   getWorkDayLeaves,
   getWorkDayUsers,
   getWorkDays,
 } from '@/shared/api/crm/admin-work-days';
 
-import { isWorkDaySyntheticRow } from '../work-days-display.utils';
+import { hasWorkDayExcuse, isWorkDaySyntheticRow } from '../work-days-display.utils';
 
 export function useWorkDaysPage() {
   const { user } = useAuth();
   const canDelete = user?.role === 'SUPER_ADMIN';
   const canManageLeaves = canDelete;
+  const canManageExcuses = canDelete;
   const today = new Date();
   const defaultFrom = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10);
   const defaultTo = today.toISOString().slice(0, 10);
@@ -33,10 +39,13 @@ export function useWorkDaysPage() {
   const [offices, setOffices] = useState<{ id: string; name: string }[]>([]);
   const [trackedUsers, setTrackedUsers] = useState<WorkDayUserSchedule[]>([]);
   const [leaves, setLeaves] = useState<WorkDayLeave[]>([]);
+  const [excuses, setExcuses] = useState<WorkDayExcuse[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [savingLeave, setSavingLeave] = useState(false);
   const [deletingLeaveId, setDeletingLeaveId] = useState<string | null>(null);
+  const [savingExcuse, setSavingExcuse] = useState(false);
+  const [deletingExcuseId, setDeletingExcuseId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -66,6 +75,15 @@ export function useWorkDaysPage() {
     }
   }, [canManageLeaves, dateFrom, dateTo, officeId]);
 
+  const loadExcuses = useCallback(async () => {
+    if (!canManageExcuses) return;
+    try {
+      setExcuses(await getWorkDayExcuses({ dateFrom, dateTo, officeId: officeId || undefined }));
+    } catch {
+      setExcuses([]);
+    }
+  }, [canManageExcuses, dateFrom, dateTo, officeId]);
+
   useEffect(() => {
     void getOffices(true)
       .then(setOffices)
@@ -86,6 +104,10 @@ export function useWorkDaysPage() {
   useEffect(() => {
     void loadLeaves();
   }, [loadLeaves]);
+
+  useEffect(() => {
+    void loadExcuses();
+  }, [loadExcuses]);
 
   const handleDelete = useCallback(
     async (row: WorkDayJournalRow) => {
@@ -144,20 +166,77 @@ export function useWorkDaysPage() {
     [load, loadLeaves]
   );
 
+  const handleCreateExcuse = useCallback(
+    async (payload: {
+      userId: string;
+      workDate: string;
+      kinds: WorkDayExcuseKind[];
+      comment?: string;
+    }) => {
+      setSavingExcuse(true);
+      setError(null);
+      try {
+        await createWorkDayExcuse(payload);
+        await Promise.all([load(), loadExcuses()]);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Не удалось простить нарушение');
+        throw e;
+      } finally {
+        setSavingExcuse(false);
+      }
+    },
+    [load, loadExcuses]
+  );
+
+  const handleDeleteExcuse = useCallback(
+    async (excuseId: string) => {
+      setDeletingExcuseId(excuseId);
+      setError(null);
+      try {
+        await deleteWorkDayExcuse(excuseId);
+        await Promise.all([load(), loadExcuses()]);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Не удалось отменить прощение');
+      } finally {
+        setDeletingExcuseId(null);
+      }
+    },
+    [load, loadExcuses]
+  );
+
   const stats = useMemo(() => {
     const days = rows.filter((r) => !isWorkDaySyntheticRow(r));
-    const late = days.filter((r) => r.lateMinutes > 0).length;
-    const early = days.filter((r) => r.earlyLeaveMinutes > 0).length;
-    const auto = days.filter((r) => r.status === 'AUTO_CLOSED').length;
+    // Прощённые нарушения не считаются нарушениями — в счётчики не входят.
+    const late = days.filter((r) => r.lateMinutes > 0 && !hasWorkDayExcuse(r, 'LATE')).length;
+    const early = days.filter(
+      (r) => r.earlyLeaveMinutes > 0 && !hasWorkDayExcuse(r, 'EARLY_LEAVE')
+    ).length;
+    const auto = days.filter(
+      (r) => r.status === 'AUTO_CLOSED' && !hasWorkDayExcuse(r, 'AUTO_CLOSE')
+    ).length;
     const dayOffs = rows.filter((r) => r.dayOffOnly === true && r.bySchedule !== true).length;
     const dayOffsBySchedule = rows.filter(
       (r) => r.dayOffOnly === true && r.bySchedule === true
     ).length;
-    const truancy = rows.filter((r) => r.truancyOnly === true).length;
+    const truancy = rows.filter(
+      (r) => r.truancyOnly === true && !hasWorkDayExcuse(r, 'TRUANCY')
+    ).length;
     const vacation = rows.filter((r) => r.leaveOnly === true && r.leaveType === 'VACATION').length;
     const sick = rows.filter((r) => r.leaveOnly === true && r.leaveType === 'SICK').length;
     const dayOffWork = days.filter((r) => r.isDayOffWork).length;
-    return { late, early, auto, dayOffs, dayOffsBySchedule, truancy, dayOffWork, vacation, sick };
+    const excused = rows.reduce((sum, r) => sum + (r.excuses?.length ?? 0), 0);
+    return {
+      late,
+      early,
+      auto,
+      dayOffs,
+      dayOffsBySchedule,
+      truancy,
+      dayOffWork,
+      vacation,
+      sick,
+      excused,
+    };
   }, [rows]);
 
   return {
@@ -171,18 +250,24 @@ export function useWorkDaysPage() {
     offices,
     trackedUsers,
     leaves,
+    excuses,
     loading,
     deletingId,
     canDelete,
     canManageLeaves,
+    canManageExcuses,
     savingLeave,
     deletingLeaveId,
+    savingExcuse,
+    deletingExcuseId,
     error,
     stats,
     load,
     handleDelete,
     handleCreateLeave,
     handleDeleteLeave,
+    handleCreateExcuse,
+    handleDeleteExcuse,
   };
 }
 

@@ -71,19 +71,46 @@ export class SalaryEmployeeSalariesService {
   }): Promise<{ salaries: SalaryEmployeePayout[]; salariesTotal: number }> {
     const { from, to, todayUtc, employeeSalaries } = input;
 
+    // Все нарушения считаются только по дням, вошедшим в начисление оклада
+    // (не позже сегодняшнего дня).
+    const penaltyUntil = new Date(
+      Math.min(Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate()), todayUtc),
+    );
+
+    // Прощённые суперадмином нарушения (сбой приложения и т.п.) не учитываются
+    // при расчёте удержаний. Ключ: «userId|дата|вид нарушения».
+    const excusedKeys = new Set<string>();
+    const hasExcuse = (
+      userId: string,
+      date: Date,
+      kind: 'LATE' | 'EARLY_LEAVE' | 'AUTO_CLOSE' | 'TRUANCY',
+    ) => excusedKeys.has(`${userId}|${toDateIso(date)}|${kind}`);
+    if (
+      (input.workModeEnforced || input.autoCloseEnforced || input.truancyEnforced) &&
+      employeeSalaries.length > 0
+    ) {
+      const excuses = await this.prisma.workDayExcuse.findMany({
+        where: {
+          userId: { in: employeeSalaries.map((s) => s.userId) },
+          workDate: { gte: from, lte: penaltyUntil },
+        },
+        select: { userId: true, workDate: true, kind: true },
+      });
+      for (const excuse of excuses) {
+        const iso = toDateIso(excuse.workDate);
+        if (iso) excusedKeys.add(`${excuse.userId}|${iso}|${excuse.kind}`);
+      }
+    }
+
     // Контроль режима работы: за каждое опоздание/убытие раньше графика удерживается
     // сумма из настроек (lateMinutes/earlyLeaveMinutes уже учитывают льготные 10 минут
-    // и согласованные заявки). Считается только по дням, вошедшим в начисление
-    // оклада (не позже сегодняшнего дня).
+    // и согласованные заявки).
     const workModePenalties = new Map<string, number>();
     const workModeEvents = new Map<
       string,
       Array<{ date: string; kind: 'LATE' | 'EARLY_LEAVE'; minutes: number }>
     >();
     if (input.workModeEnforced && employeeSalaries.length > 0) {
-      const penaltyUntil = new Date(
-        Math.min(Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate()), todayUtc),
-      );
       const violations = await this.prisma.workDay.findMany({
         where: {
           userId: { in: employeeSalaries.map((s) => s.userId) },
@@ -93,14 +120,15 @@ export class SalaryEmployeeSalariesService {
         select: { userId: true, workDate: true, lateMinutes: true, earlyLeaveMinutes: true },
       });
       for (const v of violations) {
+        const late = v.lateMinutes > 0 && !hasExcuse(v.userId, v.workDate, 'LATE');
+        const early = v.earlyLeaveMinutes > 0 && !hasExcuse(v.userId, v.workDate, 'EARLY_LEAVE');
         const events = workModeEvents.get(v.userId) ?? [];
         const date = toDateIso(v.workDate);
         if (date) {
-          if (v.lateMinutes > 0) events.push({ date, kind: 'LATE', minutes: v.lateMinutes });
-          if (v.earlyLeaveMinutes > 0)
-            events.push({ date, kind: 'EARLY_LEAVE', minutes: v.earlyLeaveMinutes });
+          if (late) events.push({ date, kind: 'LATE', minutes: v.lateMinutes });
+          if (early) events.push({ date, kind: 'EARLY_LEAVE', minutes: v.earlyLeaveMinutes });
         }
-        const count = (v.lateMinutes > 0 ? 1 : 0) + (v.earlyLeaveMinutes > 0 ? 1 : 0);
+        const count = (late ? 1 : 0) + (early ? 1 : 0);
         workModePenalties.set(v.userId, (workModePenalties.get(v.userId) ?? 0) + count);
         workModeEvents.set(v.userId, events);
       }
@@ -108,14 +136,10 @@ export class SalaryEmployeeSalariesService {
 
     // Учёт автозакрытий: за каждый рабочий день, закрытый автоматически
     // по истечении срока (сотрудник не закрыл день сам), удерживается сумма
-    // из настроек. Как и контроль режима, считается только по дням,
-    // вошедшим в начисление оклада (не позже сегодняшнего дня).
+    // из настроек.
     const autoCloseCounts = new Map<string, number>();
     const autoCloseDates = new Map<string, string[]>();
     if (input.autoCloseEnforced && employeeSalaries.length > 0) {
-      const penaltyUntil = new Date(
-        Math.min(Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate()), todayUtc),
-      );
       const autoClosed = await this.prisma.workDay.findMany({
         where: {
           userId: { in: employeeSalaries.map((s) => s.userId) },
@@ -125,6 +149,7 @@ export class SalaryEmployeeSalariesService {
         select: { userId: true, workDate: true },
       });
       for (const day of autoClosed) {
+        if (hasExcuse(day.userId, day.workDate, 'AUTO_CLOSE')) continue;
         autoCloseCounts.set(day.userId, (autoCloseCounts.get(day.userId) ?? 0) + 1);
         const dates = autoCloseDates.get(day.userId) ?? [];
         const iso = toDateIso(day.workDate);
@@ -156,6 +181,7 @@ export class SalaryEmployeeSalariesService {
       for (const row of journalRows) {
         if (row.truancyOnly !== true) continue;
         if (!salaryUserIds.has(row.userId)) continue;
+        if (hasExcuse(row.userId, row.workDate, 'TRUANCY')) continue;
         const workDate = new Date(
           Date.UTC(
             row.workDate.getUTCFullYear(),

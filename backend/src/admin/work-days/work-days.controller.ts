@@ -19,6 +19,7 @@ import { ADMIN_ROLES } from '../../common/config/admin-roles.config';
 import { RequestWithUser } from '../../common/types/request-with-user.types';
 import {
   CloseForgottenWorkDayDto,
+  CreateWorkDayExcuseDto,
   CreateWorkDayLeaveDto,
   CreateWorkDayRequestDto,
   ReviewWorkDayRequestDto,
@@ -28,6 +29,7 @@ import {
   UpdateUserWorkScheduleDto,
   UpdateWorkDaySettingsDto,
 } from './dto/work-day.dto';
+import { WorkDayExcusesService } from './work-day-excuses.service';
 import { WorkDayLeavesService } from './work-day-leaves.service';
 import { WorkDayOfficesService } from './work-day-offices.service';
 import { WorkDayRequestsService } from './work-day-requests.service';
@@ -51,6 +53,7 @@ export class WorkDaysController {
     private readonly workDayRequests: WorkDayRequestsService,
     private readonly workDayOffices: WorkDayOfficesService,
     private readonly workDayLeaves: WorkDayLeavesService,
+    private readonly workDayExcuses: WorkDayExcusesService,
   ) {}
 
   @Get('settings')
@@ -226,6 +229,31 @@ export class WorkDaysController {
   @Roles(UserRole.SUPER_ADMIN)
   deleteLeave(@Param('id') id: string) {
     return this.workDayLeaves.deleteLeave(id);
+  }
+
+  @Get('excuses')
+  @Roles(UserRole.SUPER_ADMIN)
+  async listExcuses(
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Query('userId') userId?: string,
+    @Query('officeId') officeId?: string,
+  ) {
+    const rows = await this.workDayExcuses.listExcuses({ dateFrom, dateTo, userId, officeId });
+    return rows.map((row) => this.workDayExcuses.mapExcuse(row));
+  }
+
+  @Post('excuses')
+  @Roles(UserRole.SUPER_ADMIN)
+  async createExcuse(@Req() req: RequestWithUser, @Body() dto: CreateWorkDayExcuseDto) {
+    const rows = await this.workDayExcuses.createExcuse(req.user.id, dto);
+    return rows.map((row) => this.workDayExcuses.mapExcuse(row));
+  }
+
+  @Delete('excuses/:id')
+  @Roles(UserRole.SUPER_ADMIN)
+  deleteExcuse(@Param('id') id: string) {
+    return this.workDayExcuses.deleteExcuse(id);
   }
 
   @Get()
