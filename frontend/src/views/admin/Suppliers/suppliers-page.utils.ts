@@ -3,7 +3,7 @@ import type {
   AdminSupplierLedgerOrderLink,
   SupplierBalanceStatus,
 } from '@/shared/api/admin-suppliers';
-import { packageSearchLabel } from '@/views/admin/CRM/shared/PackageOrderSearch';
+import { packageFormFields, packageSearchLabel } from '@/views/admin/CRM/shared/PackageOrderSearch';
 
 /** Сумма в рублях с копейками — сальдо поставщиков важны до копейки. */
 export function formatSupplierMoney(value: number | null | undefined): string {
@@ -78,4 +78,11 @@ export function parseMoneyInput(value: string): number | null {
  *  что и панель «Поиск заказа» (читают только formData/title пакета). */
 export function supplierOrderLinkLabel(link: AdminSupplierLedgerOrderLink): string {
   return packageSearchLabel(link.package as unknown as ContractDocumentPackage) || 'Заказ';
+}
+
+/** Компактная подпись договора в колонке «Договора»: только номер; если номера
+ *  нет — заказчик/название пакета как резерв. */
+export function supplierOrderContractLabel(link: AdminSupplierLedgerOrderLink): string {
+  const fields = packageFormFields(link.package as unknown as ContractDocumentPackage);
+  return fields.contractNumber ? `№${fields.contractNumber}` : supplierOrderLinkLabel(link);
 }

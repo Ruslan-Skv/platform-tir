@@ -11,7 +11,7 @@ import type {
 import { Modal } from '@/shared/ui/Modal';
 import {
   PackageOrderSearch,
-  packageSearchLabel,
+  packageContractNumberLabel,
 } from '@/views/admin/CRM/shared/PackageOrderSearch';
 
 import { parseMoneyInput } from '../../suppliers-page.utils';
@@ -54,7 +54,7 @@ type OrderLinkRow = {
 /** Серийный пакет из ссылки ведомости — для подписи хелперами поиска заказа
  *  (читают только formData/title), полноценный ContractDocumentPackage не нужен. */
 function linkPackageLabel(pkg: AdminSupplierLedgerEntry['orderLinks'][number]['package']): string {
-  return packageSearchLabel(pkg as unknown as ContractDocumentPackage) || 'Заказ';
+  return packageContractNumberLabel(pkg as unknown as ContractDocumentPackage);
 }
 
 function round2(value: number): number {
@@ -114,7 +114,10 @@ export function InvoiceEntryModal({
   const handleOrderSelect = (pkg: ContractDocumentPackage) => {
     setOrders((current) => {
       if (current.some((row) => row.packageId === pkg.id)) return current;
-      return [...current, { packageId: pkg.id, label: packageSearchLabel(pkg), amount: '' }];
+      return [
+        ...current,
+        { packageId: pkg.id, label: packageContractNumberLabel(pkg), amount: '' },
+      ];
     });
     setOrderSearch('');
   };
@@ -124,8 +127,16 @@ export function InvoiceEntryModal({
       setFormError('Укажите дату счёта');
       return;
     }
+    if (!documentNo.trim()) {
+      setFormError('Укажите номер счёта');
+      return;
+    }
     if (amountNumber == null || amountNumber <= 0) {
       setFormError('Сумма счёта — положительное число, например 84742');
+      return;
+    }
+    if (vatRate === '') {
+      setFormError('Укажите НДС (или выберите «Без НДС»)');
       return;
     }
     if (orders.some((row, index) => parsedOrderAmounts[index] == null)) {
@@ -168,7 +179,7 @@ export function InvoiceEntryModal({
           заказов).
         </p>
 
-        <div data-modal-form-grid>
+        <div data-modal-form-grid="quad">
           <div data-modal-form-group>
             <label htmlFor="invoice_date">Дата счёта *</label>
             <input
@@ -181,7 +192,7 @@ export function InvoiceEntryModal({
             />
           </div>
           <div data-modal-form-group>
-            <label htmlFor="invoice_document">Документ (№ счёта)</label>
+            <label htmlFor="invoice_document">№ счёта *</label>
             <input
               id="invoice_document"
               type="text"
@@ -190,11 +201,9 @@ export function InvoiceEntryModal({
               onChange={(e) => setDocumentNo(e.target.value)}
               disabled={submitting}
               maxLength={200}
+              required
             />
           </div>
-        </div>
-
-        <div data-modal-form-grid>
           <div data-modal-form-group>
             <label htmlFor="invoice_amount">Сумма счёта, ₽ *</label>
             <input
@@ -208,12 +217,13 @@ export function InvoiceEntryModal({
             />
           </div>
           <div data-modal-form-group>
-            <label htmlFor="invoice_vat">НДС</label>
+            <label htmlFor="invoice_vat">НДС *</label>
             <select
               id="invoice_vat"
               value={vatRate}
               onChange={(e) => setVatRate(e.target.value)}
               disabled={submitting}
+              required
             >
               {VAT_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -242,19 +252,6 @@ export function InvoiceEntryModal({
             </select>
           </div>
         ) : null}
-
-        <div data-modal-form-group>
-          <label htmlFor="invoice_note">Примечание (№ договора)</label>
-          <input
-            id="invoice_note"
-            type="text"
-            placeholder="3742о-1 / бн с ип сбер"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            disabled={submitting}
-            maxLength={500}
-          />
-        </div>
 
         <PackageOrderSearch
           id="invoice-order-search"
@@ -299,8 +296,23 @@ export function InvoiceEntryModal({
                   }
                   disabled={submitting}
                   title="Убрать заказ из разбивки"
+                  aria-label={`Убрать заказ ${row.label} из разбивки`}
                 >
-                  Убрать
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width={14}
+                    height={14}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
+                    <path d="M18 6 6 18" />
+                    <path d="m6 6 12 12" />
+                  </svg>
                 </button>
               </div>
             ))}
@@ -325,6 +337,19 @@ export function InvoiceEntryModal({
           </p>
         )}
 
+        <div data-modal-form-group>
+          <label htmlFor="invoice_note">Примечание</label>
+          <input
+            id="invoice_note"
+            type="text"
+            placeholder="3742о-1 / бн с ип сбер"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            disabled={submitting}
+            maxLength={500}
+          />
+        </div>
+
         {formError ? <p data-modal-form-error>{formError}</p> : null}
 
         <div data-modal-form-actions>
@@ -336,7 +361,7 @@ export function InvoiceEntryModal({
             data-admin-mutation
             data-modal-btn="primary"
             onClick={handleSubmit}
-            disabled={submitting || !amount.trim()}
+            disabled={submitting || !amount.trim() || !documentNo.trim() || vatRate === ''}
           >
             {submitting ? 'Сохранение…' : initial ? 'Сохранить счёт' : 'Добавить счёт'}
           </button>

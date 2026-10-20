@@ -502,6 +502,13 @@
   gap: 4px;
 }
 
+/* Неактивная кнопка (нет прав / идёт загрузка) — приглушаем, ховеры не нужны */
+.editEntryBtn:disabled,
+.deleteEntryBtn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 /* Значок «поле правлено супер-админом»: при наведении — первоначальное значение */
 .editedMark {
   display: inline-flex;

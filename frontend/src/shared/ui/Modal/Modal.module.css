@@ -645,6 +645,11 @@
   padding: var(--admin-space-lg, 10px);
 }
 
+/* Вариант «4 в ряд»: дата + № + сумма + НДС (№ — резиновый) */
+.content :where([data-modal-form-grid='quad']) {
+  grid-template-columns: 140px minmax(0, 1fr) 120px 140px;
+}
+
 .content :where([data-modal-form-group]) {
   display: flex;
   flex-direction: column;
@@ -818,6 +823,10 @@
 @media (max-width: 768px) {
   .content :where([data-modal-form-grid]) {
     grid-template-columns: 1fr;
+  }
+
+  .content :where([data-modal-form-grid='quad']) {
+    grid-template-columns: 1fr 1fr;
   }
 }
 

@@ -90,6 +90,13 @@ export function packageResultTitle(pkg: ContractDocumentPackage): string {
   );
 }
 
+/** Компактная подпись пакета: только № договора — для плотных списков
+ *  (без ФИО заказчика); если номера нет — обычная подпись. */
+export function packageContractNumberLabel(pkg: ContractDocumentPackage): string {
+  const fields = packageFormFields(pkg);
+  return fields.contractNumber ? `№${fields.contractNumber}` : packageResultTitle(pkg);
+}
+
 export function packageResultMeta(pkg: ContractDocumentPackage): string {
   const fields = packageFormFields(pkg);
   const kindLabel = CONTRACT_DOCUMENT_PACKAGE_KIND_LABELS[pkg.kind] ?? pkg.kind;

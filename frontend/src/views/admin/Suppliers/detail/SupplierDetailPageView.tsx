@@ -27,7 +27,7 @@ import {
   formatSupplierMoney,
   formatVatRate,
   getLedgerRowStatus,
-  supplierOrderLinkLabel,
+  supplierOrderContractLabel,
 } from '../suppliers-page.utils';
 import styles from './SupplierDetailPage.module.css';
 import type { SupplierDetailPageModel } from './hooks/useSupplierDetailPage';
@@ -194,17 +194,8 @@ export function SupplierDetailPageView({ model }: SupplierDetailPageViewProps) {
       },
       {
         key: 'documentNo',
-        title: 'Документ (№ счёта)',
-        render: (item: AdminSupplierLedgerEntry) => (
-          <div className={dpStyles.basisCell}>
-            {item.documentNo || '—'}
-            {item.orderLinks.map((link) => (
-              <span key={link.id} className={dpStyles.basisSubline}>
-                ↳ {supplierOrderLinkLabel(link)} · {formatSupplierMoney(link.amount)}
-              </span>
-            ))}
-          </div>
-        ),
+        title: '№ счёта',
+        render: (item: AdminSupplierLedgerEntry) => item.documentNo || '—',
       },
       {
         key: 'amount',
@@ -258,6 +249,21 @@ export function SupplierDetailPageView({ model }: SupplierDetailPageViewProps) {
         render: (item: AdminSupplierLedgerEntry) => formatVatRate(item.vatRate),
       },
       {
+        key: 'contracts',
+        title: 'Договора',
+        render: (item: AdminSupplierLedgerEntry) => (
+          <div className={dpStyles.basisCell}>
+            {item.orderLinks.length > 0
+              ? item.orderLinks.map((link) => (
+                  <span key={link.id} className={dpStyles.basisSubline}>
+                    {supplierOrderContractLabel(link)} · {formatSupplierMoney(link.amount)}
+                  </span>
+                ))
+              : '—'}
+          </div>
+        ),
+      },
+      {
         key: 'note',
         title: 'Примечание',
         render: (item: AdminSupplierLedgerEntry) => (
@@ -266,41 +272,96 @@ export function SupplierDetailPageView({ model }: SupplierDetailPageViewProps) {
             {item.requisiteName ? (
               <span className={dpStyles.basisSubline}>{item.requisiteName}</span>
             ) : null}
-            {item.createdByName ? (
-              <span className={dpStyles.basisSubline}>внёс: {item.createdByName}</span>
-            ) : null}
           </div>
         ),
+      },
+      {
+        key: 'author',
+        title: 'Автор',
+        render: (item: AdminSupplierLedgerEntry) => item.createdByName || '—',
       },
       {
         key: 'actions',
         title: '',
         width: '90px',
         render: (item: AdminSupplierLedgerEntry) => {
-          // Счёт правит любой редактор раздела; строку оплаты — только супер-админ.
-          const rowEditable = item.amount != null ? canEdit : canManagePayments;
+          // Счёт правит любой редактор раздела; строку оплаты — только супер-админ,
+          // остальным кнопки не показываем вообще. Оплаченный счёт (по нему уже
+          // прошла оплата) после этого правит/удаляет тоже только супер-админ.
+          const isInvoiceRow = item.amount != null;
+          if (!isInvoiceRow && !canManagePayments) {
+            return null;
+          }
+          const invoiceLockedByPayment = isInvoiceRow && item.paidAmount > 0 && !canManagePayments;
+          const rowEditable = isInvoiceRow ? canEdit && !invoiceLockedByPayment : canManagePayments;
           return (
-            <span className={listStyles.rowActions}>
+            <div className={dpStyles.entryActions}>
               <button
                 type="button"
-                className={listStyles.rowActionBtn}
+                className={dpStyles.editEntryBtn}
                 disabled={!rowEditable || ledgerLoading}
                 onClick={() => openEditEntryModal(item)}
-                title={rowEditable ? 'Изменить запись' : 'Нет прав на изменение'}
+                title={
+                  !isInvoiceRow
+                    ? 'Изменить запись (только суперадмин)'
+                    : invoiceLockedByPayment
+                      ? 'Счёт оплачен — изменение только суперадмину'
+                      : rowEditable
+                        ? 'Изменить запись'
+                        : 'Нет прав на изменение'
+                }
+                aria-label="Изменить запись"
               >
-                ✏️
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width={15}
+                  height={15}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                </svg>
               </button>
               <button
                 type="button"
                 data-admin-mutation
-                className={listStyles.rowActionBtn}
+                className={dpStyles.deleteEntryBtn}
                 disabled={!rowEditable || ledgerLoading}
                 onClick={() => askDeleteEntry(item.id)}
-                title="Удалить запись"
+                title={
+                  !isInvoiceRow
+                    ? 'Удалить запись (только суперадмин)'
+                    : invoiceLockedByPayment
+                      ? 'Счёт оплачен — удаление только суперадмину'
+                      : 'Удалить запись'
+                }
+                aria-label="Удалить запись"
               >
-                🗑
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width={15}
+                  height={15}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M3 6h18" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                  <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  <line x1="10" x2="10" y1="11" y2="17" />
+                  <line x1="14" x2="14" y1="11" y2="17" />
+                </svg>
               </button>
-            </span>
+            </div>
           );
         },
       },
@@ -546,7 +607,7 @@ export function SupplierDetailPageView({ model }: SupplierDetailPageViewProps) {
             <div className={cdHub.contractsListFilters}>
               <input
                 type="search"
-                placeholder="Поиск: № документа, примечание…"
+                placeholder="Поиск: № документа, № договора, примечание…"
                 value={ledgerSearch}
                 onChange={(e) => setLedgerSearch(e.target.value)}
                 className={`${cdHub.contractsListSearchInput}${

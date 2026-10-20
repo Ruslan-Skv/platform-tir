@@ -220,7 +220,11 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     path: '/admin/service-catalog/items',
   },
   { id: 'admin.partners', label: 'Партнёры', path: '/admin/partners' },
-  { id: 'admin.suppliers', label: 'Поставщики', path: '/admin/suppliers' },
+  {
+    id: 'admin.suppliers',
+    label: 'Расчёты с поставщиками',
+    path: '/admin/suppliers',
+  },
   {
     id: 'admin.catalog.suppliers',
     label: 'Прайс-листы поставщиков',

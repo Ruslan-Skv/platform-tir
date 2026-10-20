@@ -31,6 +31,11 @@ export class SuppliersLedgerService {
     const page = Math.max(1, params.page ?? 1);
     const limit = Math.min(Math.max(params.limit ?? 50, 1), 200);
     const search = params.search?.trim();
+    // Пользователь часто набирает «№888» — номер договора хранится без «№».
+    const contractSearch = search ? search.replace(/^№\s*/, '') : '';
+    const contractMatchIds = contractSearch
+      ? await this.findEntryIdsByContractNumber(supplierId, contractSearch)
+      : [];
 
     const where: Prisma.SupplierLedgerEntryWhereInput = {
       supplierId,
@@ -39,6 +44,8 @@ export class SuppliersLedgerService {
             OR: [
               { documentNo: { contains: search, mode: 'insensitive' } },
               { note: { contains: search, mode: 'insensitive' } },
+              // Совпадение по номеру договора из разбивки счёта.
+              ...(contractMatchIds.length > 0 ? [{ id: { in: contractMatchIds } }] : []),
             ],
           }
         : {}),
@@ -261,6 +268,29 @@ export class SuppliersLedgerService {
         });
       }
     }
+  }
+
+  /** Id записей, в разбивке которых есть договор с искомым номером —
+   *  регистронезависимо; номер лежит в JSON пакета (contract.number и
+   *  legacy-ключи), Prisma-фильтры по JSON регистрозависимы — поэтому raw SQL. */
+  private async findEntryIdsByContractNumber(
+    supplierId: string,
+    contractSearch: string,
+  ): Promise<string[]> {
+    const rows = await this.prisma.$queryRaw<{ id: string }[]>`
+      SELECT DISTINCT e.id
+      FROM supplier_ledger_entries e
+      JOIN supplier_ledger_entry_order_links l ON l."entryId" = e.id
+      JOIN contract_document_packages p ON p.id = l."packageId"
+      WHERE e."supplierId" = ${supplierId}
+        AND COALESCE(
+          p."formData"->'contract'->>'number',
+          p."formData"->>'contractNumber',
+          p."formData"->>'dogovorNumber',
+          ''
+        ) ILIKE ${`%${contractSearch}%`}
+    `;
+    return rows.map((row) => row.id);
   }
 
   private async assertSupplierExists(supplierId: string) {

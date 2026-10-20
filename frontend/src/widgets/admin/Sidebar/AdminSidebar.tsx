@@ -467,7 +467,7 @@ const baseNavItems: NavItem[] = [
   },
   { label: 'Партнёры', href: '/admin/partners', icon: '🤝', resourceId: 'admin.partners' },
   {
-    label: 'Поставщики',
+    label: 'Расчёты с поставщиками',
     href: '/admin/suppliers',
     icon: '🚚',
     resourceId: 'admin.suppliers',
