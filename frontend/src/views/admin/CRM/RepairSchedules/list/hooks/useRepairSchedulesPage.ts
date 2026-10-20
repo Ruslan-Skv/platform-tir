@@ -16,6 +16,7 @@ import {
   getRepairScheduleTrashCount,
   setRepairScheduleProjectStatus,
 } from '@/shared/api/crm/admin-repair-schedules';
+import { useAdminListPagination } from '@/views/admin/CRM/shared/list-pagination';
 
 import {
   type RepairProjectFormValues,
@@ -48,6 +49,7 @@ const TRASH_PLANNER_ROLES = new Set([
 
 const VIEW_MODE_STORAGE_KEY = 'admin_repair_schedules_view_mode';
 const FILTERS_STORAGE_KEY = 'admin_repair_schedules_filters';
+const PAGINATION_STORAGE_KEY = 'admin_repair_schedules_pagination';
 
 type StoredFilters = {
   statusFilter: RepairScheduleProjectStatus | 'ALL';
@@ -79,17 +81,17 @@ export function useRepairSchedulesPage() {
   const router = useRouter();
   const { user } = useAuth();
   const [stored] = useState(readStoredFilters);
-  const [statusFilter, setStatusFilter] = useState<RepairScheduleProjectStatus | 'ALL'>(
+  const [statusFilter, setStatusFilterState] = useState<RepairScheduleProjectStatus | 'ALL'>(
     stored.statusFilter ?? 'IN_PROGRESS'
   );
-  const [deadlineFilter, setDeadlineFilter] = useState<RepairDeadlineFilter>(
+  const [deadlineFilter, setDeadlineFilterState] = useState<RepairDeadlineFilter>(
     stored.deadlineFilter ?? 'ALL'
   );
   const [viewMode, setViewModeState] = useState<RepairSchedulesViewMode>(() =>
     readStoredViewMode()
   );
-  const [staleOnly, setStaleOnly] = useState(stored.staleOnly ?? false);
-  const [search, setSearch] = useState(stored.search ?? '');
+  const [staleOnly, setStaleOnlyState] = useState(stored.staleOnly ?? false);
+  const [search, setSearchState] = useState(stored.search ?? '');
   const [items, setItems] = useState<RepairScheduleProject[]>([]);
   /** В корзину — только планировщики; проект пакета — только если это дубль (основной остаётся). */
   const canDeleteProject = useCallback(
@@ -238,6 +240,58 @@ export function useRepairSchedulesPage() {
     return rows;
   }, [statusScopedItems, deadlineFilter, statusFilter]);
 
+  const { page, setPage, limit, setLimit, pagedItems } = useAdminListPagination(visibleItems, {
+    loading,
+    storageKey: PAGINATION_STORAGE_KEY,
+  });
+
+  /** Счётчики секций «Все» по всей выборке (без разбивки на страницы) — для заголовков списка. */
+  const statusTotals = useMemo(() => {
+    let NEW = 0;
+    let IN_PROGRESS = 0;
+    let CLOSED = 0;
+    for (const i of visibleItems) {
+      const blockStatus = blockStatusById.get(i.id);
+      if (blockStatus === 'NEW') NEW++;
+      else if (blockStatus === 'IN_PROGRESS') IN_PROGRESS++;
+      else CLOSED++;
+    }
+    return { NEW, IN_PROGRESS, CLOSED };
+  }, [visibleItems, blockStatusById]);
+
+  /** Смена фильтра возвращает список на первую страницу. */
+  const setStatusFilter = useCallback(
+    (value: RepairScheduleProjectStatus | 'ALL') => {
+      setStatusFilterState(value);
+      setPage(1);
+    },
+    [setPage]
+  );
+
+  const setDeadlineFilter = useCallback(
+    (value: RepairDeadlineFilter) => {
+      setDeadlineFilterState(value);
+      setPage(1);
+    },
+    [setPage]
+  );
+
+  const setStaleOnly = useCallback(
+    (value: boolean) => {
+      setStaleOnlyState(value);
+      setPage(1);
+    },
+    [setPage]
+  );
+
+  const setSearch = useCallback(
+    (value: string) => {
+      setSearchState(value);
+      setPage(1);
+    },
+    [setPage]
+  );
+
   const openCreate = () => {
     setFormValues(emptyRepairProjectForm());
     setFormError(null);
@@ -337,6 +391,16 @@ export function useRepairSchedulesPage() {
     search,
     setSearch,
     items: visibleItems,
+    /** Записи текущей страницы списка (срез items под пагинацию). */
+    pagedItems,
+    /** Номер страницы списка (пагинация). */
+    page,
+    setPage,
+    /** Записей на странице списка (пагинация). */
+    limit,
+    setLimit,
+    /** Счётчики секций «Все» по всей выборке — заголовки секций при пагинации. */
+    statusTotals,
     repairInstallers,
     loading,
     message,

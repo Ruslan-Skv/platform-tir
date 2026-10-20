@@ -8,9 +8,11 @@ import {
   type OdpzhScheduleStatus,
   getOdpzhSchedules,
 } from '@/shared/api/crm/admin-odpzh-schedules';
+import { useAdminListPagination } from '@/views/admin/CRM/shared/list-pagination';
 
 const FILTERS_STORAGE_KEY = 'admin_odpzh_schedules_filters';
 const VIEW_MODE_STORAGE_KEY = 'admin_odpzh_schedules_view_mode';
+const PAGINATION_STORAGE_KEY = 'admin_odpzh_schedules_pagination';
 
 export type OdpzhSchedulesViewMode = 'list' | 'timeline';
 
@@ -43,13 +45,13 @@ function readStoredFilters(): Partial<StoredFilters> {
 
 export function useOdpzhSchedulesPage() {
   const [stored] = useState(readStoredFilters);
-  const [statusFilter, setStatusFilter] = useState<OdpzhScheduleStatusFilter>(
+  const [statusFilter, setStatusFilterState] = useState<OdpzhScheduleStatusFilter>(
     stored.statusFilter ?? 'ALL'
   );
-  const [directionFilter, setDirectionFilter] = useState<OdpzhScheduleDirection | 'ALL'>(
+  const [directionFilter, setDirectionFilterState] = useState<OdpzhScheduleDirection | 'ALL'>(
     stored.directionFilter ?? 'ALL'
   );
-  const [search, setSearch] = useState(stored.search ?? '');
+  const [search, setSearchState] = useState(stored.search ?? '');
   const [viewMode, setViewModeState] = useState<OdpzhSchedulesViewMode>(() => readStoredViewMode());
   const [items, setItems] = useState<OdpzhScheduleRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,6 +108,11 @@ export function useOdpzhSchedulesPage() {
     [items, statusFilter, directionFilter]
   );
 
+  const { page, setPage, limit, setLimit, pagedItems } = useAdminListPagination(visibleItems, {
+    loading,
+    storageKey: PAGINATION_STORAGE_KEY,
+  });
+
   /** Таймлайн доступен для «Новых договоров» и «В работе»; закрытые — только списком. */
   const setViewMode = (mode: OdpzhSchedulesViewMode) => {
     setViewModeState(mode);
@@ -119,6 +126,31 @@ export function useOdpzhSchedulesPage() {
     }
   };
 
+  /** Смена фильтра возвращает список на первую страницу. */
+  const setStatusFilter = useCallback(
+    (value: OdpzhScheduleStatusFilter) => {
+      setStatusFilterState(value);
+      setPage(1);
+    },
+    [setPage]
+  );
+
+  const setDirectionFilter = useCallback(
+    (value: OdpzhScheduleDirection | 'ALL') => {
+      setDirectionFilterState(value);
+      setPage(1);
+    },
+    [setPage]
+  );
+
+  const setSearch = useCallback(
+    (value: string) => {
+      setSearchState(value);
+      setPage(1);
+    },
+    [setPage]
+  );
+
   return {
     statusFilter,
     setStatusFilter,
@@ -129,6 +161,13 @@ export function useOdpzhSchedulesPage() {
     search,
     setSearch,
     items: visibleItems,
+    /** Записи текущей страницы списка (срез items под пагинацию). */
+    pagedItems,
+    page,
+    setPage,
+    /** Записей на странице списка (пагинация). */
+    limit,
+    setLimit,
     loading,
     message,
     setMessage,

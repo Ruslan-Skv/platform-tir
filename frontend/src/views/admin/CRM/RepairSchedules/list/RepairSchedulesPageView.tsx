@@ -5,11 +5,16 @@ import { useEffect, useMemo, useState } from 'react';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { Modal } from '@/shared/ui/Modal';
 import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';
+import { AdminTablePagination } from '@/shared/ui/admin/AdminTablePagination';
 import {
   AdminListRefreshButton,
   AdminToolbarTrashButton,
 } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { CollapsibleFiltersPanel } from '@/views/admin/CRM/shared/CollapsibleFiltersPanel';
+import {
+  ADMIN_LIST_PAGE_LIMIT_OPTIONS,
+  type AdminListPageLimit,
+} from '@/views/admin/CRM/shared/list-pagination';
 import { PackageWorkOrdersHubListModal } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/PackageWorkOrdersHubListModal';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
@@ -58,6 +63,12 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
     search,
     setSearch,
     items,
+    pagedItems,
+    page,
+    setPage,
+    limit,
+    setLimit,
+    statusTotals,
     repairInstallers,
     loading,
     message,
@@ -294,6 +305,19 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
                 ? ` (${statusCounts.STALE})`
                 : ''}
             </label>
+            <select
+              value={limit}
+              onChange={(e) => setLimit(Number(e.target.value) as AdminListPageLimit)}
+              disabled={loading}
+              className={`${cdHub.contractsListSelect} ${cdHub.contractsListPageLimitSelect}`}
+              aria-label="Количество строк на странице"
+            >
+              {ADMIN_LIST_PAGE_LIMIT_OPTIONS.map((n) => (
+                <option key={n} value={n}>
+                  {n} на странице
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </CollapsibleFiltersPanel>
@@ -314,8 +338,9 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
           aria-hidden={viewMode !== 'list'}
         >
           <RepairSchedulesGroupedList
-            items={items}
+            items={pagedItems}
             statusFilter={statusFilter}
+            statusTotals={statusTotals}
             loading={loading}
             submitting={submitting}
             openProject={openProject}
@@ -323,6 +348,14 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
             moveStatus={(item, status) => setStatusChange({ item, status })}
             onDelete={setDeleteItem}
             canDeleteProject={canDeleteProject}
+          />
+          <AdminTablePagination
+            page={page}
+            limit={limit}
+            total={items.length}
+            onPageChange={setPage}
+            className={cdHub.contractsListPagination}
+            activePageClassName={cdHub.contractsListPaginationPageActive}
           />
         </div>
       </div>

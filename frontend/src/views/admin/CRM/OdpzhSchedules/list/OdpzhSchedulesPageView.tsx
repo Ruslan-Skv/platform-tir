@@ -7,10 +7,15 @@ import type {
   OdpzhScheduleRow,
   OdpzhScheduleStatus,
 } from '@/shared/api/crm/admin-odpzh-schedules';
+import { AdminTablePagination } from '@/shared/ui/admin/AdminTablePagination';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import dataTableStyles from '@/shared/ui/admin/DataTable/DataTable.module.css';
 import { CollapsibleFiltersPanel } from '@/views/admin/CRM/shared/CollapsibleFiltersPanel';
 import { PaidPercentBadge } from '@/views/admin/CRM/shared/PaidPercentBadge';
+import {
+  ADMIN_LIST_PAGE_LIMIT_OPTIONS,
+  type AdminListPageLimit,
+} from '@/views/admin/CRM/shared/list-pagination';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
 import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
@@ -141,6 +146,11 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
     search,
     setSearch,
     items,
+    pagedItems,
+    page,
+    setPage,
+    limit,
+    setLimit,
     loading,
     message,
     setMessage,
@@ -150,17 +160,27 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
 
   const countTitle = `${items.length} в выборке`;
 
-  /** При фильтре «Все» — секции по статусам; иначе один плоский список. */
+  /** Счётчики статусов в текущей выборке (без разбивки на страницы) — для заголовков секций. */
+  const statusTotals = useMemo(() => {
+    const totals = new Map<OdpzhScheduleStatus, number>();
+    for (const item of items) {
+      totals.set(item.status, (totals.get(item.status) ?? 0) + 1);
+    }
+    return totals;
+  }, [items]);
+
+  /** При фильтре «Все» — секции по статусам; иначе один плоский список. Таблица показывает
+   *  записи текущей страницы, в заголовке секции — счётчик статуса во всей выборке. */
   const sections = useMemo(() => {
     if (statusFilter !== 'ALL') {
-      return [{ id: statusFilter, label: null as string | null, items }];
+      return [{ id: statusFilter, label: null as string | null, items: pagedItems }];
     }
     return STATUS_SECTIONS.map(({ status, label }) => ({
       id: status,
       label,
-      items: items.filter((item) => item.status === status),
+      items: pagedItems.filter((item) => item.status === status),
     })).filter((section) => section.items.length > 0);
-  }, [items, statusFilter]);
+  }, [pagedItems, statusFilter]);
 
   /*
    * Горизонтальный скролл со стрелками — как у таблицы «Договоры в расчёте»
@@ -221,7 +241,7 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
       window.removeEventListener('resize', checkScrollability);
       timeouts.forEach(clearTimeout);
     };
-  }, [items, viewMode]);
+  }, [pagedItems, viewMode]);
 
   useEffect(() => stopScrolling, [stopScrolling]);
 
@@ -339,6 +359,19 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
               placeholder="Поиск по номеру договора, ФИО заказчика, адресу..."
               aria-label="Поиск по номеру договора, ФИО заказчика, адресу"
             />
+            <select
+              value={limit}
+              onChange={(e) => setLimit(Number(e.target.value) as AdminListPageLimit)}
+              disabled={loading}
+              className={`${cdHub.contractsListSelect} ${cdHub.contractsListPageLimitSelect}`}
+              aria-label="Количество строк на странице"
+            >
+              {ADMIN_LIST_PAGE_LIMIT_OPTIONS.map((n) => (
+                <option key={n} value={n}>
+                  {n} на странице
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </CollapsibleFiltersPanel>
@@ -382,7 +415,8 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
                           className={`${styles.statusSectionRow} ${styles[`statusSectionRow${section.id}`]}`}
                         >
                           <td colSpan={11}>
-                            {section.label} ({section.items.length})
+                            {section.label} (
+                            {statusTotals.get(section.id as OdpzhScheduleStatus) ?? 0})
                           </td>
                         </tr>
                       ) : null}
@@ -489,6 +523,14 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
               </div>
             ) : null}
           </div>
+          <AdminTablePagination
+            page={page}
+            limit={limit}
+            total={items.length}
+            onPageChange={setPage}
+            className={cdHub.contractsListPagination}
+            activePageClassName={cdHub.contractsListPaginationPageActive}
+          />
         </div>
       )}
     </div>

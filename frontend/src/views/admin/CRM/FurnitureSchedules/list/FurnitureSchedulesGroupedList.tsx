@@ -24,6 +24,8 @@ import {
 type Props = {
   items: FurnitureScheduleProject[];
   statusFilter: FurnitureScheduleProjectStatus | 'ALL';
+  /** Счётчики секций по всей выборке (без разбивки на страницы) — заголовки при пагинации. */
+  statusTotals?: Partial<Record<FurnitureScheduleProjectStatus, number>>;
   loading: boolean;
   submitting: boolean;
   openProject: (id: string) => void;
@@ -55,6 +57,7 @@ type StatusSection = {
 export function FurnitureSchedulesGroupedList({
   items,
   statusFilter,
+  statusTotals,
   loading,
   submitting,
   openProject,
@@ -115,6 +118,10 @@ export function FurnitureSchedulesGroupedList({
       return next;
     });
   };
+
+  /** Заголовок секции показывает счётчик статуса во всей выборке, а не на странице. */
+  const sectionCount = (section: StatusSection) =>
+    statusTotals?.[section.id as FurnitureScheduleProjectStatus] ?? section.count;
 
   const renderActions = (item: FurnitureScheduleProject) => (
     <div className={styles.actions}>
@@ -298,7 +305,7 @@ export function FurnitureSchedulesGroupedList({
           <Fragment key={section.id}>
             {section.label ? (
               <p className={styles.mobileStatusSectionTitle}>
-                {section.label} ({section.count})
+                {section.label} ({sectionCount(section)})
               </p>
             ) : null}
             {section.groups.map((group) => {
@@ -368,7 +375,7 @@ export function FurnitureSchedulesGroupedList({
                     {section.label ? (
                       <tr className={styles.statusSectionRow}>
                         <td colSpan={COL_SPAN}>
-                          {section.label} ({section.count})
+                          {section.label} ({sectionCount(section)})
                         </td>
                       </tr>
                     ) : null}

@@ -33,6 +33,8 @@ import {
 type Props = {
   items: RepairScheduleProject[];
   statusFilter: RepairScheduleProjectStatus | 'ALL';
+  /** Счётчики секций по всей выборке (без разбивки на страницы) — заголовки при пагинации. */
+  statusTotals?: Partial<Record<RepairScheduleProjectStatus, number>>;
   loading: boolean;
   submitting: boolean;
   openProject: (id: string) => void;
@@ -115,6 +117,7 @@ function CardGapRow() {
 export function RepairSchedulesGroupedList({
   items,
   statusFilter,
+  statusTotals,
   loading,
   submitting,
   openProject,
@@ -178,6 +181,10 @@ export function RepairSchedulesGroupedList({
       return next;
     });
   };
+
+  /** Заголовок секции показывает счётчик статуса во всей выборке, а не на странице. */
+  const sectionCount = (section: StatusSection) =>
+    statusTotals?.[section.id as RepairScheduleProjectStatus] ?? section.count;
 
   const renderActions = (item: RepairScheduleProject) => {
     const packageId = item.packageId;
@@ -445,7 +452,7 @@ export function RepairSchedulesGroupedList({
               <p
                 className={`${styles.mobileStatusSectionTitle} ${styles[`mobileStatusSectionTitle${section.id}`]}`}
               >
-                {section.label} ({section.count})
+                {section.label} ({sectionCount(section)})
               </p>
             ) : null}
             {section.groups.map((group) => {
@@ -519,7 +526,7 @@ export function RepairSchedulesGroupedList({
                         className={`${styles.statusSectionRow} ${styles[`statusSectionRow${section.id}`]}`}
                       >
                         <td colSpan={COL_SPAN}>
-                          {section.label} ({section.count})
+                          {section.label} ({sectionCount(section)})
                         </td>
                       </tr>
                     ) : null}
