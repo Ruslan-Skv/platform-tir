@@ -38,6 +38,7 @@ export type AdminDashboardSettingsRecord = {
   trainingDynamicsVisible: boolean;
   calendarVisible: boolean;
   dateToolbarVisible: boolean;
+  suppliersPayableVisible: boolean;
   sectionOrder: AdminDashboardSectionId[];
   quickLinks: AdminDashboardQuickLinkRecord[];
   /** Доступность блоков для роли запросившего (задаёт супер-админ). */
@@ -52,6 +53,7 @@ export type AdminDashboardRoleAllowed = {
   calendar: boolean;
   quickLinks: boolean;
   dateToolbar: boolean;
+  suppliersPayable: boolean;
 };
 
 export type AdminDashboardRoleAllowedRecord = AdminDashboardRoleAllowed & {
@@ -71,6 +73,7 @@ export const DEFAULT_ADMIN_DASHBOARD_ROLE_ALLOWED: AdminDashboardRoleAllowed = {
   calendar: true,
   quickLinks: true,
   dateToolbar: true,
+  suppliersPayable: true,
 };
 
 @Injectable()
@@ -91,6 +94,7 @@ export class AdminDashboardSettingsService {
       calendar: row.calendarAllowed,
       quickLinks: row.quickLinksAllowed,
       dateToolbar: row.dateToolbarAllowed,
+      suppliersPayable: row.suppliersPayableAllowed,
     };
   }
 
@@ -107,6 +111,7 @@ export class AdminDashboardSettingsService {
       calendar: row.calendarAllowed,
       quickLinks: row.quickLinksAllowed,
       dateToolbar: row.dateToolbarAllowed,
+      suppliersPayable: row.suppliersPayableAllowed,
     }));
   }
 
@@ -122,6 +127,7 @@ export class AdminDashboardSettingsService {
           calendarAllowed: existing.calendarAllowed,
           quickLinksAllowed: existing.quickLinksAllowed,
           dateToolbarAllowed: existing.dateToolbarAllowed,
+          suppliersPayableAllowed: existing.suppliersPayableAllowed,
         }
       : { ...DEFAULT_ADMIN_DASHBOARD_ROLE_ALLOWED };
     const row = await this.prisma.adminDashboardRoleBlock.upsert({
@@ -135,6 +141,9 @@ export class AdminDashboardSettingsService {
         ...(dto.calendar !== undefined && { calendarAllowed: dto.calendar }),
         ...(dto.quickLinks !== undefined && { quickLinksAllowed: dto.quickLinks }),
         ...(dto.dateToolbar !== undefined && { dateToolbarAllowed: dto.dateToolbar }),
+        ...(dto.suppliersPayable !== undefined && {
+          suppliersPayableAllowed: dto.suppliersPayable,
+        }),
       },
       create: {
         role: dto.role,
@@ -144,6 +153,7 @@ export class AdminDashboardSettingsService {
         calendarAllowed: dto.calendar ?? base.calendarAllowed,
         quickLinksAllowed: dto.quickLinks ?? base.quickLinksAllowed,
         dateToolbarAllowed: dto.dateToolbar ?? base.dateToolbarAllowed,
+        suppliersPayableAllowed: dto.suppliersPayable ?? base.suppliersPayableAllowed,
       },
     });
     return {
@@ -154,6 +164,7 @@ export class AdminDashboardSettingsService {
       calendar: row.calendarAllowed,
       quickLinks: row.quickLinksAllowed,
       dateToolbar: row.dateToolbarAllowed,
+      suppliersPayable: row.suppliersPayableAllowed,
     } satisfies AdminDashboardRoleAllowedRecord;
   }
 
@@ -224,6 +235,7 @@ export class AdminDashboardSettingsService {
         trainingDynamicsVisible: allowed.trainingDynamics,
         calendarVisible: allowed.calendar,
         dateToolbarVisible: allowed.dateToolbar,
+        suppliersPayableVisible: allowed.suppliersPayable,
         sectionOrder: [...DEFAULT_ADMIN_DASHBOARD_SETTINGS.sectionOrder],
         quickLinks: allowed.quickLinks
           ? DEFAULT_ADMIN_DASHBOARD_QUICK_LINKS.map((link, index) => ({
@@ -262,6 +274,7 @@ export class AdminDashboardSettingsService {
       trainingDynamicsVisible: allowed.trainingDynamics,
       calendarVisible: allowed.calendar,
       dateToolbarVisible: allowed.dateToolbar,
+      suppliersPayableVisible: allowed.suppliersPayable,
       sectionOrder: normalizeAdminDashboardSectionOrder(row.sectionOrder),
       quickLinks: allowed.quickLinks
         ? quickLinks.filter((link) => !blockedLinkIds.has(link.id))

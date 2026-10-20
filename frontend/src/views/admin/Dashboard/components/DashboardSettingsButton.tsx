@@ -53,10 +53,12 @@ const DEFAULT_ROLE_ALLOWED: AdminDashboardRoleAllowed = {
   calendar: true,
   quickLinks: true,
   dateToolbar: true,
+  suppliersPayable: true,
 };
 
 const ROLE_BLOCK_LABELS: Record<keyof AdminDashboardRoleAllowed, string> = {
   salesMonth: 'Продажи за текущий месяц',
+  suppliersPayable: 'Расчёты с поставщиками',
   trainingDynamics: 'Динамика обучения сотрудников',
   catalogActivity: 'Добавление товаров в каталог',
   calendar: 'Календарь',
@@ -71,6 +73,8 @@ const ROLE_BLOCK_HINTS: Record<keyof AdminDashboardRoleAllowed, string> = {
   calendar: 'Снимите галочку, чтобы скрыть блок для выбранной роли',
   quickLinks: 'Снимите галочку, чтобы скрыть блок для выбранной роли',
   dateToolbar: 'Блок с датами и пресетами периодов',
+  suppliersPayable:
+    'Итог к оплате и поставщики с ненулевым сальдо (раздел «Расчёты с поставщиками»)',
 };
 
 function roleAllowedEqual(

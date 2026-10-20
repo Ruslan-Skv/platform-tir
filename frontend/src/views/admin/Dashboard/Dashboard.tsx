@@ -12,10 +12,12 @@ import {
   type CatalogActivityRow,
   DEFAULT_ADMIN_DASHBOARD_SETTINGS,
   type DashboardSalesMonthResponse,
+  type DashboardSuppliersPayableResponse,
   type DashboardTrainingDynamicsResponse,
   getAdminDashboardSettings,
   getCatalogActivity,
   getDashboardSalesMonth,
+  getDashboardSuppliersPayable,
   getDashboardTrainingDynamics,
 } from '@/shared/api/admin-dashboard';
 import type { AdminDashboardSectionId } from '@/shared/lib/admin/admin-dashboard-sections';
@@ -26,6 +28,7 @@ import styles from './Dashboard.module.css';
 import { CalendarDashboardWidget } from './components/CalendarDashboardWidget';
 import { DashboardSettingsButton } from './components/DashboardSettingsButton';
 import { SalesMonthWidget } from './components/SalesMonthWidget';
+import { SuppliersPayableWidget } from './components/SuppliersPayableWidget';
 import { TrainingDynamicsWidget } from './components/TrainingDynamicsWidget';
 
 function formatPerson(row: CatalogActivityRow): string {
@@ -264,12 +267,16 @@ export function Dashboard() {
   const [catalogData, setCatalogData] = useState<CatalogActivityResponse | null>(null);
   const [trainingData, setTrainingData] = useState<DashboardTrainingDynamicsResponse | null>(null);
   const [salesMonthData, setSalesMonthData] = useState<DashboardSalesMonthResponse | null>(null);
+  const [suppliersPayableData, setSuppliersPayableData] =
+    useState<DashboardSuppliersPayableResponse | null>(null);
+  const [suppliersPayableLoading, setSuppliersPayableLoading] = useState(false);
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [trainingLoading, setTrainingLoading] = useState(false);
   const [salesMonthLoading, setSalesMonthLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const showSalesWidget = settings.salesMonthVisible && hasAccess('admin.crm.dp');
+  const showSuppliersWidget = settings.suppliersPayableVisible && hasAccess('admin.suppliers');
   const showCatalogWidget = settings.catalogActivityVisible;
   const showTrainingWidget = settings.trainingDynamicsVisible && !isTrainee;
   const showCalendarWidget = settings.calendarVisible && hasCalendarAccess;
@@ -294,6 +301,19 @@ export function Dashboard() {
       .catch(() => setSalesMonthData(null))
       .finally(() => setSalesMonthLoading(false));
   }, [showSalesWidget]);
+
+  // Расчёты с поставщиками тоже не зависят от дат — это текущие сальдо.
+  useEffect(() => {
+    if (!showSuppliersWidget) {
+      setSuppliersPayableData(null);
+      return;
+    }
+    setSuppliersPayableLoading(true);
+    void getDashboardSuppliersPayable()
+      .then(setSuppliersPayableData)
+      .catch(() => setSuppliersPayableData(null))
+      .finally(() => setSuppliersPayableLoading(false));
+  }, [showSuppliersWidget]);
 
   const loadWidgets = useCallback(async () => {
     const fromD = parseDateInput(fromInput);
@@ -381,12 +401,19 @@ export function Dashboard() {
   );
 
   const hasAnyVisibleSection = useMemo(() => {
-    if (showSalesWidget || showTrainingWidget || showCatalogWidget || showCalendarWidget) {
+    if (
+      showSalesWidget ||
+      showSuppliersWidget ||
+      showTrainingWidget ||
+      showCatalogWidget ||
+      showCalendarWidget
+    ) {
       return true;
     }
     return enabledQuickLinks.length > 0;
   }, [
     showSalesWidget,
+    showSuppliersWidget,
     showTrainingWidget,
     showCatalogWidget,
     showCalendarWidget,
@@ -398,6 +425,14 @@ export function Dashboard() {
       case 'salesMonth':
         return showSalesWidget ? (
           <SalesMonthWidget key={sectionId} data={salesMonthData} loading={salesMonthLoading} />
+        ) : null;
+      case 'suppliersPayable':
+        return showSuppliersWidget ? (
+          <SuppliersPayableWidget
+            key={sectionId}
+            data={suppliersPayableData}
+            loading={suppliersPayableLoading}
+          />
         ) : null;
       case 'trainingDynamics':
         return showTrainingWidget ? (

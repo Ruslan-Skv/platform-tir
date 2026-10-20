@@ -42,6 +42,15 @@ export interface DashboardSalesMonthResponse {
   managerSums: { managerId: string | null; name: string; sum: number }[];
 }
 
+/** Расчёты с поставщиками — итог к оплате и поставщики с ненулевым сальдо. */
+export interface DashboardSuppliersPayableResponse {
+  /** Σ положительных сальдо — «Итого к оплате». */
+  payableTotal: number;
+  /** Σ отрицательных сальдо (со знаком минус) — суммарная переплата. */
+  overpayTotal: number;
+  suppliers: { id: string; name: string; inn: string | null; balance: number }[];
+}
+
 export interface AdminDashboardQuickLink {
   id: string;
   label: string;
@@ -58,6 +67,7 @@ export interface AdminDashboardRoleAllowed {
   calendar: boolean;
   quickLinks: boolean;
   dateToolbar: boolean;
+  suppliersPayable: boolean;
 }
 
 export interface AdminDashboardRoleBlock extends AdminDashboardRoleAllowed {
@@ -77,6 +87,7 @@ export interface AdminDashboardSettings {
   trainingDynamicsVisible: boolean;
   calendarVisible: boolean;
   dateToolbarVisible: boolean;
+  suppliersPayableVisible: boolean;
   sectionOrder: AdminDashboardSectionId[];
   quickLinks: AdminDashboardQuickLink[];
   allowedBlocks?: AdminDashboardRoleAllowed;
@@ -101,6 +112,7 @@ export const DEFAULT_ADMIN_DASHBOARD_SETTINGS: AdminDashboardSettings = {
   trainingDynamicsVisible: true,
   calendarVisible: true,
   dateToolbarVisible: true,
+  suppliersPayableVisible: true,
   sectionOrder: [...DEFAULT_ADMIN_DASHBOARD_SECTION_ORDER],
   quickLinks: DEFAULT_ADMIN_DASHBOARD_QUICK_LINKS.map((link, index) => ({
     id: `default-${index}`,
@@ -155,6 +167,8 @@ function normalizeAdminDashboardSettings(
     calendarVisible: data?.calendarVisible ?? DEFAULT_ADMIN_DASHBOARD_SETTINGS.calendarVisible,
     dateToolbarVisible:
       data?.dateToolbarVisible ?? DEFAULT_ADMIN_DASHBOARD_SETTINGS.dateToolbarVisible,
+    suppliersPayableVisible:
+      data?.suppliersPayableVisible ?? DEFAULT_ADMIN_DASHBOARD_SETTINGS.suppliersPayableVisible,
     sectionOrder: normalizeAdminDashboardSectionOrder(data?.sectionOrder),
     quickLinks,
     allowedBlocks: data?.allowedBlocks,
@@ -283,6 +297,18 @@ export async function getDashboardSalesMonth(): Promise<DashboardSalesMonthRespo
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || 'Не удалось загрузить продажи за месяц');
+  }
+  return res.json();
+}
+
+export async function getDashboardSuppliersPayable(): Promise<DashboardSuppliersPayableResponse> {
+  const res = await apiFetch(`${API_URL}/admin/dashboard/suppliers-payable`, {
+    headers: getAdminAuthHeaders(),
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось загрузить расчёты с поставщиками');
   }
   return res.json();
 }

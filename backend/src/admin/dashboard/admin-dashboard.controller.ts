@@ -136,4 +136,13 @@ export class AdminDashboardController {
   getSalesMonth() {
     return this.adminDashboardService.getSalesMonth();
   }
+
+  /** Расчёты с поставщиками: «Итого к оплате» и поставщики с ненулевым сальдо. */
+  @Get('suppliers-payable')
+  @ApiOperation({
+    summary: 'Расчёты с поставщиками: итог к оплате и поставщики с ненулевым сальдо',
+  })
+  getSuppliersPayable() {
+    return this.adminDashboardService.getSuppliersPayable();
+  }
 }

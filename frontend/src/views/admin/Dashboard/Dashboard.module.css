@@ -453,6 +453,12 @@
   white-space: nowrap;
 }
 
+/* Бейдж итога «Расчёты с поставщиками» — серый (у продаж остаётся бирюзовым) */
+.suppliersTotalTone {
+  background: var(--admin-surface-soft, #f3f4f6);
+  color: var(--admin-text-secondary, #4b5563);
+}
+
 /* Сумма идёт сразу за заголовком, а ссылка прижимается к правому краю шапки. */
 .panelHeadSales .panelHeadText {
   flex: 0 1 auto;
@@ -809,6 +815,59 @@
   font-variant-numeric: tabular-nums;
   color: var(--admin-text-muted);
   line-height: var(--admin-line-height-xs);
+}
+
+/* «Расчёты с поставщиками»: список поставщиков в две колонки —
+   10–15 строк не растягивают блок по высоте. */
+.suppliersGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--admin-space-sm) var(--admin-space-lg);
+  padding: var(--admin-space-lg) var(--admin-space-xl);
+}
+
+.supplierRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--admin-space-md);
+  min-width: 0;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm, 6px);
+  background: var(--admin-surface);
+  text-decoration: none;
+  font-size: var(--admin-font-size-sm);
+}
+
+.supplierRow:hover {
+  border-color: var(--admin-primary, #2563eb);
+}
+
+.supplierName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--admin-text-secondary);
+  font-weight: 500;
+}
+
+.supplierAmount {
+  white-space: nowrap;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--admin-text-primary);
+}
+
+.supplierAmountOverpay {
+  color: var(--admin-text-muted);
+}
+
+@media (max-width: 700px) {
+  .suppliersGrid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 520px) {

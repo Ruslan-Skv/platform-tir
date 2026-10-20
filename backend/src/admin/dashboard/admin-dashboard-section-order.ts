@@ -1,5 +1,6 @@
 export const ADMIN_DASHBOARD_SECTION_IDS = [
   'salesMonth',
+  'suppliersPayable',
   'trainingDynamics',
   'catalogActivity',
   'calendar',
@@ -10,6 +11,7 @@ export type AdminDashboardSectionId = (typeof ADMIN_DASHBOARD_SECTION_IDS)[numbe
 
 export const DEFAULT_ADMIN_DASHBOARD_SECTION_ORDER: AdminDashboardSectionId[] = [
   'salesMonth',
+  'suppliersPayable',
   'trainingDynamics',
   'catalogActivity',
   'calendar',

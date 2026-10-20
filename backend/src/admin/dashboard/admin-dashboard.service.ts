@@ -30,6 +30,15 @@ export interface DashboardSalesMonthResponse {
   managerSums: { managerId: string | null; name: string; sum: number }[];
 }
 
+/** Блок дашборда «Расчёты с поставщиками»: итог и поставщики с ненулевым сальдо. */
+export interface DashboardSuppliersPayableResponse {
+  /** Σ положительных сальдо — «Итого к оплате». */
+  payableTotal: number;
+  /** Σ отрицательных сальдо (со знаком минус) — суммарная переплата. */
+  overpayTotal: number;
+  suppliers: { id: string; name: string; inn: string | null; balance: number }[];
+}
+
 @Injectable()
 export class AdminDashboardService {
   constructor(private readonly prisma: PrismaService) {}
@@ -93,6 +102,60 @@ export class AdminDashboardService {
       totalSum: Number(total._sum.amount ?? 0),
       directionSums,
       managerSums,
+    };
+  }
+
+  /**
+   * «Расчёты с поставщиками» для дашборда: те же сальдо, что в сводном списке
+   * раздела (/admin/suppliers) — сальдо начальное + Σ счетов − Σ оплат.
+   * В блок попадают только поставщики с ненулевым сальдо; удалённые в корзину
+   * не учитываются. Поставщиков немного (десятки) — считаем в памяти.
+   */
+  async getSuppliersPayable(): Promise<DashboardSuppliersPayableResponse> {
+    const [suppliers, ledgerGroups] = await Promise.all([
+      this.prisma.supplier.findMany({
+        where: { deletedAt: null },
+        select: {
+          id: true,
+          legalName: true,
+          commercialName: true,
+          inn: true,
+          openingBalance: true,
+        },
+      }),
+      this.prisma.supplierLedgerEntry.groupBy({
+        by: ['supplierId'],
+        _sum: { amount: true, payment: true },
+      }),
+    ]);
+
+    const sumsById = new Map(ledgerGroups.map((g) => [g.supplierId, g]));
+    const rows = suppliers
+      .map((supplier) => {
+        const stats = sumsById.get(supplier.id);
+        const amountSum = Number(stats?._sum.amount ?? 0);
+        const paymentSum = Number(stats?._sum.payment ?? 0);
+        const openingBalance =
+          supplier.openingBalance != null ? Number(supplier.openingBalance) : 0;
+        return {
+          id: supplier.id,
+          name: supplier.commercialName || supplier.legalName,
+          inn: supplier.inn,
+          balance: Math.round((openingBalance + amountSum - paymentSum) * 100) / 100,
+        };
+      })
+      // Ненулевое сальдо: |balance| больше полукопейки (защита от хвостов float).
+      .filter((row) => Math.abs(row.balance) > 0.005)
+      .sort((a, b) => b.balance - a.balance);
+
+    return {
+      payableTotal:
+        Math.round(rows.filter((r) => r.balance > 0).reduce((acc, r) => acc + r.balance, 0) * 100) /
+        100,
+      overpayTotal:
+        Math.round(rows.filter((r) => r.balance < 0).reduce((acc, r) => acc + r.balance, 0) * 100) /
+        100,
+      suppliers: rows,
     };
   }
 

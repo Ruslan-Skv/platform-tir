@@ -2724,6 +2724,7 @@ model AdminDashboardRoleBlock {
   calendarAllowed         Boolean  @default(true)
   quickLinksAllowed       Boolean  @default(true)
   dateToolbarAllowed      Boolean  @default(true)
+  suppliersPayableAllowed Boolean  @default(true)
   updatedAt               DateTime @updatedAt
 
   @@map("admin_dashboard_role_block")

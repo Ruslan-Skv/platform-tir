@@ -39,4 +39,9 @@ export class UpdateAdminDashboardRoleBlockDto {
   @IsOptional()
   @IsBoolean()
   dateToolbar?: boolean;
+
+  @ApiPropertyOptional({ description: 'Доступен ли блок «Расчёты с поставщиками»' })
+  @IsOptional()
+  @IsBoolean()
+  suppliersPayable?: boolean;
 }
