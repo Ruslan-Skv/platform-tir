@@ -20,7 +20,6 @@ import styles from '../shared/RepairSchedules.module.css';
 import { REPAIR_STATUS_GROUP_LABELS, repairStatusChangeTexts } from '../shared/repair-schedules';
 import { buildRepairObjectGroups } from '../shared/repairObjectGroups';
 import { RepairProjectForm } from './RepairProjectForm';
-import { RepairScheduleImportModal } from './RepairScheduleImportModal';
 import { RepairScheduleTrashModal } from './RepairScheduleTrashModal';
 import { RepairSchedulesGanttTimeline } from './RepairSchedulesGanttTimeline';
 import { RepairSchedulesGroupedList } from './RepairSchedulesGroupedList';
@@ -65,8 +64,6 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
     setMessage,
     createOpen,
     setCreateOpen,
-    importOpen,
-    setImportOpen,
     deleteItem,
     setDeleteItem,
     formValues,
@@ -170,15 +167,6 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
           </div>
         </div>
         <div className={`${cdChrome.headerButtonsRow} ${cdHub.contractsListHeaderActions}`}>
-          <button
-            data-admin-mutation
-            type="button"
-            className={cdChrome.contractsListHeaderAddBtn}
-            disabled={iconsDisabled}
-            onClick={() => setImportOpen(true)}
-          >
-            Импорт
-          </button>
           <button
             data-admin-mutation
             type="button"
@@ -347,15 +335,6 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
           onUpdated={() => void refresh()}
         />
       ) : null}
-
-      <RepairScheduleImportModal
-        isOpen={importOpen}
-        onClose={() => setImportOpen(false)}
-        onImported={(res) => {
-          flashSuccess(`Импорт: +${res.created} / ~${res.updated}, записей ${res.entriesUpserted}`);
-          void refresh();
-        }}
-      />
 
       <Modal
         isOpen={createOpen}

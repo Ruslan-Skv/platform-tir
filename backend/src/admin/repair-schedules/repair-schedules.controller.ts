@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -10,11 +9,8 @@ import {
   Post,
   Query,
   Req,
-  UploadedFile,
   UseGuards,
-  UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { RepairScheduleProjectStatus } from '@prisma/client';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -98,30 +94,6 @@ export class RepairSchedulesController {
     @Query('search') search?: string,
   ) {
     return this.service.findMy(req.user.id, { status, search });
-  }
-
-  @Post('import')
-  @UseInterceptors(
-    FileInterceptor('file', {
-      limits: { fileSize: 25 * 1024 * 1024 },
-    }),
-  )
-  importExcel(
-    @Req() req: RequestWithUser,
-    @UploadedFile() file: Express.Multer.File,
-    @Query('years') years?: string,
-  ) {
-    this.assertPlanner(req.user.role);
-    if (!file?.buffer?.length) {
-      throw new BadRequestException('Прикрепите файл Excel/CSV (.xlsx, .xls, .csv)');
-    }
-    const yearList = years
-      ?.split(',')
-      .map((y) => Number(y.trim()))
-      .filter((y) => Number.isFinite(y) && y >= 2000 && y <= 2100);
-    return this.service.importFromExcel(file.buffer, req.user.id, {
-      years: yearList?.length ? yearList : [2025, 2026],
-    });
   }
 
   @Post('auto-sync')

@@ -80,6 +80,19 @@ export class RepairSchedulesTrashService {
       throw new NotFoundException(`Repair schedule project ${id} not found`);
     }
     if (!project.deletedAt) throw new BadRequestException('Договор не в корзине');
+    if (project.packageId) {
+      // У пакета мог появиться новый проект, пока этот лежал в корзине, —
+      // восстановление не должно плодить второй действующий проект договора.
+      const active = await this.prisma.repairScheduleProject.findFirst({
+        where: { packageId: project.packageId, deletedAt: null, id: { not: id } },
+        select: { id: true },
+      });
+      if (active) {
+        throw new BadRequestException(
+          'У этого договора уже есть действующий проект план-графика — сначала уберите его в корзину',
+        );
+      }
+    }
     const restored = await this.prisma.repairScheduleProject.update({
       where: { id },
       data: { deletedAt: null, deletedById: null },

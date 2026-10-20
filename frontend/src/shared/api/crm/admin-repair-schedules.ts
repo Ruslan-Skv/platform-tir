@@ -308,16 +308,6 @@ export async function getMyRepairScheduleProjects(params?: {
   return res.json();
 }
 
-export type RepairScheduleImportResult = {
-  sheetName: string;
-  weekColumns: number;
-  projectsInFile: number;
-  skippedRows: number;
-  created: number;
-  updated: number;
-  entriesUpserted: number;
-};
-
 export type RepairScheduleAutoSyncResult = {
   scannedPackages: number;
   created: number;
@@ -332,29 +322,5 @@ export async function autoSyncRepairSchedules(): Promise<RepairScheduleAutoSyncR
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) await throwApiError(res, 'Не удалось синхронизировать договоры с план-графиком');
-  return res.json();
-}
-
-export async function importRepairScheduleExcel(
-  file: File,
-  years: number[] = [2025, 2026]
-): Promise<RepairScheduleImportResult> {
-  const form = new FormData();
-  form.append('file', file);
-  const qs = years.length ? `?years=${years.join(',')}` : '';
-  const token =
-    typeof window !== 'undefined'
-      ? localStorage.getItem('admin_token') || localStorage.getItem('user_token')
-      : null;
-  const headers: HeadersInit = {};
-  if (token) {
-    (headers as Record<string, string>).Authorization = `Bearer ${token}`;
-  }
-  const res = await apiFetch(`${API_URL}/admin/repair-schedules/import${qs}`, {
-    method: 'POST',
-    headers,
-    body: form,
-  });
-  if (!res.ok) await throwApiError(res, 'Не удалось импортировать файл');
   return res.json();
 }

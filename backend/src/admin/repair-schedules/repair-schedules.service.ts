@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -16,29 +17,27 @@ import {
   PROJECT_DETAIL_INCLUDE,
   PROJECT_INCLUDE,
   type RepairScheduleAttachedInstaller,
-  asFormDataRecord,
-  customerFromFormData,
   decimalOrNull,
   emptyToNull,
   extractAttachedInstallerIds,
-  extractPackageContractTerms,
-  moneyFromFormContract,
+  extractPackageProjectSnapshot,
   parseDateOnly,
   withDerived,
 } from './repair-schedule.shared';
-import { RepairSchedulesImportService } from './repair-schedules-import.service';
 import { RepairSchedulesTrashService } from './repair-schedules-trash.service';
 import { UpdateRepairScheduleEntryDto } from './dto/update-repair-schedule-entry.dto';
 import { UpdateRepairScheduleProjectDto } from './dto/update-repair-schedule-project.dto';
 
 export { REPAIR_SCHEDULE_STALE_DAYS } from './repair-schedule.shared';
 
+/** Ключ advisory-lock'а, сериализующего создание проектов одного пакета. */
+const PACKAGE_PROJECT_LOCK_PREFIX = 'repair-schedule-package:';
+
 @Injectable()
 export class RepairSchedulesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notify: RepairScheduleNotifyService,
-    private readonly importService: RepairSchedulesImportService,
     private readonly trash: RepairSchedulesTrashService,
   ) {}
 
@@ -127,28 +126,34 @@ export class RepairSchedulesService {
       },
     });
     if (!pkg) throw new BadRequestException('Пакет документов не найден');
-    const form = asFormDataRecord(pkg.formData);
-    const fromForm = customerFromFormData(form);
-    const terms = extractPackageContractTerms(pkg.formData);
-    const contractSum =
-      moneyFromFormContract(form, 'totalAmount') ?? moneyFromFormContract(form, 'contractCost');
-    const payoutSum = moneyFromFormContract(form, 'prepaymentAmount');
-    const workStartActDate = terms.workStartActDate ? parseDateOnly(terms.workStartActDate) : null;
-    const workCloseActDate = terms.workCloseActDate ? parseDateOnly(terms.workCloseActDate) : null;
-    const workPeriodDays = terms.workPeriodDays ?? null;
+    const snapshot = extractPackageProjectSnapshot(pkg.formData);
     return {
       packageId: pkg.id,
-      contractNumber: fromForm.contractNumber,
-      customerName: fromForm.customerName,
-      customerAddress: fromForm.customerAddress,
-      customerPhone: fromForm.customerPhone,
-      contractSum,
-      payoutSum,
-      workPeriodDays,
-      workStartActDate,
-      workCloseActDate,
-      plannedStartDate: workStartActDate,
+      ...snapshot,
+      plannedStartDate: snapshot.workStartActDate,
     };
+  }
+
+  /**
+   * Атомарное создание проекта с привязкой к пакету: advisory-lock на packageId
+   * закрывает гонку «оба проверили, что проекта нет → оба создали» между
+   * автосозданием при подписании, автосинком страницы и ручным добавлением.
+   */
+  private createLinkedToPackage(
+    data: Prisma.RepairScheduleProjectUncheckedCreateInput,
+    packageId: string,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${PACKAGE_PROJECT_LOCK_PREFIX + packageId}))`;
+      const existing = await tx.repairScheduleProject.findFirst({
+        where: { packageId, deletedAt: null },
+        select: { id: true },
+      });
+      if (existing) {
+        throw new ConflictException('У этого договора уже есть проект в план-графике ремонта');
+      }
+      return tx.repairScheduleProject.create({ data, include: PROJECT_INCLUDE });
+    });
   }
 
   async create(
@@ -205,31 +210,31 @@ export class RepairSchedulesService {
     }
 
     const status = dto.status ?? RepairScheduleProjectStatus.NEW;
-    const project = await this.prisma.repairScheduleProject.create({
-      data: {
-        status,
-        contractNumber,
-        workScope: emptyToNull(dto.workScope) ?? null,
-        installerId,
-        installerName,
-        packageId,
-        customerName,
-        customerAddress,
-        customerPhone,
-        contractSum: decimalOrNull(contractSum) ?? null,
-        payoutSum: decimalOrNull(payoutSum) ?? null,
-        furnitureInfo: emptyToNull(dto.furnitureInfo) ?? null,
-        workPeriodDays,
-        workStartActDate,
-        workCloseActDate,
-        plannedStartDate,
-        note: emptyToNull(dto.note) ?? null,
-        closedAt: status === RepairScheduleProjectStatus.CLOSED ? new Date() : null,
-        createdById: actorId,
-        updatedById: actorId,
-      },
-      include: PROJECT_INCLUDE,
-    });
+    const data: Prisma.RepairScheduleProjectUncheckedCreateInput = {
+      status,
+      contractNumber,
+      workScope: emptyToNull(dto.workScope) ?? null,
+      installerId,
+      installerName,
+      packageId,
+      customerName,
+      customerAddress,
+      customerPhone,
+      contractSum: decimalOrNull(contractSum) ?? null,
+      payoutSum: decimalOrNull(payoutSum) ?? null,
+      furnitureInfo: emptyToNull(dto.furnitureInfo) ?? null,
+      workPeriodDays,
+      workStartActDate,
+      workCloseActDate,
+      plannedStartDate,
+      note: emptyToNull(dto.note) ?? null,
+      closedAt: status === RepairScheduleProjectStatus.CLOSED ? new Date() : null,
+      createdById: actorId,
+      updatedById: actorId,
+    };
+    const project = packageId
+      ? await this.createLinkedToPackage(data, packageId)
+      : await this.prisma.repairScheduleProject.create({ data, include: PROJECT_INCLUDE });
     if (actorId && options?.notify !== false) {
       this.notify.onCreated(this.toNotifyPayload(project), actorId);
     }
@@ -393,6 +398,13 @@ export class RepairSchedulesService {
       const packageId = emptyToNull(dto.packageId) ?? null;
       if (packageId) {
         const fromPkg = await this.enrichFromPackage(packageId);
+        const rival = await this.prisma.repairScheduleProject.findFirst({
+          where: { packageId: fromPkg.packageId, deletedAt: null, id: { not: id } },
+          select: { id: true },
+        });
+        if (rival) {
+          throw new ConflictException('К этому договору уже привязан другой проект план-графика');
+        }
         data.package = { connect: { id: fromPkg.packageId } };
         if (dto.contractNumber === undefined && fromPkg.contractNumber) {
           data.contractNumber = fromPkg.contractNumber;
@@ -479,10 +491,16 @@ export class RepairSchedulesService {
     if (!project) throw new NotFoundException('Проект план-графика не найден');
     if (project.deletedAt) throw new BadRequestException('Договор уже в корзине');
     if (project.packageId) {
-      // Автосозданные из пакета проектов не удаляются — только закрытие через договор.
-      throw new ForbiddenException(
-        'Договор добавлен в план-график автоматически из пакета документов — удалить нельзя',
-      );
+      // Проект пакета нельзя удалить, пока он единственный: закрывается через договор.
+      // Дубли (созданные до защиты от гонок) — можно, основной проект остаётся.
+      const activeCount = await this.prisma.repairScheduleProject.count({
+        where: { packageId: project.packageId, deletedAt: null },
+      });
+      if (activeCount <= 1) {
+        throw new ForbiddenException(
+          'Договор добавлен в план-график из пакета документов — единственный проект пакета удалить нельзя',
+        );
+      }
     }
     const trashed = await this.prisma.repairScheduleProject.update({
       where: { id },
@@ -562,9 +580,5 @@ export class RepairSchedulesService {
       data: { updatedById: actorUserId },
     });
     return this.findOne(projectId);
-  }
-
-  importFromExcel(buffer: Buffer, actorUserId: string, options?: { years?: number[] }) {
-    return this.importService.importFromExcel(buffer, actorUserId, options);
   }
 }

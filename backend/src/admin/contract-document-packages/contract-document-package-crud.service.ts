@@ -256,6 +256,16 @@ export class ContractDocumentPackageCrudService {
     }
     // Статус договора в списке мог измениться (акты/суммы) — двигаем проект план-графика.
     if (updated.kind === ContractDocumentPackageKind.REPAIR) {
+      // Снимок проекта план-графика (номер, заказчик, суммы) обновляется из пакета,
+      // чтобы правки договора не застывали в снимке на момент создания проекта.
+      try {
+        await this.repairScheduleFromPackage.refreshProjectsSnapshotFromPackage(updated.id);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        this.logger.warn(
+          `Обновление снимка план-графика ремонта для пакета ${updated.id} не удалось: ${message}`,
+        );
+      }
       try {
         await this.repairScheduleFromPackage.syncProjectStatusFromPackage(
           updated.id,

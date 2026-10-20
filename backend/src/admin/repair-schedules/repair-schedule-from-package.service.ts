@@ -11,13 +11,15 @@ import {
   type PackageListPaymentRow,
 } from '../contract-document-packages/list-pipeline/package-list-pipeline-status';
 import {
+  decimalOrNull,
   emptyToNull,
+  extractPackageProjectSnapshot,
   pipelineStatusToProjectStatus,
   REPAIR_PROJECT_STATUS_RANK,
 } from './repair-schedule.shared';
 import { RepairSchedulesService } from './repair-schedules.service';
 
-/** Пакет со всем, что нужно для сверки статуса договора с проектом план-графика. */
+/** Пакет со всем, что нужно для сверки статуса договора с проектами план-графика. */
 const REPAIR_PACKAGE_SYNC_SELECT = {
   id: true,
   kind: true,
@@ -30,8 +32,8 @@ const REPAIR_PACKAGE_SYNC_SELECT = {
   },
   repairScheduleProjects: {
     select: { id: true, status: true },
+    where: { deletedAt: null },
     orderBy: { createdAt: 'asc' as const },
-    take: 1,
   },
 } satisfies Prisma.ContractDocumentPackageSelect;
 
@@ -41,6 +43,7 @@ type LoadedRepairPackage = Prisma.ContractDocumentPackageGetPayload<{
 
 type SyncStatusResult = {
   changed: boolean;
+  changedCount: number;
   projectId: string | null;
   status: RepairScheduleProjectStatus | null;
 };
@@ -79,7 +82,7 @@ export class RepairScheduleFromPackageService {
         deletedAt: null,
         OR: [
           { repairScheduleProjects: { none: {} } },
-          { repairScheduleProjects: { some: { status: { not: 'CLOSED' } } } },
+          { repairScheduleProjects: { some: { deletedAt: null, status: { not: 'CLOSED' } } } },
         ],
       },
       select: REPAIR_PACKAGE_SYNC_SELECT,
@@ -97,7 +100,7 @@ export class RepairScheduleFromPackageService {
         continue;
       }
       const res = await this.advanceProjectStatusFromPackage(pkg, actorUserId, { notify: false });
-      if (res.changed) statusUpdated++;
+      statusUpdated += res.changedCount;
     }
     return {
       scannedPackages: packages.length,
@@ -150,6 +153,12 @@ export class RepairScheduleFromPackageService {
       );
       return { created: true, projectId: project.id };
     } catch (err) {
+      // Гонка: параллельный запрос успел создать проект первым — возвращаем его.
+      const winner = await this.prisma.repairScheduleProject.findFirst({
+        where: { packageId: pkg.id, deletedAt: null },
+        select: { id: true },
+      });
+      if (winner) return { created: false, projectId: winner.id };
       const message = err instanceof Error ? err.message : String(err);
       this.logger.warn(
         `Не удалось автосоздать проект план-графика ремонта для пакета ${pkg.id}: ${message}`,
@@ -171,7 +180,7 @@ export class RepairScheduleFromPackageService {
       where: { id: packageId, deletedAt: null },
       select: REPAIR_PACKAGE_SYNC_SELECT,
     });
-    if (!pkg) return { changed: false, projectId: null, status: null };
+    if (!pkg) return { changed: false, changedCount: 0, projectId: null, status: null };
     return this.advanceProjectStatusFromPackage(pkg, actorUserId, options);
   }
 
@@ -182,10 +191,12 @@ export class RepairScheduleFromPackageService {
     options?: { notify?: boolean },
   ): Promise<SyncStatusResult> {
     if (pkg.kind !== ContractDocumentPackageKind.REPAIR) {
-      return { changed: false, projectId: null, status: null };
+      return { changed: false, changedCount: 0, projectId: null, status: null };
     }
-    const project = pkg.repairScheduleProjects[0];
-    if (!project) return { changed: false, projectId: null, status: null };
+    const projects = pkg.repairScheduleProjects;
+    if (projects.length === 0) {
+      return { changed: false, changedCount: 0, projectId: null, status: null };
+    }
 
     const payments: PackageListPaymentRow[] = pkg.payments.map((p) => ({
       amount: p.amount.toString(),
@@ -200,23 +211,66 @@ export class RepairScheduleFromPackageService {
       payments,
     });
     const target = pipelineStatusToProjectStatus(pipeline);
-    if (
-      !target ||
-      REPAIR_PROJECT_STATUS_RANK[target] <= REPAIR_PROJECT_STATUS_RANK[project.status]
-    ) {
-      return { changed: false, projectId: project.id, status: project.status };
-    }
 
+    // Двигаем каждый незакрытый проект пакета, а не только самый старый:
+    // дубль, созданный до защиты от гонок, не должен навсегда зависнуть в «Новых».
     const actorId = emptyToNull(actorUserId) ?? pkg.responsibleManagerId ?? pkg.createdById ?? null;
-    try {
-      await this.repairSchedules.setStatus(project.id, target, actorId, options);
-      return { changed: true, projectId: project.id, status: target };
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      this.logger.warn(
-        `Не удалось синхронизировать статус план-графика ремонта для пакета ${pkg.id}: ${message}`,
-      );
-      return { changed: false, projectId: project.id, status: project.status };
+    let changedCount = 0;
+    let lastChanged: { id: string; status: RepairScheduleProjectStatus } | null = null;
+    for (const project of projects) {
+      if (
+        !target ||
+        REPAIR_PROJECT_STATUS_RANK[target] <= REPAIR_PROJECT_STATUS_RANK[project.status]
+      ) {
+        continue;
+      }
+      try {
+        await this.repairSchedules.setStatus(project.id, target, actorId, options);
+        changedCount++;
+        lastChanged = { id: project.id, status: target };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        this.logger.warn(
+          `Не удалось синхронизировать статус план-графика ремонта для пакета ${pkg.id} (проект ${project.id}): ${message}`,
+        );
+      }
     }
+    return {
+      changed: changedCount > 0,
+      changedCount,
+      projectId: lastChanged?.id ?? projects[0].id,
+      status: lastChanged?.status ?? projects[0].status,
+    };
+  }
+
+  /**
+   * Обновляет снимок полей действующих проектов пакета (номер договора,
+   * заказчик, суммы, срок) из текущего formData. Вызывается при сохранении
+   * пакета, чтобы правки договора отражались в план-графике, а не застывали
+   * в снимке на момент создания проекта.
+   */
+  async refreshProjectsSnapshotFromPackage(packageId: string): Promise<number> {
+    const pkg = await this.prisma.contractDocumentPackage.findFirst({
+      where: { id: packageId, deletedAt: null },
+      select: { kind: true, formData: true },
+    });
+    if (!pkg || pkg.kind !== ContractDocumentPackageKind.REPAIR) return 0;
+
+    const snap = extractPackageProjectSnapshot(pkg.formData);
+    const result = await this.prisma.repairScheduleProject.updateMany({
+      where: { packageId, deletedAt: null },
+      data: {
+        ...(snap.contractNumber ? { contractNumber: snap.contractNumber } : {}),
+        ...(snap.customerName ? { customerName: snap.customerName } : {}),
+        ...(snap.customerAddress ? { customerAddress: snap.customerAddress } : {}),
+        ...(snap.customerPhone ? { customerPhone: snap.customerPhone } : {}),
+        ...(snap.contractSum != null
+          ? { contractSum: decimalOrNull(snap.contractSum) ?? null }
+          : {}),
+        ...(snap.payoutSum != null ? { payoutSum: decimalOrNull(snap.payoutSum) ?? null } : {}),
+        ...(snap.workPeriodDays != null ? { workPeriodDays: snap.workPeriodDays } : {}),
+      },
+    });
+    return result.count;
   }
 }

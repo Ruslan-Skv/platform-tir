@@ -78,11 +78,6 @@ function readStoredViewMode(): RepairSchedulesViewMode {
 export function useRepairSchedulesPage() {
   const router = useRouter();
   const { user } = useAuth();
-  /** В корзину — только планировщики и только вручную созданные проекты (без пакета). */
-  const canDeleteProject = useCallback(
-    (item: RepairScheduleProject) => TRASH_PLANNER_ROLES.has(user?.role ?? '') && !item.packageId,
-    [user?.role]
-  );
   const [stored] = useState(readStoredFilters);
   const [statusFilter, setStatusFilter] = useState<RepairScheduleProjectStatus | 'ALL'>(
     stored.statusFilter ?? 'IN_PROGRESS'
@@ -96,11 +91,17 @@ export function useRepairSchedulesPage() {
   const [staleOnly, setStaleOnly] = useState(stored.staleOnly ?? false);
   const [search, setSearch] = useState(stored.search ?? '');
   const [items, setItems] = useState<RepairScheduleProject[]>([]);
+  /** В корзину — только планировщики; проект пакета — только если это дубль (основной остаётся). */
+  const canDeleteProject = useCallback(
+    (item: RepairScheduleProject) =>
+      TRASH_PLANNER_ROLES.has(user?.role ?? '') &&
+      (!item.packageId || items.filter((p) => p.packageId === item.packageId).length > 1),
+    [user?.role, items]
+  );
   const [installers, setInstallers] = useState<InstallerMaster[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);
   const [deleteItem, setDeleteItem] = useState<RepairScheduleProject | null>(null);
   const [formValues, setFormValues] = useState<RepairProjectFormValues>(emptyRepairProjectForm);
   const [formError, setFormError] = useState<string | null>(null);
@@ -342,8 +343,6 @@ export function useRepairSchedulesPage() {
     setMessage,
     createOpen,
     setCreateOpen,
-    importOpen,
-    setImportOpen,
     deleteItem,
     setDeleteItem,
     formValues,

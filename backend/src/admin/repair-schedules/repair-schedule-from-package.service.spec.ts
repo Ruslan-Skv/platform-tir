@@ -73,6 +73,7 @@ function makeService(packages: PackageRow[]) {
         const pkg = packages.find((p) => p.id === where.packageId);
         return pkg?.repairScheduleProjects[0] ? { id: pkg.repairScheduleProjects[0].id } : null;
       }),
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
     },
   };
   const repairSchedules = {
@@ -96,7 +97,7 @@ function makeService(packages: PackageRow[]) {
     prisma as never,
     repairSchedules as unknown as RepairSchedulesService,
   );
-  return { service, createdProjects, statusCalls };
+  return { service, createdProjects, statusCalls, prisma };
 }
 
 describe('RepairScheduleFromPackageService.ensureFromConcludedRepairPackage', () => {
@@ -194,9 +195,38 @@ describe('RepairScheduleFromPackageService.syncProjectStatusFromPackage', () => 
 
     const res = await service.syncProjectStatusFromPackage('pkg-done', 'user1');
 
-    expect(res).toEqual({ changed: true, projectId: 'proj-done', status: 'CLOSED' });
+    expect(res).toEqual({
+      changed: true,
+      changedCount: 1,
+      projectId: 'proj-done',
+      status: 'CLOSED',
+    });
     expect(statusCalls).toHaveLength(1);
     expect(statusCalls[0].status).toBe('CLOSED');
+  });
+
+  it('закрывает все проекты пакета, включая дубль, а не только самый старый', async () => {
+    const { service, statusCalls } = makeService([
+      makePackage({
+        id: 'pkg-dup',
+        formData: {
+          ...WORK_IN_PROGRESS_FORM,
+          repairContractClosed: true,
+        },
+        payments: [payment('100000')],
+        repairScheduleProjects: [
+          { id: 'proj-main', status: 'IN_PROGRESS' },
+          { id: 'proj-dup', status: 'NEW' },
+        ],
+      }),
+    ]);
+
+    const res = await service.syncProjectStatusFromPackage('pkg-dup', 'user1');
+
+    expect(res.changed).toBe(true);
+    expect(res.changedCount).toBe(2);
+    expect(statusCalls.map((c) => c.projectId).sort()).toEqual(['proj-dup', 'proj-main']);
+    expect(statusCalls.every((c) => c.status === 'CLOSED')).toBe(true);
   });
 
   it('не двигает статус, когда целевой совпадает или ранг ниже текущего', async () => {
@@ -218,8 +248,18 @@ describe('RepairScheduleFromPackageService.syncProjectStatusFromPackage', () => 
     const same = await service.syncProjectStatusFromPackage('pkg-same', 'user1');
     const back = await service.syncProjectStatusFromPackage('pkg-back', 'user1');
 
-    expect(same).toEqual({ changed: false, projectId: 'proj-same', status: 'IN_PROGRESS' });
-    expect(back).toEqual({ changed: false, projectId: 'proj-back', status: 'IN_PROGRESS' });
+    expect(same).toEqual({
+      changed: false,
+      changedCount: 0,
+      projectId: 'proj-same',
+      status: 'IN_PROGRESS',
+    });
+    expect(back).toEqual({
+      changed: false,
+      changedCount: 0,
+      projectId: 'proj-back',
+      status: 'IN_PROGRESS',
+    });
     expect(statusCalls).toHaveLength(0);
   });
 
@@ -230,7 +270,42 @@ describe('RepairScheduleFromPackageService.syncProjectStatusFromPackage', () => 
 
     const res = await service.syncProjectStatusFromPackage('pkg-noproject', 'user1');
 
-    expect(res).toEqual({ changed: false, projectId: null, status: null });
+    expect(res).toEqual({ changed: false, changedCount: 0, projectId: null, status: null });
     expect(statusCalls).toHaveLength(0);
+  });
+});
+
+describe('RepairScheduleFromPackageService.refreshProjectsSnapshotFromPackage', () => {
+  it('обновляет снимок действующих проектов из текущего formData пакета', async () => {
+    const { service, prisma } = makeService([
+      makePackage({
+        id: 'pkg-num',
+        formData: { contract: { number: '7751р-11', totalAmount: 25564 } },
+      }),
+    ]);
+
+    const count = await service.refreshProjectsSnapshotFromPackage('pkg-num');
+
+    expect(count).toBe(1);
+    expect(prisma.repairScheduleProject.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { packageId: 'pkg-num', deletedAt: null },
+        data: expect.objectContaining({
+          contractNumber: '7751р-11',
+          contractSum: expect.anything(),
+        }),
+      }),
+    );
+  });
+
+  it('игнорирует не-ремонтные и удалённые пакеты', async () => {
+    const { service, prisma } = makeService([
+      makePackage({ id: 'pkg-windows', kind: ContractDocumentPackageKind.WINDOWS }),
+    ]);
+
+    const count = await service.refreshProjectsSnapshotFromPackage('pkg-windows');
+
+    expect(count).toBe(0);
+    expect(prisma.repairScheduleProject.updateMany).not.toHaveBeenCalled();
   });
 });

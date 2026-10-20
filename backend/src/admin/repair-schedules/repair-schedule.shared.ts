@@ -150,6 +150,29 @@ export function customerFromFormData(formData: Record<string, unknown>) {
   };
 }
 
+/**
+ * Снимок полей проекта план-графика из formData пакета «Ремонт»: номер договора,
+ * заказчик, суммы и срок. Пакет — источник истины; проект хранит копию,
+ * которую нужно обновлять при изменении пакета.
+ */
+export function extractPackageProjectSnapshot(formData: unknown) {
+  const form = asFormDataRecord(formData);
+  const fromForm = customerFromFormData(form);
+  const terms = extractPackageContractTerms(formData);
+  return {
+    contractNumber: fromForm.contractNumber,
+    customerName: fromForm.customerName,
+    customerAddress: fromForm.customerAddress,
+    customerPhone: fromForm.customerPhone,
+    contractSum:
+      moneyFromFormContract(form, 'totalAmount') ?? moneyFromFormContract(form, 'contractCost'),
+    payoutSum: moneyFromFormContract(form, 'prepaymentAmount'),
+    workPeriodDays: terms.workPeriodDays ?? null,
+    workStartActDate: terms.workStartActDate ? parseDateOnly(terms.workStartActDate) : null,
+    workCloseActDate: terms.workCloseActDate ? parseDateOnly(terms.workCloseActDate) : null,
+  };
+}
+
 export function decimalOrNull(value?: number | null): Prisma.Decimal | null | undefined {
   if (value === undefined) return undefined;
   if (value === null) return null;
@@ -607,6 +630,7 @@ export function extractAttachedInstallerIds(packageFormData: unknown): string[] 
 export function withDerived<
   T extends {
     status: RepairScheduleProjectStatus;
+    contractNumber?: string | null;
     workPeriodDays?: number | null;
     workStartActDate?: Date | null;
     workCloseActDate?: Date | null;
@@ -671,6 +695,11 @@ export function withDerived<
     staleDays: REPAIR_SCHEDULE_STALE_DAYS,
     ...contractMeta,
     ...deadline,
+    /** Живой номер договора из пакета: сохранённый на проекте снимок мог устареть. */
+    contractNumber:
+      (pkg ? customerFromFormData(asFormDataRecord(pkg.formData)).contractNumber : null) ??
+      project.contractNumber ??
+      null,
     /** Сколько процентов договора оплачено (журнал оплат пакета / всё к оплате); null — пакета нет. */
     paidPercent,
     syncedFromPackage: Boolean(project.package),
