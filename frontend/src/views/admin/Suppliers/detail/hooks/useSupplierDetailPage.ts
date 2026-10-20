@@ -105,6 +105,10 @@ export type SupplierDetailPageModel = {
   canEdit: boolean;
   /** Оплаты по счетам проводит только супер-админ (счета — ведущие специалисты). */
   canManagePayments: boolean;
+  /** Удаление поставщика — только супер-админ. */
+  canDeleteSupplier: boolean;
+  /** Правка карточки и блоков реквизитов — только супер-админ (создавать может любой редактор). */
+  canEditSupplierCard: boolean;
 };
 
 /** Карточка поставщика: баланс, ведомость счетов/оплат и блоки банковских реквизитов. */
@@ -114,7 +118,10 @@ export function useSupplierDetailPage(): SupplierDetailPageModel {
   const supplierId = (routeParams.id as string) ?? '';
   const { canEdit } = useAdminSectionCanEdit();
   const { user } = useAuth();
-  const canManagePayments = user?.role === 'SUPER_ADMIN';
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const canManagePayments = isSuperAdmin;
+  const canDeleteSupplier = isSuperAdmin;
+  const canEditSupplierCard = isSuperAdmin;
 
   const [supplier, setSupplier] = useState<AdminSupplier | null>(null);
   const [requisites, setRequisites] = useState<AdminSupplierRequisite[]>([]);
@@ -456,5 +463,7 @@ export function useSupplierDetailPage(): SupplierDetailPageModel {
     handleDeleteSupplier,
     canEdit,
     canManagePayments,
+    canDeleteSupplier,
+    canEditSupplierCard,
   };
 }

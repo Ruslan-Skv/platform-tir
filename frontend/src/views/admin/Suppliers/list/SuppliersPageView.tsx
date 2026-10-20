@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 
 import type { AdminSupplierSummaryRow } from '@/shared/api/admin-suppliers';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
+import { AdminToolbarTrashButton } from '@/shared/ui/admin/AdminToolbarIconButton/AdminToolbarTrashButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
 import dpStyles from '@/views/admin/CRM/MoneyMovements/MoneyMovements.module.css';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
@@ -15,6 +16,7 @@ import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-worksp
 
 import { SuppliersRulesInfoTip } from '../SuppliersRulesInfoTip';
 import { SupplierFormModal } from '../modals/SupplierFormModal';
+import { SuppliersTrashModal } from '../modals/SuppliersTrashModal';
 import {
   BALANCE_STATUS_LABELS,
   formatSupplierDate,
@@ -93,6 +95,11 @@ export function SuppliersPageView({ model }: SuppliersPageViewProps) {
     saving,
     handleSave,
     canEdit,
+    isSuperAdmin,
+    trashOpen,
+    setTrashOpen,
+    trashCount,
+    refreshTrashCount,
   } = model;
 
   const router = useRouter();
@@ -175,12 +182,16 @@ export function SuppliersPageView({ model }: SuppliersPageViewProps) {
             <button
               type="button"
               className={styles.rowActionBtn}
-              disabled={!canEdit || loading}
+              disabled={!isSuperAdmin || loading}
               onClick={(e) => {
                 e.stopPropagation();
                 openEditModal(item.id);
               }}
-              title={canEdit ? 'Реквизиты и карточка поставщика' : 'Нет прав на изменение'}
+              title={
+                isSuperAdmin
+                  ? 'Реквизиты и карточка поставщика (только суперадмин)'
+                  : 'Изменять карточку поставщика может только суперадмин'
+              }
             >
               Карточка
             </button>
@@ -188,7 +199,7 @@ export function SuppliersPageView({ model }: SuppliersPageViewProps) {
         ),
       },
     ],
-    [canEdit, loading, openEditModal]
+    [isSuperAdmin, loading, openEditModal]
   );
 
   return (
@@ -207,6 +218,14 @@ export function SuppliersPageView({ model }: SuppliersPageViewProps) {
               </span>
             </div>
             <div className={cdHub.contractsHeaderIconActionsMobile}>
+              {isSuperAdmin ? (
+                <AdminToolbarTrashButton
+                  trashCount={trashCount}
+                  onClick={() => setTrashOpen(true)}
+                  title="Корзина поставщиков"
+                  aria-label="Корзина поставщиков"
+                />
+              ) : null}
               <AdminListRefreshButton
                 disabled={loading}
                 busy={loading}
@@ -229,6 +248,14 @@ export function SuppliersPageView({ model }: SuppliersPageViewProps) {
             + Поставщик
           </button>
           <div className={cdHub.contractsHeaderIconActionsDesktop}>
+            {isSuperAdmin ? (
+              <AdminToolbarTrashButton
+                trashCount={trashCount}
+                onClick={() => setTrashOpen(true)}
+                title="Корзина поставщиков"
+                aria-label="Корзина поставщиков"
+              />
+            ) : null}
             <AdminListRefreshButton
               disabled={loading}
               busy={loading}
@@ -433,6 +460,16 @@ export function SuppliersPageView({ model }: SuppliersPageViewProps) {
         submitting={saving}
         onSubmit={handleSave}
       />
+
+      {isSuperAdmin ? (
+        <SuppliersTrashModal
+          isOpen={trashOpen}
+          onClose={() => {
+            setTrashOpen(false);
+            void refreshTrashCount();
+          }}
+        />
+      ) : null}
     </div>
   );
 }

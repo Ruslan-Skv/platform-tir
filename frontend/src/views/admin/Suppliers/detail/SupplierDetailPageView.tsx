@@ -68,12 +68,13 @@ function CopyField({ label, value }: { label: string; value: string }) {
 /** Карточка блока реквизитов: банк, счета, БИК, ИНН/КПП — с копированием полей. */
 function RequisiteCard({
   requisite,
-  canEdit,
+  canEditCard,
   onEdit,
   onDelete,
 }: {
   requisite: AdminSupplierRequisite;
-  canEdit: boolean;
+  /** Правка и удаление блока — только супер-админ (добавление — любой редактор). */
+  canEditCard: boolean;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -84,24 +85,56 @@ function RequisiteCard({
           {requisite.name}
           {requisite.isDefault ? ' · по умолчанию' : ''}
         </p>
-        {canEdit ? (
-          <span className={listStyles.rowActions}>
+        {canEditCard ? (
+          <span className={dpStyles.entryActions}>
             <button
               type="button"
-              className={listStyles.rowActionBtn}
+              className={dpStyles.editEntryBtn}
               onClick={onEdit}
-              title="Изменить блок реквизитов"
+              title="Изменить блок реквизитов (только суперадмин)"
+              aria-label="Изменить блок реквизитов"
             >
-              ✏️
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width={15}
+                height={15}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+              </svg>
             </button>
             <button
               type="button"
               data-admin-mutation
-              className={listStyles.rowActionBtn}
+              className={dpStyles.deleteEntryBtn}
               onClick={onDelete}
-              title="Удалить блок реквизитов"
+              title="Удалить блок реквизитов (только суперадмин)"
+              aria-label="Удалить блок реквизитов"
             >
-              🗑
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width={15}
+                height={15}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <path d="M3 6h18" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                <line x1="10" x2="10" y1="11" y2="17" />
+                <line x1="14" x2="14" y1="11" y2="17" />
+              </svg>
             </button>
           </span>
         ) : null}
@@ -182,6 +215,8 @@ export function SupplierDetailPageView({ model }: SupplierDetailPageViewProps) {
     handleDeleteSupplier,
     canEdit,
     canManagePayments,
+    canDeleteSupplier,
+    canEditSupplierCard,
   } = model;
 
   const ledgerColumns = useMemo(
@@ -488,9 +523,13 @@ export function SupplierDetailPageView({ model }: SupplierDetailPageViewProps) {
           <button
             type="button"
             className={listStyles.rowActionBtn}
-            disabled={loading || !canEdit}
+            disabled={loading || !canEditSupplierCard}
             onClick={openSupplierModal}
-            title={canEdit ? 'Наименование, ИНН, контакты, сальдо начальное' : 'Нет прав'}
+            title={
+              canEditSupplierCard
+                ? 'Наименование, ИНН, контакты, сальдо начальное (только суперадмин)'
+                : 'Изменять карточку поставщика может только суперадмин'
+            }
           >
             Карточка
           </button>
@@ -660,7 +699,7 @@ export function SupplierDetailPageView({ model }: SupplierDetailPageViewProps) {
               <RequisiteCard
                 key={requisite.id}
                 requisite={requisite}
-                canEdit={canEdit}
+                canEditCard={canEditSupplierCard}
                 onEdit={() => openEditRequisiteModal(requisite)}
                 onDelete={() => askDeleteRequisite(requisite.id)}
               />
@@ -731,15 +770,15 @@ export function SupplierDetailPageView({ model }: SupplierDetailPageViewProps) {
         isOpen={deleteSupplierConfirm}
         onClose={cancelDeleteSupplier}
         onConfirm={() => void handleDeleteSupplier()}
-        title="Удалить поставщика"
-        message={`Поставщик «${supplier.legalName}» будет удалён вместе с ведомостью и реквизитами. Действие необратимо. Продолжить?`}
-        confirmText="Удалить поставщика"
+        title="Удалить поставщика в корзину"
+        message={`Поставщик «${supplier.legalName}» будет перемещён в корзину: скроется из списка и карточки. Восстановление невозможно, через 30 дней — безвозвратное удаление вместе с ведомостью и реквизитами. Продолжить?`}
+        confirmText="Удалить в корзину"
         variant="danger"
         closeOnConfirm={false}
         confirmLoading={deletingSupplier}
       />
 
-      {canEdit ? (
+      {canDeleteSupplier ? (
         <div className={styles.dangerZoneRow}>
           <button
             type="button"
@@ -747,7 +786,7 @@ export function SupplierDetailPageView({ model }: SupplierDetailPageViewProps) {
             className={listStyles.rowActionBtn}
             onClick={askDeleteSupplier}
             disabled={loading}
-            title="Удалить поставщика вместе с ведомостью"
+            title="Удалить поставщика в корзину (только суперадмин)"
           >
             Удалить поставщика
           </button>

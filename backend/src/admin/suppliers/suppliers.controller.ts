@@ -57,6 +57,28 @@ export class SuppliersController {
     return this.suppliers.getSummary(query);
   }
 
+  /** Число поставщиков в корзине (для бейджа) — только супер-админ. */
+  @Get('trash/count')
+  @Roles('SUPER_ADMIN')
+  trashCount() {
+    return this.suppliers.trashCount();
+  }
+
+  /** Корзина поставщиков: удалённые карточки с информацией об удалении. Без восстановления. */
+  @Get('trash')
+  @Roles('SUPER_ADMIN')
+  findTrash(
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.suppliers.findTrash({
+      search,
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+    });
+  }
+
   /** Карточка поставщика: реквизиты + итоги ведомости. */
   @Get(':id')
   getDetail(@Param('id') id: string) {
@@ -69,14 +91,18 @@ export class SuppliersController {
     return this.suppliers.create(dto);
   }
 
+  /** Правка карточки поставщика — только супер-админ (создавать может любой редактор раздела). */
   @Patch(':id')
+  @Roles('SUPER_ADMIN')
   update(@Param('id') id: string, @Body() dto: SaveSupplierDto) {
     return this.suppliers.update(id, dto);
   }
 
+  /** Удаление поставщика в корзину — только супер-админ. */
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.suppliers.remove(id);
+  @Roles('SUPER_ADMIN')
+  remove(@Param('id') id: string, @Req() req: RequestWithUser) {
+    return this.suppliers.remove(id, { id: req.user?.id, role: req.user?.role });
   }
 
   /** Ведомость расчётов: счета (начисления) и оплаты поставщика. */
@@ -122,7 +148,9 @@ export class SuppliersController {
     return this.suppliers.createRequisite(id, dto);
   }
 
+  /** Правка блока реквизитов — только супер-админ (добавлять новые может любой редактор раздела). */
   @Patch('requisites/:requisiteId')
+  @Roles('SUPER_ADMIN')
   updateRequisite(
     @Param('requisiteId') requisiteId: string,
     @Body() dto: SaveSupplierRequisiteDto,
@@ -130,7 +158,9 @@ export class SuppliersController {
     return this.suppliers.updateRequisite(requisiteId, dto);
   }
 
+  /** Удаление блока реквизитов — только супер-админ (добавлять новые может любой редактор раздела). */
   @Delete('requisites/:requisiteId')
+  @Roles('SUPER_ADMIN')
   deleteRequisite(@Param('requisiteId') requisiteId: string) {
     return this.suppliers.deleteRequisite(requisiteId);
   }

@@ -103,6 +103,7 @@ model User {
   complexObjectHistory                    ComplexObjectHistory[]                    @relation("ComplexObjectHistoryChangedBy")
   officeHistory                           OfficeHistory[]                           @relation("OfficeHistoryChangedBy")
   supplierLedgerEntriesCreated            SupplierLedgerEntry[]                     @relation("SupplierLedgerEntryCreatedBy")
+  suppliersDeleted                        Supplier[]                                @relation("SupplierDeletedBy")
   supplierPriceListSnapshotsUploaded      SupplierPriceListSnapshot[]               @relation("SupplierPriceListUploadedBy")
   taskHistory                             TaskHistory[]                             @relation("TaskHistoryChangedBy")
   customerHistory                         CustomerHistory[]                         @relation("CustomerHistoryChangedBy")
@@ -1780,8 +1781,13 @@ model Supplier {
   lastSyncAt             DateTime?
   openingBalance         Decimal?                      @db.Decimal(14, 2) // Сальдо начальное (+ = должны поставщику, − = переплата)
   openingBalanceDate     DateTime? // Дата, на которую зафиксировано сальдо начальное
+  /// Мягкое удаление в корзину (по аналогии с ДП): дата удаления; null — активен.
+  deletedAt              DateTime?
+  /// Кто удалил поставщика в корзину.
+  deletedById            String?
   createdAt              DateTime                      @default(now())
   updatedAt              DateTime                      @updatedAt
+  deletedBy              User?                         @relation("SupplierDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
   products               ProductSupplier[]
   syncLogs               SupplierSyncLog[]
   requisites             SupplierRequisite[]

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
+import { useAuth } from '@/features/auth/context/AuthContext';
 import {
   type AdminSupplier,
   type AdminSupplierSummaryRow,
@@ -11,6 +12,7 @@ import {
   createSupplier,
   getSupplierDetail,
   getSuppliersSummary,
+  getSuppliersTrashCount,
   updateSupplier,
 } from '@/shared/api/admin-suppliers';
 
@@ -54,6 +56,12 @@ export type SuppliersPageModel = {
   saving: boolean;
   handleSave: (params: SaveSupplierParams) => Promise<void>;
   canEdit: boolean;
+  /** Корзина поставщиков — только супер-админ. */
+  isSuperAdmin: boolean;
+  trashOpen: boolean;
+  setTrashOpen: (value: boolean) => void;
+  trashCount: number;
+  refreshTrashCount: () => Promise<void>;
 };
 
 type PersistedFilters = {
@@ -93,6 +101,8 @@ function isLimit(value: unknown): value is SuppliersPageLimit {
 /** Сводный список поставщиков — итоговая вкладка раздела (аналог «Итого» таблицы). */
 export function useSuppliersPage(): SuppliersPageModel {
   const { canEdit } = useAdminSectionCanEdit();
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
   const [rows, setRows] = useState<AdminSupplierSummaryRow[]>([]);
   const [totals, setTotals] = useState<AdminSupplierSummaryTotals | null>(null);
@@ -215,7 +225,8 @@ export function useSuppliersPage(): SuppliersPageModel {
 
   const openEditModal = useCallback(
     (supplierId: string) => {
-      if (!canEdit) return;
+      // Правка карточки поставщика — только супер-админ; создание открыто всем редакторам.
+      if (!isSuperAdmin) return;
       // В сводной строке нет части полей карточки — подтягиваем полную.
       void (async () => {
         try {
@@ -226,10 +237,27 @@ export function useSuppliersPage(): SuppliersPageModel {
         }
       })();
     },
-    [canEdit]
+    [isSuperAdmin]
   );
 
   const closeModal = useCallback(() => setEditSupplier(undefined), []);
+
+  // Корзина (супер-админ): счётчик для бейджа кнопки.
+  const [trashOpen, setTrashOpen] = useState(false);
+  const [trashCount, setTrashCount] = useState(0);
+  const refreshTrashCount = useCallback(async () => {
+    if (!isSuperAdmin) return;
+    try {
+      const res = await getSuppliersTrashCount();
+      setTrashCount(res.count);
+    } catch {
+      /* счётчик не критичен — кнопку показываем и без него */
+    }
+  }, [isSuperAdmin]);
+
+  useEffect(() => {
+    void refreshTrashCount();
+  }, [refreshTrashCount]);
 
   const handleSave = useCallback(
     async (params: SaveSupplierParams) => {
@@ -279,5 +307,10 @@ export function useSuppliersPage(): SuppliersPageModel {
     saving,
     handleSave,
     canEdit,
+    isSuperAdmin,
+    trashOpen,
+    setTrashOpen,
+    trashCount,
+    refreshTrashCount,
   };
 }

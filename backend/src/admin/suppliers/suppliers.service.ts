@@ -11,11 +11,13 @@ import { SaveSupplierDto } from './dto/save-supplier.dto';
 import { SaveSupplierRequisiteDto } from './dto/save-requisite.dto';
 import {
   SUPPLIER_BALANCE_STATUS,
+  USER_BRIEF_SELECT,
   balanceStatus,
   parseDateOrThrow,
   roundMoney,
   serializeRequisite,
   serializeSupplier,
+  userName,
 } from './suppliers-serialize';
 
 /** Карточка поставщика: сводный список сальдо, реквизиты, сама карточка.
@@ -23,6 +25,11 @@ import {
 @Injectable()
 export class SuppliersService {
   constructor(private readonly prisma: PrismaService) {}
+
+  /** Корзина поставщиков: хранение 30 дней, затем безвозвратное удаление (как в ДП). */
+  static readonly TRASH_RETENTION_DAYS = 30;
+  private static readonly TRASH_RETENTION_MS =
+    SuppliersService.TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
 
   // ---------- Сводный список (итоговая вкладка) ----------
 
@@ -38,16 +45,19 @@ export class SuppliersService {
     const limit = Math.min(Math.max(params.limit ?? 50, 1), 200);
     const search = params.search?.trim();
 
-    const where: Prisma.SupplierWhereInput = search
-      ? {
-          OR: [
-            { legalName: { contains: search, mode: 'insensitive' } },
-            { commercialName: { contains: search, mode: 'insensitive' } },
-            { name: { contains: search, mode: 'insensitive' } },
-            { inn: { contains: search, mode: 'insensitive' } },
-          ],
-        }
-      : {};
+    const where: Prisma.SupplierWhereInput = {
+      deletedAt: null,
+      ...(search
+        ? {
+            OR: [
+              { legalName: { contains: search, mode: 'insensitive' } },
+              { commercialName: { contains: search, mode: 'insensitive' } },
+              { name: { contains: search, mode: 'insensitive' } },
+              { inn: { contains: search, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    };
 
     // Поставщиков немного (десятки) — агрегаты ведомости берём одним groupBy,
     // сальдо считаем в памяти и уже по нему фильтруем/сортируем/режем страницу.
@@ -161,7 +171,7 @@ export class SuppliersService {
       where: { id },
       include: { requisites: { orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] } },
     });
-    if (!supplier) throw new NotFoundException('Поставщик не найден');
+    if (!supplier || supplier.deletedAt) throw new NotFoundException('Поставщик не найден');
 
     const [ledgerStats, productsCount] = await Promise.all([
       this.prisma.supplierLedgerEntry.aggregate({
@@ -210,7 +220,7 @@ export class SuppliersService {
   async update(id: string, dto: SaveSupplierDto) {
     assertLegalName(dto.legalName);
     const existing = await this.prisma.supplier.findUnique({ where: { id } });
-    if (!existing) throw new NotFoundException('Поставщик не найден');
+    if (!existing || existing.deletedAt) throw new NotFoundException('Поставщик не найден');
     const nextInn = normalizeOptionalText(dto.inn);
     if (nextInn !== undefined && nextInn !== existing.inn) {
       await this.assertInnFree(nextInn);
@@ -239,9 +249,12 @@ export class SuppliersService {
     return serializeSupplier(updated);
   }
 
-  async remove(id: string) {
+  /** Удаление в корзину (супер-админ): записи ведомости и реквизиты остаются,
+   *  из сводного списка и карточки поставщик исчезает. Через 30 дней — чистка. */
+  async remove(id: string, actor: { id?: string; role?: string } = {}) {
     const supplier = await this.prisma.supplier.findUnique({ where: { id } });
     if (!supplier) throw new NotFoundException('Поставщик не найден');
+    if (supplier.deletedAt) throw new ConflictException('Поставщик уже удалён в корзину');
 
     const productsCount = await this.prisma.productSupplier.count({ where: { supplierId: id } });
     if (productsCount > 0) {
@@ -250,8 +263,130 @@ export class SuppliersService {
       );
     }
 
-    await this.prisma.supplier.delete({ where: { id } });
+    await this.prisma.supplier.update({
+      where: { id },
+      data: {
+        deletedAt: new Date(),
+        deletedById: actor.id ?? null,
+      },
+    });
     return { deleted: true };
+  }
+
+  // ---------- Корзина (только супер-админ) ----------
+
+  /** Корзина поставщиков: кто удалил, когда, безвозвратное удаление когда.
+   *  Без восстановления — как в корзине ДП. */
+  async findTrash(params: { search?: string; page?: number; limit?: number }) {
+    await this.purgeExpiredTrash();
+    const page = Math.max(1, params.page ?? 1);
+    const limit = Math.min(Math.max(params.limit ?? 15, 1), 50);
+    const search = params.search?.trim();
+
+    const where: Prisma.SupplierWhereInput = {
+      deletedAt: { not: null },
+      ...(search
+        ? {
+            OR: [
+              { legalName: { contains: search, mode: 'insensitive' } },
+              { commercialName: { contains: search, mode: 'insensitive' } },
+              { name: { contains: search, mode: 'insensitive' } },
+              { inn: { contains: search, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    };
+
+    const [total, suppliers] = await Promise.all([
+      this.prisma.supplier.count({ where }),
+      this.prisma.supplier.findMany({
+        where,
+        orderBy: { deletedAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: { deletedBy: { select: USER_BRIEF_SELECT } },
+      }),
+    ]);
+
+    const ids = suppliers.map((s) => s.id);
+    const [ledgerGroups, requisiteCounts, entryCounts] = ids.length
+      ? await Promise.all([
+          this.prisma.supplierLedgerEntry.groupBy({
+            by: ['supplierId'],
+            where: { supplierId: { in: ids } },
+            _sum: { amount: true, payment: true },
+          }),
+          this.prisma.supplierRequisite.groupBy({
+            by: ['supplierId'],
+            where: { supplierId: { in: ids } },
+            _count: { _all: true },
+          }),
+          this.prisma.supplierLedgerEntry.groupBy({
+            by: ['supplierId'],
+            where: { supplierId: { in: ids } },
+            _count: { _all: true },
+          }),
+        ])
+      : [[], [], []];
+
+    const sumsById = new Map(ledgerGroups.map((g) => [g.supplierId, g]));
+    const requisiteCountById = new Map(requisiteCounts.map((g) => [g.supplierId, g._count._all]));
+    const entryCountById = new Map(entryCounts.map((g) => [g.supplierId, g._count._all]));
+
+    return {
+      data: suppliers.map((supplier) => {
+        const stats = sumsById.get(supplier.id);
+        const amountSum = roundMoney(Number(stats?._sum.amount ?? 0));
+        const paymentSum = roundMoney(Number(stats?._sum.payment ?? 0));
+        const openingBalance =
+          supplier.openingBalance != null ? Number(supplier.openingBalance) : 0;
+        const deletedAt = supplier.deletedAt as Date;
+        return {
+          id: supplier.id,
+          legalName: supplier.legalName,
+          commercialName: supplier.commercialName,
+          name: supplier.commercialName || supplier.legalName,
+          inn: supplier.inn,
+          requisiteCount: requisiteCountById.get(supplier.id) ?? 0,
+          entriesCount: entryCountById.get(supplier.id) ?? 0,
+          openingBalance: supplier.openingBalance != null ? roundMoney(openingBalance) : null,
+          amountSum,
+          paymentSum,
+          balance: roundMoney(openingBalance + amountSum - paymentSum),
+          deletedBy: userName(supplier.deletedBy),
+          deletedAt: deletedAt.toISOString(),
+          permanentDeleteAt: new Date(
+            deletedAt.getTime() + SuppliersService.TRASH_RETENTION_MS,
+          ).toISOString(),
+        };
+      }),
+      total,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+      trashRetentionDays: SuppliersService.TRASH_RETENTION_DAYS,
+    };
+  }
+
+  /** Число поставщиков в корзине (для бейджа кнопки). */
+  async trashCount() {
+    await this.purgeExpiredTrash();
+    const count = await this.prisma.supplier.count({ where: { deletedAt: { not: null } } });
+    return { count };
+  }
+
+  /** Безвозвратно удаляет поставщиков из корзины старше 30 дней — вместе с
+   *  ведомостью и реквизитами (каскад). Вызывается при обращении к корзине. */
+  private async purgeExpiredTrash(): Promise<void> {
+    const cutoff = new Date(Date.now() - SuppliersService.TRASH_RETENTION_MS);
+    const expired = await this.prisma.supplier.findMany({
+      where: { deletedAt: { lt: cutoff } },
+      select: { id: true },
+    });
+    if (expired.length === 0) return;
+    await this.prisma.supplier.deleteMany({
+      where: { id: { in: expired.map((row) => row.id) } },
+    });
   }
 
   private async assertInnFree(inn?: string | null) {
@@ -331,9 +466,9 @@ export class SuppliersService {
   private async assertSupplierExists(supplierId: string) {
     const supplier = await this.prisma.supplier.findUnique({
       where: { id: supplierId },
-      select: { id: true },
+      select: { deletedAt: true },
     });
-    if (!supplier) throw new NotFoundException('Поставщик не найден');
+    if (!supplier || supplier.deletedAt) throw new NotFoundException('Поставщик не найден');
   }
 }
 

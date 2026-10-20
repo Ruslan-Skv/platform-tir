@@ -239,6 +239,58 @@ export async function deleteSupplier(supplierId: string): Promise<{ deleted: boo
   return res.json();
 }
 
+/** Строка корзины: удалённый поставщик с информацией об удалении. */
+export type AdminSupplierTrashItem = {
+  id: string;
+  legalName: string;
+  commercialName: string | null;
+  name: string;
+  inn: string | null;
+  requisiteCount: number;
+  entriesCount: number;
+  openingBalance: number | null;
+  amountSum: number;
+  paymentSum: number;
+  balance: number;
+  deletedBy: string | null;
+  deletedAt: string;
+  permanentDeleteAt: string;
+};
+
+export type AdminSupplierTrashResponse = {
+  data: AdminSupplierTrashItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  trashRetentionDays: number;
+};
+
+/** Корзина поставщиков (супер-админ): удалённые карточки, без восстановления. */
+export async function getSuppliersTrash(params?: {
+  search?: string;
+  page?: number;
+  limit?: number;
+}): Promise<AdminSupplierTrashResponse> {
+  const search = new URLSearchParams();
+  if (params?.search) search.set('search', params.search);
+  search.set('page', String(params?.page ?? 1));
+  search.set('limit', String(params?.limit ?? 15));
+  const res = await apiFetch(`${API_URL}/admin/suppliers/trash?${search}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) await throwApiError(res, 'Не удалось загрузить корзину поставщиков');
+  return res.json();
+}
+
+export async function getSuppliersTrashCount(): Promise<{ count: number }> {
+  const res = await apiFetch(`${API_URL}/admin/suppliers/trash/count`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) await throwApiError(res, 'Не удалось загрузить счётчик корзины');
+  return res.json();
+}
+
 /** Ведомость расчётов поставщика: счета (начисления) и оплаты. */
 export async function getSupplierLedger(
   supplierId: string,

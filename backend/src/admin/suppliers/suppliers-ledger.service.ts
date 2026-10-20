@@ -296,9 +296,9 @@ export class SuppliersLedgerService {
   private async assertSupplierExists(supplierId: string) {
     const supplier = await this.prisma.supplier.findUnique({
       where: { id: supplierId },
-      select: { id: true },
+      select: { deletedAt: true },
     });
-    if (!supplier) throw new NotFoundException('Поставщик не найден');
+    if (!supplier || supplier.deletedAt) throw new NotFoundException('Поставщик не найден');
   }
 
   private async assertRequisiteBelongsToSupplier(supplierId: string, requisiteId: string) {
