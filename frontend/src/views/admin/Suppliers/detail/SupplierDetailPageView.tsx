@@ -27,10 +27,12 @@ import {
   formatSupplierMoney,
   formatVatRate,
   getLedgerRowStatus,
+  supplierOrderLinkLabel,
 } from '../suppliers-page.utils';
 import styles from './SupplierDetailPage.module.css';
 import type { SupplierDetailPageModel } from './hooks/useSupplierDetailPage';
-import { LedgerEntryModal } from './modals/LedgerEntryModal';
+import { InvoiceEntryModal } from './modals/InvoiceEntryModal';
+import { PaymentEntryModal } from './modals/PaymentEntryModal';
 import { RequisiteModal } from './modals/RequisiteModal';
 
 type SupplierDetailPageViewProps = {
@@ -143,9 +145,10 @@ export function SupplierDetailPageView({ model }: SupplierDetailPageViewProps) {
     resetLedgerFilters,
     tab,
     setTab,
-    entryModalOpen,
+    entryModalKind,
     editingEntry,
-    openCreateEntryModal,
+    openCreateInvoiceModal,
+    openCreatePaymentModal,
     openEditEntryModal,
     closeEntryModal,
     entrySubmitting,
@@ -178,6 +181,7 @@ export function SupplierDetailPageView({ model }: SupplierDetailPageViewProps) {
     deletingSupplier,
     handleDeleteSupplier,
     canEdit,
+    canManagePayments,
   } = model;
 
   const ledgerColumns = useMemo(
@@ -191,7 +195,16 @@ export function SupplierDetailPageView({ model }: SupplierDetailPageViewProps) {
       {
         key: 'documentNo',
         title: 'Документ (№ счёта)',
-        render: (item: AdminSupplierLedgerEntry) => item.documentNo || '—',
+        render: (item: AdminSupplierLedgerEntry) => (
+          <div className={dpStyles.basisCell}>
+            {item.documentNo || '—'}
+            {item.orderLinks.map((link) => (
+              <span key={link.id} className={dpStyles.basisSubline}>
+                ↳ {supplierOrderLinkLabel(link)} · {formatSupplierMoney(link.amount)}
+              </span>
+            ))}
+          </div>
+        ),
       },
       {
         key: 'amount',
@@ -205,13 +218,16 @@ export function SupplierDetailPageView({ model }: SupplierDetailPageViewProps) {
       },
       {
         key: 'payment',
-        title: 'Оплата',
-        render: (item: AdminSupplierLedgerEntry) =>
-          item.payment != null ? (
-            <span className={listStyles.balanceOverpay}>{formatSupplierMoney(item.payment)}</span>
+        title: 'Оплачено',
+        render: (item: AdminSupplierLedgerEntry) => {
+          // Счёт: сколько из него закрыто оплатами (FIFO); строка-оплата: её сумма.
+          const value = item.amount != null ? item.paidAmount : item.payment;
+          return value != null && value !== 0 ? (
+            <span className={listStyles.balanceOverpay}>{formatSupplierMoney(value)}</span>
           ) : (
             '—'
-          ),
+          );
+        },
       },
       {
         key: 'status',
@@ -260,32 +276,36 @@ export function SupplierDetailPageView({ model }: SupplierDetailPageViewProps) {
         key: 'actions',
         title: '',
         width: '90px',
-        render: (item: AdminSupplierLedgerEntry) => (
-          <span className={listStyles.rowActions}>
-            <button
-              type="button"
-              className={listStyles.rowActionBtn}
-              disabled={!canEdit || ledgerLoading}
-              onClick={() => openEditEntryModal(item)}
-              title={canEdit ? 'Изменить запись' : 'Нет прав на изменение'}
-            >
-              ✏️
-            </button>
-            <button
-              type="button"
-              data-admin-mutation
-              className={listStyles.rowActionBtn}
-              disabled={!canEdit || ledgerLoading}
-              onClick={() => askDeleteEntry(item.id)}
-              title="Удалить запись"
-            >
-              🗑
-            </button>
-          </span>
-        ),
+        render: (item: AdminSupplierLedgerEntry) => {
+          // Счёт правит любой редактор раздела; строку оплаты — только супер-админ.
+          const rowEditable = item.amount != null ? canEdit : canManagePayments;
+          return (
+            <span className={listStyles.rowActions}>
+              <button
+                type="button"
+                className={listStyles.rowActionBtn}
+                disabled={!rowEditable || ledgerLoading}
+                onClick={() => openEditEntryModal(item)}
+                title={rowEditable ? 'Изменить запись' : 'Нет прав на изменение'}
+              >
+                ✏️
+              </button>
+              <button
+                type="button"
+                data-admin-mutation
+                className={listStyles.rowActionBtn}
+                disabled={!rowEditable || ledgerLoading}
+                onClick={() => askDeleteEntry(item.id)}
+                title="Удалить запись"
+              >
+                🗑
+              </button>
+            </span>
+          );
+        },
       },
     ],
-    [canEdit, ledgerLoading, openEditEntryModal, askDeleteEntry]
+    [canEdit, canManagePayments, ledgerLoading, openEditEntryModal, askDeleteEntry]
   );
 
   if (!supplier && loading) {
@@ -362,16 +382,36 @@ export function SupplierDetailPageView({ model }: SupplierDetailPageViewProps) {
         </div>
         <div className={`${cdChrome.headerButtonsRow} ${cdHub.contractsListHeaderActions}`}>
           {tab === 'ledger' ? (
-            <button
-              data-admin-mutation
-              type="button"
-              className={cdChrome.contractsListHeaderAddBtn}
-              disabled={ledgerLoading || !canEdit}
-              onClick={openCreateEntryModal}
-              title={canEdit ? 'Счёт или оплата по поставщику' : 'Нет прав на изменение раздела'}
-            >
-              + Запись
-            </button>
+            <>
+              <button
+                data-admin-mutation
+                type="button"
+                className={cdChrome.contractsListHeaderAddBtn}
+                disabled={ledgerLoading || !canEdit}
+                onClick={openCreateInvoiceModal}
+                title={
+                  canEdit
+                    ? 'Счёт от поставщика — вносят ведущие специалисты'
+                    : 'Нет прав на изменение раздела'
+                }
+              >
+                + Счёт
+              </button>
+              <button
+                data-admin-mutation
+                type="button"
+                className={cdChrome.contractsListHeaderAddBtn}
+                disabled={ledgerLoading || !canManagePayments}
+                onClick={openCreatePaymentModal}
+                title={
+                  canManagePayments
+                    ? 'Оплата по счетам (одной суммой) — гасит самые ранние счета'
+                    : 'Проводить оплаты может только супер-админ'
+                }
+              >
+                + Оплата
+              </button>
+            </>
           ) : (
             <button
               data-admin-mutation
@@ -568,8 +608,17 @@ export function SupplierDetailPageView({ model }: SupplierDetailPageViewProps) {
         </div>
       )}
 
-      <LedgerEntryModal
-        open={entryModalOpen}
+      <InvoiceEntryModal
+        open={entryModalKind === 'invoice'}
+        onClose={closeEntryModal}
+        initial={editingEntry}
+        requisites={requisites}
+        submitting={entrySubmitting}
+        onSubmit={handleSaveEntry}
+      />
+
+      <PaymentEntryModal
+        open={entryModalKind === 'payment'}
         onClose={closeEntryModal}
         initial={editingEntry}
         requisites={requisites}

@@ -88,17 +88,27 @@ export class SuppliersController {
     @Body() dto: SaveSupplierLedgerEntryDto,
     @Req() req: RequestWithUser,
   ) {
-    return this.suppliers.createEntry(id, dto, req.user?.id);
+    return this.suppliers.createEntry(id, dto, {
+      id: req.user?.id,
+      role: req.user?.role,
+    });
   }
 
   @Patch('ledger/:entryId')
-  updateEntry(@Param('entryId') entryId: string, @Body() dto: SaveSupplierLedgerEntryDto) {
-    return this.suppliers.updateEntry(entryId, dto);
+  updateEntry(
+    @Param('entryId') entryId: string,
+    @Body() dto: SaveSupplierLedgerEntryDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.suppliers.updateEntry(entryId, dto, {
+      id: req.user?.id,
+      role: req.user?.role,
+    });
   }
 
   @Delete('ledger/:entryId')
-  deleteEntry(@Param('entryId') entryId: string) {
-    return this.suppliers.deleteEntry(entryId);
+  deleteEntry(@Param('entryId') entryId: string, @Req() req: RequestWithUser) {
+    return this.suppliers.deleteEntry(entryId, { role: req.user?.role });
   }
 
   /** Банковские реквизиты поставщика (блоков может быть несколько). */

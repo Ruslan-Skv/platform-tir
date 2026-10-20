@@ -110,6 +110,21 @@ export type AdminSupplierDetailResponse = {
   stats: AdminSupplierStats;
 };
 
+/** Заказ (пакет договора), на который разнесена часть счёта поставщика. */
+export type AdminSupplierLedgerOrderLink = {
+  id: string;
+  packageId: string;
+  /** Часть суммы счёта, отнесённая на заказ, ₽. */
+  amount: number;
+  package: {
+    id: string;
+    kind: string;
+    title: string | null;
+    status?: string;
+    formData: Record<string, unknown>;
+  };
+};
+
 /** Строка ведомости расчётов: счёт (начисление) и/или оплата. */
 export type AdminSupplierLedgerEntry = {
   id: string;
@@ -122,9 +137,13 @@ export type AdminSupplierLedgerEntry = {
   documentNo: string | null;
   amount: number | null;
   payment: number | null;
+  /** Сколько счёта закрыто оплатами (FIFO: оплаты гасят самые ранние счета), ₽. */
+  paidAmount: number;
   note: string | null;
   /** НДС: null — не указано, 0 — без НДС, 22 — 22%. */
   vatRate: number | null;
+  /** Разбивка счёта по заказам (пусто — счёт без разбивки, например мелочёвка). */
+  orderLinks: AdminSupplierLedgerOrderLink[];
   createdByName: string | null;
   createdAt: string;
   updatedAt: string;
@@ -236,6 +255,12 @@ export async function getSupplierLedger(
   return res.json();
 }
 
+export type SaveSupplierLedgerOrderLinkParams = {
+  packageId: string;
+  /** Часть суммы счёта, отнесённая на заказ, ₽. */
+  amount: number;
+};
+
 export type SaveSupplierLedgerEntryParams = {
   date: string;
   documentNo?: string;
@@ -244,6 +269,8 @@ export type SaveSupplierLedgerEntryParams = {
   note?: string;
   vatRate?: number | null;
   requisiteId?: string | null;
+  /** Разбивка счёта по заказам: undefined — не менять, [] — снять разбивку. */
+  orderLinks?: SaveSupplierLedgerOrderLinkParams[];
 };
 
 export async function createSupplierLedgerEntry(

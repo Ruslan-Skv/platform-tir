@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
 import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
+import { useAuth } from '@/features/auth/context/AuthContext';
 import {
   type AdminSupplier,
   type AdminSupplierLedgerEntry,
@@ -29,6 +30,9 @@ const LEDGER_LIMIT = 50;
 const DETAIL_TAB_STORAGE_KEY = 'admin_supplier_detail_tab_v1';
 
 export type SupplierDetailTab = 'ledger' | 'requisites';
+
+/** Какая модалка записи ведомости открыта: счёт или оплата. */
+export type EntryModalKind = 'invoice' | 'payment' | null;
 
 export type SupplierDetailPageModel = {
   supplier: AdminSupplier | null;
@@ -57,9 +61,10 @@ export type SupplierDetailPageModel = {
   setTab: (value: SupplierDetailTab) => void;
 
   // Модалки
-  entryModalOpen: boolean;
+  entryModalKind: EntryModalKind;
   editingEntry: AdminSupplierLedgerEntry | null;
-  openCreateEntryModal: () => void;
+  openCreateInvoiceModal: () => void;
+  openCreatePaymentModal: () => void;
   openEditEntryModal: (entry: AdminSupplierLedgerEntry) => void;
   closeEntryModal: () => void;
   entrySubmitting: boolean;
@@ -98,6 +103,8 @@ export type SupplierDetailPageModel = {
   handleDeleteSupplier: () => Promise<void>;
 
   canEdit: boolean;
+  /** Оплаты по счетам проводит только супер-админ (счета — ведущие специалисты). */
+  canManagePayments: boolean;
 };
 
 /** Карточка поставщика: баланс, ведомость счетов/оплат и блоки банковских реквизитов. */
@@ -106,6 +113,8 @@ export function useSupplierDetailPage(): SupplierDetailPageModel {
   const routeParams = useParams();
   const supplierId = (routeParams.id as string) ?? '';
   const { canEdit } = useAdminSectionCanEdit();
+  const { user } = useAuth();
+  const canManagePayments = user?.role === 'SUPER_ADMIN';
 
   const [supplier, setSupplier] = useState<AdminSupplier | null>(null);
   const [requisites, setRequisites] = useState<AdminSupplierRequisite[]>([]);
@@ -218,28 +227,39 @@ export function useSupplierDetailPage(): SupplierDetailPageModel {
   }, []);
 
   // --- Записи ведомости ---
-  const [entryModalOpen, setEntryModalOpen] = useState(false);
+  const [entryModalKind, setEntryModalKind] = useState<EntryModalKind>(null);
   const [editingEntry, setEditingEntry] = useState<AdminSupplierLedgerEntry | null>(null);
   const [entrySubmitting, setEntrySubmitting] = useState(false);
   const [deleteEntryId, setDeleteEntryId] = useState<string | null>(null);
   const [deletingEntry, setDeletingEntry] = useState(false);
 
-  const openCreateEntryModal = useCallback(() => {
+  const openCreateInvoiceModal = useCallback(() => {
     if (!canEdit) return;
     setEditingEntry(null);
-    setEntryModalOpen(true);
+    setEntryModalKind('invoice');
   }, [canEdit]);
+
+  const openCreatePaymentModal = useCallback(() => {
+    if (!canManagePayments) return;
+    setEditingEntry(null);
+    setEntryModalKind('payment');
+  }, [canManagePayments]);
 
   const openEditEntryModal = useCallback(
     (entry: AdminSupplierLedgerEntry) => {
       if (!canEdit) return;
+      // Оплату может править только супер-админ; счёт — любой с правом редактирования.
+      if (entry.amount == null && !canManagePayments) return;
       setEditingEntry(entry);
-      setEntryModalOpen(true);
+      setEntryModalKind(entry.amount != null ? 'invoice' : 'payment');
     },
-    [canEdit]
+    [canEdit, canManagePayments]
   );
 
-  const closeEntryModal = useCallback(() => setEntryModalOpen(false), []);
+  const closeEntryModal = useCallback(() => {
+    setEntryModalKind(null);
+    setEditingEntry(null);
+  }, []);
 
   const handleSaveEntry = useCallback(
     async (params: SaveSupplierLedgerEntryParams) => {
@@ -250,7 +270,8 @@ export function useSupplierDetailPage(): SupplierDetailPageModel {
         } else {
           await createSupplierLedgerEntry(supplierId, params);
         }
-        setEntryModalOpen(false);
+        setEntryModalKind(null);
+        setEditingEntry(null);
         await loadAll();
       } finally {
         setEntrySubmitting(false);
@@ -398,9 +419,10 @@ export function useSupplierDetailPage(): SupplierDetailPageModel {
     resetLedgerFilters,
     tab,
     setTab,
-    entryModalOpen,
+    entryModalKind,
     editingEntry,
-    openCreateEntryModal,
+    openCreateInvoiceModal,
+    openCreatePaymentModal,
     openEditEntryModal,
     closeEntryModal,
     entrySubmitting,
@@ -433,5 +455,6 @@ export function useSupplierDetailPage(): SupplierDetailPageModel {
     deletingSupplier,
     handleDeleteSupplier,
     canEdit,
+    canManagePayments,
   };
 }

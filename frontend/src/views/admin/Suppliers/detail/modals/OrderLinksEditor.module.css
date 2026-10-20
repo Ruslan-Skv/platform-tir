@@ -1,0 +1,76 @@
+/* Разбивка счёта поставщика по заказам внутри модалки счёта. */
+
+.orderLinkList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.orderLinkRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px auto;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: 10px;
+  background: var(--admin-surface-soft, #f9fafb);
+}
+
+.orderLinkName {
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--admin-text, #111827);
+  overflow-wrap: anywhere;
+}
+
+.orderLinkMeta {
+  display: block;
+  margin-top: 2px;
+  font-weight: 400;
+  font-size: var(--admin-font-size-xs, 12px);
+  color: var(--admin-text-secondary, #6b7280);
+}
+
+.orderLinkAmount {
+  width: 100%;
+  min-width: 0;
+}
+
+.orderLinkRemove {
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--admin-border, #e5e7eb);
+  background: var(--admin-surface, #fff);
+  color: var(--admin-text-secondary, #4b5563);
+  font-size: var(--admin-font-size-xs, 12px);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.orderLinkRemove:hover:not(:disabled) {
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+.orderLinkTotal {
+  margin: 8px 0 0;
+  font-size: var(--admin-font-size-xs, 12px);
+  color: var(--admin-text-secondary, #6b7280);
+}
+
+.orderLinkTotalOver {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .orderLinkRow {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .orderLinkAmount {
+    grid-column: 1 / -1;
+  }
+}

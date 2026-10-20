@@ -7,9 +7,23 @@ export const USER_BRIEF_SELECT = {
   lastName: true,
 } as const;
 
+/** Краткое представление заказа в разбивке счёта: formData нужен фронтенду для
+ *  подписи «заказчик · № договора» теми же хелперами, что и панель «Поиск заказа». */
+export const LEDGER_ORDER_PACKAGE_SELECT = {
+  id: true,
+  kind: true,
+  title: true,
+  status: true,
+  formData: true,
+} as const;
+
 export const LEDGER_ENTRY_INCLUDE = {
   requisite: true,
   createdBy: { select: USER_BRIEF_SELECT },
+  orderLinks: {
+    include: { package: { select: LEDGER_ORDER_PACKAGE_SELECT } },
+    orderBy: { createdAt: 'asc' as const },
+  },
 } satisfies Prisma.SupplierLedgerEntryInclude;
 
 export type SupplierLedgerEntryRow = Prisma.SupplierLedgerEntryGetPayload<{
@@ -102,8 +116,21 @@ export function serializeLedgerEntry(entry: SupplierLedgerEntryRow) {
     documentNo: entry.documentNo,
     amount: entry.amount != null ? roundMoney(Number(entry.amount)) : null,
     payment: entry.payment != null ? roundMoney(Number(entry.payment)) : null,
+    paidAmount: roundMoney(Number(entry.paidAmount ?? 0)),
     note: entry.note,
     vatRate: entry.vatRate != null ? Number(entry.vatRate) : null,
+    orderLinks: entry.orderLinks.map((link) => ({
+      id: link.id,
+      packageId: link.packageId,
+      amount: roundMoney(Number(link.amount)),
+      package: {
+        id: link.package.id,
+        kind: link.package.kind,
+        title: link.package.title,
+        status: link.package.status,
+        formData: link.package.formData,
+      },
+    })),
     createdByName: userName(entry.createdBy),
     createdAt: entry.createdAt.toISOString(),
     updatedAt: entry.updatedAt.toISOString(),

@@ -1,4 +1,9 @@
-import type { SupplierBalanceStatus } from '@/shared/api/admin-suppliers';
+import type { ContractDocumentPackage } from '@/shared/api/admin-contract-document-packages';
+import type {
+  AdminSupplierLedgerOrderLink,
+  SupplierBalanceStatus,
+} from '@/shared/api/admin-suppliers';
+import { packageSearchLabel } from '@/views/admin/CRM/shared/PackageOrderSearch';
 
 /** Сумма в рублях с копейками — сальдо поставщиков важны до копейки. */
 export function formatSupplierMoney(value: number | null | undefined): string {
@@ -35,20 +40,22 @@ export const LEDGER_ROW_STATUS_LABELS: Record<LedgerRowStatus, string> = {
   PAYMENT_ONLY: 'Оплата',
 };
 
-/** Статус строки ведомости: сравнение счёта и оплаты (как «ОПЛАЧЕН» в таблице,
- *  только вычисляется автоматически). */
+/** Статус строки ведомости: счёт сравнивается с закрытой оплатами суммой
+ *  (FIFO-распределение оплат по самым ранним счетам), отдельная оплата без
+ *  счёта — «Оплата» (аванс/переплата). */
 export function getLedgerRowStatus(entry: {
   amount: number | null;
   payment: number | null;
+  paidAmount?: number;
 }): LedgerRowStatus | null {
   const amount = entry.amount ?? 0;
-  const payment = entry.payment ?? 0;
+  const paid = entry.paidAmount ?? entry.payment ?? 0;
   if (amount > 0) {
-    if (payment >= amount) return 'PAID';
-    if (payment > 0) return 'PARTIAL';
+    if (paid >= amount - 0.005) return 'PAID';
+    if (paid > 0.005) return 'PARTIAL';
     return 'UNPAID';
   }
-  if (payment !== 0) return 'PAYMENT_ONLY';
+  if (entry.payment !== null && entry.payment !== 0) return 'PAYMENT_ONLY';
   return null;
 }
 
@@ -65,4 +72,10 @@ export function parseMoneyInput(value: string): number | null {
   if (!trimmed) return null;
   const parsed = Number(trimmed);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+/** Подпись заказа в разбивке счёта: «заказчик · №договора» — теми же хелперами,
+ *  что и панель «Поиск заказа» (читают только formData/title пакета). */
+export function supplierOrderLinkLabel(link: AdminSupplierLedgerOrderLink): string {
+  return packageSearchLabel(link.package as unknown as ContractDocumentPackage) || 'Заказ';
 }

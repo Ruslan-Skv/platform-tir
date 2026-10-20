@@ -1824,19 +1824,40 @@ model SupplierLedgerEntry {
   documentNo  String? // «№ 71 от 14 октября 2026 г.» — свободной строкой, как в таблице
   amount      Decimal? @db.Decimal(14, 2) // Сумма счёта (начисление)
   payment     Decimal? @db.Decimal(14, 2) // Оплата
+  paidAmount  Decimal  @default(0) @db.Decimal(14, 2) // Сколько счёта закрыто оплатами (FIFO — самые ранние счета)
   note        String?  @db.Text // Примечание (№ договора и т.п.)
   vatRate     Decimal? @db.Decimal(5, 2) // НДС: null — не указано, 0 — без НДС, 22 — 22%
   createdById String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  supplier  Supplier           @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-  requisite SupplierRequisite? @relation(fields: [requisiteId], references: [id], onDelete: SetNull)
-  createdBy User?              @relation("SupplierLedgerEntryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  supplier   Supplier                       @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  requisite  SupplierRequisite?             @relation(fields: [requisiteId], references: [id], onDelete: SetNull)
+  createdBy  User?                          @relation("SupplierLedgerEntryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  orderLinks SupplierLedgerEntryOrderLink[]
 
   @@index([supplierId, date])
   @@index([requisiteId])
   @@map("supplier_ledger_entries")
+}
+
+/// Разбивка счёта поставщика по заказам (договорам): один счёт можно разнести
+/// на несколько заказов — для будущего контроля рентабельности закупок.
+model SupplierLedgerEntryOrderLink {
+  id        String   @id @default(cuid())
+  entryId   String
+  packageId String
+  amount    Decimal  @db.Decimal(14, 2) // Часть суммы счёта, отнесённая на заказ
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  entry   SupplierLedgerEntry     @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  /// Заказ (пакет документов договора). Удалённые пакеты (deletedAt) не выбираются.
+  package ContractDocumentPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@unique([entryId, packageId])
+  @@index([packageId])
+  @@map("supplier_ledger_entry_order_links")
 }
 
 /// Категория сверки прайс-листа поставщика
@@ -3667,6 +3688,7 @@ model ContractDocumentPackage {
   concludedBellEvents       ContractConcludedBellEvent[]
   numberHolds               ContractDocumentNumberHold[]
   numberAssignments         ContractDocumentNumberAssignment[]
+  supplierLedgerOrderLinks  SupplierLedgerEntryOrderLink[]
 
   @@index([kind])
   @@index([createdAt])

@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -19,6 +20,9 @@ import {
   serializeRequisite,
   serializeSupplier,
 } from './suppliers-serialize';
+
+/** Кто внёс/изменил запись ведомости — для проверок ролей. */
+export type LedgerActor = { id?: string; role?: string } | undefined;
 
 /** Раздел «Поставщики»: реквизиты + ведомость расчётов (счета/оплаты) по каждому
  *  поставщику. Сальдо конечное = сальдо начальное + Σ счетов − Σ оплат. */
@@ -319,90 +323,199 @@ export class SuppliersService {
     };
   }
 
-  async createEntry(supplierId: string, dto: SaveSupplierLedgerEntryDto, currentUserId?: string) {
+  async createEntry(supplierId: string, dto: SaveSupplierLedgerEntryDto, actor: LedgerActor = {}) {
     await this.assertSupplierExists(supplierId);
     this.assertEntryAmounts(dto);
-    const data: Prisma.SupplierLedgerEntryCreateInput = {
-      supplier: { connect: { id: supplierId } },
-      date: parseDateOrThrow(dto.date, 'Дата записи'),
-      documentNo: dto.documentNo?.trim() || null,
-      amount: dto.amount ?? null,
-      payment: dto.payment ?? null,
-      note: dto.note?.trim() || null,
-      vatRate: dto.vatRate ?? null,
-      createdBy: currentUserId ? { connect: { id: currentUserId } } : undefined,
-      ...(dto.requisiteId
-        ? {
-            requisite: {
-              connect: {
-                id: await this.assertRequisiteBelongsToSupplier(supplierId, dto.requisiteId),
-              },
-            },
-          }
-        : {}),
-    };
-    const entry = await this.prisma.supplierLedgerEntry.create({
-      data,
-      include: LEDGER_ENTRY_INCLUDE,
+    this.assertCanManagePayments(dto.payment, actor.role);
+    this.assertOrderLinksAllowed(dto.amount, dto.orderLinks);
+    await this.assertOrderLinksValid(dto.amount, dto.orderLinks);
+    const requisiteId = dto.requisiteId
+      ? await this.assertRequisiteBelongsToSupplier(supplierId, dto.requisiteId)
+      : null;
+
+    const entry = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.supplierLedgerEntry.create({
+        data: {
+          supplierId,
+          requisiteId,
+          date: parseDateOrThrow(dto.date, 'Дата записи'),
+          documentNo: dto.documentNo?.trim() || null,
+          amount: dto.amount ?? null,
+          payment: dto.payment ?? null,
+          note: dto.note?.trim() || null,
+          vatRate: dto.vatRate ?? null,
+          ...(actor.id ? { createdById: actor.id } : {}),
+        },
+      });
+      await this.replaceOrderLinks(tx, created.id, dto.orderLinks);
+      await this.recalculatePaidAllocations(supplierId, tx);
+      return tx.supplierLedgerEntry.findUnique({
+        where: { id: created.id },
+        include: LEDGER_ENTRY_INCLUDE,
+      });
     });
+    if (!entry) throw new NotFoundException('Запись ведомости не найдена');
     return serializeLedgerEntry(entry);
   }
 
-  async updateEntry(entryId: string, dto: SaveSupplierLedgerEntryDto) {
-    const existing = await this.prisma.supplierLedgerEntry.findUnique({ where: { id: entryId } });
-    if (!existing) throw new NotFoundException('Запись ведомости не найдена');
+  async updateEntry(entryId: string, dto: SaveSupplierLedgerEntryDto, actor: LedgerActor = {}) {
+    const entry = await this.prisma.$transaction(async (tx) => {
+      const existing = await tx.supplierLedgerEntry.findUnique({ where: { id: entryId } });
+      if (!existing) throw new NotFoundException('Запись ведомости не найдена');
 
-    const merged = {
-      date: dto.date ?? existing.date.toISOString().slice(0, 10),
-      amount:
-        dto.amount !== undefined
-          ? dto.amount
-          : existing.amount != null
-            ? Number(existing.amount)
-            : undefined,
-      payment:
+      const nextPayment =
         dto.payment !== undefined
           ? dto.payment
-          : existing.payment != null
+          : existing.payment
             ? Number(existing.payment)
-            : undefined,
-    };
-    this.assertEntryAmounts(merged);
+            : null;
+      const nextAmount =
+        dto.amount !== undefined ? dto.amount : existing.amount ? Number(existing.amount) : null;
+      this.assertEntryAmounts({ amount: nextAmount, payment: nextPayment });
+      // Оплату (создание/изменение суммы) проводит только супер-админ; правка
+      // реквизитов счёта специалистом оплату не трогает и разрешена.
+      if (dto.payment !== undefined) {
+        this.assertCanManagePayments(nextPayment, actor.role);
+      }
 
-    const entry = await this.prisma.supplierLedgerEntry.update({
-      where: { id: entryId },
-      data: {
-        date: parseDateOrThrow(merged.date, 'Дата записи'),
-        documentNo: dto.documentNo !== undefined ? dto.documentNo.trim() || null : undefined,
-        amount: dto.amount !== undefined ? dto.amount : undefined,
-        payment: dto.payment !== undefined ? dto.payment : undefined,
-        note: dto.note !== undefined ? dto.note.trim() || null : undefined,
-        vatRate: dto.vatRate !== undefined ? dto.vatRate : undefined,
-        requisiteId:
-          dto.requisiteId !== undefined
-            ? dto.requisiteId
-              ? await this.assertRequisiteBelongsToSupplier(existing.supplierId, dto.requisiteId)
-              : null
-            : undefined,
-      },
-      include: LEDGER_ENTRY_INCLUDE,
+      const updated = await tx.supplierLedgerEntry.update({
+        where: { id: entryId },
+        data: {
+          date: dto.date ? parseDateOrThrow(dto.date, 'Дата записи') : undefined,
+          documentNo: dto.documentNo !== undefined ? dto.documentNo.trim() || null : undefined,
+          amount: dto.amount !== undefined ? dto.amount : undefined,
+          payment: dto.payment !== undefined ? dto.payment : undefined,
+          note: dto.note !== undefined ? dto.note.trim() || null : undefined,
+          vatRate: dto.vatRate !== undefined ? dto.vatRate : undefined,
+          requisiteId:
+            dto.requisiteId !== undefined
+              ? dto.requisiteId
+                ? await this.assertRequisiteBelongsToSupplier(existing.supplierId, dto.requisiteId)
+                : null
+              : undefined,
+        },
+      });
+      if (dto.orderLinks !== undefined) {
+        this.assertOrderLinksAllowed(
+          updated.amount != null ? Number(updated.amount) : null,
+          dto.orderLinks,
+        );
+        await this.assertOrderLinksValid(
+          updated.amount != null ? Number(updated.amount) : null,
+          dto.orderLinks,
+        );
+        await this.replaceOrderLinks(tx, entryId, dto.orderLinks);
+      }
+      await this.recalculatePaidAllocations(existing.supplierId, tx);
+      return tx.supplierLedgerEntry.findUnique({
+        where: { id: entryId },
+        include: LEDGER_ENTRY_INCLUDE,
+      });
     });
+    if (!entry) throw new NotFoundException('Запись ведомости не найдена');
     return serializeLedgerEntry(entry);
   }
 
-  async deleteEntry(entryId: string) {
+  async deleteEntry(entryId: string, actor: LedgerActor = {}) {
     const existing = await this.prisma.supplierLedgerEntry.findUnique({ where: { id: entryId } });
     if (!existing) throw new NotFoundException('Запись ведомости не найдена');
-    await this.prisma.supplierLedgerEntry.delete({ where: { id: entryId } });
+    if (existing.payment != null && Number(existing.payment) !== 0) {
+      assertCanManagePayments(actor.role);
+    }
+    await this.prisma.$transaction(async (tx) => {
+      await tx.supplierLedgerEntry.delete({ where: { id: entryId } });
+      await this.recalculatePaidAllocations(existing.supplierId, tx);
+    });
     return { deleted: true };
   }
 
   /** Хотя бы одна из сумм (счёт/оплата) должна быть заполнена и отлична от нуля. */
-  private assertEntryAmounts(dto: { amount?: number; payment?: number }) {
+  private assertEntryAmounts(dto: { amount?: number | null; payment?: number | null }) {
     const hasAmount = dto.amount != null && dto.amount !== 0;
     const hasPayment = dto.payment != null && dto.payment !== 0;
     if (!hasAmount && !hasPayment) {
       throw new BadRequestException('Заполните сумму счёта или оплату');
+    }
+  }
+
+  /** Оплаты в ведомости проводит только супер-админ (счета — ведущие специалисты). */
+  private assertCanManagePayments(payment: number | null | undefined, role?: string) {
+    if (payment != null && payment !== 0) {
+      assertCanManagePayments(role);
+    }
+  }
+
+  /** Разбивка по заказам имеет смысл только у счёта (строки с суммой). */
+  private assertOrderLinksAllowed(
+    amount: number | null | undefined,
+    links: SaveSupplierLedgerEntryDto['orderLinks'],
+  ) {
+    if (links && links.length > 0 && (amount == null || amount <= 0)) {
+      throw new BadRequestException('Разбивку по заказам можно задать только у счёта (с суммой)');
+    }
+  }
+
+  /** Сумма разбивки не превышает счёт; заказы существуют и не удалены. */
+  private async assertOrderLinksValid(
+    amount: number | null | undefined,
+    links: SaveSupplierLedgerEntryDto['orderLinks'],
+  ) {
+    if (!links || links.length === 0) return;
+    const ids = [...new Set(links.map((link) => link.packageId))];
+    if (ids.length !== links.length) {
+      throw new BadRequestException('Один и тот же заказ указан в разбивке дважды');
+    }
+    const sum = roundMoney(links.reduce((acc, link) => acc + link.amount, 0));
+    if (amount != null && sum > roundMoney(amount) + 0.005) {
+      throw new BadRequestException('Сумма разбивки по заказам превышает сумму счёта');
+    }
+    const packages = await this.prisma.contractDocumentPackage.count({
+      where: { id: { in: ids }, deletedAt: null },
+    });
+    if (packages !== ids.length) {
+      throw new BadRequestException('В разбивке есть несуществующий или удалённый заказ');
+    }
+  }
+
+  /** Полная замена разбивки счёта по заказам (undefined — не трогать, [] — снять). */
+  private async replaceOrderLinks(
+    tx: Prisma.TransactionClient,
+    entryId: string,
+    links: SaveSupplierLedgerEntryDto['orderLinks'],
+  ) {
+    if (links === undefined) return;
+    await tx.supplierLedgerEntryOrderLink.deleteMany({ where: { entryId } });
+    if (links.length === 0) return;
+    await tx.supplierLedgerEntryOrderLink.createMany({
+      data: links.map((link) => ({
+        entryId,
+        packageId: link.packageId,
+        amount: new Prisma.Decimal(link.amount),
+      })),
+    });
+  }
+
+  /** Оплаты гасят самые ранние неоплаченные счета поставщика (FIFO): пул всех
+   *  оплат разносится по счетам в порядке даты/внесения, остаток пула — переплата.
+   *  Пересчитывается целиком после каждого изменения ведомости. */
+  private async recalculatePaidAllocations(supplierId: string, tx: Prisma.TransactionClient) {
+    const entries = await tx.supplierLedgerEntry.findMany({
+      where: { supplierId },
+      orderBy: [{ date: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+      select: { id: true, amount: true, payment: true, paidAmount: true },
+    });
+    let pool = roundMoney(entries.reduce((acc, entry) => acc + Number(entry.payment ?? 0), 0));
+    for (const entry of entries) {
+      const invoice = entry.amount != null ? Number(entry.amount) : null;
+      const allocated =
+        invoice != null && invoice > 0 ? roundMoney(Math.max(0, Math.min(pool, invoice))) : 0;
+      pool = roundMoney(pool - allocated);
+      if (Math.abs(Number(entry.paidAmount ?? 0) - allocated) > 0.004) {
+        await tx.supplierLedgerEntry.update({
+          where: { id: entry.id },
+          data: { paidAmount: new Prisma.Decimal(allocated) },
+        });
+      }
     }
   }
 
@@ -495,6 +608,13 @@ export class SuppliersService {
 function assertLegalName(legalName: string | undefined) {
   if (!legalName || legalName.trim().length < 2) {
     throw new BadRequestException('Наименование юридическое — минимум 2 символа');
+  }
+}
+
+/** Записи с оплатой (проведение платежей) — только супер-админ. */
+function assertCanManagePayments(role: string | undefined) {
+  if (role !== 'SUPER_ADMIN') {
+    throw new ForbiddenException('Проводить оплаты поставщикам может только супер-админ');
   }
 }
 
