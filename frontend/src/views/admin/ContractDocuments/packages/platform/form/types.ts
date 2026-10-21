@@ -70,6 +70,9 @@ export interface PackageObjectBlock {
   managerNote: string;
 }
 
+/** Тип скидки на работы: в процентах (по умолчанию) или фиксированной суммой в рублях. */
+export type PackageContractDiscountType = 'PERCENT' | 'AMOUNT';
+
 export interface PackageContractBlock {
   number: string;
   date: string;
@@ -91,7 +94,14 @@ export interface PackageContractBlock {
   workPeriod: string;
   /** Суперадмин задал срок в карточке договора — не перезаписывать из «Сроки договоров». */
   workPeriodIsManual?: boolean;
-  /** Скидка на стоимость по договору, % (применяется к смете, Д/с, заказ-нарядам и сводке оплат). */
+  /** Тип скидки: % (discountPercent) или рубли (discountAmount). */
+  discountType?: PackageContractDiscountType;
+  /** Скидка в рублях (при discountType = 'AMOUNT'); % в discountPercent — производное от итога сметы. */
+  discountAmount?: string;
+  /**
+   * Скидка на стоимость по договору, % (применяется к смете, Д/с, заказ-нарядам и сводке оплат).
+   * При discountType = 'AMOUNT' — эффективный %, пересчитываемый от итога сметы.
+   */
   discountPercent: string;
   /** Офис заключения (для нумерации); обычно из открытого рабочего дня. */
   officeId: string;
@@ -222,9 +232,21 @@ export interface PackageInstallerAssignment {
 /** Статус доп. соглашения: после «подписано/оплачено» расчёты к этому Д/с не меняются. */
 export type PackageAddendumSlotStatus = 'OPEN' | 'SIGNED' | 'PAID';
 
+/**
+ * Скидка Д/с: `INHERIT` — наследуется договоровая (по умолчанию), `PERCENT`/`AMOUNT` —
+ * своя, замещает договоровую для этого Д/с (сумма Д/с, заказ-наряд по Д/с, сводка оплат).
+ */
+export type PackageAddendumSlotDiscountType = 'INHERIT' | 'PERCENT' | 'AMOUNT';
+
 /** Расчёты, прикреплённые к конкретному Д/с (№1…№5). */
 export interface PackageAddendumSlotEstimateBlock {
   status: PackageAddendumSlotStatus;
+  /** Тип скидки Д/с (по умолчанию — наследование договоровой). */
+  discountType?: PackageAddendumSlotDiscountType;
+  /** Эффективный % скидки Д/с (при AMOUNT — производный от итога работ Д/с). */
+  discountPercent?: string;
+  /** Скидка Д/с в рублях (при discountType = 'AMOUNT'). */
+  discountAmount?: string;
   /** Время установки статуса SIGNED (ISO), нужно для окна отмены 24 часа. */
   signedAt: string;
   /** Время установки статуса PAID (ISO). */

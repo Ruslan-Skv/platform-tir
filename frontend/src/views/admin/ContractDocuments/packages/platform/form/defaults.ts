@@ -125,6 +125,8 @@ export function defaultPackageFormData(): PackageFormData {
       invoiceNumber: '',
       workPeriod: '',
       workPeriodIsManual: false,
+      discountType: 'PERCENT',
+      discountAmount: '',
       discountPercent: '',
       officeId: '',
       surveyorUserId: '',
@@ -218,6 +220,9 @@ function _normalizeIssuedInvoices(raw: unknown): PackageIssuedInvoice[] {
 function defaultAddendumSlot(): PackageAddendumSlotEstimateBlock {
   return {
     status: 'OPEN',
+    discountType: 'INHERIT',
+    discountPercent: '',
+    discountAmount: '',
     signedAt: '',
     paidAt: '',
     workPeriodIncreaseDays: '',

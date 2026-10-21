@@ -31,6 +31,11 @@ import { buildEstimateRoomsHtmlFromSnapshot } from './estimateHtml';
 import { resolveExecutorBankFields } from './executorBankFields';
 import { buildPackageInvoiceTemplateExtras } from './invoiceTemplateFields';
 import { formatMoneyWholePlain, roundMoneyStringToWhole } from './moneyWhole';
+import {
+  formatDiscountPercentForField,
+  resolveAddendumSlotDiscount,
+  resolveContractDiscount,
+} from './packageContractDiscount';
 import type {
   PackageContractBlock,
   PackageEstimateBlock,
@@ -191,7 +196,11 @@ export function packageFormForTemplate(
         .join('\n\n')
     : '';
 
-  const roomsHtml = buildEstimateRoomsHtmlFromSnapshot(snapshot, form.contract.discountPercent);
+  const roomsHtml = buildEstimateRoomsHtmlFromSnapshot(
+    snapshot,
+    form.contract.discountPercent,
+    resolveContractDiscount(form).amountRub
+  );
 
   const prepaymentRaw = form.contract.prepaymentAmount.trim();
   const prepaymentAmountWords = prepaymentRaw
@@ -273,10 +282,20 @@ export function packageFormForTemplate(
       );
     }
     if (sectionsHtml.length === 0) return '';
+    // Скидка Д/с замещает договорную: свою показываем подписью «по Д/с №…».
+    const slotDiscount =
+      addendumSlotIdx !== null ? resolveAddendumSlotDiscount(form, addendumSlotIdx) : null;
     const totalsAndFooterHtml = `<div class="estimateA4DocPrintEmbed">${buildEstimateDiscountTotalsBlockHtml(
       {
         grossTotal: summaryTotal,
-        contractDiscountPercent: form.contract.discountPercent,
+        contractDiscountPercent:
+          slotDiscount && slotDiscount.percent > 0
+            ? formatDiscountPercentForField(slotDiscount.percent)
+            : form.contract.discountPercent,
+        discountAmountRub: slotDiscount?.amountRub ?? null,
+        discountLabel: slotDiscount?.overridesContract
+          ? `Скидка по Д/с №${addendumSlot ?? ''}`
+          : undefined,
       }
     )}${buildEstimateDocPrintFooterHtml({
       directorName: form.executor.directorName,
@@ -372,6 +391,9 @@ export function packageFormForTemplate(
       ? (() => {
           const slotIdx = addendumSlot - 1;
           const slot = form.addendumSlots[slotIdx];
+          // Скидка Д/с замещает договорную в заказ-наряде по этому Д/с.
+          const slotDiscountPercent = resolveAddendumSlotDiscount(form, slotIdx).percent;
+          const slotDiscountPercentRaw = formatDiscountPercentForField(slotDiscountPercent);
           if (isProductDirectionPackageKind(options?.packageKind)) {
             if (!slot || !windowsAddendumSlotHasAccountOrderContent(slot)) {
               return {
@@ -383,10 +405,16 @@ export function packageFormForTemplate(
             }
             const showLineAmounts = form.workOrder.showLineAmounts;
             const additionalComputed = addendumSlotSnap
-              ? resolveWorkOrderComputedForTemplate(addendumSlotSnap, form, options)
+              ? resolveWorkOrderComputedForTemplate(addendumSlotSnap, form, {
+                  ...options,
+                  discountPercentOverride: slotDiscountPercentRaw,
+                })
               : null;
             const excludedComputed = addendumExcludedSnap
-              ? resolveWorkOrderComputedForTemplate(addendumExcludedSnap, form, options)
+              ? resolveWorkOrderComputedForTemplate(addendumExcludedSnap, form, {
+                  ...options,
+                  discountPercentOverride: slotDiscountPercentRaw,
+                })
               : null;
             const additionalRoomsHtml =
               additionalComputed && additionalComputed.rooms.length > 0
@@ -416,7 +444,7 @@ export function packageFormForTemplate(
           const workOrderAddendumComputed = resolveWorkOrderComputedForTemplate(
             slot?.snapshot ?? null,
             form,
-            options
+            { ...options, discountPercentOverride: slotDiscountPercentRaw }
           );
           const workOrderAddendumSections = buildEstimateSectionsFromPresetIds(
             slot?.selectedPresetIds ?? [],
@@ -429,7 +457,7 @@ export function packageFormForTemplate(
                 form.workOrder.taxPercent,
                 form.workOrder.markupPercent,
                 form.workOrder.gradeIncreasePercent,
-                form.contract.discountPercent,
+                slotDiscountPercentRaw,
                 workOrderAddendumSections,
                 form.workOrder.showLineAmounts,
                 workOrderAddendumComputed
@@ -486,6 +514,7 @@ export function packageFormForTemplate(
     ? amountToRussianWords(contractTotalAmountForPrint)
     : form.contract.totalAmountWords;
 
+  const contractDiscount = resolveContractDiscount(form);
   const contractForTemplate = {
     ...form.contract,
     totalAmount: contractTotalAmountForPrint,
@@ -496,6 +525,11 @@ export function packageFormForTemplate(
     contractCost: contractCostFields.contractCost,
     productsCost: contractCostFields.productsCost,
     worksCost: contractCostFields.worksCost,
+    /** Скидка в рублях для шаблона `{{contract.discountAmountRub}}` (только режим «руб.»). */
+    discountAmountRub:
+      contractDiscount.mode === 'AMOUNT' && contractDiscount.amountRub != null
+        ? formatMoneyWholePlain(contractDiscount.amountRub)
+        : '',
     ...(invoiceExtras
       ? {
           prepaymentAmountFormatted: invoiceExtras.prepaymentAmountFormatted,

@@ -4,6 +4,7 @@ import { CrmCustomerSearchPanel } from '@/views/admin/CRM/Customers/modals/CrmCu
 
 import cdDataTab from '../../../../styles/data-tab.module.css';
 import { ProductContractCostFields } from '../../../families/product-like/cost/ProductContractCostFields';
+import { formatContractMoneyFieldRaw } from '../../hub/payments/packageContractPaymentsFormat';
 import { packageCustomerBlockHasContent } from '../../questionnaires/applyCrmContractToForm';
 import { PackageMeasurementLinkSection } from '../measurementTab/PackageMeasurementLinkSection';
 import type { PackageDataTabProps } from './PackageDataTab';
@@ -43,6 +44,11 @@ export function PackageDataCustomerSearchColumn({
 }: PackageDataCustomerSearchColumnProps) {
   const hasOrphanCustomerFields =
     !linkedCrmCustomerId?.trim() && packageCustomerBlockHasContent(form.customer);
+  /** Поле «Стоимость договора» — только отображение: разряды через пробел + «руб.». */
+  const contractTotalDisplay = (() => {
+    const amount = formatContractMoneyFieldRaw(form.contract.totalAmount);
+    return amount ? `${amount} руб.` : '';
+  })();
 
   return (
     <div className={`${DATA_TOP_BLOCK} ${cdDataTab.dataTopBlockCustomerCol}`}>
@@ -91,7 +97,7 @@ export function PackageDataCustomerSearchColumn({
             id="repair_data_contract_total"
             type="text"
             readOnly
-            value={form.contract.totalAmount}
+            value={contractTotalDisplay}
             placeholder="—"
             autoComplete="off"
             title="Из вкладки «Смета» (с учётом скидки по договору)"

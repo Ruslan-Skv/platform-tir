@@ -151,6 +151,10 @@ export const PACKAGE_CONTRACT_PLACEHOLDER_GROUPS: PackageContractPlaceholderGrou
         path: 'contract.discountPercent',
         label: 'Скидка по договору (%, число; применяется к смете и Д/с)',
       },
+      {
+        path: 'contract.discountAmountRub',
+        label: 'Скидка по договору в рублях (только для режима «руб.»; иначе пусто)',
+      },
     ],
   },
   {

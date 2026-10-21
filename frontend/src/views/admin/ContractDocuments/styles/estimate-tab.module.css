@@ -122,6 +122,11 @@
   font-size: var(--admin-font-size-xs);
 }
 
+/* Поле скидки на вкладке «Смета»: компактное, как ячейка «Дата|Срок|Скидка» на «Данных». */
+.estimateDiscountField {
+  max-width: 240px;
+}
+
 .estimateTabCompact .estimateA4Wrap {
   padding: var(--admin-space-xs) var(--admin-space-sm);
   margin-top: 0;

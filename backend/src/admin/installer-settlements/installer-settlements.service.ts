@@ -73,6 +73,8 @@ type CandidateRawRow = {
   contractNumber: string | null;
   customerName: string | null;
   discountPercent: string | null;
+  discountType: string | null;
+  discountAmount: string | null;
   taxPercent: string | null;
   markupPercent: string | null;
   gradeIncreasePercent: string | null;
@@ -81,6 +83,9 @@ type CandidateRawRow = {
   estimateSnapshot: unknown;
   addendumSnapshots: unknown[];
   addendumExcludedSnapshots: unknown[];
+  addendumSlotDiscountTypes: unknown[];
+  addendumSlotDiscountPercents: unknown[];
+  addendumSlotDiscountAmounts: unknown[];
 };
 
 type MasterAgg = {
@@ -201,10 +206,12 @@ export class InstallerSettlementsService {
             p."formData"->'contract'->>'number' AS "contractNumber",
             p."formData"->'customer'->>'fullName' AS "customerName",
             p."formData"->'contract'->>'discountPercent' AS "discountPercent",
+            p."formData"->'contract'->>'discountType' AS "discountType",
+            p."formData"->'contract'->>'discountAmount' AS "discountAmount",
             p."formData"->'workOrder'->>'taxPercent' AS "taxPercent",
             p."formData"->'workOrder'->>'markupPercent' AS "markupPercent",
             p."formData"->'workOrder'->>'gradeIncreasePercent' AS "gradeIncreasePercent",
-            p."formData"->>'addendumSlotCount' AS "addendumSlotCountText",
+            p."formData"->'addendumSlotCount' AS "addendumSlotCountText",
             p."formData"->'finalEstimateInstallerAssignments' AS "assignments",
             p."formData"->'estimate'->'snapshot' AS "estimateSnapshot",
             ARRAY[
@@ -220,7 +227,28 @@ export class InstallerSettlementsService {
               p."formData"->'addendumSlots'->2->'excludedSnapshot',
               p."formData"->'addendumSlots'->3->'excludedSnapshot',
               p."formData"->'addendumSlots'->4->'excludedSnapshot'
-            ] AS "addendumExcludedSnapshots"
+            ] AS "addendumExcludedSnapshots",
+            ARRAY[
+              p."formData"->'addendumSlots'->0->>'discountType',
+              p."formData"->'addendumSlots'->1->>'discountType',
+              p."formData"->'addendumSlots'->2->>'discountType',
+              p."formData"->'addendumSlots'->3->>'discountType',
+              p."formData"->'addendumSlots'->4->>'discountType'
+            ] AS "addendumSlotDiscountTypes",
+            ARRAY[
+              p."formData"->'addendumSlots'->0->>'discountPercent',
+              p."formData"->'addendumSlots'->1->>'discountPercent',
+              p."formData"->'addendumSlots'->2->>'discountPercent',
+              p."formData"->'addendumSlots'->3->>'discountPercent',
+              p."formData"->'addendumSlots'->4->>'discountPercent'
+            ] AS "addendumSlotDiscountPercents",
+            ARRAY[
+              p."formData"->'addendumSlots'->0->>'discountAmount',
+              p."formData"->'addendumSlots'->1->>'discountAmount',
+              p."formData"->'addendumSlots'->2->>'discountAmount',
+              p."formData"->'addendumSlots'->3->>'discountAmount',
+              p."formData"->'addendumSlots'->4->>'discountAmount'
+            ] AS "addendumSlotDiscountAmounts"
           FROM contract_document_packages p
           WHERE p."deleted_at" IS NULL${kindCondition}${packageSearchFilter}
             AND (
@@ -270,7 +298,11 @@ export class InstallerSettlementsService {
         computeInstallerAccrual({
           kind: pkg.kind,
           formData: {
-            contract: { discountPercent: pkg.discountPercent },
+            contract: {
+              discountPercent: pkg.discountPercent,
+              discountType: pkg.discountType,
+              discountAmount: pkg.discountAmount,
+            },
             workOrder: {
               taxPercent: pkg.taxPercent,
               markupPercent: pkg.markupPercent,
@@ -281,6 +313,9 @@ export class InstallerSettlementsService {
             addendumSlots: (pkg.addendumSnapshots ?? []).map((snapshot, index) => ({
               snapshot: (snapshot ?? null) as never,
               excludedSnapshot: ((pkg.addendumExcludedSnapshots ?? [])[index] ?? null) as never,
+              discountType: (pkg.addendumSlotDiscountTypes ?? [])[index] ?? null,
+              discountPercent: (pkg.addendumSlotDiscountPercents ?? [])[index] ?? null,
+              discountAmount: (pkg.addendumSlotDiscountAmounts ?? [])[index] ?? null,
             })),
             finalEstimateInstallerAssignments: (pkg.assignments ?? null) as never,
           },

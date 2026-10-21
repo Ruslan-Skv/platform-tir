@@ -1,6 +1,7 @@
 import { formatMoneyWholeGrouped } from '../form/moneyWhole';
 import {
   applyPackageContractDiscountToAmount,
+  formatDiscountPercentShort,
   parsePackageContractDiscountPercent,
 } from '../form/packageContractDiscount';
 import type { PackageEstimateBlock } from './types';
@@ -8,20 +9,28 @@ import type { PackageEstimateBlock } from './types';
 /** Подвал после таблицы сметы: скидка и итог со скидкой (не трогает суммы по строкам). */
 function buildEstimateRoomsDiscountSuffixHtml(
   grossTotal: number,
-  contractDiscountPercentRaw?: string
+  contractDiscountPercentRaw?: string,
+  discountAmountRub?: number | null
 ): string {
   const p = parsePackageContractDiscountPercent(contractDiscountPercentRaw ?? '');
   if (p <= 0 || !Number.isFinite(grossTotal) || grossTotal <= 0) return '';
   const net = applyPackageContractDiscountToAmount(grossTotal, p);
   const fmt = formatMoneyWholeGrouped;
-  return `<p class="estimateA4DiscountMeta" style="margin:8px 0 0;text-align:right;">Скидка по договору: ${String(p).replace('.', ',')}%</p>
+  const amountText =
+    typeof discountAmountRub === 'number' &&
+    Number.isFinite(discountAmountRub) &&
+    discountAmountRub > 0
+      ? `${fmt(discountAmountRub)} руб. (≈${formatDiscountPercentShort(p)}%)`
+      : `${formatDiscountPercentShort(p)}%`;
+  return `<p class="estimateA4DiscountMeta" style="margin:8px 0 0;text-align:right;">Скидка по договору: ${amountText}</p>
 <p class="estimateA4Total" style="margin:4px 0 0;text-align:right;">Итого со скидкой: <strong>${fmt(net)} руб.</strong></p>`;
 }
 
 /** HTML-таблица объединённой сметы по снимку (как на вкладке «Смета» / в шаблоне). Строки — без договорной скидки; при необходимости скидка только в подвале через `buildEstimateRoomsDiscountSuffixHtml`. */
 export function buildEstimateRoomsHtmlFromSnapshot(
   snapshot: PackageEstimateBlock['snapshot'],
-  contractDiscountPercentRaw?: string
+  contractDiscountPercentRaw?: string,
+  discountAmountRub?: number | null
 ): string {
   if (!snapshot?.rooms?.length) return '';
   const escapeHtml = (value: string): string =>
@@ -68,5 +77,5 @@ export function buildEstimateRoomsHtmlFromSnapshot(
       )}</td>
     </tr>
   </tbody>
-</table>${buildEstimateRoomsDiscountSuffixHtml(snapshot.total, contractDiscountPercentRaw)}`;
+</table>${buildEstimateRoomsDiscountSuffixHtml(snapshot.total, contractDiscountPercentRaw, discountAmountRub)}`;
 }

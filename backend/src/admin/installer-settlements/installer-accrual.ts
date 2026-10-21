@@ -32,16 +32,24 @@ type EstimateSnapshotLine = {
 
 type EstimateSnapshot = {
   rooms?: Array<{ name?: unknown; lines?: EstimateSnapshotLine[] }> | null;
+  total?: unknown;
 } | null;
 
 type FormDataForAccrual = {
-  contract?: { discountPercent?: unknown };
+  contract?: {
+    discountPercent?: unknown;
+    discountType?: unknown;
+    discountAmount?: unknown;
+  };
   workOrder?: { taxPercent?: unknown; markupPercent?: unknown; gradeIncreasePercent?: unknown };
   estimate?: { snapshot?: EstimateSnapshot };
   addendumSlotCount?: unknown;
   addendumSlots?: Array<{
     snapshot?: EstimateSnapshot;
     excludedSnapshot?: EstimateSnapshot;
+    discountType?: unknown;
+    discountPercent?: unknown;
+    discountAmount?: unknown;
   }> | null;
   finalEstimateInstallerAssignments?: Record<string, { installerId?: unknown }> | null;
 };
@@ -60,6 +68,72 @@ function parseNonNegativePercent(raw: unknown): number {
 /** Скидка договора: 0…100. */
 export function parseContractDiscountPercent(raw: unknown): number {
   return Math.min(100, parseNonNegativePercent(raw));
+}
+
+/** Сумма скидки в рублях из поля формы: ≥ 0; пусто/мусор → 0. */
+function parseDiscountAmountRub(raw: unknown): number {
+  if (typeof raw === 'number') return Number.isFinite(raw) && raw >= 0 ? raw : 0;
+  if (typeof raw !== 'string') return 0;
+  const normalized = raw.trim().replace(/\s+/g, '').replace(',', '.');
+  if (!normalized) return 0;
+  const parsed = Number(normalized);
+  if (!Number.isFinite(parsed) || parsed < 0) return 0;
+  return parsed;
+}
+
+/** Эффективный % из рублёвой скидки и базы: рубли ≥ базы → 100; пустая база → 0. */
+function deriveDiscountPercentFromAmount(amountRub: number, baseTotal: number | null): number {
+  if (!Number.isFinite(amountRub) || amountRub <= 0) return 0;
+  if (baseTotal == null || !Number.isFinite(baseTotal) || baseTotal <= 0) return 0;
+  return Math.min(100, (amountRub / baseTotal) * 100);
+}
+
+/** Итог снимка сметы: `total`, иначе сумма строк (как во фронтенде). */
+function snapshotTotalRub(snapshot: EstimateSnapshot): number | null {
+  if (!snapshot) return null;
+  if (typeof snapshot.total === 'number' && Number.isFinite(snapshot.total)) {
+    return snapshot.total;
+  }
+  let sum = 0;
+  let seen = false;
+  for (const room of snapshot.rooms ?? []) {
+    for (const line of room?.lines ?? []) {
+      sum += toFiniteNumber(line?.amount);
+      seen = true;
+    }
+  }
+  return seen ? sum : null;
+}
+
+/**
+ * Эффективная скидка договора, %: режим «рубли» пересчитывается от итога сметы
+ * (как `resolveContractDiscount` на фронтенде; `discountPercent` при этом
+ * поддерживается актуальным самим фронтом — здесь пересчёт для надёжности).
+ */
+function effectiveContractDiscountPercent(form: FormDataForAccrual): number {
+  if (form.contract?.discountType === 'AMOUNT') {
+    return deriveDiscountPercentFromAmount(
+      parseDiscountAmountRub(form.contract?.discountAmount),
+      snapshotTotalRub(form.estimate?.snapshot ?? null),
+    );
+  }
+  return parseContractDiscountPercent(form.contract?.discountPercent);
+}
+
+/** Скидка Д/с (0…100): своя (%/рубли от итога работ Д/с) или договоровая (INHERIT). */
+function addendumSlotDiscountPercent(form: FormDataForAccrual, slotIndex0: number): number {
+  const slot = form.addendumSlots?.[slotIndex0];
+  if (!slot) return effectiveContractDiscountPercent(form);
+  if (slot.discountType === 'AMOUNT') {
+    return deriveDiscountPercentFromAmount(
+      parseDiscountAmountRub(slot.discountAmount),
+      snapshotTotalRub(slot.snapshot ?? null),
+    );
+  }
+  if (slot.discountType === 'PERCENT') {
+    return parseContractDiscountPercent(slot.discountPercent);
+  }
+  return effectiveContractDiscountPercent(form);
 }
 
 /** Процент поля заказ-наряда (налог/наценка): 0…100. */
@@ -108,17 +182,24 @@ function toFiniteNumber(value: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-/** Строки итоговой сметы: смета договора + Д/с (включённые минус исключённые). */
-function buildFinalEstimateRows(form: FormDataForAccrual): Array<{ key: string; amount: number }> {
+/** Строки итоговой сметы: смета договора + Д/с (включённые минус исключённые) с частями по источникам. */
+function buildFinalEstimateRows(
+  form: FormDataForAccrual,
+): Array<{ key: string; sourceAmounts: Array<{ source: 'main' | number; amount: number }> }> {
   type Agg = {
     includedAmount: number;
     excludedAmount: number;
     includedQty: number;
     excludedQty: number;
+    sourceAmounts: Array<{ source: 'main' | number; amount: number }>;
   };
   const acc = new Map<string, Agg>();
 
-  const addSnapshot = (snapshot: EstimateSnapshot, kind: 'included' | 'excluded') => {
+  const addSnapshot = (
+    snapshot: EstimateSnapshot,
+    kind: 'included' | 'excluded',
+    source: 'main' | number,
+  ) => {
     if (!snapshot?.rooms?.length) return;
     for (const room of snapshot.rooms) {
       const roomName = String(room?.name ?? '').trim() || 'Помещение';
@@ -134,10 +215,14 @@ function buildFinalEstimateRows(form: FormDataForAccrual): Array<{ key: string; 
           excludedAmount: 0,
           includedQty: 0,
           excludedQty: 0,
+          sourceAmounts: [],
         };
         if (kind === 'included') {
           prev.includedAmount += amount;
           prev.includedQty += quantity;
+          const src = prev.sourceAmounts.find((x) => x.source === source);
+          if (src) src.amount += amount;
+          else prev.sourceAmounts.push({ source, amount });
         } else {
           prev.excludedAmount += amount;
           prev.excludedQty += quantity;
@@ -147,20 +232,31 @@ function buildFinalEstimateRows(form: FormDataForAccrual): Array<{ key: string; 
     }
   };
 
-  addSnapshot(form.estimate?.snapshot ?? null, 'included');
+  addSnapshot(form.estimate?.snapshot ?? null, 'included', 'main');
   const slotCount = Math.min(5, Math.max(0, Math.trunc(toFiniteNumber(form.addendumSlotCount))));
   const slots = Array.isArray(form.addendumSlots) ? form.addendumSlots.slice(0, slotCount) : [];
-  for (const slot of slots) {
-    addSnapshot(slot?.snapshot ?? null, 'included');
-    addSnapshot(slot?.excludedSnapshot ?? null, 'excluded');
-  }
+  slots.forEach((slot, index) => {
+    addSnapshot(slot?.snapshot ?? null, 'included', index);
+    addSnapshot(slot?.excludedSnapshot ?? null, 'excluded', index);
+  });
 
-  const rows: Array<{ key: string; amount: number }> = [];
+  const rows: Array<{
+    key: string;
+    sourceAmounts: Array<{ source: 'main' | number; amount: number }>;
+  }> = [];
   for (const [key, item] of acc.entries()) {
     const quantity = Math.max(0, item.includedQty - item.excludedQty);
     const amount = Math.max(0, item.includedAmount - item.excludedAmount);
     if (quantity <= 0 && amount <= 0) continue;
-    rows.push({ key, amount });
+    // Исключения вычитаем из частей по порядку (сначала смета договора, затем Д/с) —
+    // как на фронтенде (finalEstimateSummary.ts).
+    let remainingExcluded = item.excludedAmount;
+    const sourceAmounts = item.sourceAmounts.map((src) => {
+      const net = Math.max(0, src.amount - remainingExcluded);
+      remainingExcluded -= src.amount - net;
+      return { source: src.source, amount: net };
+    });
+    rows.push({ key, sourceAmounts });
   }
   return rows;
 }
@@ -168,6 +264,7 @@ function buildFinalEstimateRows(form: FormDataForAccrual): Array<{ key: string; 
 /**
  * «Начислено» по мастерам для пакета: назначенные на строки сметы мастера
  * получают сумму строки с коэффициентами заказ-наряда своего направления.
+ * Скидка — по источнику части строки (смета договора / Д/с со своей скидкой).
  */
 export function computeInstallerAccrual(params: {
   kind: ContractDocumentPackageKind;
@@ -183,7 +280,12 @@ export function computeInstallerAccrual(params: {
       : {}
   ) as FormDataForAccrual;
 
-  const discountFactor = 1 - parseContractDiscountPercent(form.contract?.discountPercent) / 100;
+  const contractDiscountFactor = 1 - effectiveContractDiscountPercent(form) / 100;
+  const slotDiscountFactors = [0, 1, 2, 3, 4].map(
+    (i) => 1 - addendumSlotDiscountPercent(form, i) / 100,
+  );
+  const discountFactorFor = (source: 'main' | number): number =>
+    source === 'main' ? contractDiscountFactor : (slotDiscountFactors[source] ?? 1);
   const assignments =
     form.finalEstimateInstallerAssignments &&
     typeof form.finalEstimateInstallerAssignments === 'object'
@@ -203,11 +305,13 @@ export function computeInstallerAccrual(params: {
     const grade = params.installerGradeById.has(installerId)
       ? parseInstallerGradePercent(params.installerGradeById.get(installerId) ?? '')
       : fallbackGrade;
-    const priceFactor = product
-      ? discountFactor * productMarkupFactor
-      : discountFactor * taxFactor * markupFactor * (1 + grade / 100);
+    const amountAfterDiscount = row.sourceAmounts.reduce(
+      (sum, part) => sum + part.amount * discountFactorFor(part.source),
+      0,
+    );
+    const factor = product ? productMarkupFactor : taxFactor * markupFactor * (1 + grade / 100);
     const prev = result.get(installerId) ?? { installerId, total: 0, lineCount: 0 };
-    prev.total += row.amount * priceFactor;
+    prev.total += amountAfterDiscount * factor;
     prev.lineCount += 1;
     result.set(installerId, prev);
   }

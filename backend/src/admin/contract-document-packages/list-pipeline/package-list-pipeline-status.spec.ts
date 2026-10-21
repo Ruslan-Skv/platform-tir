@@ -169,6 +169,60 @@ describe('computePackageListPipelineStatus', () => {
     ).toBe('CLOSED');
   });
 
+  it('applies addendum own discount instead of contract discount (ремонт)', () => {
+    // Д/с №1 со своей скидкой 50% (замещает договоровую 10%): платить 10 000 из 20 000.
+    expect(
+      computePackageListPipelineStatus({
+        kind: ContractDocumentPackageKind.REPAIR,
+        status: ContractDocumentPackageStatus.CONTRACT_CONCLUDED,
+        formData: {
+          contract: { totalAmount: '100000', discountPercent: '10' },
+          addendumSlotCount: 1,
+          addendumSlots: [
+            { snapshot: { total: 20000 }, discountType: 'PERCENT', discountPercent: '50' },
+          ],
+          repairContractCloseActSignedAt: '2026-10-15',
+          repairContractCloseActPhotoUrl: '/uploads/close.jpg',
+        },
+        payments: [
+          { amount: '100000', paymentType: 'FINAL', paymentDate: '2026-10-14' },
+          {
+            amount: '10000',
+            paymentType: 'AMENDMENT',
+            addendumNumber: 1,
+            paymentDate: '2026-10-14',
+          },
+        ],
+      }),
+    ).toBe('CLOSED');
+
+    // Рублёвая скидка Д/с: 5 000 от 20 000 → 25% → платить 15 000.
+    expect(
+      computePackageListPipelineStatus({
+        kind: ContractDocumentPackageKind.REPAIR,
+        status: ContractDocumentPackageStatus.CONTRACT_CONCLUDED,
+        formData: {
+          contract: { totalAmount: '100000' },
+          addendumSlotCount: 1,
+          addendumSlots: [
+            { snapshot: { total: 20000 }, discountType: 'AMOUNT', discountAmount: '5000' },
+          ],
+          repairContractCloseActSignedAt: '2026-10-15',
+          repairContractCloseActPhotoUrl: '/uploads/close.jpg',
+        },
+        payments: [
+          { amount: '100000', paymentType: 'FINAL', paymentDate: '2026-10-14' },
+          {
+            amount: '15000',
+            paymentType: 'AMENDMENT',
+            addendumNumber: 1,
+            paymentDate: '2026-10-14',
+          },
+        ],
+      }),
+    ).toBe('CLOSED');
+  });
+
   it('reduces payable by negative addendum (уменьшение договора)', () => {
     expect(
       computePackageListPipelineStatus({

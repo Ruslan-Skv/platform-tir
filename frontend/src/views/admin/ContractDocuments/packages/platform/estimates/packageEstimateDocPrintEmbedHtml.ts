@@ -6,6 +6,7 @@ import type {
 import { formatMoneyWholeGrouped } from '../form/moneyWhole';
 import {
   applyPackageContractDiscountToAmount,
+  formatDiscountPercentShort,
   parsePackageContractDiscountPercent,
 } from '../form/packageContractDiscount';
 import {
@@ -202,6 +203,10 @@ export type EstimateSheetPrintVariant = 'repair' | 'windows';
 export function buildEstimateDiscountTotalsBlockHtml(options: {
   grossTotal: number;
   contractDiscountPercent?: string;
+  /** Скидка в рублях (режим «руб.»): показываем сумму и производный %. */
+  discountAmountRub?: number | null;
+  /** Подпись строки скидки («по договору» / «по Д/с №…»). */
+  discountLabel?: string;
   /** Подпись «Итого … (без скидки)» — для «Окна» это счёт-заказ. */
   grossLabel?: string;
   /** Подпись итога без скидки по договору. */
@@ -216,8 +221,18 @@ export function buildEstimateDiscountTotalsBlockHtml(options: {
   );
   if (discountPercent > 0 && grossTotal > 0) {
     const totalAfterDiscount = applyPackageContractDiscountToAmount(grossTotal, discountPercent);
+    const amountRub =
+      typeof options.discountAmountRub === 'number' && Number.isFinite(options.discountAmountRub)
+        ? options.discountAmountRub
+        : null;
+    const discountLabel = escapeHtml(options.discountLabel ?? 'Скидка по договору');
+    const discountText = amountRub
+      ? `${discountLabel}: ${formatMoney(amountRub)} руб. (≈${formatDiscountPercentShort(
+          discountPercent
+        )}%)`
+      : `${discountLabel}: ${formatDiscountPercentShort(discountPercent)}%`;
     return `<p class="estimateA4Total">${escapeHtml(grossLabel)} <strong>${formatMoney(grossTotal)} руб.</strong></p>
-<p class="estimateA4DiscountMeta">Скидка по договору: ${String(discountPercent).replace('.', ',')}%</p>
+<p class="estimateA4DiscountMeta">${discountText}</p>
 <p class="estimateA4Total">Итого со скидкой: <strong>${formatMoney(totalAfterDiscount)} руб.</strong></p>`;
   }
   return `<p class="estimateA4Total">${escapeHtml(finalLabel)} <strong>${formatMoney(grossTotal)} руб.</strong></p>`;
@@ -241,6 +256,10 @@ export function buildEstimateDocPrintEmbedHtml(options: {
   includeTotals?: boolean;
   /** Скидка по договору, % — блок в подвале сметы. */
   contractDiscountPercent?: string;
+  /** Скидка в рублях (режим «руб.») — показывается вместе с производным %. */
+  discountAmountRub?: number | null;
+  /** Подпись строки скидки («по договору» / «по Д/с №…»). */
+  discountLabel?: string;
   grossLabel?: string;
   finalLabel?: string;
   executorPartyLabel?: EstimateDocPrintExecutorPartyLabel;
@@ -324,6 +343,8 @@ export function buildEstimateDocPrintEmbedHtml(options: {
     ? buildEstimateDiscountTotalsBlockHtml({
         grossTotal: snapshot.total,
         contractDiscountPercent,
+        discountAmountRub: options.discountAmountRub,
+        discountLabel: options.discountLabel,
         grossLabel,
         finalLabel,
       })
@@ -355,6 +376,8 @@ export function buildEstimateSheetPrintHtml(options: {
   directorName: string;
   customerFullName: string;
   contractDiscountPercent?: string;
+  /** Скидка в рублях (режим «руб.») — показывается вместе с производным %. */
+  discountAmountRub?: number | null;
   /** Класс корня `.docPrint` (например `windowsPackageUnifiedPrint`). */
   docPrintRootClass?: string;
 }): string {
@@ -377,6 +400,7 @@ export function buildEstimateSheetPrintHtml(options: {
     customerFullName: options.customerFullName,
     includeFooter: false,
     contractDiscountPercent: options.contractDiscountPercent,
+    discountAmountRub: options.discountAmountRub,
     grossLabel,
     finalLabel,
   });

@@ -39,3 +39,15 @@ export function formatDateRu(isoDate: string) {
 export function formatHubDiscountCell(discountPct: number) {
   return discountPct > 0 ? `${String(discountPct).replace('.', ',')} %` : '—';
 }
+
+/** Ячейка «Скидка»: при рублёвой скидке показываем сумму и производный %. */
+export function formatHubDiscountCellWithAmount(
+  discountPct: number,
+  discountAmountRub: number | null
+) {
+  if (discountAmountRub && discountPct > 0) {
+    const pct = String(Math.round(discountPct * 100) / 100).replace('.', ',');
+    return `${formatMoneyRublesKopecksGrouped(discountAmountRub)} ₽ (≈${pct} %)`;
+  }
+  return formatHubDiscountCell(discountPct);
+}

@@ -9,7 +9,11 @@ import { remoteSigningStatusLabel } from '@/shared/api/contract-documents/admin-
 import { PACKAGE_KIND_DIRECTION_SLUG } from '../../../config';
 import { CONTRACT_DOCUMENT_PACKAGE_KIND_LABELS } from '../../../config/contractDocumentsListKinds';
 import { isProductDirectionPackageKind } from '../../../config/productDirectionPackageKind';
-import { applyPackageContractDiscountToNullableBase } from '../../../platform/form/packageContractDiscount';
+import {
+  applyPackageContractDiscountToNullableBase,
+  formatDiscountPercentForField,
+  resolveAddendumSlotDiscount,
+} from '../../../platform/form/packageContractDiscount';
 import { getDisplayContractNumber } from '../../../platform/form/packageContractDisplay';
 import { type PackageFormData, mergePackageFormData } from '../../../platform/form/packageForm';
 import {
@@ -148,9 +152,10 @@ export function contractsListSignedAddendumRub(
 ): number | null {
   const slot = form.addendumSlots[slotIndex0];
   if (!slot || !contractsListIsAddendumSignedLikeStatus(slot.status)) return null;
+  // Скидка Д/с замещает договорную (INHERIT → договоровая).
   return contractsListSnapshotTotalAfterDiscountRub(
     slot.snapshot,
-    String(form.contract.discountPercent ?? '')
+    formatDiscountPercentForField(resolveAddendumSlotDiscount(form, slotIndex0).percent)
   );
 }
 

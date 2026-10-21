@@ -1,0 +1,47 @@
+/* Строка «[тип скидки ▾][значение]» внутри существующего поля вкладки.
+   Стили инпутов/селектов наследуются от родительского .field. */
+.discountControlsRow {
+  display: flex;
+  gap: var(--admin-space-xs);
+  min-width: 0;
+}
+
+/* Селектор «% | руб.» — компактный, не шире содержимого: базовые правила .field select
+   (большие паддинги, width: 100% в плотных режимах) расширяют его и выдавливают
+   значение из узкой ячейки, поэтому перебиваем с запасом специфичности. */
+.discountControlsRow.discountControlsRow select.discountControlsSelect {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 0;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  font-size: var(--admin-font-size-xs);
+}
+
+/* Значение скидки занимает остаток ячейки. */
+.discountControlsRow.discountControlsRow input.discountControlsInput {
+  flex: 1 1 0;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Вариант селекта на всю ширину поля (скидка Д/с: «По договору (…) | Своя, % | Своя, руб.»). */
+.discountControlsRow.discountControlsRow select.discountControlsSelectFull {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Фокус — синяя рамка с кольцом, как у полей вкладки «Данные» (data-tab.module.css). */
+.discountControlsRow.discountControlsRow select.discountControlsSelect:focus,
+.discountControlsRow.discountControlsRow select.discountControlsSelectFull:focus,
+.discountControlsRow.discountControlsRow input.discountControlsInput:focus {
+  border-color: var(--admin-focus-ring, #3b82f6);
+  box-shadow: 0 0 0 1px var(--admin-focus-ring, #3b82f6);
+  outline: none;
+}
+
+.discountHint {
+  margin: 0;
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-secondary);
+}

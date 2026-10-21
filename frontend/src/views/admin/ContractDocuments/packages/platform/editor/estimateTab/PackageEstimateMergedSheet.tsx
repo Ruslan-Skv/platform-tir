@@ -2,7 +2,11 @@
 
 import cdDocPreview from '../../../../styles/documents-preview.module.css';
 import cdEstimateTab from '../../../../styles/estimate-tab.module.css';
-import { applyPackageContractDiscountToAmount } from '../../form/packageContractDiscount';
+import {
+  applyPackageContractDiscountToAmount,
+  formatDiscountPercentShort,
+  resolveContractDiscount,
+} from '../../form/packageContractDiscount';
 import attachStyles from './PackageEstimateAttach.module.css';
 import type { PackageEstimateTabProps } from './PackageEstimateTab';
 import { PackageEstimateSignaturesBlock, formatPackageMoneyValue } from './estimateTabUi';
@@ -132,7 +136,16 @@ export function PackageEstimateMergedSheet({
                     </strong>
                   </p>
                   <p className={cdDocPreview.estimateA4DiscountMeta}>
-                    Скидка по договору: {String(contractDiscountPercentParsed).replace('.', ',')}%
+                    Скидка по договору:{' '}
+                    {form.contract.discountType === 'AMOUNT' &&
+                    resolveContractDiscount(form).amountRub ? (
+                      <>
+                        {formatPackageMoneyValue(resolveContractDiscount(form).amountRub ?? 0)}{' '}
+                        руб.( ≈{formatDiscountPercentShort(contractDiscountPercentParsed)}%)
+                      </>
+                    ) : (
+                      <>{formatDiscountPercentShort(contractDiscountPercentParsed)}%</>
+                    )}
                   </p>
                   <p className={cdDocPreview.estimateA4Total}>
                     Итого со скидкой:{' '}

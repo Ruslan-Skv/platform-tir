@@ -5,6 +5,8 @@ import Link from 'next/link';
 import cdHub from '../../../../styles/contracts-list-hub.module.css';
 import cdEstimateTab from '../../../../styles/estimate-tab.module.css';
 import cdProduct from '../../../../styles/product-package.module.css';
+import { contractDiscountHint } from '../../form/packageContractDiscount';
+import { PackageDiscountControls, PackageDiscountHint } from '../shared/PackageDiscountControls';
 import { PackageLockNotice, packageLockNoticeMessage } from '../shared/packageLockNoticeUi';
 import attachStyles from './PackageEstimateAttach.module.css';
 import { PackageEstimateAttachPanel } from './PackageEstimateAttachPanel';
@@ -58,6 +60,28 @@ export function PackageEstimateTabView(props: PackageEstimateTabProps) {
           ) : null}
           <div className={ESTIMATE_SECTION_FIELDS}>
             <PackageEstimateAttachPanel {...props} />
+            {(props.form.estimate.snapshot?.rooms?.length ?? 0) > 0 ? (
+              <div
+                className={`${cdEstimateTab.field} ${cdEstimateTab.fieldSpanAll} ${cdEstimateTab.estimateDiscountField}`}
+              >
+                <label htmlFor="estimate_discount_value">
+                  {props.isProductDirectionPackage
+                    ? 'Скидка на работы (счёт-заказ)'
+                    : 'Скидка на работы (по смете)'}
+                </label>
+                <PackageDiscountControls
+                  idPrefix="estimate_discount"
+                  mode={props.form.contract.discountType}
+                  percent={props.form.contract.discountPercent}
+                  amount={props.form.contract.discountAmount ?? ''}
+                  disabled={props.signedDocsLocked}
+                  onModeChange={props.onContractDiscountTypeChange}
+                  onPercentChange={props.onContractDiscountPercentChange}
+                  onAmountChange={props.onContractDiscountAmountChange}
+                />
+                <PackageDiscountHint>{contractDiscountHint(props.form)}</PackageDiscountHint>
+              </div>
+            ) : null}
             <PackageEstimateMergedSheet {...props} />
             <p
               className={`${ESTIMATE_HINT} ${cdEstimateTab.fieldSpanAll} ${attachStyles.estimateTabHintFullWidth}`}

@@ -12,6 +12,11 @@ import {
   defaultPackagePostWorkQuestionnaire2Block,
 } from './defaults';
 import { resolveExecutorBankFields } from './executorBankFields';
+import {
+  normalizeAddendumSlotDiscountType,
+  normalizeContractDiscountType,
+  syncPackageDiscountDerivedFields,
+} from './packageContractDiscount';
 import type {
   PackageAddendumSlotEstimateBlock,
   PackageAddendumSlotStatus,
@@ -241,6 +246,9 @@ function normalizeAddendumSlots(raw: unknown): PackageAddendumSlotsTuple {
     }
     out[i] = {
       status: normalizeAddendumSlotStatus(o.status),
+      discountType: normalizeAddendumSlotDiscountType(o.discountType),
+      discountPercent: typeof o.discountPercent === 'string' ? o.discountPercent : '',
+      discountAmount: typeof o.discountAmount === 'string' ? o.discountAmount : '',
       signedAt: typeof o.signedAt === 'string' ? o.signedAt : '',
       paidAt: typeof o.paidAt === 'string' ? o.paidAt : '',
       workPeriodIncreaseDays:
@@ -515,10 +523,16 @@ export function mergePackageFormData(raw: unknown): PackageFormData {
     addendumSlots,
     addendumDocumentDates
   );
-  return {
+  return syncPackageDiscountDerivedFields({
     ...merged,
     customer: mergedCustomer,
     executor: mergedExecutor,
+    contract: {
+      ...merged.contract,
+      discountType: normalizeContractDiscountType(merged.contract?.discountType),
+      discountAmount:
+        typeof merged.contract?.discountAmount === 'string' ? merged.contract.discountAmount : '',
+    },
     selectedRepairInstallerIds: Array.isArray(
       (merged as unknown as Record<string, unknown>).selectedRepairInstallerIds
     )
@@ -664,5 +678,5 @@ export function mergePackageFormData(raw: unknown): PackageFormData {
     issuedInvoices: normalizeIssuedInvoices(
       (merged as unknown as Record<string, unknown>).issuedInvoices
     ),
-  };
+  });
 }

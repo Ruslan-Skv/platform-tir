@@ -163,12 +163,15 @@ export function resolveWorkOrderComputedForTemplate(
   options?: {
     packageKind?: ContractDocumentPackageKind;
     windowsWorkOrderMarkupPercent?: number;
+    /** Скидка Д/с (замещает договорную) — для заказ-наряда по Д/с. */
+    discountPercentOverride?: string;
   }
 ): WorkOrderComputedForHtml {
+  const discountPercentRaw = options?.discountPercentOverride ?? form.contract.discountPercent;
   if (isProductDirectionPackageKind(options?.packageKind)) {
     return buildWindowsWorkOrderComputedForTemplate(
       snapshot,
-      form.contract.discountPercent,
+      discountPercentRaw,
       options.windowsWorkOrderMarkupPercent
     );
   }
@@ -177,7 +180,7 @@ export function resolveWorkOrderComputedForTemplate(
     form.workOrder.taxPercent,
     form.workOrder.markupPercent,
     form.workOrder.gradeIncreasePercent,
-    form.contract.discountPercent
+    discountPercentRaw
   );
 }
 

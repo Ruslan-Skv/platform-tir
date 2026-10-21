@@ -1,6 +1,9 @@
 import type { ContractEstimatePreset } from '@/shared/api/admin-contract-document-packages';
 
-import type { PackageAddendumSlotEstimateBlock } from '../../form/types';
+import type {
+  PackageAddendumSlotDiscountType,
+  PackageAddendumSlotEstimateBlock,
+} from '../../form/types';
 
 export type EstimateUsageRow = {
   packageId: string;
@@ -19,6 +22,16 @@ export type PackageAddendumEstimateBlockProps = {
   onDocumentDateChange: (value: string) => void;
   workPeriodIncreaseDays: string;
   onWorkPeriodIncreaseDaysChange: (value: string) => void;
+  /** Скидка Д/с: подпись наследуемой договоровой (напр. «5%» или «нет»). */
+  contractDiscountLabel: string;
+  /** Изменение скидки Д/с (тип / % / рубли); блокируется при подписании Д/с. */
+  onSlotDiscountChange: (patch: {
+    discountType?: PackageAddendumSlotDiscountType;
+    discountPercent?: string;
+    discountAmount?: string;
+  }) => void;
+  /** Подсказка по рублёвой скидке Д/с (пересчёт в % от итога работ Д/с). */
+  slotDiscountHint: string | null;
   estimatePresets: ContractEstimatePreset[];
   /** Подпись объекта из вкладки «Смета» (пусто — объект ещё не задан). */
   contractEstimateObjectLabel: string;

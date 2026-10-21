@@ -581,6 +581,7 @@ export function usePackageDocumentEditorController({
     addEstimatePresetToForm,
     moveEstimatePresetInForm,
     removeEstimatePresetFromForm,
+    updateContract,
   });
 
   const productSpecificationHandlers = usePackageProductSpecificationHandlers({

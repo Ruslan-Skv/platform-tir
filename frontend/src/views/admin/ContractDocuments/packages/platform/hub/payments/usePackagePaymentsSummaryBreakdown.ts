@@ -10,7 +10,10 @@ import {
 import { isProductDirectionPackageKind } from '../../../config/productDirectionPackageKind';
 import { computeProductContractCostBreakdown } from '../../../families/product-like/cost/productContractCostBreakdown';
 import { formatMoneyRublesKopecksGrouped } from '../../form/moneyWhole';
-import { parsePackageContractDiscountPercent } from '../../form/packageContractDiscount';
+import {
+  parsePackageContractDiscountPercent,
+  resolveAddendumSlotDiscount,
+} from '../../form/packageContractDiscount';
 import { type PackageFormData, clampPackageAddendumSlotCount } from '../../form/packageForm';
 import { buildPackagePaymentBasisOptions } from '../../payments/packagePaymentBasisOptions';
 import { computePackagePayableBreakdown } from '../../payments/packagePaymentTotals';
@@ -43,8 +46,17 @@ export function usePackagePaymentsSummaryBreakdown({
     return Array.from({ length: count }, (_, i) => {
       const totalRub =
         payableBreakdown.addendumTotalsRub.find((a) => a.slotIndex1 === i + 1)?.totalRub ?? null;
+      // Скидка строки Д/с: своя (замещает договорную) или договоровая.
+      const slotDiscount = resolveAddendumSlotDiscount(form, i);
       if (totalRub == null || !Number.isFinite(totalRub)) {
-        return { num: i + 1, costStr: '', rec100: '', hasData: false as const };
+        return {
+          num: i + 1,
+          costStr: '',
+          rec100: '',
+          hasData: false as const,
+          discountPct: slotDiscount.percent,
+          discountAmountRub: slotDiscount.amountRub,
+        };
       }
       const costStr = formatMoneyRublesKopecksGrouped(totalRub);
       return {
@@ -53,9 +65,11 @@ export function usePackagePaymentsSummaryBreakdown({
         // «Рекомендованная оплата» имеет смысл только когда по д/с есть что доплатить.
         rec100: totalRub > 0 ? costStr : '',
         hasData: true as const,
+        discountPct: slotDiscount.percent,
+        discountAmountRub: slotDiscount.amountRub,
       };
     });
-  }, [form.addendumSlotCount, payableBreakdown]);
+  }, [form, payableBreakdown]);
 
   const windowsCostBreakdown = useMemo(
     () =>

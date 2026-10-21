@@ -6,18 +6,17 @@ import type { InstallerMaster } from '@/shared/api/admin-crm';
 
 import { normalizeWindowsWorkOrderMarkupPercent } from '../../../families/product-like/print/productWorkOrder';
 import {
+  type FinalEstimateSummaryRow,
   type InstallerGradePercent,
+  applyFinalEstimateDiscountToRowAmount,
+  buildFinalEstimateDiscountFactors,
   buildFinalEstimateSummary,
   normalizeWorkOrderGrade,
   parseInstallerGradePercent,
   parsePercentForWorkOrder,
 } from '../../editor/shared/finalEstimateSummary';
 import type { EstimateEmbedSection } from '../../estimates/packageEstimateDocPrintEmbedHtml';
-import {
-  applyPackageContractDiscountToAmount,
-  packageContractDiscountMoneyFactor,
-  parsePackageContractDiscountPercent,
-} from '../../form/packageContractDiscount';
+import { parsePackageContractDiscountPercent } from '../../form/packageContractDiscount';
 import type { PackageFormData } from '../../form/packageForm';
 
 export type UsePackageFinalEstimateWorkOrdersOptions = {
@@ -48,13 +47,20 @@ export function usePackageFinalEstimateWorkOrders({
     [form.contract.discountPercent]
   );
 
+  // Скидка части строки зависит от источника: смета договора — договоровая, Д/с — своя.
+  const finalEstimateDiscountFactors = useMemo(
+    () => buildFinalEstimateDiscountFactors(form),
+    [form]
+  );
+
   const finalEstimateTotalAfterDiscount = useMemo(
     () =>
-      applyPackageContractDiscountToAmount(
-        finalEstimateSummary.totalAmount,
-        contractDiscountPercentParsed
+      finalEstimateSummary.rows.reduce(
+        (sum, row) =>
+          sum + applyFinalEstimateDiscountToRowAmount(row, finalEstimateDiscountFactors.factorFor),
+        0
       ),
-    [finalEstimateSummary.totalAmount, contractDiscountPercentParsed]
+    [finalEstimateSummary.rows, finalEstimateDiscountFactors]
   );
 
   const finalEstimateRooms = useMemo(() => {
@@ -72,6 +78,7 @@ export function usePackageFinalEstimateWorkOrders({
           amount: number;
           includedQuantity: number;
           excludedQuantity: number;
+          sourceAmounts: FinalEstimateSummaryRow['sourceAmounts'];
         }>;
       }
     >();
@@ -91,6 +98,7 @@ export function usePackageFinalEstimateWorkOrders({
         amount: row.amount,
         includedQuantity: row.includedQuantity,
         excludedQuantity: row.excludedQuantity,
+        sourceAmounts: row.sourceAmounts,
       });
       room.total += row.amount;
       roomMap.set(row.roomName, room);
@@ -219,9 +227,7 @@ export function usePackageFinalEstimateWorkOrders({
   );
 
   const finalWorkOrderComputed = useMemo(() => {
-    const discountFactor = packageContractDiscountMoneyFactor(
-      parsePackageContractDiscountPercent(form.contract.discountPercent)
-    );
+    const { factorFor: discountFactorFor } = finalEstimateDiscountFactors;
     const windowsMarkupFactor = isProductDirectionPackage
       ? 1 - normalizeWindowsWorkOrderMarkupPercent(windowsWorkOrderMarkupPercent) / 100
       : 1;
@@ -255,11 +261,14 @@ export function usePackageFinalEstimateWorkOrders({
             ? parseInstallerGradePercent(assignedInstaller.grade)
             : fallbackGradeIncreasePercent;
         const gradeFactor = isProductDirectionPackage ? 1 : 1 + gradeIncreasePercent / 100;
+        // Скидка — по источнику каждой части строки (смета договора / Д/с со своей скидкой),
+        // затем как раньше: налог, наценка, разряд.
+        const amountAfterDiscount = applyFinalEstimateDiscountToRowAmount(line, discountFactorFor);
         const priceFactor = isProductDirectionPackage
-          ? discountFactor * windowsMarkupFactor
-          : discountFactor * (1 - taxPercent / 100) * (1 - markupPercent / 100) * gradeFactor;
-        const adjustedPrice = line.price * priceFactor;
-        const adjustedAmount = line.amount * priceFactor;
+          ? windowsMarkupFactor
+          : (1 - taxPercent / 100) * (1 - markupPercent / 100) * gradeFactor;
+        const adjustedAmount = amountAfterDiscount * priceFactor;
+        const adjustedPrice = line.quantity > 0 ? adjustedAmount / line.quantity : 0;
         if (assignedInstaller) {
           const prev = installerTotalsMap.get(assignedInstaller.id) ?? {
             installer: assignedInstaller,
@@ -297,7 +306,7 @@ export function usePackageFinalEstimateWorkOrders({
     form.workOrder.taxPercent,
     form.workOrder.markupPercent,
     form.workOrder.gradeIncreasePercent,
-    form.contract.discountPercent,
+    finalEstimateDiscountFactors,
     form.finalEstimateInstallerAssignments,
     selectedInstallersById,
   ]);

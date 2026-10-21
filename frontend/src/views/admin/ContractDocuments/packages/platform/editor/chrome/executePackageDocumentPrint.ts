@@ -11,6 +11,7 @@ import {
 } from '../../../families/product-like/print/productPackagePrint';
 import { buildEstimateSheetPrintHtml } from '../../estimates/packageEstimateDocPrintEmbedHtml';
 import type { EstimateEmbedSection } from '../../estimates/packageEstimateDocPrintEmbedHtml';
+import { resolveContractDiscount } from '../../form/packageContractDiscount';
 import type { PackageFormData } from '../../form/packageForm';
 import {
   isPackageActA4PreviewTab,
@@ -83,6 +84,10 @@ export function executePackageDocumentPrint(input: ExecutePackageDocumentPrintIn
           directorName,
           customerFullName,
           contractDiscountPercent: form.contract.discountPercent,
+          discountAmountRub:
+            form.contract.discountType === 'AMOUNT'
+              ? resolveContractDiscount(form).amountRub
+              : null,
           docPrintRootClass: WINDOWS_PACKAGE_UNIFIED_PRINT_CLASS,
         });
         printWindowsEstimateSheetHtml(

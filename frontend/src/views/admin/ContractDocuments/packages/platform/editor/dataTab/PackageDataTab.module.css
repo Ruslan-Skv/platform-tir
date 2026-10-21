@@ -29,6 +29,18 @@
   right: 6px;
 }
 
+/* «Стоимость договора» — компактное поле под суммой, не на всю колонку
+   (и вне плотного режима; в плотном то же значение ниже) */
+.packageDataContractAmountField {
+  flex: 0 0 auto;
+  max-width: 12.5rem;
+}
+
+.packageDataContractAmountField input {
+  width: 100%;
+  max-width: 12.5rem;
+}
+
 :global(.packageDataTabDense) .packageDataContractAmountField {
   flex: 0 0 auto;
   max-width: 12.5rem;

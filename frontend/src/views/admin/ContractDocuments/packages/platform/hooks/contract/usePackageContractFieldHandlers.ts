@@ -9,6 +9,7 @@ import {
   applyPackageContractDiscountToAmount,
   packageEstimateTotalToContractFields,
   parsePackageContractDiscountPercent,
+  syncPackageDiscountDerivedFields,
 } from '../../form/packageContractDiscount';
 import type { PackageFormData } from '../../form/packageForm';
 
@@ -67,16 +68,21 @@ export function usePackageContractFieldHandlers({
         return;
       }
       setForm((p) => {
-        const nextContract = { ...p.contract, [key]: value };
+        let nextContract = { ...p.contract, [key]: value };
         if (key === 'workPeriod') {
           nextContract.workPeriodIsManual = true;
         }
-        if (key === 'discountPercent') {
+        if (key === 'discountPercent' || key === 'discountAmount' || key === 'discountType') {
+          // При рублёвой скидке пересчитываем эффективный % от итога сметы (актуальная база — в p).
+          nextContract = syncPackageDiscountDerivedFields({
+            ...p,
+            contract: nextContract,
+          }).contract;
           const base = p.estimate.snapshot?.total;
           if (typeof base === 'number' && Number.isFinite(base)) {
             const after = applyPackageContractDiscountToAmount(
               base,
-              parsePackageContractDiscountPercent(value)
+              parsePackageContractDiscountPercent(nextContract.discountPercent)
             );
             const fields = packageEstimateTotalToContractFields(after);
             nextContract.totalAmount = fields.totalAmount;

@@ -1,6 +1,10 @@
 'use client';
 
 import cdChrome from '../../../../styles/editor-chrome.module.css';
+import {
+  PackageAddendumSlotDiscountControls,
+  PackageDiscountHint,
+} from '../shared/PackageDiscountControls';
 import { PackageLockNotice, packageLockNoticeMessage } from '../shared/packageLockNoticeUi';
 import { PackageAddendumAdditionalWorksSection } from './PackageAddendumAdditionalWorksSection';
 import type { PackageAddendumEstimateBlockProps } from './PackageAddendumEstimateBlockProps';
@@ -29,6 +33,9 @@ export function PackageAddendumEstimateBlockView({
   onDocumentDateChange,
   workPeriodIncreaseDays,
   onWorkPeriodIncreaseDaysChange,
+  contractDiscountLabel,
+  onSlotDiscountChange,
+  slotDiscountHint,
   contractEstimateObjectLabel,
   ...sectionProps
 }: PackageAddendumEstimateBlockProps) {
@@ -127,6 +134,19 @@ export function PackageAddendumEstimateBlockView({
                 min={0}
                 step={1}
               />
+            </div>
+            <div className={`${ADDENDUM_FIELD} ${cdChrome.packageAddendumDiscountFieldRow}`}>
+              <label htmlFor={`repair_addendum_discount_${slotOrdinal}_mode`}>Скидка по Д/с</label>
+              <PackageAddendumSlotDiscountControls
+                idPrefix={`repair_addendum_discount_${slotOrdinal}`}
+                mode={slot.discountType}
+                percent={slot.discountPercent ?? ''}
+                amount={slot.discountAmount ?? ''}
+                contractDiscountLabel={contractDiscountLabel}
+                disabled={readOnly}
+                onChange={onSlotDiscountChange}
+              />
+              <PackageDiscountHint>{slotDiscountHint}</PackageDiscountHint>
             </div>
           </div>
           {estimateBody}

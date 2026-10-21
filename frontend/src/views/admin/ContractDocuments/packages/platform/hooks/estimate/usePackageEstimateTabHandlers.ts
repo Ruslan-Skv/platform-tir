@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 
-import type { PackageFormData } from '../../form/packageForm';
+import type { PackageContractDiscountType, PackageFormData } from '../../form/types';
+import type { PackageContractBlock } from '../../form/types';
 
 export type UsePackageEstimateTabHandlersOptions = {
   setForm: React.Dispatch<React.SetStateAction<PackageFormData>>;
@@ -9,6 +10,8 @@ export type UsePackageEstimateTabHandlersOptions = {
   addEstimatePresetToForm: (presetId: string) => void;
   moveEstimatePresetInForm: (sourceId: string, targetId: string) => void;
   removeEstimatePresetFromForm: (presetId: string) => void;
+  /** Обновление полей договора (вкладка «Данные») — для поля скидки на вкладке «Смета». */
+  updateContract: <K extends keyof PackageContractBlock>(key: K, value: string) => void;
 };
 
 export function usePackageEstimateTabHandlers({
@@ -18,6 +21,7 @@ export function usePackageEstimateTabHandlers({
   addEstimatePresetToForm,
   moveEstimatePresetInForm,
   removeEstimatePresetFromForm,
+  updateContract,
 }: UsePackageEstimateTabHandlersOptions) {
   const onEstimateObjectChange = useCallback(
     (groupKey: string) => {
@@ -40,5 +44,17 @@ export function usePackageEstimateTabHandlers({
     onAttachPreset,
     onMovePreset: moveEstimatePresetInForm,
     onRemovePreset: removeEstimatePresetFromForm,
+    onContractDiscountTypeChange: useCallback(
+      (value: string) => updateContract('discountType', value as PackageContractDiscountType),
+      [updateContract]
+    ),
+    onContractDiscountPercentChange: useCallback(
+      (value: string) => updateContract('discountPercent', value),
+      [updateContract]
+    ),
+    onContractDiscountAmountChange: useCallback(
+      (value: string) => updateContract('discountAmount', value),
+      [updateContract]
+    ),
   };
 }

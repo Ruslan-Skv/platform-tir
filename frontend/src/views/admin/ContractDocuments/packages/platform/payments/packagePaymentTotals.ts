@@ -13,7 +13,7 @@ import {
 import { computeProductContractCostBreakdown } from '../../families/product-like/cost/productContractCostBreakdown';
 import {
   applyPackageContractDiscountToAmount,
-  parsePackageContractDiscountPercent,
+  resolveAddendumSlotDiscount,
 } from '../form/packageContractDiscount';
 import { type PackageFormData, clampPackageAddendumSlotCount } from '../form/packageForm';
 
@@ -55,7 +55,6 @@ export interface PackagePayableBreakdown {
  */
 function computeRepairLikePayableBreakdown(form: PackageFormData): PackagePayableBreakdown {
   const mainContractRub = parseRubAmountString(form.contract.totalAmount);
-  const discountPct = parsePackageContractDiscountPercent(form.contract.discountPercent);
   const addendumTotalsRub: PackagePayableBreakdown['addendumTotalsRub'] = [];
   const count = clampPackageAddendumSlotCount(form.addendumSlotCount);
   let addendumSumKnown = 0;
@@ -63,8 +62,10 @@ function computeRepairLikePayableBreakdown(form: PackageFormData): PackagePayabl
     const slot = form.addendumSlots[i];
     const t = slot?.snapshot?.total;
     const rawTotal = typeof t === 'number' && Number.isFinite(t) ? t : null;
+    // Скидка Д/с замещает договорную (INHERIT → договоровая).
+    const slotDiscountPct = resolveAddendumSlotDiscount(form, i).percent;
     const totalRub =
-      rawTotal != null ? applyPackageContractDiscountToAmount(rawTotal, discountPct) : null;
+      rawTotal != null ? applyPackageContractDiscountToAmount(rawTotal, slotDiscountPct) : null;
     addendumTotalsRub.push({ slotIndex1: i + 1, totalRub });
     if (totalRub != null) {
       addendumSumKnown += totalRub;
@@ -138,7 +139,6 @@ export function computeFurniturePayableBreakdown(form: PackageFormData): Package
   pushLeg('appliances', furniture?.appliances?.enabled === true);
 
   const mainContractRub = hasAnyLegTotal ? legsSum : null;
-  const discountPct = parsePackageContractDiscountPercent(form.contract.discountPercent);
   const addendumTotalsRub: PackagePayableBreakdown['addendumTotalsRub'] = [];
   const count = clampPackageAddendumSlotCount(form.addendumSlotCount);
   let addendumSumKnown = 0;
@@ -146,8 +146,9 @@ export function computeFurniturePayableBreakdown(form: PackageFormData): Package
     const slot = form.addendumSlots[i];
     const t = slot?.snapshot?.total;
     const rawTotal = typeof t === 'number' && Number.isFinite(t) ? t : null;
+    const slotDiscountPct = resolveAddendumSlotDiscount(form, i).percent;
     const totalRub =
-      rawTotal != null ? applyPackageContractDiscountToAmount(rawTotal, discountPct) : null;
+      rawTotal != null ? applyPackageContractDiscountToAmount(rawTotal, slotDiscountPct) : null;
     addendumTotalsRub.push({ slotIndex1: i + 1, totalRub });
     if (totalRub != null) {
       addendumSumKnown += totalRub;

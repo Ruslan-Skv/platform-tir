@@ -57,6 +57,7 @@ import {
 import {
   applyPackageContractDiscountToAmount,
   parsePackageContractDiscountPercent,
+  resolveContractDiscount,
 } from '@/views/admin/ContractDocuments/packages/platform/form/packageContractDiscount';
 import { getPackageContractNumberDisplayForForm } from '@/views/admin/ContractDocuments/packages/platform/form/packageContractDisplay';
 import type { PackageFormData } from '@/views/admin/ContractDocuments/packages/platform/form/packageForm';
@@ -319,6 +320,10 @@ function buildEstimateHtml(ctx: PackageCustomerShareContext): string {
     directorName: ctx.form.executor.directorName,
     customerFullName: ctx.form.customer.fullName,
     contractDiscountPercent: ctx.form.contract.discountPercent,
+    discountAmountRub:
+      ctx.form.contract.discountType === 'AMOUNT'
+        ? resolveContractDiscount(ctx.form).amountRub
+        : null,
     docPrintRootClass: isProduct ? WINDOWS_PACKAGE_UNIFIED_PRINT_CLASS : undefined,
   });
 }

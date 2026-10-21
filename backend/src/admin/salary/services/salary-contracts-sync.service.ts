@@ -144,14 +144,17 @@ export class SalaryContractsSyncService {
       null;
     const surveyorId = nonEmptyString(contract?.surveyorUserId);
 
-    const discountRaw = nonEmptyString(contract?.discountPercent);
+    const contractDiscountPct = effectiveContractDiscountPercent(fd);
     let baseAmount = parseFlexibleNumber(contract?.totalAmount);
     if (baseAmount === null) {
-      baseAmount = snapshotTotalAfterDiscount(asRecord(fd?.estimate)?.snapshot, discountRaw);
+      baseAmount = snapshotTotalAfterDiscountPercent(
+        asRecord(fd?.estimate)?.snapshot,
+        contractDiscountPct,
+      );
     }
     baseAmount = baseAmount === null ? 0 : Math.max(round2(baseAmount), 0);
 
-    const extraBills = collectSignedAddenda(fd, discountRaw);
+    const extraBills = collectSignedAddenda(fd, contractDiscountPct);
     const signedDay = isoDayOrNull(fd?.contractConcludedAt);
     const closedDay = isoDayOrNull(fd?.repairContractCloseActSignedAt);
     const prepaidMap = await loadPrepaidReachedDates(this.prisma, [
@@ -269,17 +272,14 @@ function ruDayOrNull(value: unknown): string | null {
   return match ? `${match[3]}-${match[2]}-${match[1]}` : null;
 }
 
-/** Снимок сметы (total или сумма строк) со скидкой договора — как «СД» в списке договоров. */
-function snapshotTotalAfterDiscount(
-  snapshotRaw: unknown,
-  discountPercentRaw: string | null,
-): number | null {
+/** Снимок сметы (total или сумма строк) — база без скидки. */
+function snapshotBaseTotal(snapshotRaw: unknown): number | null {
   const snap = asRecord(snapshotRaw);
   if (!snap) return null;
-  let base: number | null = null;
   if (typeof snap.total === 'number' && Number.isFinite(snap.total)) {
-    base = snap.total;
-  } else if (Array.isArray(snap.rooms)) {
+    return snap.total;
+  }
+  if (Array.isArray(snap.rooms)) {
     let sum = 0;
     for (const roomRaw of snap.rooms) {
       const room = asRecord(roomRaw);
@@ -292,24 +292,64 @@ function snapshotTotalAfterDiscount(
         if (amount !== null) sum += amount;
       }
     }
-    base = sum;
+    return sum;
   }
-  if (base === null) return null;
-  const discount = discountPercentRaw === null ? 0 : (parseFlexibleNumber(discountPercentRaw) ?? 0);
-  return round2(base * (1 - Math.min(Math.max(discount, 0), 100) / 100));
+  return null;
 }
 
-/** Подписанные Д/с пакета → доп. соглашения з/п (сумма со скидкой, дата подписания). */
+/** Снимок сметы со скидкой (процент 0…100) — как «СД» в списке договоров. */
+function snapshotTotalAfterDiscountPercent(
+  snapshotRaw: unknown,
+  discountPercent: number,
+): number | null {
+  const base = snapshotBaseTotal(snapshotRaw);
+  if (base === null) return null;
+  return round2(base * (1 - Math.min(Math.max(discountPercent, 0), 100) / 100));
+}
+
+/** Эффективный % скидки договора: «рубли» пересчитываются от итога сметы, иначе поле %. */
+function effectiveContractDiscountPercent(fd: Record<string, unknown> | null): number {
+  const contract = asRecord(fd?.contract);
+  if (contract?.discountType === 'AMOUNT') {
+    const base = snapshotBaseTotal(asRecord(fd?.estimate)?.snapshot);
+    const amount = parseFlexibleNumber(contract?.discountAmount) ?? 0;
+    if (base == null || base <= 0 || amount <= 0) return 0;
+    return Math.min(100, (amount / base) * 100);
+  }
+  return Math.min(Math.max(parseFlexibleNumber(contract?.discountPercent) ?? 0, 0), 100);
+}
+
+/** Скидка Д/с, %: своя (%/рубли от итога работ Д/с) или договоровая (INHERIT). */
+function addendumSlotDiscountPercent(
+  slot: Record<string, unknown>,
+  contractDiscountPercent: number,
+): number {
+  if (slot.discountType === 'AMOUNT') {
+    const base = snapshotBaseTotal(slot.snapshot);
+    const amount = parseFlexibleNumber(slot.discountAmount) ?? 0;
+    if (base == null || base <= 0 || amount <= 0) return 0;
+    return Math.min(100, (amount / base) * 100);
+  }
+  if (slot.discountType === 'PERCENT') {
+    return Math.min(Math.max(parseFlexibleNumber(slot.discountPercent) ?? 0, 0), 100);
+  }
+  return contractDiscountPercent;
+}
+
+/** Подписанные Д/с пакета → доп. соглашения з/п (сумма со скидкой Д/с, дата подписания). */
 function collectSignedAddenda(
   fd: Record<string, unknown> | null,
-  discountRaw: string | null,
+  contractDiscountPercent: number,
 ): Array<{ amount: number; date: Date; note: string | null }> {
   const bills: Array<{ amount: number; date: Date; note: string | null }> = [];
   if (!fd || !Array.isArray(fd.addendumSlots)) return bills;
   fd.addendumSlots.forEach((slotRaw, index) => {
     const slot = asRecord(slotRaw);
     if (!slot || (slot.status !== 'SIGNED' && slot.status !== 'PAID')) return;
-    const amount = snapshotTotalAfterDiscount(slot.snapshot, discountRaw);
+    const amount = snapshotTotalAfterDiscountPercent(
+      slot.snapshot,
+      addendumSlotDiscountPercent(slot, contractDiscountPercent),
+    );
     if (amount === null) return;
     const docDates = Array.isArray(fd.addendumDocumentDates) ? fd.addendumDocumentDates : [];
     const day =

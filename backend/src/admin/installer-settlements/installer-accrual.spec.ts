@@ -138,4 +138,76 @@ describe('computeInstallerAccrual', () => {
     });
     expect(accrued.size).toBe(0);
   });
+
+  it('скидка по источникам: своя скидка Д/с замещает договоровую', () => {
+    const accrued = computeInstallerAccrual({
+      kind: ContractDocumentPackageKind.REPAIR,
+      installerGradeById: grades,
+      formData: {
+        contract: { discountPercent: '10' },
+        workOrder: { taxPercent: '0', markupPercent: '0', gradeIncreasePercent: 0 },
+        estimate: {
+          snapshot: {
+            total: 1000,
+            rooms: [{ name: 'Зал', lines: [ROOM_LINE('Полы', 'м²', 10, 1000)] }],
+          },
+        },
+        addendumSlotCount: 1,
+        addendumSlots: [
+          {
+            discountType: 'PERCENT',
+            discountPercent: '50',
+            snapshot: {
+              total: 200,
+              rooms: [{ name: 'Зал', lines: [ROOM_LINE('Плинтус', 'м', 4, 200)] }],
+            },
+            excludedSnapshot: null,
+          },
+        ],
+        finalEstimateInstallerAssignments: {
+          'Зал::Полы::м²': { installerId: 'master-x' },
+          'Зал::Плинтус::м': { installerId: 'master-x' },
+        },
+      },
+    });
+    // Полы (смета договора, скидка 10%): 1000 × 0.9 = 900;
+    // Плинтус (Д/с со своей скидкой 50%, договоровая не применяется): 200 × 0.5 = 100.
+    expect(accrued.get('master-x')?.total).toBeCloseTo(1000, 6);
+  });
+
+  it('рублёвая скидка: договор — от итога сметы, Д/с — от итога работ Д/с', () => {
+    const accrued = computeInstallerAccrual({
+      kind: ContractDocumentPackageKind.REPAIR,
+      installerGradeById: grades,
+      formData: {
+        contract: { discountType: 'AMOUNT', discountAmount: '250', discountPercent: '25' },
+        workOrder: { taxPercent: '0', markupPercent: '0', gradeIncreasePercent: 0 },
+        estimate: {
+          snapshot: {
+            total: 1000,
+            rooms: [{ name: 'Зал', lines: [ROOM_LINE('Полы', 'м²', 10, 1000)] }],
+          },
+        },
+        addendumSlotCount: 1,
+        addendumSlots: [
+          {
+            // 100 руб. от итога Д/с 200 руб. → 50%
+            discountType: 'AMOUNT',
+            discountAmount: '100',
+            snapshot: {
+              total: 200,
+              rooms: [{ name: 'Зал', lines: [ROOM_LINE('Плинтус', 'м', 4, 200)] }],
+            },
+            excludedSnapshot: null,
+          },
+        ],
+        finalEstimateInstallerAssignments: {
+          'Зал::Полы::м²': { installerId: 'master-x' },
+          'Зал::Плинтус::м': { installerId: 'master-x' },
+        },
+      },
+    });
+    // Полы: 1000 − 250 = 750; Плинтус: 200 − 100 = 100.
+    expect(accrued.get('master-x')?.total).toBeCloseTo(850, 6);
+  });
 });

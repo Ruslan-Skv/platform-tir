@@ -12,6 +12,12 @@ import { ProductAddendumTab } from '../../../families/product-like/addendum/Prod
 import type { ProductAddendumSpecificationLine } from '../../../families/product-like/addendum/addendumSpecification';
 import { PackageAddendumEstimateBlock } from '../../editor/addendum/PackageAddendumEstimateBlock';
 import { applyEstimatePresetIdsToAddendumSlot } from '../../estimates/applyEstimatePresetIds';
+import {
+  addendumSlotDiscountHint,
+  formatDiscountPercentShort,
+  resolveContractDiscount,
+  syncPackageDiscountDerivedFields,
+} from '../../form/packageContractDiscount';
 import { isPackageAddendumSlotRemovable } from '../../form/packageForm';
 import type { PackageFormData } from '../../form/packageForm';
 import {
@@ -115,8 +121,16 @@ export function usePackageAddendumEditor({
     (slotIndex0: number, patch: Partial<PackageFormData['addendumSlots'][number]>) => {
       setForm((p) => {
         const slots = [...p.addendumSlots] as PackageFormData['addendumSlots'];
-        slots[slotIndex0] = { ...slots[slotIndex0], ...patch };
-        const next = { ...p, addendumSlots: slots };
+        const target = slots[slotIndex0];
+        if (!target) return p;
+        // Скидка Д/с, как и расчёты, фиксируется при подписании/оплате Д/с.
+        const touchesDiscount =
+          patch.discountType !== undefined ||
+          patch.discountPercent !== undefined ||
+          patch.discountAmount !== undefined;
+        if (touchesDiscount && target.status !== 'OPEN') return p;
+        slots[slotIndex0] = { ...target, ...patch };
+        const next = syncPackageDiscountDerivedFields({ ...p, addendumSlots: slots });
         formRef.current = next;
         schedulePersistDebounced();
         setDirty(true);
@@ -198,6 +212,7 @@ export function usePackageAddendumEditor({
     const slot = form.addendumSlots[slotIndex0];
     if (!slot) return null;
 
+    const contractDiscountPercent = resolveContractDiscount(form).percent;
     return {
       slotOrdinal: activeAddendumSlot,
       slot,
@@ -207,6 +222,12 @@ export function usePackageAddendumEditor({
       workPeriodIncreaseDays: slot.workPeriodIncreaseDays ?? '',
       onWorkPeriodIncreaseDaysChange: (v) =>
         patchAddendumSlotField(slotIndex0, { workPeriodIncreaseDays: v }),
+      contractDiscountLabel:
+        contractDiscountPercent > 0
+          ? `${formatDiscountPercentShort(contractDiscountPercent)}%`
+          : 'нет',
+      onSlotDiscountChange: (patch) => patchAddendumSlotField(slotIndex0, patch),
+      slotDiscountHint: addendumSlotDiscountHint(form, slotIndex0),
       estimatePresets,
       contractEstimateObjectLabel,
       addendumAttachablePresets: attachableAddendumEstimatePresets,
@@ -287,8 +308,7 @@ export function usePackageAddendumEditor({
     draggingAddendumExcludedEstimatePresetId,
     estimatePresets,
     estimateUsageById,
-    form.addendumDocumentDates,
-    form.addendumSlots,
+    form,
     isProductDirectionPackage,
     patchAddendumDocumentDate,
     patchAddendumSlotField,

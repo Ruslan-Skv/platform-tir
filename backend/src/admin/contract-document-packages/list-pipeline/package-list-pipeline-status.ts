@@ -109,6 +109,42 @@ function parseDiscountPercent(raw: unknown): number {
   return Math.min(100, parseRubAmount(raw) ?? 0);
 }
 
+/** Эффективный % скидки договора: «рубли» пересчитываются от итога сметы, иначе поле %. */
+function contractDiscountPercent(
+  formData: Record<string, unknown>,
+  contract: Record<string, unknown> | null,
+): number {
+  if (contract?.discountType === 'AMOUNT') {
+    const amount = parseRubAmount(contract?.discountAmount) ?? 0;
+    const snap = asObj(asObj(formData.estimate)?.snapshot);
+    const base =
+      snap && typeof snap.total === 'number' && Number.isFinite(snap.total) ? snap.total : null;
+    if (base == null || base <= 0 || amount <= 0) return 0;
+    return Math.min(100, (amount / base) * 100);
+  }
+  return parseDiscountPercent(contract?.discountPercent);
+}
+
+/** Скидка Д/с, %: своя (%/рубли от итога работ Д/с) или договоровая (INHERIT). */
+function addendumSlotDiscountPercent(
+  slot: Record<string, unknown> | null,
+  contractDiscountPct: number,
+): number {
+  if (!slot) return contractDiscountPct;
+  if (slot.discountType === 'AMOUNT') {
+    const amount = parseRubAmount(slot.discountAmount) ?? 0;
+    const snap = asObj(slot.snapshot);
+    const base =
+      snap && typeof snap.total === 'number' && Number.isFinite(snap.total) ? snap.total : null;
+    if (base == null || base <= 0 || amount <= 0) return 0;
+    return Math.min(100, (amount / base) * 100);
+  }
+  if (slot.discountType === 'PERCENT') {
+    return parseDiscountPercent(slot.discountPercent);
+  }
+  return contractDiscountPct;
+}
+
 /** Процент наценки: ≥ 0 без верхнего предела — наценка может превышать 100. */
 function parseMarkupPercent(raw: unknown): number {
   return parseRubAmount(raw) ?? 0;
@@ -323,9 +359,8 @@ function computeProductMainContractRub(formData: Record<string, unknown>): numbe
   const worksRaw =
     typeof snap?.total === 'number' && Number.isFinite(snap.total) ? snap.total : null;
   const contract = asObj(formData.contract);
-  const discountRaw = contract?.discountPercent;
   const worksAmount =
-    worksRaw != null ? applyDiscount(worksRaw, parseDiscountPercent(discountRaw)) : 0;
+    worksRaw != null ? applyDiscount(worksRaw, contractDiscountPercent(formData, contract)) : 0;
 
   const ceilingsNet = sumCeilingsProducts(formData);
   const doorsGross = sumDoorsProducts(formData);
@@ -349,7 +384,7 @@ function computePayableBreakdown(
   formData: Record<string, unknown>,
 ): PayableBreakdown {
   const contract = asObj(formData.contract);
-  const discountPct = parseDiscountPercent(contract?.discountPercent);
+  const discountPct = contractDiscountPercent(formData, contract);
   const mainContractRub = isProductKind(kind)
     ? computeProductMainContractRub(formData)
     : parseRubAmount(contract?.totalAmount);
@@ -360,6 +395,8 @@ function computePayableBreakdown(
   let addendumSumKnown = 0;
   for (let i = 0; i < count; i++) {
     const slot = slots[i];
+    // Скидка Д/с замещает договорную (INHERIT → договоровая).
+    const slotDiscountPct = addendumSlotDiscountPercent(slot, discountPct);
     const snap = asObj(slot?.snapshot);
     const rawTotal =
       typeof snap?.total === 'number' && Number.isFinite(snap.total) ? snap.total : null;
@@ -378,15 +415,15 @@ function computePayableBreakdown(
           : 0;
       const accountGrossNet = (rawTotal ?? 0) - rawExcluded;
       const accountNetAfterDiscount =
-        discountPct > 0 && accountGrossNet > 0
-          ? applyDiscount(accountGrossNet, discountPct)
+        slotDiscountPct > 0 && accountGrossNet > 0
+          ? applyDiscount(accountGrossNet, slotDiscountPct)
           : accountGrossNet;
       const specNetTotal =
         sumProductAddendumSpecLines(slot?.specificationAddedLines) -
         sumProductAddendumSpecLines(slot?.specificationExcludedLines);
       totalRub = specNetTotal + accountNetAfterDiscount;
     } else {
-      totalRub = rawTotal != null ? applyDiscount(rawTotal, discountPct) : null;
+      totalRub = rawTotal != null ? applyDiscount(rawTotal, slotDiscountPct) : null;
     }
     addendumTotalsRub.push({ slotIndex1: i + 1, totalRub });
     if (totalRub != null) addendumSumKnown += totalRub;

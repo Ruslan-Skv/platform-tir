@@ -449,7 +449,7 @@
 
 .packageAddendumMetaInlineRow {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: var(--admin-space-md);
   align-items: flex-end;
   margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-lg);
@@ -467,6 +467,12 @@
 
 .packageAddendumWorkPeriodIncreaseFieldRow input {
   width: 100%;
+}
+
+/* Скидка Д/с (наследование договоровой или своя) — третье поле строки метаданных */
+.packageAddendumDiscountFieldRow {
+  margin: 0;
+  max-width: 300px;
 }
 
 .packageAddendumEstimateHeading {

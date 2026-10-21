@@ -12,6 +12,7 @@ import { formatMoneyWholeGrouped } from '../form/moneyWhole';
 import {
   applyPackageContractDiscountToNullableBase,
   packageEstimateTotalToContractFields,
+  syncPackageDiscountDerivedFields,
 } from '../form/packageContractDiscount';
 import type { PackageFormData } from '../form/packageForm';
 
@@ -52,7 +53,7 @@ function detachMainPackageEstimateFromForm(
   productDirection?: boolean
 ): PackageFormData {
   const cleared = contractTotalsForEstimate(previous, null, productDirection);
-  return {
+  return syncPackageDiscountDerivedFields({
     ...previous,
     estimateObjectGroupKey: '',
     contract: {
@@ -68,7 +69,7 @@ function detachMainPackageEstimateFromForm(
       snapshot: null,
       notes: '',
     },
-  };
+  });
 }
 
 export type EstimateSnapshotLine = {
@@ -423,26 +424,32 @@ export function applyEstimatePresetIdsToPackageForm(
     }))
   );
   const notes = formatCombinedEstimateNotes(selectedPresets, mergedSnapshot, estimateGroups);
-  const contractTotals = contractTotalsForEstimate(
-    previous,
-    mergedSnapshot,
-    options?.productDirection
-  );
-  return {
+  // Сначала обновляем смету и пересчитываем производный % рублёвой скидки от новой базы,
+  // затем — суммы договора от актуального процента.
+  const withEstimate: PackageFormData = {
     ...previous,
     estimateObjectGroupKey: groupKey,
-    contract: {
-      ...previous.contract,
-      totalAmount: contractTotals.totalAmount,
-      totalAmountWords: contractTotals.totalAmountWords,
-      recommendedPrepayment: contractTotals.recommendedPrepayment,
-    },
     estimate: {
       ...previous.estimate,
       selectedPresetId: coercedIds[0] ?? '',
       selectedPresetIds: coercedIds,
       snapshot: mergedSnapshot,
       notes,
+    },
+  };
+  const synced = syncPackageDiscountDerivedFields(withEstimate);
+  const contractTotals = contractTotalsForEstimate(
+    synced,
+    mergedSnapshot,
+    options?.productDirection
+  );
+  return {
+    ...synced,
+    contract: {
+      ...synced.contract,
+      totalAmount: contractTotals.totalAmount,
+      totalAmountWords: contractTotals.totalAmountWords,
+      recommendedPrepayment: contractTotals.recommendedPrepayment,
     },
   };
 }
@@ -485,7 +492,7 @@ export function applyEstimatePresetIdsToAddendumSlot(
         ? { selectedPresetIds: [], snapshot: null, notes: '' }
         : { excludedSelectedPresetIds: [], excludedSnapshot: null, excludedNotes: '' }),
     };
-    return { ...previous, addendumSlots: nextSlots };
+    return syncPackageDiscountDerivedFields({ ...previous, addendumSlots: nextSlots });
   }
 
   const selectedPresets = uniqueIds
@@ -508,9 +515,9 @@ export function applyEstimatePresetIdsToAddendumSlot(
           excludedNotes: notes,
         }),
   };
-  return {
+  return syncPackageDiscountDerivedFields({
     ...previous,
     ...(formObjectKey ? null : { estimateObjectGroupKey: objectKey }),
     addendumSlots: nextSlots,
-  };
+  });
 }

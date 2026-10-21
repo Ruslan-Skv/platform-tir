@@ -6,6 +6,8 @@ export type PackageContractObjectBlockFieldId =
   | 'contract.date'
   | 'contract.workPeriod'
   | 'contract.discountPercent'
+  | 'contract.discountType'
+  | 'contract.discountAmount'
   | 'object.objectAddress'
   | 'object.objectFloor'
   | 'object.objectDescription'
@@ -30,6 +32,8 @@ export function snapshotPackageContractObjectBlockFields(
     'contract.date': data.contract.date ?? '',
     'contract.workPeriod': data.contract.workPeriod ?? '',
     'contract.discountPercent': data.contract.discountPercent ?? '',
+    'contract.discountType': data.contract.discountType ?? 'PERCENT',
+    'contract.discountAmount': data.contract.discountAmount ?? '',
     'object.objectAddress': data.object.objectAddress ?? '',
     'object.objectFloor': data.object.objectFloor ?? '',
     'object.objectDescription': data.object.objectDescription ?? '',

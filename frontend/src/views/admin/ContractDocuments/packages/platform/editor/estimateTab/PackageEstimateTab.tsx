@@ -43,6 +43,10 @@ export type PackageEstimateTabProps = {
   onAttachPreset: (presetId: string) => void;
   onMovePreset: (sourceId: string, targetId: string) => void;
   onRemovePreset: (presetId: string) => void;
+  /** Скидка на работы (то же поле, что на вкладке «Данные»): тип и значения. */
+  onContractDiscountTypeChange: (value: 'PERCENT' | 'AMOUNT') => void;
+  onContractDiscountPercentChange: (value: string) => void;
+  onContractDiscountAmountChange: (value: string) => void;
 };
 
 export function PackageEstimateTab(props: PackageEstimateTabProps) {

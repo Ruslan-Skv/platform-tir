@@ -11,9 +11,11 @@ import cdProduct from '../../../../styles/product-package.module.css';
 import cdTemplates from '../../../../styles/templates-library.module.css';
 import { isFurnitureLikePackageKind } from '../../../config';
 import { isProductDirectionPackageKind } from '../../../config/productDirectionPackageKind';
+import { resolveContractDiscount } from '../../form/packageContractDiscount';
 import {
   formatContractMoneyFieldRaw,
   formatHubDiscountCell,
+  formatHubDiscountCellWithAmount,
   formatMoneyRub,
   formatPercentOfGrandTotal,
 } from './packageContractPaymentsFormat';
@@ -165,7 +167,10 @@ export function PackageContractPaymentsHubSummarySection({
                   <tr>
                     <td>Договор</td>
                     <td className={cdBase.paymentsHubSummaryNumCol}>
-                      {formatHubDiscountCell(paymentsContractDiscountPct)}
+                      {formatHubDiscountCellWithAmount(
+                        paymentsContractDiscountPct,
+                        resolveContractDiscount(form).amountRub
+                      )}
                     </td>
                     <td className={cdBase.paymentsHubSummaryNumCol}>
                       {formatContractMoneyFieldRaw(form.contract.totalAmount) ||
@@ -199,7 +204,7 @@ export function PackageContractPaymentsHubSummarySection({
                       <tr key={`pay_hub_ds_${row.num}`}>
                         <td>Д/с №{row.num}</td>
                         <td className={cdBase.paymentsHubSummaryNumCol}>
-                          {formatHubDiscountCell(paymentsContractDiscountPct)}
+                          {formatHubDiscountCellWithAmount(row.discountPct, row.discountAmountRub)}
                         </td>
                         <td className={cdBase.paymentsHubSummaryNumCol}>
                           {row.costStr ? `${row.costStr} ₽` : formatMoneyRub(cov?.totalRub ?? null)}

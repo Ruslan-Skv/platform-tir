@@ -10,7 +10,9 @@ import {
   DEFAULT_PACKAGE_CONTRACT_WORK_PERIOD_DAYS,
   DEFAULT_PRODUCT_CONTRACT_WORK_PERIOD_DAYS,
 } from '../../form/contractWorkPeriod';
+import { contractDiscountHint } from '../../form/packageContractDiscount';
 import { ContractDocumentsHelpTooltip } from '../../ui/ContractDocumentsHelpTooltip';
+import { PackageDiscountControls, PackageDiscountHint } from '../shared/PackageDiscountControls';
 import { PackageContractNumberField } from './PackageContractNumberField';
 import type { PackageDataTabProps } from './PackageDataTab';
 import styles from './PackageDataTab.module.css';
@@ -167,22 +169,25 @@ export function PackageDataContractObjectSection({
             <div
               className={`${DATA_FIELD} ${cdDataTab.contractInlineField} ${cdDataTab.contractDiscountFieldCell}`}
             >
-              <label htmlFor="contract_discount_pct">Скидка на работы</label>
-              <input
-                id="contract_discount_pct"
-                inputMode="decimal"
-                value={form.contract.discountPercent}
-                onChange={(e) => updateContract('discountPercent', e.target.value)}
-                placeholder="0"
-                autoComplete="off"
+              <label htmlFor="contract_discount_value">Скидка на работы</label>
+              <PackageDiscountControls
+                idPrefix="contract_discount"
+                mode={form.contract.discountType}
+                percent={form.contract.discountPercent}
+                amount={form.contract.discountAmount ?? ''}
                 disabled={signedDocsLocked}
-                readOnly={signedDocsLocked}
-                className={
-                  signedDocsLocked
-                    ? DATA_AUTO_FILLED
-                    : contractObjectBlockFieldClassName('contract.discountPercent')
-                }
+                amountModeAvailable={!isFurnitureLikePackageKind(packageKind)}
+                selectClassName={contractObjectBlockFieldClassName('contract.discountType')}
+                inputClassName={contractObjectBlockFieldClassName(
+                  form.contract.discountType === 'AMOUNT'
+                    ? 'contract.discountAmount'
+                    : 'contract.discountPercent'
+                )}
+                onModeChange={(v) => updateContract('discountType', v)}
+                onPercentChange={(v) => updateContract('discountPercent', v)}
+                onAmountChange={(v) => updateContract('discountAmount', v)}
               />
+              <PackageDiscountHint>{contractDiscountHint(form)}</PackageDiscountHint>
             </div>
           </div>
           <div className={`${cdDataTab.contractInlineRow} ${cdDataTab.contractObjectAddressRow}`}>
