@@ -7,6 +7,17 @@ export const FURNITURE_STATUS_LABELS = {
   CLOSED: 'Закрытые',
 } as const;
 
+/**
+ * Порядок секций план-графика при фильтре «Все»: в работе → на очереди →
+ * рекламации → закрытые. Общий и для списка, и для сортировки под пагинацию.
+ */
+export const FURNITURE_STATUS_SECTION_ORDER = [
+  'IN_PROGRESS',
+  'NEW',
+  'CLAIMS',
+  'CLOSED',
+] as const satisfies ReadonlyArray<keyof typeof FURNITURE_STATUS_LABELS>;
+
 export const ENTRY_KIND_LABELS = {
   WEEKLY: 'Неделя',
   MILESTONE: 'Веха',

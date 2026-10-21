@@ -16,6 +16,7 @@ import {
 import { useAdminListPagination } from '@/views/admin/CRM/shared/list-pagination';
 
 import {
+  FURNITURE_STATUS_SECTION_ORDER,
   type FurnitureProjectFormValues,
   emptyFurnitureProjectForm,
   matchesDeadlineFilter,
@@ -25,6 +26,7 @@ import {
 import {
   compareFurnitureProjectsByAge,
   compareFurnitureProjectsByClosedAt,
+  compareFurnitureProjectsByContractDate,
 } from '../../shared/furnitureObjectGroups';
 
 export type FurnitureDeadlineFilter = 'ALL' | 'LE20' | 'LE10' | 'LE3' | 'OVERDUE';
@@ -159,22 +161,27 @@ export function useFurnitureSchedulesPage() {
 
   const visibleItems = useMemo(() => {
     let rows = statusScopedItems.filter((i) => matchesDeadlineFilter(i, deadlineFilter));
-    if (deadlineFilter !== 'ALL') {
+    if (statusFilter === 'ALL') {
+      // «Все»: секции идут в фиксированном порядке (в работе → на очереди → рекламации →
+      // закрытые), внутри секции — по дате договора, как их показывает список. Пагинация
+      // нарезает страницы по этому порядку, поэтому статусы не перемешиваются между страницами.
+      rows = [...rows].sort((a, b) => {
+        const sa = FURNITURE_STATUS_SECTION_ORDER.indexOf(a.status);
+        const sb = FURNITURE_STATUS_SECTION_ORDER.indexOf(b.status);
+        return sa !== sb ? sa - sb : compareFurnitureProjectsByContractDate(a, b);
+      });
+    } else if (deadlineFilter !== 'ALL') {
       rows = [...rows].sort((a, b) => {
         const da = a.deadlineDaysLeft ?? Number.POSITIVE_INFINITY;
         const db = b.deadlineDaysLeft ?? Number.POSITIVE_INFINITY;
         if (da !== db) return da - db;
         return statusFilter === 'CLOSED'
           ? compareFurnitureProjectsByClosedAt(a, b, true)
-          : compareFurnitureProjectsByAge(a, b, statusFilter === 'ALL');
+          : compareFurnitureProjectsByAge(a, b, false);
       });
-    } else if (statusFilter === 'CLOSED' || statusFilter === 'ALL') {
-      // Закрытые / Все: сверху новые (для закрытых — по дате закрытия).
-      rows = [...rows].sort((a, b) =>
-        statusFilter === 'CLOSED'
-          ? compareFurnitureProjectsByClosedAt(a, b, true)
-          : compareFurnitureProjectsByAge(a, b, true)
-      );
+    } else if (statusFilter === 'CLOSED') {
+      // Закрытые: сверху новые (по дате закрытия).
+      rows = [...rows].sort((a, b) => compareFurnitureProjectsByClosedAt(a, b, true));
     } else {
       // На очереди / В работе / Рекламации: сверху старые, снизу новые.
       rows = [...rows].sort((a, b) => compareFurnitureProjectsByAge(a, b, false));

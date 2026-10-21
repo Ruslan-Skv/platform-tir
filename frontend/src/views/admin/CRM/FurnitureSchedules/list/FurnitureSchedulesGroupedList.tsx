@@ -14,7 +14,12 @@ import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.mod
 
 import { FurnitureDeadlineWarningBadge } from '../shared/FurnitureDeadlineWarningBadge';
 import styles from '../shared/FurnitureSchedules.module.css';
-import { FURNITURE_STATUS_LABELS, formatDate, formatMoney } from '../shared/furniture-schedules';
+import {
+  FURNITURE_STATUS_LABELS,
+  FURNITURE_STATUS_SECTION_ORDER,
+  formatDate,
+  formatMoney,
+} from '../shared/furniture-schedules';
 import {
   buildRepairObjectGroups,
   compareFurnitureProjectsByContractDate,
@@ -39,13 +44,12 @@ type Props = {
 
 const COL_SPAN = 8;
 
-/** Порядок секций при фильтре «Все»: в работе → на очереди → закрытые. */
-const STATUS_SECTIONS: Array<{ status: FurnitureScheduleProjectStatus; label: string }> = [
-  { status: 'IN_PROGRESS', label: 'В работе' },
-  { status: 'NEW', label: 'На очереди' },
-  { status: 'CLAIMS', label: 'Рекламации' },
-  { status: 'CLOSED', label: 'Закрытые' },
-];
+/** Порядок секций при фильтре «Все»: в работе → на очереди → рекламации → закрытые. */
+const STATUS_SECTIONS: Array<{ status: FurnitureScheduleProjectStatus; label: string }> =
+  FURNITURE_STATUS_SECTION_ORDER.map((status) => ({
+    status,
+    label: FURNITURE_STATUS_LABELS[status],
+  }));
 
 type StatusSection = {
   id: string;
