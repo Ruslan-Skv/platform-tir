@@ -6,7 +6,13 @@
   grid-column: 1 / -1;
 }
 
-.numberingRow {
+/*
+ * Строка «Офис | Замерщик | Номер» — именно 3 колонки, без переноса «Номер дог.».
+ * Специфичность выше `.contractInlineRow` (2 колонки): порядок CSS-модулей в бандле
+ * различается между dev- и prod-сборками Next.js, равная специфичность приводила
+ * к переносу номера на вторую строку в проде.
+ */
+.wrap .numberingRow {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   column-gap: var(--admin-space-md);
   align-items: start;
@@ -68,7 +74,7 @@
 }
 
 @media (max-width: 720px) {
-  .numberingRow {
+  .wrap .numberingRow {
     grid-template-columns: minmax(0, 1fr);
   }
 
