@@ -14,6 +14,16 @@ export const REPAIR_STATUS_GROUP_LABELS = {
   CLOSED: 'Закрытые',
 } as const;
 
+/**
+ * Порядок секций план-графика при фильтре «Все»: в работе → новые → закрытые.
+ * Общий и для списка, и для сортировки под пагинацию.
+ */
+export const REPAIR_STATUS_SECTION_ORDER = [
+  'IN_PROGRESS',
+  'NEW',
+  'CLOSED',
+] as const satisfies ReadonlyArray<keyof typeof REPAIR_STATUS_GROUP_LABELS>;
+
 export type RepairStatusChangeTexts = {
   title: string;
   message: string;

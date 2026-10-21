@@ -18,7 +18,9 @@ import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.mod
 import { RepairDeadlineWarningBadge } from '../shared/RepairDeadlineWarningBadge';
 import styles from '../shared/RepairSchedules.module.css';
 import {
+  REPAIR_STATUS_GROUP_LABELS,
   REPAIR_STATUS_LABELS,
+  REPAIR_STATUS_SECTION_ORDER,
   formatDate,
   formatMoney,
   packageObjectTexts,
@@ -49,11 +51,11 @@ type Props = {
 const COL_SPAN = 10;
 
 /** Порядок секций при фильтре «Все»: в работе → новые → закрытые. */
-const STATUS_SECTIONS: Array<{ status: RepairScheduleProjectStatus; label: string }> = [
-  { status: 'IN_PROGRESS', label: 'В работе' },
-  { status: 'NEW', label: 'Новые договора' },
-  { status: 'CLOSED', label: 'Закрытые' },
-];
+const STATUS_SECTIONS: Array<{ status: RepairScheduleProjectStatus; label: string }> =
+  REPAIR_STATUS_SECTION_ORDER.map((status) => ({
+    status,
+    label: REPAIR_STATUS_GROUP_LABELS[status],
+  }));
 
 type StatusSection = {
   id: string;

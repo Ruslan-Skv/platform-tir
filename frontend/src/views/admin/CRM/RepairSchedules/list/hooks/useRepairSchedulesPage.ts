@@ -19,6 +19,7 @@ import {
 import { useAdminListPagination } from '@/views/admin/CRM/shared/list-pagination';
 
 import {
+  REPAIR_STATUS_SECTION_ORDER,
   type RepairProjectFormValues,
   emptyRepairProjectForm,
   matchesDeadlineFilter,
@@ -219,23 +220,36 @@ export function useRepairSchedulesPage() {
 
   const visibleItems = useMemo(() => {
     let rows = statusScopedItems.filter((i) => matchesDeadlineFilter(i, deadlineFilter));
-    if (deadlineFilter !== 'ALL') {
+    if (statusFilter === 'ALL') {
+      // «Все»: блоки объектов раскладываем по секциям агрегатным статусом блока
+      // (в работе → новые → закрытые), внутри секции блоки — старые сверху, как в списке.
+      // Пагинация нарезает страницы по этому порядку, поэтому секции и блоки объектов
+      // не перемешиваются между страницами.
+      const blocks = buildRepairObjectGroups(
+        [...rows].sort((a, b) => compareRepairProjectsByAge(a, b, false))
+      );
+      const bySection = new Map<RepairScheduleProjectStatus, RepairScheduleProject[]>();
+      for (const status of REPAIR_STATUS_SECTION_ORDER) bySection.set(status, []);
+      for (const block of blocks) {
+        bySection.get(repairObjectGroupStatus(block.projects))?.push(...block.projects);
+      }
+      rows = REPAIR_STATUS_SECTION_ORDER.flatMap((status) => bySection.get(status) ?? []);
+    } else if (deadlineFilter !== 'ALL') {
       rows = [...rows].sort((a, b) => {
         const da = a.deadlineDaysLeft ?? Number.POSITIVE_INFINITY;
         const db = b.deadlineDaysLeft ?? Number.POSITIVE_INFINITY;
         if (da !== db) return da - db;
         return statusFilter === 'CLOSED'
           ? compareRepairProjectsByClosedAt(a, b, true)
-          : compareRepairProjectsByAge(a, b, statusFilter === 'ALL');
+          : compareRepairProjectsByAge(a, b, false);
       });
     } else if (statusFilter === 'CLOSED') {
       // Закрытые: сверху закрытые позднее всего.
       rows = [...rows].sort((a, b) => compareRepairProjectsByClosedAt(a, b, true));
     } else {
-      // Новые / В работе — старые сверху; Все — новые сверху.
+      // Новые / В работе — старые сверху.
       // Группировка по объекту потом держит договоры вместе по первому появлению.
-      const newestFirst = statusFilter === 'ALL';
-      rows = [...rows].sort((a, b) => compareRepairProjectsByAge(a, b, newestFirst));
+      rows = [...rows].sort((a, b) => compareRepairProjectsByAge(a, b, false));
     }
     return rows;
   }, [statusScopedItems, deadlineFilter, statusFilter]);
