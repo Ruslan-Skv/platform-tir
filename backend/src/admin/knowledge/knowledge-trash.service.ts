@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+import { KnowledgeUploadService } from './knowledge-upload.service';
 
 export const KNOWLEDGE_TRASH_RETENTION_DAYS = 30;
 const KNOWLEDGE_TRASH_RETENTION_MS = KNOWLEDGE_TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
@@ -31,9 +32,32 @@ const deletedBySelect = {
   email: true,
 } satisfies Prisma.UserSelect;
 
+const materialFilesSelect = {
+  videoUrl: true,
+  thumbnailUrl: true,
+  attachments: { select: { fileUrl: true } },
+} satisfies Prisma.KnowledgeMaterialSelect;
+
+type MaterialWithFiles = {
+  videoUrl: string | null;
+  thumbnailUrl: string | null;
+  attachments: { fileUrl: string }[];
+};
+
 @Injectable()
 export class KnowledgeTrashService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly uploadService: KnowledgeUploadService,
+  ) {}
+
+  private materialFileUrls(material: MaterialWithFiles): (string | null)[] {
+    return [
+      material.videoUrl,
+      material.thumbnailUrl,
+      ...material.attachments.map((a) => a.fileUrl),
+    ];
+  }
 
   permanentDeleteAtIso(deletedAt: Date): string {
     return new Date(deletedAt.getTime() + KNOWLEDGE_TRASH_RETENTION_MS).toISOString();
@@ -46,6 +70,27 @@ export class KnowledgeTrashService {
   private async purgeExpiredTrash(): Promise<void> {
     const cutoff = new Date(Date.now() - KNOWLEDGE_TRASH_RETENTION_MS);
 
+    const expiredCategories = await this.prisma.knowledgeCategory.findMany({
+      where: { deletedAt: { lt: cutoff } },
+      select: { id: true, image: true },
+    });
+    const expiredCategoryIds = expiredCategories.map((c) => c.id);
+
+    // Материалы истёкших категорий удаляются каскадом вместе с категорией,
+    // даже если сами ещё не истекли, — их файлы тоже нужно удалить с диска.
+    const [expiredMaterials, categoryMaterials] = await Promise.all([
+      this.prisma.knowledgeMaterial.findMany({
+        where: { deletedAt: { lt: cutoff } },
+        select: materialFilesSelect,
+      }),
+      expiredCategoryIds.length
+        ? this.prisma.knowledgeMaterial.findMany({
+            where: { categoryId: { in: expiredCategoryIds } },
+            select: materialFilesSelect,
+          })
+        : Promise.resolve<MaterialWithFiles[]>([]),
+    ]);
+
     await this.prisma.$transaction([
       this.prisma.knowledgeMaterial.deleteMany({
         where: { deletedAt: { lt: cutoff } },
@@ -57,6 +102,12 @@ export class KnowledgeTrashService {
         where: { deletedAt: { lt: cutoff } },
       }),
     ]);
+
+    const fileUrls = [
+      ...expiredCategories.flatMap((c) => [c.image]),
+      ...[...expiredMaterials, ...categoryMaterials].flatMap((m) => this.materialFileUrls(m)),
+    ];
+    await this.uploadService.removeLocalFilesByUrls(fileUrls);
   }
 
   async softDeleteMaterial(id: string, deletedById: string) {
@@ -292,16 +343,19 @@ export class KnowledgeTrashService {
   async permanentDeleteMaterial(id: string): Promise<void> {
     const row = await this.prisma.knowledgeMaterial.findFirst({
       where: { id, deletedAt: { not: null } },
+      select: materialFilesSelect,
     });
     if (!row) {
       throw new NotFoundException('Материал не найден в корзине');
     }
     await this.prisma.knowledgeMaterial.delete({ where: { id } });
+    await this.uploadService.removeLocalFilesByUrls(this.materialFileUrls(row));
   }
 
   async permanentDeleteCategory(id: string): Promise<void> {
     const row = await this.prisma.knowledgeCategory.findFirst({
       where: { id, deletedAt: { not: null } },
+      select: { id: true, image: true },
     });
     if (!row) {
       throw new NotFoundException('Категория не найдена в корзине');
@@ -315,7 +369,13 @@ export class KnowledgeTrashService {
       );
     }
     // Каскадом удалятся модули и материалы категории, находящиеся в корзине.
+    const materials = await this.prisma.knowledgeMaterial.findMany({
+      where: { categoryId: id },
+      select: materialFilesSelect,
+    });
     await this.prisma.knowledgeCategory.delete({ where: { id } });
+    const fileUrls = [row.image, ...materials.flatMap((m) => this.materialFileUrls(m))];
+    await this.uploadService.removeLocalFilesByUrls(fileUrls);
   }
 
   async permanentDeleteModule(id: string): Promise<void> {

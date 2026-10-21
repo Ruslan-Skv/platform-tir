@@ -69,19 +69,33 @@ export class KnowledgeService {
     return this.targetAudienceService.createTargetAudience(dto);
   }
 
-  private async syncAttachments(materialId: string, attachments: KnowledgeAttachmentDto[]) {
-    await this.prisma.knowledgeMaterialAttachment.deleteMany({ where: { materialId } });
-    if (!attachments.length) return;
-    await this.prisma.knowledgeMaterialAttachment.createMany({
-      data: attachments.map((a, i) => ({
-        materialId,
-        fileName: a.fileName.trim(),
-        fileUrl: a.fileUrl.trim(),
-        fileSize: a.fileSize ?? null,
-        mimeType: a.mimeType?.trim() || null,
-        sortOrder: a.sortOrder ?? i,
-      })),
+  /**
+   * Пересоздаёт вложения материала и возвращает fileUrl удалённых вложений,
+   * чтобы вызывающий код мог снять с диска ставшие ненужными файлы.
+   */
+  private async syncAttachments(
+    materialId: string,
+    attachments: KnowledgeAttachmentDto[],
+  ): Promise<string[]> {
+    const previous = await this.prisma.knowledgeMaterialAttachment.findMany({
+      where: { materialId },
+      select: { fileUrl: true },
     });
+    await this.prisma.knowledgeMaterialAttachment.deleteMany({ where: { materialId } });
+    if (attachments.length) {
+      await this.prisma.knowledgeMaterialAttachment.createMany({
+        data: attachments.map((a, i) => ({
+          materialId,
+          fileName: a.fileName.trim(),
+          fileUrl: a.fileUrl.trim(),
+          fileSize: a.fileSize ?? null,
+          mimeType: a.mimeType?.trim() || null,
+          sortOrder: a.sortOrder ?? i,
+        })),
+      });
+    }
+    const keptUrls = new Set(attachments.map((a) => a.fileUrl.trim()));
+    return previous.map((a) => a.fileUrl).filter((url) => !keptUrls.has(url));
   }
 
   async createMaterial(authorId: string, dto: CreateKnowledgeMaterialDto) {
@@ -323,8 +337,9 @@ export class KnowledgeService {
     const wasPublished = existing.status === PageStatus.PUBLISHED;
     const willPublish = nextStatus === PageStatus.PUBLISHED;
 
+    let removedAttachmentUrls: string[] = [];
     if (dto.attachments !== undefined) {
-      await this.syncAttachments(id, dto.attachments);
+      removedAttachmentUrls = await this.syncAttachments(id, dto.attachments);
     }
 
     if (dto.targetAudienceIds !== undefined) {
@@ -382,6 +397,19 @@ export class KnowledgeService {
       },
       include: buildMaterialInclude(),
     });
+
+    // Локальные файлы (uploads/knowledge), на которые после обновления
+    // больше не ссылается ни одно поле, удаляем с диска. Внешние ссылки
+    // removeLocalFilesByUrls игнорирует.
+    const staleFileUrls = [
+      ...(nextVideoUrl !== existing.videoUrl ? [existing.videoUrl] : []),
+      ...(nextThumbnailUrl !== existing.thumbnailUrl ? [existing.thumbnailUrl] : []),
+      ...removedAttachmentUrls,
+    ];
+    if (staleFileUrls.length) {
+      await this.uploadService.removeLocalFilesByUrls(staleFileUrls);
+    }
+
     return mapMaterialResponse(material, true);
   }
 

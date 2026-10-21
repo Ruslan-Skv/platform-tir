@@ -87,6 +87,8 @@ COPY prisma/seed-product-card-badges.cjs ./prisma/seed-product-card-badges.cjs
 COPY prisma/seed-quiz-remont.cjs ./prisma/seed-quiz-remont.cjs
 # Сид библиотеки шаблонов договоров + снимки для запуска в контейнере
 COPY prisma/seed-contract-template-presets.cjs ./prisma/seed-contract-template-presets.cjs
+# Зачистка осиротевших файлов uploads/knowledge (запускается вручную в контейнере)
+COPY prisma/cleanup-knowledge-uploads.cjs ./prisma/cleanup-knowledge-uploads.cjs
 COPY prisma/seed-data ./prisma/seed-data
 RUN npx prisma generate
 

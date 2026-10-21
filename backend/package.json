@@ -53,7 +53,8 @@
     "prisma:copy-doors-templates-to-ceilings": "ts-node -r tsconfig-paths/register scripts/copy-doors-templates-to-ceilings.ts",
     "prisma:seed-ceilings-price-list": "ts-node -r tsconfig-paths/register prisma/seed-ceilings-price-list.ts",
     "prisma:check-ceilings-montage-works": "ts-node -r tsconfig-paths/register prisma/seed-ceilings-montage-works-check.ts",
-    "create-super-admin": "ts-node -r tsconfig-paths/register prisma/create-super-admin.ts"
+    "create-super-admin": "ts-node -r tsconfig-paths/register prisma/create-super-admin.ts",
+    "knowledge:cleanup-uploads": "node prisma/cleanup-knowledge-uploads.cjs"
   },
   "overrides": {
     "multer": "^2.3.0",

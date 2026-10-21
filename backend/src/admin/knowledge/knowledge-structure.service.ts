@@ -6,13 +6,17 @@ import {
 } from '@nestjs/common';
 import { KnowledgeMaterialType, PageStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+import { KnowledgeUploadService } from './knowledge-upload.service';
 import { CreateKnowledgeCategoryDto } from './dto/create-knowledge-category.dto';
 import { CreateKnowledgeModuleDto } from './dto/create-knowledge-module.dto';
 import { ImportKnowledgeCategoryOutlineDto } from './dto/import-knowledge-category-outline.dto';
 
 @Injectable()
 export class KnowledgeStructureService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly uploadService: KnowledgeUploadService,
+  ) {}
 
   async assertModuleBelongsToCategory(moduleId: string, categoryId: string) {
     const mod = await this.prisma.knowledgeModule.findUnique({
@@ -59,7 +63,10 @@ export class KnowledgeStructureService {
   }
 
   async updateCategory(id: string, data: Partial<CreateKnowledgeCategoryDto>) {
-    await this.prisma.knowledgeCategory.findUniqueOrThrow({ where: { id } });
+    const existing = await this.prisma.knowledgeCategory.findUniqueOrThrow({
+      where: { id },
+      select: { image: true },
+    });
     if (data.slug) {
       const existing = await this.prisma.knowledgeCategory.findFirst({
         where: { slug: data.slug, NOT: { id } },
@@ -68,7 +75,11 @@ export class KnowledgeStructureService {
         throw new ConflictException(`Категория со slug "${data.slug}" уже существует`);
       }
     }
-    return this.prisma.knowledgeCategory.update({ where: { id }, data });
+    const updated = await this.prisma.knowledgeCategory.update({ where: { id }, data });
+    if (data.image !== undefined && data.image !== existing.image) {
+      await this.uploadService.removeLocalFilesByUrls([existing.image]);
+    }
+    return updated;
   }
 
   async createModule(dto: CreateKnowledgeModuleDto) {
