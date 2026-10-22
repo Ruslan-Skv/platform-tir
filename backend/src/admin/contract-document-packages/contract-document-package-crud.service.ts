@@ -14,7 +14,6 @@ import {
   extractEstimatePresetIds,
   extractSignatoryCrmUserId,
 } from './form/contract-package-form-read';
-import { revertContractConclusionForm } from './form/contract-conclusion-revert';
 import { CreateContractDocumentPackageDto } from './dto/create-contract-document-package.dto';
 import { UpdateContractDocumentPackageDto } from './dto/update-contract-document-package.dto';
 import { injectDefaultWorkPeriodIntoFormData } from './repair-contract-work-period';
@@ -284,75 +283,6 @@ export class ContractDocumentPackageCrudService {
     return this.findOne(id);
   }
 
-  /**
-   * Супер-админ: отмена подписания договора вне 30-секундного окна хаба
-   * (кнопка «Отменить подписание» в списке договоров). FormData строится из
-   * хранимой — данные клиента не используются, поэтому защита устаревшей
-   * формы (preserveRemoteSigningStateOnUpdate) здесь не применяется.
-   */
-  async revertSigning(id: string, actorUserId?: string | null) {
-    const row = await this.findOne(id);
-    if (row.status !== ContractDocumentPackageStatus.CONTRACT_CONCLUDED) {
-      throw new BadRequestException('Отменить подписание можно только у подписанного договора');
-    }
-    // Возврат в работу отзывает и активные сессии ЭП (маркер _remoteSigning
-    // чистится внутри) — иначе пакет висел бы «На согласовании» уже в работе.
-    // Выполняется до записи отката, чтобы маркер не попал в снимок версии.
-    try {
-      await this.signingSessions.cancelActiveSessionsOnManualConclusion(id);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      this.logger.warn(
-        `Отзыв сессий ЭП при отмене подписания пакета ${id} не выполнен: ${message}`,
-      );
-    }
-    const fresh = await this.findOne(id);
-    const formDataToSave = revertContractConclusionForm(fresh.formData) as Prisma.InputJsonValue;
-    await this.contractNumbering.syncNumberAssignmentsForPackage(id, formDataToSave);
-    const updated = await this.prisma.contractDocumentPackage.update({
-      where: { id },
-      data: {
-        formData: formDataToSave,
-        status: ContractDocumentPackageStatus.IN_PROGRESS,
-      },
-      include: contractDocumentPackageInclude,
-    });
-    await this.appendPackageVersion(
-      id,
-      {
-        title: updated.title,
-        formData: updated.formData as Prisma.InputJsonValue,
-        status: updated.status,
-      },
-      actorUserId ?? null,
-    );
-    // Статус договора в списке изменился — двигаем проект план-графика (как в update()).
-    if (updated.kind === ContractDocumentPackageKind.REPAIR) {
-      try {
-        await this.repairScheduleFromPackage.refreshProjectsSnapshotFromPackage(updated.id);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        this.logger.warn(
-          `Обновление снимка план-графика ремонта для пакета ${updated.id} не удалось: ${message}`,
-        );
-      }
-      try {
-        await this.repairScheduleFromPackage.syncProjectStatusFromPackage(
-          updated.id,
-          actorUserId ?? null,
-        );
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        this.logger.warn(
-          `Синхронизация статуса план-графика ремонта для пакета ${updated.id} не удалась: ${message}`,
-        );
-      }
-    }
-    // Событийная синхронизация договора в расчёт з/п (ошибки логируются внутри).
-    void this.salarySync.syncPackageSafe(id);
-    return this.findOne(id);
-  }
-
   async listVersions(packageId: string) {
     await this.findOne(packageId);
     const versions = await this.prisma.contractDocumentPackageVersion.findMany({
@@ -546,7 +476,8 @@ export class ContractDocumentPackageCrudService {
     return haystack.includes(searchNorm);
   }
 
-  private async appendPackageVersion(
+  /** Добавляет снимок пакета в журнал версий (без дублей подряд одинаковых). Публично для смежных сервисов модуля. */
+  async appendPackageVersion(
     packageId: string,
     snapshot: {
       title: string | null;

@@ -14,6 +14,7 @@ import { ContractDocumentPackageInstallerAdvancesService } from './payments/cont
 import { ContractDocumentPackagesController } from './contract-document-packages.controller';
 import { ContractDocumentPackagesService } from './contract-document-packages.service';
 import { ContractDocumentPackageCrudService } from './contract-document-package-crud.service';
+import { ContractDocumentPackageSigningRevertService } from './signing/contract-document-package-signing-revert.service';
 import { ContractDocumentPackageListService } from './list-pipeline/contract-document-package-list.service';
 import { ContractDocumentPackageGlobalLibraryService } from './contract-document-package-global-library.service';
 import { ContractDocumentPackageEstimatePresetsService } from './contract-document-package-estimate-presets.service';
@@ -36,6 +37,7 @@ import { ContractDocumentPackageCeilingsPriceListService } from './contract-docu
   providers: [
     ContractDocumentPackagesService,
     ContractDocumentPackageCrudService,
+    ContractDocumentPackageSigningRevertService,
     ContractDocumentPackageListService,
     ContractDocumentPackageGlobalLibraryService,
     ContractDocumentPackageEstimatePresetsService,

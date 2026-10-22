@@ -23,6 +23,7 @@ import {
 } from './contract-document-package-estimate-transfer.service';
 import { ContractDocumentPackageKindSettingsService } from './contract-document-package-kind-settings.service';
 import { ContractDocumentPackageCrudService } from './contract-document-package-crud.service';
+import { ContractDocumentPackageSigningRevertService } from './signing/contract-document-package-signing-revert.service';
 import {
   ContractDocumentPackageListService,
   type ContractDocumentPackageFindAllFilters,
@@ -34,6 +35,7 @@ import { SetCeilingsPriceListDto } from './dto/settings/set-ceilings-price-list.
 export class ContractDocumentPackagesService {
   constructor(
     private readonly crud: ContractDocumentPackageCrudService,
+    private readonly signingRevert: ContractDocumentPackageSigningRevertService,
     private readonly list: ContractDocumentPackageListService,
     private readonly globalLibrary: ContractDocumentPackageGlobalLibraryService,
     private readonly estimatePresets: ContractDocumentPackageEstimatePresetsService,
@@ -67,7 +69,7 @@ export class ContractDocumentPackagesService {
 
   /** Супер-админ: отмена подписания договора и возврат в работу (без окна хаба). */
   revertSigning(id: string, actorUserId?: string | null) {
-    return this.crud.revertSigning(id, actorUserId);
+    return this.signingRevert.revertSigning(id, actorUserId);
   }
 
   listVersions(packageId: string) {
