@@ -10,7 +10,7 @@ import { loadSignedStageTabIds } from './signing-stage-evidence';
  * форма редактора, а не осознанное действие. Зеркалит фронтенд-константу
  * CONTRACT_SIGNED_REVERT_WINDOW_MS (packageHubConstants.ts).
  */
-export const REMOTE_SIGNING_CONCLUSION_REVERT_WINDOW_MS = 30 * 1000;
+export const REMOTE_SIGNING_CONCLUSION_REVERT_WINDOW_MS = 5 * 1000;
 
 /** Поля formData, которые ЭП-флоу пишет в formData при подписании актов. */
 const ACT_SIGNS: Array<{

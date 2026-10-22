@@ -1412,7 +1412,7 @@ export class ContractDocumentPackagesController {
     return this.service.update(id, dto, req.user?.id);
   }
 
-  /** Супер-админ: отмена подписания договора вне 30-секундного окна хаба. */
+  /** Супер-админ: отмена подписания договора вне 5-секундного окна хаба. */
   @Post(':id/revert-signing')
   @Roles('SUPER_ADMIN')
   revertSigning(@Param('id') id: string, @Req() req: RequestWithUser) {

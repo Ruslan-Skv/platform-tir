@@ -723,7 +723,7 @@ export async function updateContractDocumentPackage(
 }
 
 /**
- * Супер-админ: отмена подписания договора вне 30-секундного окна хаба.
+ * Супер-админ: отмена подписания договора вне 5-секундного окна хаба.
  * FormData и статус пересчитываются на сервере из хранимых данных.
  */
 export async function revertContractDocumentPackageSigning(

@@ -265,8 +265,8 @@ describe('remoteSigningPreservationEvidenceTabs', () => {
     ).toEqual(new Set());
   });
 
-  it('окно отката — 30 секунд', () => {
-    expect(REMOTE_SIGNING_CONCLUSION_REVERT_WINDOW_MS).toBe(30 * 1000);
+  it('окно отката — 5 секунд', () => {
+    expect(REMOTE_SIGNING_CONCLUSION_REVERT_WINDOW_MS).toBe(5 * 1000);
   });
 
   it('обновление только статуса: дата не проверяется, статус — подтверждается', () => {

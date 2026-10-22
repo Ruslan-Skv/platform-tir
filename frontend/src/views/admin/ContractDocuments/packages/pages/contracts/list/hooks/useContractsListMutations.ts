@@ -169,7 +169,7 @@ export function useContractsListMutations({
     [packagePendingDelete]
   );
 
-  /** Супер-админ: отмена подписания договора и возврат в работу (без 30-сек окна хаба). */
+  /** Супер-админ: отмена подписания договора и возврат в работу (без 5-сек окна хаба). */
   const requestRevertSigning = useCallback(
     (pkg: ContractDocumentPackage) => {
       if (!canEdit || !isSuperAdmin || pkg.status !== 'CONTRACT_CONCLUDED') return;

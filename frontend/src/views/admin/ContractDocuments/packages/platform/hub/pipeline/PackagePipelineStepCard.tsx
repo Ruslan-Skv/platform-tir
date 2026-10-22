@@ -95,7 +95,7 @@ export function PackagePipelineStepCard({
               <span
                 className={hubStyles.pipelineRevertSpinner}
                 role="status"
-                aria-label="Идёт отсчёт 30 секунд на отмену"
+                aria-label="Идёт отсчёт 5 секунд на отмену"
               />
               Отменить подписание договора можно в течение{' '}
               {Math.ceil(pipeline.contractSignedRevertRemainingMs / 1000)} с
@@ -168,7 +168,7 @@ export function PackagePipelineStepCard({
                       <span
                         className={hubStyles.pipelineRevertSpinner}
                         role="status"
-                        aria-label="Идёт отсчёт 30 секунд на отмену"
+                        aria-label="Идёт отсчёт 5 секунд на отмену"
                       />
                       Отменить подписание ({Math.ceil(card.signedRevertRemainingMs / 1000)} с)
                     </button>

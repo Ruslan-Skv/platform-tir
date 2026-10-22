@@ -89,7 +89,7 @@ export function usePackageHub({
     useState<ContractDocumentPackageStatus>('IN_PROGRESS');
   const [paymentRows, setPaymentRows] = useState<ContractDocumentPackagePayment[]>([]);
   const [savingPackageStatus, setSavingPackageStatus] = useState(false);
-  // Тик перерисовки во время 30-секундного окна отмены подписания —
+  // Тик перерисовки во время 5-секундного окна отмены подписания —
   // подключён к зависимостям pipeline, чтобы отсчёт секунд шёл «живьём».
   const [undoUiTick, setUndoUiTick] = useState(0);
 
@@ -489,7 +489,7 @@ export function usePackageHub({
         payments: paymentRows,
         nowMs: Date.now(),
       }),
-    // undoUiTick — чтобы отсчёт 30 секунд на отмену подписания обновлялся каждую секунду.
+    // undoUiTick — чтобы отсчёт 5 секунд на отмену подписания обновлялся каждую секунду.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- значение тика не читается напрямую: оно принуждает пересчитать nowMs.
     [packageKind, packageFlowStatus, form, paymentRows, undoUiTick]
   );
@@ -628,7 +628,7 @@ export function usePackageHub({
       packageFlowStatusRef.current === 'CONTRACT_CONCLUDED' &&
       isWithinMsSinceIso(formRef.current.contractConcludedAt, CONTRACT_SIGNED_REVERT_WINDOW_MS);
     if (!canRevert) {
-      setError('Снять статус «Договор подписан» можно только в течение 30 секунд после установки.');
+      setError('Снять статус «Договор подписан» можно только в течение 5 секунд после установки.');
       return;
     }
     setSavingPackageStatus(true);
