@@ -722,6 +722,24 @@ export async function updateContractDocumentPackage(
   return res.json();
 }
 
+/**
+ * Супер-админ: отмена подписания договора вне 30-секундного окна хаба.
+ * FormData и статус пересчитываются на сервере из хранимых данных.
+ */
+export async function revertContractDocumentPackageSigning(
+  id: string
+): Promise<ContractDocumentPackage> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/${id}/revert-signing`,
+    {
+      method: 'POST',
+      headers: getAdminAuthHeaders(),
+    }
+  );
+  if (!res.ok) throw new Error(await readAdminContractPackagesError(res));
+  return res.json();
+}
+
 /** Фото акта начала работ для пакета «Ремонт»; файл сохраняется на сервере, в ответе — относительный `imageUrl`. */
 export async function uploadRepairPackageWorkStartActPhoto(
   packageId: string,

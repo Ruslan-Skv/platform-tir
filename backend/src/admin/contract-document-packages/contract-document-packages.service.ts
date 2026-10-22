@@ -65,6 +65,11 @@ export class ContractDocumentPackagesService {
     return this.crud.update(id, dto, savedById);
   }
 
+  /** Супер-админ: отмена подписания договора и возврат в работу (без окна хаба). */
+  revertSigning(id: string, actorUserId?: string | null) {
+    return this.crud.revertSigning(id, actorUserId);
+  }
+
   listVersions(packageId: string) {
     return this.crud.listVersions(packageId);
   }

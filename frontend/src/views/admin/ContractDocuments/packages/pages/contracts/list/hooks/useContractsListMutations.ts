@@ -11,8 +11,8 @@ import type {
 import {
   createContractDocumentPackage,
   getContractDocumentPackage,
+  revertContractDocumentPackageSigning,
   trashContractDocumentPackage,
-  updateContractDocumentPackage,
 } from '@/shared/api/admin-contract-document-packages';
 import { adminContractDocumentsContractsPackageHref } from '@/views/admin/ContractDocuments/packages/config/contractDocumentsContractsRoutes';
 
@@ -186,16 +186,9 @@ export function useContractsListMutations({
       setRevertSigningPackageId(id);
       setError(null);
       try {
-        const formData = {
-          ...((pkg.formData ?? {}) as Record<string, unknown>),
-          contractConcludedAt: '',
-          contractPaidAt: '',
-        };
-        await updateContractDocumentPackage(id, {
-          formData,
-          status: 'IN_PROGRESS',
-          recordVersion: true,
-        });
+        // FormData и статус сбрасывает сервер (отдельный эндпоинт супер-админа):
+        // общий PATCH нейтрализуется защитой устаревшей формы.
+        await revertContractDocumentPackageSigning(id);
         setPackagePendingRevertSign(null);
         await load();
       } catch (e) {
@@ -222,7 +215,7 @@ export function useContractsListMutations({
               formData: (packagePendingRevertSign.formData ?? {}) as Record<string, unknown>,
             });
             const suffix = n && String(n).trim() !== '' && n !== '—' ? ` «${n}»` : '';
-            return `Отменить подписание договора${suffix} и вернуть его на доработку? Статус изменится на «В работе», дата подписания сбросится. Оплаты и план-график сохранятся.`;
+            return `Отменить подписание договора${suffix} и вернуть его на доработку? Статус изменится на «В работе», дата подписания сбросится, подписания д/с будут сняты. Оплаты и план-график сохранятся.`;
           })()
         : '',
     [packagePendingRevertSign]
