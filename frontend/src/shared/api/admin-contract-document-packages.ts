@@ -1083,6 +1083,8 @@ export async function previewContractDocumentNumber(params: {
   kind: ContractDocumentPackageKind;
   /** Переопределение буквы направления (мебель: м / с / т). */
   numberLetterOverride?: string;
+  /** Пакет, для которого открыто поле номера: его номер/резерв не «занят» для себя. */
+  packageId?: string | null;
 }): Promise<ContractNumberPreview> {
   const qs = new URLSearchParams({
     managerUserId: params.managerUserId,
@@ -1093,6 +1095,9 @@ export async function previewContractDocumentNumber(params: {
   if (params.numberLetterOverride?.trim()) {
     qs.set('numberLetterOverride', params.numberLetterOverride.trim());
   }
+  if (params.packageId?.trim()) {
+    qs.set('packageId', params.packageId.trim());
+  }
   const res = await apiFetch(
     `${getApiBaseUrl()}/admin/contract-document-packages/contract-number/preview?${qs}`,
     { headers: getAdminAuthHeaders() }
@@ -1100,6 +1105,44 @@ export async function previewContractDocumentNumber(params: {
   if (!res.ok) {
     throw new Error(await readAdminContractPackagesError(res));
   }
+  return res.json();
+}
+
+export type ContractNumberHold = {
+  number: string;
+  expiresAt: string;
+  source: 'manual' | 'signing';
+};
+
+/** Ручная бронь выбранных в форме номеров за пакетом — на 5 суток. */
+export async function reserveContractDocumentNumbers(params: {
+  packageId: string;
+  managerUserId: string;
+  surveyorUserId: string;
+  officeId: string;
+  numbers: string[];
+}): Promise<{ holds: ContractNumberHold[] }> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/contract-number/hold`,
+    {
+      method: 'POST',
+      headers: getAdminAuthHeaders(),
+      body: JSON.stringify(params),
+    }
+  );
+  if (!res.ok) throw new Error(await readAdminContractPackagesError(res));
+  return res.json();
+}
+
+/** Активные резервы номеров пакета (ручная бронь и бронь сессий ЭП). */
+export async function getContractDocumentNumberHolds(
+  packageId: string
+): Promise<{ holds: ContractNumberHold[] }> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/contract-number/hold?packageId=${encodeURIComponent(packageId)}`,
+    { headers: getAdminAuthHeaders() }
+  );
+  if (!res.ok) throw new Error(await readAdminContractPackagesError(res));
   return res.json();
 }
 

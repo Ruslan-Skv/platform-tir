@@ -5,10 +5,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   type ContractDocumentPackageKind,
   type ContractNumberPreview,
+  getContractDocumentNumberHolds,
   previewContractDocumentNumber,
+  reserveContractDocumentNumbers,
 } from '@/shared/api/admin-contract-document-packages';
 
 import type { PackageDataTabProps } from '../../platform/editor/dataTab/PackageDataTab';
+import { formatHoldDate, summarizeHolds } from '../../platform/editor/dataTab/contractNumberHoldUi';
 import {
   DATA_AUTO_FILLED,
   DATA_FIELD,
@@ -38,6 +41,8 @@ type Props = Pick<
 > & {
   setForm: React.Dispatch<React.SetStateAction<PackageFormData>>;
   touchPackageData: () => void;
+  /** Пакет, для которого открыто поле: свой номер/резерв не «занят» для себя. */
+  packageId?: string | null;
 };
 
 const OPTIONAL_LEGS = ['montage', 'appliances'] as const;
@@ -46,6 +51,7 @@ function FurnitureLegNumberControl({
   legId,
   form,
   packageKind,
+  packageId,
   locked,
   numberValue,
   onNumberChange,
@@ -53,6 +59,7 @@ function FurnitureLegNumberControl({
   legId: FurniturePackageLegId;
   form: PackageFormData;
   packageKind: ContractDocumentPackageKind;
+  packageId?: string | null;
   locked: boolean;
   numberValue: string;
   onNumberChange: (value: string) => void;
@@ -91,6 +98,7 @@ function FurnitureLegNumberControl({
         officeId,
         kind: packageKind,
         numberLetterOverride: letter,
+        packageId,
       });
       if (!result.ok || !result.recommendedNumber) {
         setPreview(null);
@@ -104,7 +112,7 @@ function FurnitureLegNumberControl({
     } finally {
       setPreviewLoading(false);
     }
-  }, [canPreview, managerUserId, surveyorUserId, officeId, packageKind, letter]);
+  }, [canPreview, managerUserId, surveyorUserId, officeId, packageKind, letter, packageId]);
 
   useEffect(() => {
     if (locked) return;
@@ -122,6 +130,16 @@ function FurnitureLegNumberControl({
 
   const inputId = `furniture_leg_number_${legId}`;
 
+  const selectValue = preview?.recommendedNumber
+    ? numberValue === preview.recommendedNumber
+      ? preview.recommendedNumber
+      : custom || numberValue
+        ? '__custom__'
+        : preview.recommendedNumber
+    : custom || numberValue
+      ? '__custom__'
+      : '';
+
   return (
     <div className={styles.numberBlock}>
       <div className={DATA_FIELD}>
@@ -132,15 +150,7 @@ function FurnitureLegNumberControl({
           <>
             <div className={styles.numberRow}>
               <select
-                value={
-                  custom
-                    ? '__custom__'
-                    : preview?.recommendedNumber && numberValue === preview.recommendedNumber
-                      ? preview.recommendedNumber
-                      : numberValue && preview?.recommendedNumber !== numberValue
-                        ? '__custom__'
-                        : (preview?.recommendedNumber ?? '')
-                }
+                value={selectValue}
                 onChange={(e) => {
                   const v = e.target.value;
                   if (v === '__custom__') {
@@ -170,7 +180,7 @@ function FurnitureLegNumberControl({
                 ) : null}
                 <option value="__custom__">Свой номер…</option>
               </select>
-              {custom ? (
+              {selectValue === '__custom__' ? (
                 <input
                   id={inputId}
                   value={numberValue}
@@ -200,8 +210,71 @@ export function PackageDataFurnitureLegsSection({
   applyExecutorProfile,
   setForm,
   touchPackageData,
+  packageId = null,
 }: Props) {
   const locked = signedDocsLocked;
+  const [holdInfo, setHoldInfo] = useState<{ numbers: string[]; expiresAt: string } | null>(null);
+  const [reserveBusy, setReserveBusy] = useState(false);
+  const [reserveError, setReserveError] = useState<string | null>(null);
+
+  const managerUserId = form.executor.signatoryCrmUserId?.trim() || '';
+  const officeId = form.contract.officeId?.trim() || '';
+  const surveyorUserId = form.contract.surveyorUserId?.trim() || '';
+  const canReserve = Boolean(packageId?.trim() && managerUserId && officeId && surveyorUserId);
+
+  // Статус брони номеров пакета (ручная бронь и бронь сессий ЭП).
+  useEffect(() => {
+    const id = packageId?.trim();
+    if (!id) {
+      setHoldInfo(null);
+      return;
+    }
+    let cancelled = false;
+    void getContractDocumentNumberHolds(id)
+      .then((res) => {
+        if (!cancelled) setHoldInfo(summarizeHolds(res.holds));
+      })
+      .catch(() => {
+        if (!cancelled) setHoldInfo(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [packageId]);
+
+  /** Номера всех включённых ног (изготовление всегда + включённые монтаж/техника). */
+  const legNumbers = useMemo(() => {
+    const numbers = [
+      form.furniture.manufacture.contract.number.trim() || form.contract.number.trim(),
+    ];
+    for (const legId of OPTIONAL_LEGS) {
+      if (!form.furniture[legId].enabled) continue;
+      const n = form.furniture[legId].contract.number.trim();
+      if (n) numbers.push(n);
+    }
+    return [...new Set(numbers.map((n) => n.trim()).filter(Boolean))];
+  }, [form.contract.number, form.furniture]);
+
+  const reserveNumbers = async () => {
+    const id = packageId?.trim();
+    if (!id || legNumbers.length === 0 || !canReserve) return;
+    setReserveBusy(true);
+    setReserveError(null);
+    try {
+      const res = await reserveContractDocumentNumbers({
+        packageId: id,
+        managerUserId,
+        surveyorUserId,
+        officeId,
+        numbers: legNumbers,
+      });
+      setHoldInfo(summarizeHolds(res.holds));
+    } catch (e) {
+      setReserveError(e instanceof Error ? e.message : 'Не удалось забронировать номера');
+    } finally {
+      setReserveBusy(false);
+    }
+  };
 
   const patchLeg = useCallback(
     (legId: FurniturePackageLegId, patch: Partial<PackageFormData['furniture']['manufacture']>) => {
@@ -369,6 +442,33 @@ export function PackageDataFurnitureLegsSection({
         каждой ноги свой исполнитель и номер (м / с / т).
       </p>
 
+      {!locked && packageId ? (
+        <div className={styles.reserveRow}>
+          <button
+            type="button"
+            className={styles.reserveBtn}
+            disabled={reserveBusy || legNumbers.length === 0 || !canReserve}
+            onClick={() => void reserveNumbers()}
+            title={
+              holdInfo
+                ? `Номера ${holdInfo.numbers.join(', ')} забронированы за этим договором. Бронь снимется автоматически, если договор не будет подписан до ${formatHoldDate(holdInfo.expiresAt)}. Клик — продлить бронь.`
+                : 'Закрепить номера всех договоров пакета за этим договором на 5 суток'
+            }
+          >
+            {reserveBusy
+              ? 'Бронируем…'
+              : holdInfo
+                ? `Бронь до ${formatHoldDate(holdInfo.expiresAt)}`
+                : 'Забронировать номера'}
+          </button>
+          {reserveError ? (
+            <span className={styles.hintError} title={reserveError}>
+              {reserveError}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+
       <section className={styles.legCard} aria-label={FURNITURE_LEG_LABEL.manufacture}>
         <header className={styles.legHeader}>
           <h4 className={styles.legTitle}>{FURNITURE_LEG_LABEL.manufacture}</h4>
@@ -398,6 +498,7 @@ export function PackageDataFurnitureLegsSection({
             legId="manufacture"
             form={form}
             packageKind={packageKind}
+            packageId={packageId}
             locked={locked}
             numberValue={form.furniture.manufacture.contract.number || form.contract.number}
             onNumberChange={(value) => {
@@ -451,6 +552,7 @@ export function PackageDataFurnitureLegsSection({
                   legId={legId}
                   form={form}
                   packageKind={packageKind}
+                  packageId={packageId}
                   locked={locked}
                   numberValue={leg.contract.number}
                   onNumberChange={(value) =>

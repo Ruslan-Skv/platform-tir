@@ -15,6 +15,7 @@ import {
   emptyPreviewErrorResult,
   formatContractNumberUserName,
   isSystemContractNumberFormat,
+  parseSystemContractNumber,
   type ContractNumberParts,
   type ContractNumberPreviewInput,
   type ContractNumberPreviewResult,
@@ -49,9 +50,13 @@ export class ContractDocumentNumberingService {
       return emptyPreviewErrorResult(resolved);
     }
 
+    // Свой номер и свой резерв не мешают: рекомендация для открытого пакета
+    // должна оставаться стабильной между подготовкой и подписанием договора.
+    const excludePackageId = input.excludePackageId?.trim() || null;
     const nextSequence = await this.holds.peekNextAvailableSequence(
       resolved.managerUserId,
       resolved.directionId,
+      excludePackageId,
     );
     let sequence = nextSequence;
     let recommendedNumber = composeContractNumber({
@@ -61,9 +66,13 @@ export class ContractDocumentNumberingService {
       directionLetter: resolved.directionLetter,
       sequence,
     });
-    // Пропускаем номера, уже занятые любым пакетом (в т.ч. своим черновиком с ручным вводом).
+    // Пропускаем номера, уже занятые чужими пакетами (в т.ч. чужими черновиками
+    // с ручным вводом); собственный номер пакета своей рекомендации не мешает.
     for (let guard = 0; guard < 500; guard += 1) {
-      const taken = await this.assignments.isNumberAssignedToOtherPackage(recommendedNumber, null);
+      const taken = await this.assignments.isNumberAssignedToOtherPackage(
+        recommendedNumber,
+        excludePackageId,
+      );
       if (!taken) break;
       sequence += 1;
       recommendedNumber = composeContractNumber({
@@ -130,6 +139,24 @@ export class ContractDocumentNumberingService {
     return this.holds.softReserveNumbersForSigning(params);
   }
 
+  /** Ручная бронь выбранных в форме номеров за пакетом — на 5 суток. */
+  manualReserveNumbers(input: {
+    packageId: string;
+    managerUserId: string;
+    surveyorUserId: string;
+    officeId: string;
+    numbers: string[];
+  }): Promise<Array<{ number: string; expiresAt: Date }>> {
+    return this.holds.manualReserveNumbers(input);
+  }
+
+  /** Активные резервы номеров пакета (ручная бронь и бронь сессий ЭП). */
+  listActiveHoldsForPackage(
+    packageId: string,
+  ): Promise<Array<{ number: string; expiresAt: Date; source: 'manual' | 'signing' }>> {
+    return this.holds.listActiveHoldsForPackage(packageId);
+  }
+
   releaseHoldsForSession(sessionId: string): Promise<void> {
     return this.holds.releaseHoldsForSession(sessionId);
   }
@@ -154,8 +181,9 @@ export class ContractDocumentNumberingService {
   }
 
   /**
-   * При «Договор подписан»: если есть soft-hold ЭП — закрепляет его;
-   * иначе резервирует новый порядковый номер. Свой номер не трогает.
+   * При «Договор подписан»: закрепляет номер за пакетом. Выбранный/напечатанный
+   * номер сохраняется, пока его не забрал другой договор (реестр номеров или
+   * чужой резерв ЭП); номер из устаревшей формы восстанавливается из резерва.
    */
   async finalizeFormDataNumbersOnConclude(
     kind: ContractDocumentPackageKind,
@@ -178,13 +206,26 @@ export class ContractDocumentNumberingService {
         if (consumed) return consumed;
       }
 
-      return this.allocateIfSequenceOrEmpty({
+      if (packageId && !slot.currentNumber) {
+        const own = await this.holds.consumeOwnHoldForSlot({
+          packageId,
+          managerUserId: slot.managerUserId,
+          surveyorUserId: slot.surveyorUserId,
+          officeId: slot.officeId,
+          kind,
+          numberLetterOverride: slot.numberLetterOverride,
+        });
+        if (own) return own;
+      }
+
+      return this.finalizeSlotNumber({
         managerUserId: slot.managerUserId,
         surveyorUserId: slot.surveyorUserId,
         officeId: slot.officeId,
         kind,
         numberLetterOverride: slot.numberLetterOverride,
         currentNumber: slot.currentNumber,
+        packageId: packageId ?? null,
       });
     });
   }
@@ -418,33 +459,65 @@ export class ContractDocumentNumberingService {
     };
   }
 
-  private async allocateIfSequenceOrEmpty(input: {
+  /**
+   * Финализация номера слота при подписании: текущий системный номер
+   * сохраняется, пока он свободен (не отдан другому договору и не держится
+   * чужим резервом ЭП); если занят или пуст — выделяется следующий свободный.
+   * Ручной (несистемный) номер не трогаем.
+   */
+  private async finalizeSlotNumber(input: {
     managerUserId: string;
     surveyorUserId: string;
     officeId: string;
     kind: ContractDocumentPackageKind;
     numberLetterOverride?: string;
     currentNumber: string;
+    packageId: string | null;
   }): Promise<string | null> {
-    const preview = await this.preview({
-      managerUserId: input.managerUserId,
-      surveyorUserId: input.surveyorUserId,
-      officeId: input.officeId,
-      kind: input.kind,
-      numberLetterOverride: input.numberLetterOverride,
-    });
-    if (!preview.ok || !preview.recommendedNumber) return null;
+    const resolved = await this.resolveNumberParts(input, { soft: true });
+    if ('error' in resolved) return null;
 
     const current = input.currentNumber.trim();
     const isEmpty = !current;
-    const looksLikeSequence = isSystemContractNumberFormat(current, {
-      officePrefix: preview.officePrefix ?? '',
-      managerCode: preview.managerCode ?? '',
-      surveyorCode: preview.surveyorCode ?? '',
-      directionLetter: preview.directionLetter ?? '',
-    });
+    const looksLikeSequence = isEmpty
+      ? false
+      : isSystemContractNumberFormat(current, {
+          officePrefix: resolved.officePrefix,
+          managerCode: resolved.managerCode,
+          surveyorCode: resolved.surveyorCode,
+          directionLetter: resolved.directionLetter,
+        });
 
     if (!isEmpty && !looksLikeSequence) return null;
+
+    if (looksLikeSequence) {
+      const parsed = parseSystemContractNumber(current, {
+        officePrefix: resolved.officePrefix,
+        managerCode: resolved.managerCode,
+        surveyorCode: resolved.surveyorCode,
+      });
+      const sequence = parsed?.sequence ?? NaN;
+      const takenElsewhere = await this.assignments.isNumberAssignedToOtherPackage(
+        current,
+        input.packageId,
+      );
+      const heldByOther = Number.isFinite(sequence)
+        ? await this.holds.isSequenceHeldByOther({
+            managerUserId: resolved.managerUserId,
+            directionId: resolved.directionId,
+            sequence,
+            excludePackageId: input.packageId,
+          })
+        : false;
+      if (!takenElsewhere && !heldByOther) {
+        await this.holds.settleCounterForSequence(
+          resolved.managerUserId,
+          resolved.directionId,
+          sequence,
+        );
+        return current;
+      }
+    }
 
     const allocated = await this.allocate({
       managerUserId: input.managerUserId,

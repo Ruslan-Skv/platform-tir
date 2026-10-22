@@ -108,6 +108,42 @@
   min-width: 0;
 }
 
+/* Кнопка «Забронировать номер» — правый верхний угол блока, в строке заголовка. */
+.reserveNumberBtn {
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: 0.25rem 0.65rem;
+  border: 1px solid var(--admin-border, #cbd5e1);
+  border-radius: 0.45rem;
+  background: var(--admin-surface, #fff);
+  color: var(--admin-text-muted, #64748b);
+  font-size: 0.75rem;
+  line-height: 1.3;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.reserveNumberBtn:hover:not(:disabled) {
+  border-color: var(--admin-primary, #2563eb);
+  color: var(--admin-primary, #2563eb);
+}
+
+.reserveNumberBtn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.reserveNumberError {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  color: #b91c1c;
+}
+
 :global(.packageDataTabDense) .packageDataPartySectionTitleRow :global(.sectionTitle) {
   flex: 0 1 auto;
   min-width: 0;

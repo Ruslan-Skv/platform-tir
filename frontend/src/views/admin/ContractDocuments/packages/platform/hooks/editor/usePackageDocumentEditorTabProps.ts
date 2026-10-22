@@ -29,6 +29,8 @@ export type UsePackageDocumentEditorTabPropsOptions = {
   isSuperAdmin: boolean;
   isProductDirectionPackage: boolean;
   packageKind: import('@/shared/api/admin-contract-document-packages').ContractDocumentPackageKind;
+  /** Пакет, для которого открыто поле номера: свой номер/резерв не «занят» для себя. */
+  packageId: string | null;
   contractObjectBlockFieldClassName: PackageDataTabProps['contractObjectBlockFieldClassName'];
   updateContract: PackageDataTabProps['updateContract'];
   updateObject: PackageDataTabProps['updateObject'];
@@ -88,6 +90,7 @@ export function usePackageDocumentEditorTabProps({
   isSuperAdmin,
   isProductDirectionPackage,
   packageKind,
+  packageId,
   contractObjectBlockFieldClassName,
   updateContract,
   updateObject,
@@ -145,6 +148,7 @@ export function usePackageDocumentEditorTabProps({
       isSuperAdmin,
       isProductDirectionPackage,
       packageKind,
+      packageId,
       contractObjectBlockFieldClassName,
       updateContract,
       updateObject,
@@ -178,6 +182,7 @@ export function usePackageDocumentEditorTabProps({
       isSuperAdmin,
       isProductDirectionPackage,
       packageKind,
+      packageId,
       contractObjectBlockFieldClassName,
       updateContract,
       updateObject,

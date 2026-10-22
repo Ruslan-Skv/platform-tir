@@ -29,6 +29,7 @@ export function PackageDataTabView(props: PackageDataTabProps) {
             touchPackageData={props.touchPackageData}
             signedDocsLocked={props.signedDocsLocked}
             packageKind={props.packageKind}
+            packageId={props.packageId}
             executorProfiles={props.executorProfiles}
             updateContract={props.updateContract}
             applyExecutorProfile={props.applyExecutorProfile}

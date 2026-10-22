@@ -35,6 +35,7 @@ import { ContractDocumentNumberingService } from '../../contract-document-number
 import { CreateContractDocumentPaymentInvoiceDto } from './dto/invoices/create-contract-document-payment-invoice.dto';
 import { CreateFreePaymentInvoiceDto } from './dto/invoices/create-free-payment-invoice.dto';
 import { PreviewContractNumberDto } from './dto/preview-contract-number.dto';
+import { ReserveContractNumbersDto } from './dto/reserve-contract-numbers.dto';
 import { CreateContractDocumentPackageDto } from './dto/create-contract-document-package.dto';
 import { SetGlobalExecutorProfilesDto } from './dto/settings/set-global-executor-profiles.dto';
 import { SetGlobalContractTemplatesDto } from './dto/settings/set-global-contract-templates.dto';
@@ -1348,6 +1349,8 @@ export class ContractDocumentPackagesController {
     @Query('officeId') officeId: string,
     @Query('kind') kind: string,
     @Query('numberLetterOverride') numberLetterOverride?: string,
+    /** Пакет, для которого открыто поле номера: его номер/резерв не «занят» для себя. */
+    @Query('packageId') packageId?: string,
   ) {
     return this.contractNumbering.preview({
       managerUserId,
@@ -1355,7 +1358,22 @@ export class ContractDocumentPackagesController {
       officeId,
       kind: kind as ContractDocumentPackageKind,
       numberLetterOverride,
+      excludePackageId: packageId?.trim() || null,
     });
+  }
+
+  /** Активные резервы номеров пакета (ручная бронь и бронь сессий ЭП). */
+  @Get('contract-number/hold')
+  async contractNumberHolds(@Query('packageId') packageId: string) {
+    const holds = await this.contractNumbering.listActiveHoldsForPackage(packageId);
+    return { holds };
+  }
+
+  /** Ручная бронь выбранных в форме номеров за пакетом — на 5 суток. */
+  @Post('contract-number/hold')
+  async reserveContractNumbers(@Body() dto: ReserveContractNumbersDto) {
+    const holds = await this.contractNumbering.manualReserveNumbers(dto);
+    return { holds };
   }
 
   @Post('contract-number/allocate')

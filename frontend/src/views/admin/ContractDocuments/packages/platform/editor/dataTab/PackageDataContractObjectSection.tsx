@@ -2,6 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+import {
+  getContractDocumentNumberHolds,
+  reserveContractDocumentNumbers,
+} from '@/shared/api/admin-contract-document-packages';
 import { type CrmUser, getCrmUsers } from '@/shared/api/admin-crm';
 
 import cdDataTab from '../../../../styles/data-tab.module.css';
@@ -16,6 +20,7 @@ import { PackageDiscountControls, PackageDiscountHint } from '../shared/PackageD
 import { PackageContractNumberField } from './PackageContractNumberField';
 import type { PackageDataTabProps } from './PackageDataTab';
 import styles from './PackageDataTab.module.css';
+import { formatHoldDate, summarizeHolds } from './contractNumberHoldUi';
 import {
   DATA_AUTO_FILLED,
   DATA_BLANK_SHEET,
@@ -34,6 +39,7 @@ export type PackageDataContractObjectSectionProps = Pick<
   | 'isSuperAdmin'
   | 'isProductDirectionPackage'
   | 'packageKind'
+  | 'packageId'
   | 'contractObjectBlockFieldClassName'
   | 'updateContract'
   | 'updateObject'
@@ -59,6 +65,7 @@ export function PackageDataContractObjectSection({
   isSuperAdmin,
   isProductDirectionPackage,
   packageKind,
+  packageId,
   contractObjectBlockFieldClassName,
   updateContract,
   updateObject,
@@ -70,6 +77,18 @@ export function PackageDataContractObjectSection({
   workPeriodFieldHelp,
 }: PackageDataContractObjectSectionProps) {
   const [crmUsers, setCrmUsers] = useState<CrmUser[]>([]);
+  const [holdInfo, setHoldInfo] = useState<{ numbers: string[]; expiresAt: string } | null>(null);
+  const [reserveBusy, setReserveBusy] = useState(false);
+  const [reserveError, setReserveError] = useState<string | null>(null);
+
+  const isFurniture = isFurnitureLikePackageKind(packageKind);
+  const managerUserId = form.executor.signatoryCrmUserId?.trim() || '';
+  const officeId = form.contract.officeId?.trim() || '';
+  const surveyorUserId = form.contract.surveyorUserId?.trim() || '';
+  const contractNumber = form.contract.number.trim();
+  const canReserve = Boolean(
+    !isFurniture && !signedDocsLocked && packageId && managerUserId && officeId && surveyorUserId
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -85,6 +104,47 @@ export function PackageDataContractObjectSection({
     };
   }, []);
 
+  // Статус брони номера (ручная бронь и бронь сессий ЭП) — подпись в кнопке.
+  useEffect(() => {
+    const id = typeof packageId === 'string' ? packageId.trim() : '';
+    if (!id || isFurniture) {
+      setHoldInfo(null);
+      return;
+    }
+    let cancelled = false;
+    void getContractDocumentNumberHolds(id)
+      .then((res) => {
+        if (!cancelled) setHoldInfo(summarizeHolds(res.holds));
+      })
+      .catch(() => {
+        if (!cancelled) setHoldInfo(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [packageId, isFurniture]);
+
+  const reserveNumber = async () => {
+    const id = typeof packageId === 'string' ? packageId.trim() : '';
+    if (!id || !contractNumber || !canReserve) return;
+    setReserveBusy(true);
+    setReserveError(null);
+    try {
+      const res = await reserveContractDocumentNumbers({
+        packageId: id,
+        managerUserId,
+        surveyorUserId,
+        officeId,
+        numbers: [contractNumber],
+      });
+      setHoldInfo(summarizeHolds(res.holds));
+    } catch (e) {
+      setReserveError(e instanceof Error ? e.message : 'Не удалось забронировать номер');
+    } finally {
+      setReserveBusy(false);
+    }
+  };
+
   const employeeCodeByUserId = useMemo(() => {
     const map = new Map<string, string>();
     for (const user of crmUsers) {
@@ -99,6 +159,32 @@ export function PackageDataContractObjectSection({
       <div className={`${DATA_SECTION_CARD} ${DATA_BLANK_SHEET}`}>
         <div className={styles.packageDataPartySectionTitleRow}>
           <h3 className={DATA_SECTION_TITLE}>Договор и объект</h3>
+          {canReserve ? (
+            <>
+              <button
+                type="button"
+                className={styles.reserveNumberBtn}
+                disabled={reserveBusy || !contractNumber}
+                onClick={() => void reserveNumber()}
+                title={
+                  holdInfo
+                    ? `Номер ${holdInfo.numbers.join(', ')} забронирован за этим договором. Бронь снимется автоматически, если договор не будет подписан до ${formatHoldDate(holdInfo.expiresAt)}. Клик — продлить бронь.`
+                    : 'Закрепить выбранный номер за этим договором на 5 суток'
+                }
+              >
+                {reserveBusy
+                  ? 'Бронируем…'
+                  : holdInfo
+                    ? `Бронь до ${formatHoldDate(holdInfo.expiresAt)}`
+                    : 'Забронировать номер'}
+              </button>
+              {reserveError ? (
+                <span className={styles.reserveNumberError} title={reserveError}>
+                  {reserveError}
+                </span>
+              ) : null}
+            </>
+          ) : null}
           {signedDocsLocked ? (
             <PackageDataSectionLockInline title="Договор подписан: блок «Договор и объект» закрыт для правок, кроме полей «Краткое описание работ» и «Примечание»" />
           ) : null}
@@ -111,6 +197,7 @@ export function PackageDataContractObjectSection({
             fieldClassName={contractObjectBlockFieldClassName('contract.number')}
             updateContract={updateContract}
             omitNumberField={isFurnitureLikePackageKind(packageKind)}
+            packageId={packageId}
           />
           <div className={`${cdDataTab.contractInlineRow} ${cdDataTab.contractHeaderMetaRow}`}>
             <ContractDocumentsHelpTooltip

@@ -27,6 +27,8 @@ type PackageContractNumberFieldProps = {
   updateContract: (key: keyof PackageFormData['contract'], value: string) => void;
   /** Только офис и замерщик (номер выдаётся в другом блоке, напр. ноги «Мебель»). */
   omitNumberField?: boolean;
+  /** Пакет, для которого открыто поле: свой номер/резерв не «занят» для себя. */
+  packageId?: string | null;
 };
 
 function formatCrmUserLabel(u: CrmUser): string {
@@ -49,6 +51,7 @@ export function PackageContractNumberField({
   fieldClassName,
   updateContract,
   omitNumberField = false,
+  packageId = null,
 }: PackageContractNumberFieldProps) {
   const { status: workDayStatus } = useWorkDay();
   const [offices, setOffices] = useState<Office[]>([]);
@@ -116,6 +119,7 @@ export function PackageContractNumberField({
         surveyorUserId,
         officeId,
         kind: packageKind,
+        packageId,
       });
       if (!result.ok || !result.recommendedNumber) {
         setPreview(null);
@@ -129,7 +133,7 @@ export function PackageContractNumberField({
     } finally {
       setPreviewLoading(false);
     }
-  }, [canPreview, managerUserId, surveyorUserId, officeId, packageKind]);
+  }, [canPreview, managerUserId, surveyorUserId, officeId, packageKind, packageId]);
 
   useEffect(() => {
     if (locked) return;
@@ -139,14 +143,14 @@ export function PackageContractNumberField({
     return () => window.clearTimeout(t);
   }, [locked, refreshPreview]);
 
+  // Выбранный номер сравнивается с рекомендацией первым: после повторного
+  // открытия окна рекомендация совпадает с сохранённым номером пакета.
   const selectValue = useMemo(() => {
-    if (numberMode === 'custom') return CUSTOM_VALUE;
     if (preview?.recommendedNumber && form.contract.number === preview.recommendedNumber) {
       return preview.recommendedNumber;
     }
-    if (form.contract.number && preview?.recommendedNumber !== form.contract.number) {
-      return CUSTOM_VALUE;
-    }
+    if (numberMode === 'custom') return CUSTOM_VALUE;
+    if (form.contract.number) return CUSTOM_VALUE;
     return preview?.recommendedNumber ?? '';
   }, [numberMode, form.contract.number, preview]);
 
@@ -251,7 +255,7 @@ export function PackageContractNumberField({
                   ) : null}
                   <option value={CUSTOM_VALUE}>Свой номер…</option>
                 </select>
-                {numberMode === 'custom' || selectValue === CUSTOM_VALUE ? (
+                {selectValue === CUSTOM_VALUE ? (
                   <input
                     value={form.contract.number}
                     onChange={(e) => {

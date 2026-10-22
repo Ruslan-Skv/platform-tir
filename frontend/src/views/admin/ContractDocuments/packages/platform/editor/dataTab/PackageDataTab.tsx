@@ -18,6 +18,8 @@ export type PackageDataTabProps = {
   isSuperAdmin: boolean;
   isProductDirectionPackage: boolean;
   packageKind: import('@/shared/api/admin-contract-document-packages').ContractDocumentPackageKind;
+  /** Пакет, для которого открыто поле номера: свой номер/резерв не «занят» для себя. */
+  packageId: string | null;
   contractObjectBlockFieldClassName: (
     fieldId: PackageContractObjectBlockFieldId
   ) => string | undefined;

@@ -11,6 +11,8 @@ export type ContractNumberPreviewInput = {
   kind: ContractDocumentPackageKind;
   /** Если задано — подставляется вместо буквы CRM-направления. */
   numberLetterOverride?: string;
+  /** Пакет, для которого запрашивается превью: его номера и резервы не считаются занятыми. */
+  excludePackageId?: string | null;
 };
 
 export type ContractNumberParts = {
@@ -98,6 +100,26 @@ export function isSystemContractNumberFormat(
     `^${escapeRegExp(parts.officePrefix)}/?${escapeRegExp(parts.managerCode)}/?${escapeRegExp(parts.surveyorCode)}${escapeRegExp(parts.directionLetter)}-\\d+$`,
   );
   return re.test(number.trim());
+}
+
+/**
+ * Разбор системного номера «7713д-5» (легаси со слэшами тоже): буква направления
+ * и порядковый номер. Буква не сверяется с конкретным направлением — подходит
+ * любая (мебель: м / с / т), сверка с допустимыми буквами — на вызывающей стороне.
+ */
+export function parseSystemContractNumber(
+  number: string,
+  parts: { officePrefix: string; managerCode: string; surveyorCode: string },
+): { directionLetter: string; sequence: number } | null {
+  if (!parts.officePrefix || !parts.managerCode || !parts.surveyorCode) return null;
+  const re = new RegExp(
+    `^${escapeRegExp(parts.officePrefix)}/?${escapeRegExp(parts.managerCode)}/?${escapeRegExp(parts.surveyorCode)}([^\\d/\\s])-?(\\d+)$`,
+  );
+  const m = number.trim().match(re);
+  if (!m) return null;
+  const sequence = Number(m[2]);
+  if (!Number.isFinite(sequence) || sequence <= 0) return null;
+  return { directionLetter: m[1], sequence };
 }
 
 export function emptyPreviewErrorResult(

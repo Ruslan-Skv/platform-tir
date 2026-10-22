@@ -623,6 +623,7 @@ export function usePackageDocumentEditorController({
         isSuperAdmin,
         isProductDirectionPackage,
         packageKind,
+        packageId,
         contractObjectBlockFieldClassName,
         updateContract,
         updateObject,

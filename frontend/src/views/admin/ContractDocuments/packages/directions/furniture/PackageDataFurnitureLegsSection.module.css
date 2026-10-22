@@ -85,3 +85,33 @@
     flex-wrap: wrap;
   }
 }
+
+.reserveRow {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.reserveBtn {
+  flex: 0 0 auto;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--admin-border, #cbd5e1);
+  border-radius: 0.45rem;
+  background: var(--admin-surface, #fff);
+  color: var(--admin-text-muted, #64748b);
+  font-size: 12px;
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.reserveBtn:hover:not(:disabled) {
+  border-color: var(--admin-primary, #2563eb);
+  color: var(--admin-primary, #2563eb);
+}
+
+.reserveBtn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
