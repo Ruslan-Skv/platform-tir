@@ -215,14 +215,12 @@ export class SetGlobalEstimatePresetsDto {
   kind: ContractDocumentPackageKind;
 
   @IsArray()
-  @ArrayMaxSize(200)
   @ValidateNested({ each: true })
   @Type(() => ContractEstimatePresetDto)
   items: ContractEstimatePresetDto[];
 
   @IsOptional()
   @IsArray()
-  @ArrayMaxSize(80)
   @ValidateNested({ each: true })
   @Type(() => ContractEstimateGroupDto)
   groups?: ContractEstimateGroupDto[];
