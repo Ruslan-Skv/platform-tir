@@ -39,11 +39,23 @@ export interface ContractsListFiltersPersisted {
   page: number;
   /** Только договоры с подписанными через ЭП документами. */
   epSigned: boolean;
+  /** Момент сохранения (ms) — по нему фильтры протухают (см. CONTRACTS_LIST_FILTERS_TTL_MS). */
+  savedAt: number;
 }
 
-const CONTRACTS_LIST_FILTERS_STORAGE_KEY = 'admin_contract_documents_contracts_list_filters_v3';
-/** @deprecated */
-const CONTRACTS_LIST_FILTERS_STORAGE_KEY_V2 = 'admin_repair_contracts_list_filters_v2';
+/**
+ * Фильтры списка живут в localStorage ограниченное время. Скрывающие фильтры
+ * (статусы, ЭП, направления, даты) не должны переживать рабочую смену: иначе
+ * менеджер при застрявшем чипе (напр. «Закрытые») «теряет» созданный договор
+ * «В проекте» — он не виден ни в списке, ни в поиске по номеру.
+ */
+const CONTRACTS_LIST_FILTERS_TTL_MS = 24 * 60 * 60 * 1000;
+
+const CONTRACTS_LIST_FILTERS_STORAGE_KEY = 'admin_contract_documents_contracts_list_filters_v4';
+/**
+ * @deprecated Ключи v3/v2 больше не читаются: записи без savedAt считаются
+ * протухшими — это разово сбрасывает застрявшие фильтры у всех пользователей.
+ */
 
 export const EMPTY_CONTRACTS_LIST_FILTERS: ContractsListFiltersPersisted = {
   search: '',
@@ -61,6 +73,7 @@ export const EMPTY_CONTRACTS_LIST_FILTERS: ContractsListFiltersPersisted = {
   expandedObjectIds: [],
   page: 1,
   epSigned: false,
+  savedAt: 0,
 };
 
 function normalizePageLimit(raw: unknown): ContractsPageLimit {
@@ -186,6 +199,10 @@ function normalizePersistedFilters(
         ? raw.page
         : EMPTY_CONTRACTS_LIST_FILTERS.page,
     epSigned: typeof raw.epSigned === 'boolean' ? raw.epSigned : false,
+    savedAt:
+      typeof raw.savedAt === 'number' && Number.isFinite(raw.savedAt) && raw.savedAt > 0
+        ? raw.savedAt
+        : 0,
   };
 }
 
@@ -193,26 +210,21 @@ let memoryCache: ContractsListFiltersPersisted | null = null;
 
 function readFromLocalStorage(): ContractsListFiltersPersisted {
   try {
-    const rawV3 = localStorage.getItem(CONTRACTS_LIST_FILTERS_STORAGE_KEY);
-    if (rawV3) {
-      return normalizePersistedFilters(JSON.parse(rawV3) as Partial<ContractsListFiltersPersisted>);
+    const raw = localStorage.getItem(CONTRACTS_LIST_FILTERS_STORAGE_KEY);
+    if (!raw) {
+      return { ...EMPTY_CONTRACTS_LIST_FILTERS, savedAt: Date.now() };
     }
-    const rawV2 = localStorage.getItem(CONTRACTS_LIST_FILTERS_STORAGE_KEY_V2);
-    if (rawV2) {
-      const migrated = normalizePersistedFilters(
-        JSON.parse(rawV2) as Partial<ContractsListFiltersPersisted> & {
-          statusFilter?: string;
-          directionFilter?: string;
-        }
-      );
-      // Миграция с v2: не затираем привычные фильтры ролевым дефолтом.
-      migrated.scopeTouched = true;
-      migrated.listScope = 'all';
-      return migrated;
+    const parsed = normalizePersistedFilters(
+      JSON.parse(raw) as Partial<ContractsListFiltersPersisted>
+    );
+    // Протухшие фильтры (или запись старого формата без savedAt) — дефолты:
+    // scopeTouched=false, поэтому дефолты роли применятся заново.
+    if (Date.now() - parsed.savedAt > CONTRACTS_LIST_FILTERS_TTL_MS) {
+      return { ...EMPTY_CONTRACTS_LIST_FILTERS, savedAt: Date.now() };
     }
-    return { ...EMPTY_CONTRACTS_LIST_FILTERS };
+    return parsed;
   } catch {
-    return { ...EMPTY_CONTRACTS_LIST_FILTERS };
+    return { ...EMPTY_CONTRACTS_LIST_FILTERS, savedAt: Date.now() };
   }
 }
 
@@ -233,10 +245,13 @@ export function reloadContractsListFiltersFromStorage(): ContractsListFiltersPer
 }
 
 export function persistContractsListFilters(state: ContractsListFiltersPersisted): void {
-  memoryCache = { ...state };
+  memoryCache = { ...state, savedAt: Date.now() };
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(CONTRACTS_LIST_FILTERS_STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(
+      CONTRACTS_LIST_FILTERS_STORAGE_KEY,
+      JSON.stringify({ ...state, savedAt: Date.now() })
+    );
   } catch {
     /* ignore quota / private mode */
   }

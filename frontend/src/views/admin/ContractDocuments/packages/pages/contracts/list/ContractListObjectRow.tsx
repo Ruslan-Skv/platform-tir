@@ -6,6 +6,7 @@ import dataTableStyles from '@/shared/ui/admin/DataTable/DataTable.module.css';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
 
+import { getDisplayContractNumber } from '../../../platform/form/packageContractDisplay';
 import {
   formatContractsListMoney,
   formatContractsListPaidWithPercent,
@@ -49,6 +50,18 @@ export function ContractListObjectRow({
   const agg = aggregateContractsListPackagesMoney(packages, addendumColumnCount);
   const paymentBase = addendumColumnCount > 0 ? agg.totalWithAddendaRub : agg.totalRub;
   const expanded = expandedObjectIds.includes(objectId);
+  // Номера внутри свёрнутой карточки: иначе договоры объекта (напр. два свежих
+  // черновика) не видны в списке даже по номеру, пока объект не развернуть.
+  const contractNumbers = packages
+    .map((p) =>
+      getDisplayContractNumber({ formData: (p.formData ?? {}) as Record<string, unknown> })
+    )
+    .filter((n) => n && n !== '—');
+  const numbersFull = contractNumbers.join(', ');
+  const numbersLabel =
+    contractNumbers.length > 3
+      ? `${contractNumbers.slice(0, 3).join(', ')} +${contractNumbers.length - 3}`
+      : numbersFull;
   const totalLabel =
     addendumColumnCount > 0
       ? formatContractsListMoney(agg.totalWithAddendaRub)
@@ -92,7 +105,7 @@ export function ContractListObjectRow({
                 </span>
                 <span className={cdBase.contractsListObjectBadge}>({packages.length})</span>
               </div>
-              {objCustomer || showAddressMeta ? (
+              {objCustomer || showAddressMeta || (!expanded && numbersLabel) ? (
                 <div className={cdHub.contractsListObjectHeaderMeta}>
                   {objCustomer ? (
                     <span className={cdHub.contractsListObjectMetaChip} title={objCustomer}>
@@ -105,6 +118,14 @@ export function ContractListObjectRow({
                       title={objAddress || undefined}
                     >
                       {objAddress}
+                    </span>
+                  ) : null}
+                  {!expanded && numbersLabel ? (
+                    <span
+                      className={cdHub.contractsListObjectMetaChip}
+                      title={`Договоры объекта: ${numbersFull}`}
+                    >
+                      № {numbersLabel}
                     </span>
                   ) : null}
                 </div>

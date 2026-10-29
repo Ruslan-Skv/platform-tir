@@ -217,6 +217,17 @@ export class ContractDocumentPackageListService {
       dateTo,
     };
 
+    /*
+     * Поиск по номеру/заказчику/адресу — «аварийный выход» из очередей: на строки
+     * статусы очереди и фильтр ЭП не действуют. Иначе договор, находящийся вне
+     * выбранного чипа (напр. «Закрытые» или «Подписаны ЭП»), невозможно найти
+     * даже по точному номеру — менеджер «теряет» только что созданный договор.
+     * Счётчики чипов (counts) считаются по полным фильтрам.
+     */
+    const rowsOpts = searchNorm
+      ? { ...baseOpts, pipelineStatuses: [] as PackageListPipelineStatus[] }
+      : baseOpts;
+
     // Пакеты, у которых хотя бы один документ подписан через ЭП: флаг «ЭП» в списке и фильтр epSigned.
     const signedSigningPackageIds = new Set(
       (
@@ -232,9 +243,10 @@ export class ContractDocumentPackageListService {
       hasSignedSigningSessions: signedSigningPackageIds.has(pkg.id),
     });
 
-    let filtered = annotated
-      .filter((item) => matchesExact(item, baseOpts))
-      .filter((item) => !filters?.epSigned || signedSigningPackageIds.has(item.pkg.id));
+    let filtered = annotated.filter((item) => matchesExact(item, rowsOpts));
+    if (filters?.epSigned && !searchNorm) {
+      filtered = filtered.filter((item) => signedSigningPackageIds.has(item.pkg.id));
+    }
 
     filtered = this.sortAnnotatedPackages(filtered, sortBy, sortOrder);
 

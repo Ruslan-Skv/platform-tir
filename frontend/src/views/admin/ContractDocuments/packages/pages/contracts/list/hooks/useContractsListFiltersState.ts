@@ -128,6 +128,7 @@ export function useContractsListFiltersState(currentUserRole: string | null | un
       expandedObjectIds,
       page,
       epSigned,
+      savedAt: Date.now(),
     });
   }, [
     search,
