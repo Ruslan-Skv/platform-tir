@@ -1,6 +1,7 @@
 import { ContractDocumentPackageKind, ContractDocumentPackageStatus } from '@prisma/client';
 
 import {
+  computeAddendumSlotTotalRub,
   computePackageEffectiveManagerUserId,
   computePackageListPipelineStatus,
   computePackagePaidPercent,
@@ -286,6 +287,65 @@ describe('computePackageListPipelineStatus', () => {
         payments: [{ amount: '3200', paymentType: 'FINAL', paymentDate: '2026-10-10' }],
       }),
     ).toBe('SIGNED');
+  });
+});
+
+describe('computeAddendumSlotTotalRub', () => {
+  it('subtracts excluded works from added works (договор 191Д-201: 3150 − 1500 = 1650)', () => {
+    // Слот Д/с №1 реального договора 191Д-201 (DOORS): доп. работы 3150,
+    // непроводимые работы 1500, скидка договора 0.
+    const slot = {
+      status: 'SIGNED',
+      discountType: 'INHERIT',
+      snapshot: { total: 3150 },
+      excludedSnapshot: { total: 1500 },
+      specificationAddedLines: [],
+      specificationExcludedLines: [],
+    };
+    expect(computeAddendumSlotTotalRub(ContractDocumentPackageKind.DOORS, slot, 0)).toBe(1650);
+  });
+
+  it('subtracts material reduction from specification lines (уменьшение материалов)', () => {
+    const slot = {
+      status: 'SIGNED',
+      discountType: 'INHERIT',
+      snapshot: null,
+      excludedSnapshot: null,
+      specificationAddedLines: [{ name: 'Подоконник', quantity: '2', price: '1500' }],
+      specificationExcludedLines: [{ name: 'Отлив', quantity: '3', price: '500' }],
+    };
+    // 2×1500 − 3×500 = 1500.
+    expect(computeAddendumSlotTotalRub(ContractDocumentPackageKind.WINDOWS, slot, 0)).toBe(1500);
+  });
+
+  it('keeps repair addendum as snapshot with slot discount (без исключений)', () => {
+    const slot = {
+      status: 'SIGNED',
+      discountType: 'PERCENT',
+      discountPercent: '10',
+      snapshot: { total: 5000 },
+    };
+    expect(computeAddendumSlotTotalRub(ContractDocumentPackageKind.REPAIR, slot, 0)).toBe(4500);
+    expect(computeAddendumSlotTotalRub(ContractDocumentPackageKind.REPAIR, null, 0)).toBeNull();
+  });
+
+  it('applies discount only to positive net part and allows negative total', () => {
+    // Добавлено 1000, исключено 3000, скидка 10% — итог отрицательный, скидка не применяется.
+    const slot = {
+      discountType: 'INHERIT',
+      snapshot: { total: 1000 },
+      excludedSnapshot: { total: 3000 },
+    };
+    expect(computeAddendumSlotTotalRub(ContractDocumentPackageKind.DOORS, slot, 10)).toBe(-2000);
+    // Добавлено 5000, исключено 1000, скидка 10% — скидка с положительной части: 4000×0.9.
+    const slotPositive = {
+      discountType: 'INHERIT',
+      snapshot: { total: 5000 },
+      excludedSnapshot: { total: 1000 },
+    };
+    expect(computeAddendumSlotTotalRub(ContractDocumentPackageKind.DOORS, slotPositive, 10)).toBe(
+      3600,
+    );
   });
 });
 

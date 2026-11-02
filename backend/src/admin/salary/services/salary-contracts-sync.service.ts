@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
+import type { ContractDocumentPackageKind } from '@prisma/client';
 
 import { PrismaService } from '../../../database/prisma.service';
+import { computeAddendumSlotTotalRub } from '../../contract-document-packages/list-pipeline/package-list-pipeline-status';
 import { fromDateIso, round2, toNum } from '../salary.constants';
 import { loadPrepaidReachedDates } from './salary-prepaid.helper';
 
@@ -17,8 +19,9 @@ import { loadPrepaidReachedDates } from './salary-prepaid.helper';
  * Переносится: №, офис, направление (kind → код направления з/п), дата подписания
  * (contractConcludedAt), дата закрытия (акт сдачи-приёмки), заказчик, менеджер
  * (карточка менеджера → ответственный → создавший), замерщик, стоимость договора
- * (contract.totalAmount, иначе смета со скидкой), подписанные Д/с (сумма со скидкой
- * и дата подписания).
+ * (contract.totalAmount, иначе смета со скидкой), подписанные Д/с (итоговая
+ * стоимость — добавленные работы минус исключённые и уменьшение материалов,
+ * как в карточке Д/с списка договоров, — и дата подписания).
  *
  * Не перезаписываются (остаются ручными настройками расчёта): переопределения
  * процентов, note и т.п. Ручные записи не трогаются, кроме совпадения по
@@ -154,7 +157,7 @@ export class SalaryContractsSyncService {
     }
     baseAmount = baseAmount === null ? 0 : Math.max(round2(baseAmount), 0);
 
-    const extraBills = collectSignedAddenda(fd, contractDiscountPct);
+    const extraBills = collectSignedAddenda(fd, contractDiscountPct, pkg.kind);
     const signedDay = isoDayOrNull(fd?.contractConcludedAt);
     const closedDay = isoDayOrNull(fd?.repairContractCloseActSignedAt);
     const prepaidMap = await loadPrepaidReachedDates(this.prisma, [
@@ -319,36 +322,24 @@ function effectiveContractDiscountPercent(fd: Record<string, unknown> | null): n
   return Math.min(Math.max(parseFlexibleNumber(contract?.discountPercent) ?? 0, 0), 100);
 }
 
-/** Скидка Д/с, %: своя (%/рубли от итога работ Д/с) или договоровая (INHERIT). */
-function addendumSlotDiscountPercent(
-  slot: Record<string, unknown>,
-  contractDiscountPercent: number,
-): number {
-  if (slot.discountType === 'AMOUNT') {
-    const base = snapshotBaseTotal(slot.snapshot);
-    const amount = parseFlexibleNumber(slot.discountAmount) ?? 0;
-    if (base == null || base <= 0 || amount <= 0) return 0;
-    return Math.min(100, (amount / base) * 100);
-  }
-  if (slot.discountType === 'PERCENT') {
-    return Math.min(Math.max(parseFlexibleNumber(slot.discountPercent) ?? 0, 0), 100);
-  }
-  return contractDiscountPercent;
-}
-
-/** Подписанные Д/с пакета → доп. соглашения з/п (сумма со скидкой Д/с, дата подписания). */
+/** Подписанные Д/с пакета → доп. соглашения з/п (итоговая стоимость Д/с, дата подписания). */
 function collectSignedAddenda(
   fd: Record<string, unknown> | null,
   contractDiscountPercent: number,
+  kind: string,
 ): Array<{ amount: number; date: Date; note: string | null }> {
   const bills: Array<{ amount: number; date: Date; note: string | null }> = [];
   if (!fd || !Array.isArray(fd.addendumSlots)) return bills;
   fd.addendumSlots.forEach((slotRaw, index) => {
     const slot = asRecord(slotRaw);
     if (!slot || (slot.status !== 'SIGNED' && slot.status !== 'PAID')) return;
-    const amount = snapshotTotalAfterDiscountPercent(
-      slot.snapshot,
-      addendumSlotDiscountPercent(slot, contractDiscountPercent),
+    // Итог Д/с — как в карточке Д/с списка договоров: добавленные работы минус
+    // исключённые (непроводимые) и уменьшение материалов по спецификации. Может
+    // быть отрицательным (Д/с уменьшает договор) — тогда з/п по нему снижается.
+    const amount = computeAddendumSlotTotalRub(
+      kind as ContractDocumentPackageKind,
+      slot,
+      contractDiscountPercent,
     );
     if (amount === null) return;
     const docDates = Array.isArray(fd.addendumDocumentDates) ? fd.addendumDocumentDates : [];
@@ -358,7 +349,7 @@ function collectSignedAddenda(
       ruDayOrNull(docDates[index]) ??
       null;
     if (!day) return; // без даты Д/с не попадает в расчёт з/п
-    bills.push({ amount, date: fromDateIso(day), note: `Д/с №${index + 1}` });
+    bills.push({ amount: round2(amount), date: fromDateIso(day), note: `Д/с №${index + 1}` });
   });
   return bills;
 }

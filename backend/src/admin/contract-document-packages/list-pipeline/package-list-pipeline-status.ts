@@ -394,42 +394,54 @@ function computePayableBreakdown(
   const addendumTotalsRub: PayableBreakdown['addendumTotalsRub'] = [];
   let addendumSumKnown = 0;
   for (let i = 0; i < count; i++) {
-    const slot = slots[i];
-    // Скидка Д/с замещает договорную (INHERIT → договоровая).
-    const slotDiscountPct = addendumSlotDiscountPercent(slot, discountPct);
-    const snap = asObj(slot?.snapshot);
-    const rawTotal =
-      typeof snap?.total === 'number' && Number.isFinite(snap.total) ? snap.total : null;
-    let totalRub: number | null;
-    if (isProductKind(kind)) {
-      /*
-       * Паритет с frontend `computeWindowsAddendumTotals`: строки спецификации
-       * (добавления − исключения) + счёт-заказ за вычетом исключённого, скидка —
-       * только с положительной части. Итог может быть отрицательным — такое Д/с
-       * уменьшает сумму договора, платить по нему не нужно.
-       */
-      const excludedSnap = asObj(slot?.excludedSnapshot);
-      const rawExcluded =
-        typeof excludedSnap?.total === 'number' && Number.isFinite(excludedSnap.total)
-          ? excludedSnap.total
-          : 0;
-      const accountGrossNet = (rawTotal ?? 0) - rawExcluded;
-      const accountNetAfterDiscount =
-        slotDiscountPct > 0 && accountGrossNet > 0
-          ? applyDiscount(accountGrossNet, slotDiscountPct)
-          : accountGrossNet;
-      const specNetTotal =
-        sumProductAddendumSpecLines(slot?.specificationAddedLines) -
-        sumProductAddendumSpecLines(slot?.specificationExcludedLines);
-      totalRub = specNetTotal + accountNetAfterDiscount;
-    } else {
-      totalRub = rawTotal != null ? applyDiscount(rawTotal, slotDiscountPct) : null;
-    }
+    const totalRub = computeAddendumSlotTotalRub(kind, slots[i], discountPct);
     addendumTotalsRub.push({ slotIndex1: i + 1, totalRub });
     if (totalRub != null) addendumSumKnown += totalRub;
   }
   const grandTotalRub = mainContractRub != null ? mainContractRub + addendumSumKnown : null;
   return { mainContractRub, addendumTotalsRub, grandTotalRub };
+}
+
+/**
+ * Итоговая стоимость Д/с, руб: добавленные работы минус исключённые
+ * (непроводимые) и минус уменьшение материалов по строкам спецификации;
+ * скидка — только с положительной части. Единый расчёт для списка договоров
+ * и синхронизации договоров з/п. Отрицательный итог — Д/с уменьшает сумму
+ * договора. null — итог неизвестен (нет прикреплённых расчётов и спецификации).
+ */
+export function computeAddendumSlotTotalRub(
+  kind: ContractDocumentPackageKind,
+  slot: Record<string, unknown> | null,
+  contractDiscountPct: number,
+): number | null {
+  // Скидка Д/с замещает договорную (INHERIT → договорная).
+  const slotDiscountPct = addendumSlotDiscountPercent(slot, contractDiscountPct);
+  const snap = asObj(slot?.snapshot);
+  const rawTotal =
+    typeof snap?.total === 'number' && Number.isFinite(snap.total) ? snap.total : null;
+  if (!isProductKind(kind)) {
+    return rawTotal != null ? applyDiscount(rawTotal, slotDiscountPct) : null;
+  }
+  /*
+   * Паритет с frontend `computeWindowsAddendumTotals`: строки спецификации
+   * (добавления − исключения) + счёт-заказ за вычетом исключённого, скидка —
+   * только с положительной части. Итог может быть отрицательным — такое Д/с
+   * уменьшает сумму договора, платить по нему не нужно.
+   */
+  const excludedSnap = asObj(slot?.excludedSnapshot);
+  const rawExcluded =
+    typeof excludedSnap?.total === 'number' && Number.isFinite(excludedSnap.total)
+      ? excludedSnap.total
+      : 0;
+  const accountGrossNet = (rawTotal ?? 0) - rawExcluded;
+  const accountNetAfterDiscount =
+    slotDiscountPct > 0 && accountGrossNet > 0
+      ? applyDiscount(accountGrossNet, slotDiscountPct)
+      : accountGrossNet;
+  const specNetTotal =
+    sumProductAddendumSpecLines(slot?.specificationAddedLines) -
+    sumProductAddendumSpecLines(slot?.specificationExcludedLines);
+  return specNetTotal + accountNetAfterDiscount;
 }
 
 function isPaidAtLeastPct(paidRub: number, totalRub: number | null, minPct: number): boolean {
