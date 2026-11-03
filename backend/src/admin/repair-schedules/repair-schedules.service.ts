@@ -5,28 +5,20 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  ContractDocumentPackageKind,
-  Prisma,
-  RepairScheduleEntryKind,
-  RepairScheduleProjectStatus,
-} from '@prisma/client';
+import { Prisma, RepairScheduleEntryKind, RepairScheduleProjectStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
-import { InstallerSalarySummariesService } from '../installer-settlements/installer-salary-summaries.service';
 import { CreateRepairScheduleEntryDto } from './dto/create-repair-schedule-entry.dto';
 import { CreateRepairScheduleProjectDto } from './dto/create-repair-schedule-project.dto';
 import {
   RepairScheduleNotifyProject,
   RepairScheduleNotifyService,
 } from './repair-schedule-notify.service';
+import { RepairScheduleRowEnrichmentService } from './repair-schedule-row-enrichment.service';
 import {
   PROJECT_DETAIL_INCLUDE,
   PROJECT_INCLUDE,
-  type RepairScheduleAttachedInstaller,
-  type RepairScheduleSalarySummary,
   decimalOrNull,
   emptyToNull,
-  extractAttachedInstallerIds,
   extractPackageProjectSnapshot,
   parseDateOnly,
   withDerived,
@@ -46,7 +38,7 @@ export class RepairSchedulesService {
     private readonly prisma: PrismaService,
     private readonly notify: RepairScheduleNotifyService,
     private readonly trash: RepairSchedulesTrashService,
-    private readonly salarySummaries: InstallerSalarySummariesService,
+    private readonly rowEnrichment: RepairScheduleRowEnrichmentService,
   ) {}
 
   private toNotifyPayload(
@@ -95,63 +87,6 @@ export class RepairSchedulesService {
       if (!name) name = installer.fullName;
     }
     return { installerId: id, installerName: name };
-  }
-
-  /** Дополняет проекты мастерами, прикреплёнными в модалке «Заказ-наряды» пакета. */
-  private async withContractInstallers<T extends { package?: { formData?: unknown } | null }>(
-    rows: T[],
-  ): Promise<Array<T & { attachedInstallers: RepairScheduleAttachedInstaller[] }>> {
-    const idsByRow = rows.map((row) => extractAttachedInstallerIds(row.package?.formData));
-    const allIds = [...new Set(idsByRow.flat())];
-    const byId = new Map<string, RepairScheduleAttachedInstaller>();
-    if (allIds.length > 0) {
-      const installers = await this.prisma.installerMaster.findMany({
-        where: { id: { in: allIds } },
-        select: { id: true, fullName: true, grade: true },
-      });
-      for (const installer of installers) byId.set(installer.id, installer);
-    }
-    return rows.map((row, index) => ({
-      ...row,
-      attachedInstallers: idsByRow[index]
-        .map((id) => byId.get(id))
-        .filter((installer): installer is RepairScheduleAttachedInstaller => Boolean(installer)),
-    }));
-  }
-
-  private async withContractInstaller<T extends { package?: { formData?: unknown } | null }>(
-    row: T,
-  ): Promise<T & { attachedInstallers: RepairScheduleAttachedInstaller[] }> {
-    return (await this.withContractInstallers([row]))[0];
-  }
-
-  /**
-   * Сводка з/п по договорам списка план-графика: полная начисленная з/п
-   * (сумма итогов заказ-нарядов мастеров — как на вкладке «Авансы» модалки
-   * «Заказ-наряды») и выданные авансы с их долей от полной з/п.
-   * Подключается только к спискам планировщика — «мои ремонты» мастера з/п не видят.
-   */
-  private async withSalarySummaries<
-    T extends {
-      packageId: string | null;
-      package?: { kind?: unknown; formData?: unknown } | null;
-    },
-  >(rows: T[]): Promise<Array<T & { salary: RepairScheduleSalarySummary | null }>> {
-    const withPackage = rows.filter(
-      (row): row is T & { packageId: string; package: { kind: unknown; formData?: unknown } } =>
-        Boolean(row.packageId) && row.package != null && row.package.kind != null,
-    );
-    const salaryByPackage = await this.salarySummaries.byPackages(
-      withPackage.map((row) => ({
-        id: row.packageId,
-        kind: row.package.kind as ContractDocumentPackageKind,
-        formData: row.package.formData,
-      })),
-    );
-    return rows.map((row) => ({
-      ...row,
-      salary: (row.packageId ? salaryByPackage.get(row.packageId) : undefined) ?? null,
-    }));
   }
 
   private async enrichFromPackage(packageId: string) {
@@ -275,7 +210,7 @@ export class RepairSchedulesService {
     if (actorId && options?.notify !== false) {
       this.notify.onCreated(this.toNotifyPayload(project), actorId);
     }
-    return this.withContractInstaller(withDerived(project));
+    return this.rowEnrichment.withContractInstaller(withDerived(project));
   }
 
   async findAll(params: {
@@ -313,7 +248,9 @@ export class RepairSchedulesService {
     if (params.staleOnly) {
       result = result.filter((row) => row.stale);
     }
-    return this.withSalarySummaries(await this.withContractInstallers(result));
+    return this.rowEnrichment.withSalarySummaries(
+      await this.rowEnrichment.withContractInstallers(result),
+    );
   }
 
   async findMy(userId: string, params?: { status?: RepairScheduleProjectStatus; search?: string }) {
@@ -337,7 +274,7 @@ export class RepairSchedulesService {
       include: PROJECT_INCLUDE,
       orderBy: [{ status: 'asc' }, { updatedAt: 'desc' }],
     });
-    return this.withContractInstallers(rows.map((row) => withDerived(row)));
+    return this.rowEnrichment.withContractInstallers(rows.map((row) => withDerived(row)));
   }
 
   async assertCanAccessProject(projectId: string, userId: string, role: string) {
@@ -358,7 +295,7 @@ export class RepairSchedulesService {
       include: PROJECT_DETAIL_INCLUDE,
     });
     if (!project) throw new NotFoundException(`Repair schedule project ${id} not found`);
-    return this.withContractInstaller(withDerived(project));
+    return this.rowEnrichment.withContractInstaller(withDerived(project));
   }
 
   async update(
@@ -483,7 +420,7 @@ export class RepairSchedulesService {
       data,
       include: PROJECT_DETAIL_INCLUDE,
     });
-    const derived = await this.withContractInstaller(withDerived(updated));
+    const derived = await this.rowEnrichment.withContractInstaller(withDerived(updated));
     const skipNotify = options?.notify === false || !actorId;
     if (dto.status !== undefined) {
       if (!skipNotify) this.notify.onStatusChanged(this.toNotifyPayload(updated), actorId);

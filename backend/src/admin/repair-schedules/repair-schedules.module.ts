@@ -5,6 +5,7 @@ import { ExternalNotifyModule } from '../../external-notify/external-notify.modu
 import { InstallerSettlementsModule } from '../installer-settlements/installer-settlements.module';
 import { RepairScheduleFromPackageService } from './repair-schedule-from-package.service';
 import { RepairScheduleNotifyService } from './repair-schedule-notify.service';
+import { RepairScheduleRowEnrichmentService } from './repair-schedule-row-enrichment.service';
 import { RepairSchedulesTrashService } from './repair-schedules-trash.service';
 import { RepairSchedulesController } from './repair-schedules.controller';
 import { RepairSchedulesService } from './repair-schedules.service';
@@ -17,6 +18,7 @@ import { RepairSchedulesService } from './repair-schedules.service';
     RepairScheduleFromPackageService,
     RepairScheduleNotifyService,
     RepairSchedulesTrashService,
+    RepairScheduleRowEnrichmentService,
   ],
   exports: [RepairSchedulesService, RepairScheduleFromPackageService],
 })
