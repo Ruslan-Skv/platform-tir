@@ -4,6 +4,7 @@ import { ShieldCheck } from 'lucide-react';
 
 import { useState } from 'react';
 
+import type { CrmUser } from '@/shared/api/admin-crm';
 import type {
   WorkDayExcuse,
   WorkDayJournalRow,
@@ -89,6 +90,11 @@ function RequestsCell({ row }: { row: WorkDayJournalRow }) {
 function leaveUserName(leave: WorkDayLeave): string {
   const user = leave.user;
   if (!user) return '—';
+  const name = [user.lastName, user.firstName].filter(Boolean).join(' ');
+  return name || user.email;
+}
+
+function employeeOptionLabel(user: CrmUser): string {
   const name = [user.lastName, user.firstName].filter(Boolean).join(' ');
   return name || user.email;
 }
@@ -185,8 +191,11 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
     setDateTo,
     officeId,
     setOfficeId,
+    userId,
+    setUserId,
     rows,
     offices,
+    employees,
     trackedUsers,
     leaves,
     excuses,
@@ -311,6 +320,27 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
             {offices.map((o) => (
               <option key={o.id} value={o.id}>
                 {o.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className={`${cdHub.contractsListDateLabel} ${styles.dateLabel}`}>
+          <span className={cdHub.contractsListDateLabelText}>Сотрудник</span>
+          <select
+            value={userId}
+            onChange={(e) => setUserId(e.target.value)}
+            disabled={loading}
+            className={contractsListFilterFieldClass(
+              cdHub.contractsListSelect,
+              Boolean(userId),
+              cdHub.contractsListFilterActive
+            )}
+            aria-label="Сотрудник"
+          >
+            <option value="">Все сотрудники</option>
+            {employees.map((u) => (
+              <option key={u.id} value={u.id}>
+                {employeeOptionLabel(u)}
               </option>
             ))}
           </select>

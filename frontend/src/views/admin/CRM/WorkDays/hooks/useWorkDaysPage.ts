@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
-import { getOffices } from '@/shared/api/admin-crm';
+import { type CrmUser, getCrmUsers, getOffices } from '@/shared/api/admin-crm';
 import {
   type WorkDayExcuse,
   type WorkDayExcuseKind,
@@ -23,6 +23,11 @@ import {
 
 import { hasWorkDayExcuse, isWorkDaySyntheticRow } from '../work-days-display.utils';
 
+function crmUserLabel(user: CrmUser): string {
+  const name = [user.lastName, user.firstName].filter(Boolean).join(' ');
+  return name || user.email;
+}
+
 export function useWorkDaysPage() {
   const { user } = useAuth();
   const canDelete = user?.role === 'SUPER_ADMIN';
@@ -35,8 +40,10 @@ export function useWorkDaysPage() {
   const [dateFrom, setDateFrom] = useState(defaultFrom);
   const [dateTo, setDateTo] = useState(defaultTo);
   const [officeId, setOfficeId] = useState('');
+  const [userId, setUserId] = useState('');
   const [rows, setRows] = useState<WorkDayJournalRow[]>([]);
   const [offices, setOffices] = useState<{ id: string; name: string }[]>([]);
+  const [employees, setEmployees] = useState<CrmUser[]>([]);
   const [trackedUsers, setTrackedUsers] = useState<WorkDayUserSchedule[]>([]);
   const [leaves, setLeaves] = useState<WorkDayLeave[]>([]);
   const [excuses, setExcuses] = useState<WorkDayExcuse[]>([]);
@@ -56,6 +63,7 @@ export function useWorkDaysPage() {
         dateFrom,
         dateTo,
         officeId: officeId || undefined,
+        userId: userId || undefined,
       });
       setRows(data);
     } catch (e) {
@@ -64,29 +72,53 @@ export function useWorkDaysPage() {
     } finally {
       setLoading(false);
     }
-  }, [dateFrom, dateTo, officeId]);
+  }, [dateFrom, dateTo, officeId, userId]);
 
   const loadLeaves = useCallback(async () => {
     if (!canManageLeaves) return;
     try {
-      setLeaves(await getWorkDayLeaves({ dateFrom, dateTo, officeId: officeId || undefined }));
+      setLeaves(
+        await getWorkDayLeaves({
+          dateFrom,
+          dateTo,
+          officeId: officeId || undefined,
+          userId: userId || undefined,
+        })
+      );
     } catch {
       setLeaves([]);
     }
-  }, [canManageLeaves, dateFrom, dateTo, officeId]);
+  }, [canManageLeaves, dateFrom, dateTo, officeId, userId]);
 
   const loadExcuses = useCallback(async () => {
     if (!canManageExcuses) return;
     try {
-      setExcuses(await getWorkDayExcuses({ dateFrom, dateTo, officeId: officeId || undefined }));
+      setExcuses(
+        await getWorkDayExcuses({
+          dateFrom,
+          dateTo,
+          officeId: officeId || undefined,
+          userId: userId || undefined,
+        })
+      );
     } catch {
       setExcuses([]);
     }
-  }, [canManageExcuses, dateFrom, dateTo, officeId]);
+  }, [canManageExcuses, dateFrom, dateTo, officeId, userId]);
 
   useEffect(() => {
     void getOffices(true)
       .then(setOffices)
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    void getCrmUsers()
+      .then((users) => {
+        setEmployees(
+          [...users].sort((a, b) => crmUserLabel(a).localeCompare(crmUserLabel(b), 'ru'))
+        );
+      })
       .catch(() => {});
   }, []);
 
@@ -246,8 +278,11 @@ export function useWorkDaysPage() {
     setDateTo,
     officeId,
     setOfficeId,
+    userId,
+    setUserId,
     rows,
     offices,
+    employees,
     trackedUsers,
     leaves,
     excuses,
