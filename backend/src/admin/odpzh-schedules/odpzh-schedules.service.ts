@@ -7,6 +7,8 @@ import {
   packagePaidPercentFromExplain,
   type PackageListPaymentRow,
 } from '../contract-document-packages/list-pipeline/package-list-pipeline-status';
+import { type InstallerSalarySummary } from '../installer-settlements/installer-accrual';
+import { InstallerSalarySummariesService } from '../installer-settlements/installer-salary-summaries.service';
 import {
   asFormDataRecord,
   selectedInstallerIds,
@@ -56,6 +58,11 @@ export type OdpzhScheduleRow = {
   allInstallationsDone: boolean;
   /** Дата последнего выполненного монтажа (completedAt ?? dateEnd ?? date). */
   lastCompletedInstallationDate: string | null;
+  /**
+   * З/п мастеров по договору (итог заказ-нарядов + выданные авансы) — колонка
+   * «З/п». null/отсутствует — мастера не назначены или з/п скрыта ролью монтажника.
+   */
+  salary?: InstallerSalarySummary | null;
   /**
    * Дата закрытия договора: дата акта сдачи либо (без отметки акта) дата
    * последней оплаты — закрытие = полная оплата + акт, берём более позднюю.
@@ -367,13 +374,20 @@ function firstPhone(raw: unknown): string | null {
  */
 @Injectable()
 export class OdpzhSchedulesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly salarySummaries: InstallerSalarySummariesService,
+  ) {}
 
-  async findAll(params: {
-    status?: OdpzhScheduleStatus;
-    direction?: OdpzhScheduleKind;
-    search?: string;
-  }): Promise<OdpzhScheduleRow[]> {
+  async findAll(
+    params: {
+      status?: OdpzhScheduleStatus;
+      direction?: OdpzhScheduleKind;
+      search?: string;
+    },
+    /** Роль запросившего: монтажнику (INSTALLER) своды з/п не отдаём. */
+    viewerRole?: string,
+  ): Promise<OdpzhScheduleRow[]> {
     const searchNorm = params.search?.trim().toLowerCase().replace(/\s+/g, ' ') ?? '';
 
     const packages = await this.prisma.contractDocumentPackage.findMany({
@@ -414,7 +428,22 @@ export class OdpzhSchedulesService {
       rows.push(row);
     }
 
-    rows.sort((a, b) => {
+    // Колонка «З/п»: своды по договорам выборки; монтажнику з/п не показываем.
+    const rowIds = new Set(rows.map((row) => row.id));
+    const salaryByPackage =
+      viewerRole === 'INSTALLER'
+        ? new Map<string, InstallerSalarySummary>()
+        : await this.salarySummaries.byPackages(
+            packages
+              .filter((pkg) => rowIds.has(pkg.id))
+              .map((pkg) => ({ id: pkg.id, kind: pkg.kind, formData: pkg.formData })),
+          );
+    const rowsWithSalary: OdpzhScheduleRow[] = rows.map((row) => ({
+      ...row,
+      salary: salaryByPackage.get(row.id) ?? null,
+    }));
+
+    rowsWithSalary.sort((a, b) => {
       if (a.status !== b.status) {
         const rank = { NEW: 0, IN_PROGRESS: 1, INSTALLATIONS_DONE: 2, CLOSED: 3 } as const;
         return rank[a.status] - rank[b.status];
@@ -425,6 +454,6 @@ export class OdpzhSchedulesService {
       return da.localeCompare(db);
     });
 
-    return rows;
+    return rowsWithSalary;
   }
 }

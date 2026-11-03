@@ -5,6 +5,7 @@ import { Fragment, useEffect, useMemo, useState } from 'react';
 import type {
   RepairScheduleProject,
   RepairScheduleProjectStatus,
+  RepairScheduleSalarySummary,
 } from '@/shared/api/crm/admin-repair-schedules';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import dataTableStyles from '@/shared/ui/admin/DataTable/DataTable.module.css';
@@ -53,7 +54,42 @@ type Props = {
   canDeleteProject: (item: RepairScheduleProject) => boolean;
 };
 
-const COL_SPAN = 10;
+const COL_SPAN = 11;
+
+/**
+ * Колонка «З/п»: полная з/п мастеров договора (итог заказ-нарядов после
+ * прикрепления мастеров); в скобках — выдано авансов (₽ и % от полной з/п).
+ */
+function SalaryCell({ salary }: { salary: RepairScheduleSalarySummary | null | undefined }) {
+  if (!salary || (salary.total == null && salary.paid <= 0)) {
+    return (
+      <span className={styles.subline} title="Мастера ещё не назначены на работы в заказ-нарядах">
+        —
+      </span>
+    );
+  }
+  if (salary.total == null) {
+    return (
+      <div className={styles.cellMain}>
+        <div>—</div>
+        <span
+          className={styles.subline}
+          title="Полная з/п неизвестна (мастера не назначены); в скобках — выдано авансов"
+        >
+          ({formatMoney(salary.paid)})
+        </span>
+      </div>
+    );
+  }
+  return (
+    <div className={styles.cellMain}>
+      <div title="Полная з/п мастеров по заказ-нарядам договора">{formatMoney(salary.total)}</div>
+      <span className={styles.subline} title="Выдано авансов: сумма и % от полной з/п">
+        ({formatMoney(salary.paid)} · {salary.paidPercent ?? 0}%)
+      </span>
+    </div>
+  );
+}
 
 /** Порядок секций при фильтре «Все»: в работе → новые → закрытые. */
 const STATUS_SECTIONS: Array<{ status: RepairScheduleProjectStatus; label: string }> =
@@ -254,6 +290,13 @@ export function RepairSchedulesGroupedList({
 
   const renderProjectCells = (item: RepairScheduleProject, hideCustomer: boolean) => {
     const { objectDescription, managerNote } = packageObjectTexts(item.package);
+    const addendumsDelta = item.contractAddendumsTotalRub;
+    const contractTotalTitle =
+      addendumsDelta != null && addendumsDelta !== 0
+        ? `Стоимость договора с доп. соглашениями: ${formatMoney(
+            item.contractTotalRub ?? item.contractSum
+          )} (Д/с: ${addendumsDelta > 0 ? '+' : '−'}${formatMoney(Math.abs(addendumsDelta))})`
+        : 'Стоимость договора';
     return (
       <>
         <td>
@@ -303,9 +346,14 @@ export function RepairSchedulesGroupedList({
         </td>
         <td>
           <div className={styles.cellMain}>
-            <div>{formatMoney(item.contractSum)}</div>
+            <div title={contractTotalTitle}>
+              {formatMoney(item.contractTotalRub ?? item.contractSum)}
+            </div>
             {item.paidPercent != null ? <PaidPercentBadge percent={item.paidPercent} /> : null}
           </div>
+        </td>
+        <td>
+          <SalaryCell salary={item.salary} />
         </td>
         <td title="Дата подписания акта начала работ">
           <div className={styles.cellMain}>
@@ -376,6 +424,16 @@ export function RepairSchedulesGroupedList({
             {(item.attachedInstallers ?? []).length > 0 ? (
               <div className={styles.mobileCardMeta}>
                 {item.attachedInstallers!.map((m) => m.fullName).join(', ')}
+              </div>
+            ) : null}
+            {item.salary && (item.salary.total != null || item.salary.paid > 0) ? (
+              <div className={styles.mobileCardMeta}>
+                З/п:{' '}
+                {item.salary.total == null
+                  ? `— (${formatMoney(item.salary.paid)})`
+                  : `${formatMoney(item.salary.total)} (${formatMoney(item.salary.paid)} · ${
+                      item.salary.paidPercent ?? 0
+                    }%)`}
               </div>
             ) : null}
           </div>
@@ -526,7 +584,15 @@ export function RepairSchedulesGroupedList({
                   <th>Договор</th>
                   <th>Мастер</th>
                   <th>Заказчик / адрес</th>
-                  <th>Стоимость</th>
+                  <th title="Стоимость договора с доп. соглашениями (всё к оплате)">СД + д/с</th>
+                  <th
+                    title={
+                      'Полная з/п мастеров по заказ-нарядам договора; ' +
+                      'в скобках — выдано авансов (₽ и % от полной з/п)'
+                    }
+                  >
+                    З/п
+                  </th>
                   <th title="Дата подписания акта начала работ">Дата АНР</th>
                   <th>Срок окончания</th>
                   <th>Последняя запись</th>

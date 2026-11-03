@@ -135,6 +135,41 @@ function StatusBadge({ item }: { item: OdpzhScheduleRow }) {
   );
 }
 
+/**
+ * Колонка «З/п»: полная з/п мастеров договора (итог заказ-нарядов после
+ * прикрепления мастеров); в скобках — выдано авансов (₽ и % от полной з/п).
+ */
+function SalaryCell({ salary }: { salary: OdpzhScheduleRow['salary'] }) {
+  if (!salary || (salary.total == null && salary.paid <= 0)) {
+    return (
+      <span className={styles.subline} title="Мастера ещё не назначены на работы в заказ-нарядах">
+        —
+      </span>
+    );
+  }
+  if (salary.total == null) {
+    return (
+      <div className={styles.sumCol}>
+        <div>—</div>
+        <span
+          className={styles.subline}
+          title="Полная з/п неизвестна (мастера не назначены); в скобках — выдано авансов"
+        >
+          ({formatSum(salary.paid)})
+        </span>
+      </div>
+    );
+  }
+  return (
+    <div className={styles.sumCol}>
+      <div title="Полная з/п мастеров по заказ-нарядам договора">{formatSum(salary.total)}</div>
+      <span className={styles.subline} title="Выдано авансов: сумма и % от полной з/п">
+        ({formatSum(salary.paid)} · {salary.paidPercent ?? 0}%)
+      </span>
+    </div>
+  );
+}
+
 export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageModel }) {
   const {
     statusFilter,
@@ -400,6 +435,14 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
                     <th>Клиент</th>
                     <th>Адрес</th>
                     <th>Стоимость</th>
+                    <th
+                      title={
+                        'Полная з/п мастеров по заказ-нарядам договора; ' +
+                        'в скобках — выдано авансов (₽ и % от полной з/п)'
+                      }
+                    >
+                      З/п
+                    </th>
                     <th>Срок договора</th>
                     <th>Монтажники</th>
                     <th>Монтаж</th>
@@ -414,7 +457,7 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
                         <tr
                           className={`${styles.statusSectionRow} ${styles[`statusSectionRow${section.id}`]}`}
                         >
-                          <td colSpan={11}>
+                          <td colSpan={12}>
                             {section.label} (
                             {statusTotals.get(section.id as OdpzhScheduleStatus) ?? 0})
                           </td>
@@ -447,6 +490,9 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
                                 <PaidPercentBadge percent={item.paidPercent} />
                               ) : null}
                             </div>
+                          </td>
+                          <td className={styles.sum}>
+                            <SalaryCell salary={item.salary} />
                           </td>
                           <td
                             className={deadlineCellClass(item.deadlineWarning)}
@@ -505,7 +551,7 @@ export function OdpzhSchedulesPageView({ model }: { model: OdpzhSchedulesPageMod
                   ))}
                   {!loading && items.length === 0 ? (
                     <tr>
-                      <td colSpan={11} className={styles.empty}>
+                      <td colSpan={12} className={styles.empty}>
                         Нет договоров в этом разделе
                       </td>
                     </tr>

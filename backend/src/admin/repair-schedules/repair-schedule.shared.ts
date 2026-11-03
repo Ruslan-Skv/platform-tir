@@ -8,7 +8,8 @@ import {
 } from '@prisma/client';
 
 import {
-  computePackagePaidPercent,
+  explainPackageListPipelineStatus,
+  packagePaidPercentFromExplain,
   type PackageListPipelineStatus,
 } from '../contract-document-packages/list-pipeline/package-list-pipeline-status';
 
@@ -612,6 +613,9 @@ export type RepairScheduleAttachedInstaller = {
   grade: string;
 };
 
+/** Сводка з/п мастеров по договору: полная начисленная и выданные авансы. */
+export type { InstallerSalarySummary as RepairScheduleSalarySummary } from '../installer-settlements/installer-accrual';
+
 /**
  * ID мастеров, прикреплённых к договору в модалке «Заказ-наряды»
  * (поле selectedRepairInstallerIds в formData пакета документов).
@@ -655,9 +659,11 @@ export function withDerived<
       Date.now() - latestEntry.date.getTime() > REPAIR_SCHEDULE_STALE_DAYS * 24 * 60 * 60 * 1000);
 
   const pkg = project.package;
-  const paidPercent =
+  // Один расчёт конвейера пакета даёт и % оплат, и «всё к оплате»
+  // (сумма договора + все Д/с) для колонки «СД» списка план-графика.
+  const pipelineExplain =
     pkg && pkg.kind
-      ? computePackagePaidPercent({
+      ? explainPackageListPipelineStatus({
           kind: pkg.kind,
           status: pkg.status ?? null,
           formData: pkg.formData,
@@ -671,6 +677,7 @@ export function withDerived<
             : [],
         })
       : null;
+  const paidPercent = pipelineExplain ? packagePaidPercentFromExplain(pipelineExplain) : null;
 
   const contractMeta = buildRepairContractMeta({
     workPeriodDays: project.workPeriodDays,
@@ -702,6 +709,13 @@ export function withDerived<
       null,
     /** Сколько процентов договора оплачено (журнал оплат пакета / всё к оплате); null — пакета нет. */
     paidPercent,
+    /** Стоимость договора с доп. соглашениями («всё к оплате»); null — пакета нет / сумма неизвестна. */
+    contractTotalRub: pipelineExplain?.payable.grandTotalRub ?? null,
+    /** Сумма всех Д/с (отрицательная — уменьшение договора); null — пакета нет. */
+    contractAddendumsTotalRub:
+      pipelineExplain == null
+        ? null
+        : pipelineExplain.payable.addendumTotalsRub.reduce((sum, a) => sum + (a.totalRub ?? 0), 0),
     syncedFromPackage: Boolean(project.package),
     /** Эффективные поля для UI: live из пакета или сохранённые на проекте. */
     workPeriodDays: contractMeta.workPeriodDays,

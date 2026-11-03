@@ -33,7 +33,7 @@ export class OdpzhSchedulesController {
 
   @Get()
   findAll(
-    @Req() _req: RequestWithUser,
+    @Req() req: RequestWithUser,
     @Query('status') status?: string,
     @Query('direction') direction?: string,
     @Query('search') search?: string,
@@ -50,10 +50,13 @@ export class OdpzhSchedulesController {
     // 'ALL' или отсутствие статуса — все договоры (с учётом направления/поиска).
     const statusFilter = status === 'ALL' ? undefined : (status as OdpzhScheduleStatus | undefined);
     const directionFilter = direction as OdpzhScheduleKind | undefined;
-    return this.service.findAll({
-      status: statusFilter,
-      direction: directionFilter,
-      search,
-    });
+    return this.service.findAll(
+      {
+        status: statusFilter,
+        direction: directionFilter,
+        search,
+      },
+      req.user.role,
+    );
   }
 }

@@ -20,6 +20,16 @@ async function throwApiError(res: Response, fallback: string): Promise<never> {
 export type RepairScheduleProjectStatus = 'NEW' | 'IN_PROGRESS' | 'CLOSED';
 export type RepairScheduleEntryKind = 'WEEKLY' | 'MILESTONE' | 'NOTE';
 
+/** З/п мастеров по договору: полная начисленная (итог заказ-нарядов) и выданные авансы. */
+export type RepairScheduleSalarySummary = {
+  /** Полная з/п; null — мастера ещё не назначены на работы. */
+  total: number | null;
+  /** Выдано авансов, ₽. */
+  paid: number;
+  /** Выдано от полной з/п, % (округлён до целого); null — полная з/п неизвестна. */
+  paidPercent: number | null;
+};
+
 export type RepairContractAddendumMeta = {
   number: number;
   documentDate: string | null;
@@ -75,6 +85,10 @@ export type RepairScheduleProject = {
   contractSum: string | number | null;
   /** Сколько процентов договора оплачено (журнал оплат пакета / всё к оплате); null — пакета нет. */
   paidPercent?: number | null;
+  /** Стоимость договора с доп. соглашениями («всё к оплате»); null — пакета нет / сумма неизвестна. */
+  contractTotalRub?: number | null;
+  /** Сумма всех Д/с (отрицательная — уменьшение договора); null — пакета нет. */
+  contractAddendumsTotalRub?: number | null;
   payoutSum: string | number | null;
   furnitureInfo: string | null;
   workPeriodDays: number | null;
@@ -110,6 +124,8 @@ export type RepairScheduleProject = {
   } | null;
   /** Мастера, прикреплённые к договору в модалке «Заказ-наряды» пакета. */
   attachedInstallers?: Array<{ id: string; fullName: string; grade: string }> | null;
+  /** З/п мастеров по договору (итог заказ-нарядов + выданные авансы); есть только в списках планировщика. */
+  salary?: RepairScheduleSalarySummary | null;
   package?: {
     id: string;
     kind?: string;

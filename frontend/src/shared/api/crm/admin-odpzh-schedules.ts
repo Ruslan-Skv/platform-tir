@@ -2,6 +2,8 @@
 
 import { apiFetch } from '@/shared/lib/api-fetch';
 
+import type { RepairScheduleSalarySummary } from './admin-repair-schedules';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 function getAdminAuthHeaders(): HeadersInit {
@@ -52,6 +54,8 @@ export type OdpzhScheduleRow = {
   contractSum: number | null;
   /** Сколько процентов договора оплачено (журнал оплат / всё к оплате); null — суммы нет. */
   paidPercent: number | null;
+  /** З/п мастеров по договору (итог заказ-нарядов + выданные авансы); null — мастера не назначены или скрыто ролью. */
+  salary?: RepairScheduleSalarySummary | null;
   /** Дата договора (ISO). */
   contractDate: string | null;
   /** Срок договора в рабочих днях. */

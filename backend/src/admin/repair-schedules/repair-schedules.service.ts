@@ -5,8 +5,14 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, RepairScheduleEntryKind, RepairScheduleProjectStatus } from '@prisma/client';
+import {
+  ContractDocumentPackageKind,
+  Prisma,
+  RepairScheduleEntryKind,
+  RepairScheduleProjectStatus,
+} from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+import { InstallerSalarySummariesService } from '../installer-settlements/installer-salary-summaries.service';
 import { CreateRepairScheduleEntryDto } from './dto/create-repair-schedule-entry.dto';
 import { CreateRepairScheduleProjectDto } from './dto/create-repair-schedule-project.dto';
 import {
@@ -17,6 +23,7 @@ import {
   PROJECT_DETAIL_INCLUDE,
   PROJECT_INCLUDE,
   type RepairScheduleAttachedInstaller,
+  type RepairScheduleSalarySummary,
   decimalOrNull,
   emptyToNull,
   extractAttachedInstallerIds,
@@ -39,6 +46,7 @@ export class RepairSchedulesService {
     private readonly prisma: PrismaService,
     private readonly notify: RepairScheduleNotifyService,
     private readonly trash: RepairSchedulesTrashService,
+    private readonly salarySummaries: InstallerSalarySummariesService,
   ) {}
 
   private toNotifyPayload(
@@ -115,6 +123,35 @@ export class RepairSchedulesService {
     row: T,
   ): Promise<T & { attachedInstallers: RepairScheduleAttachedInstaller[] }> {
     return (await this.withContractInstallers([row]))[0];
+  }
+
+  /**
+   * Сводка з/п по договорам списка план-графика: полная начисленная з/п
+   * (сумма итогов заказ-нарядов мастеров — как на вкладке «Авансы» модалки
+   * «Заказ-наряды») и выданные авансы с их долей от полной з/п.
+   * Подключается только к спискам планировщика — «мои ремонты» мастера з/п не видят.
+   */
+  private async withSalarySummaries<
+    T extends {
+      packageId: string | null;
+      package?: { kind?: unknown; formData?: unknown } | null;
+    },
+  >(rows: T[]): Promise<Array<T & { salary: RepairScheduleSalarySummary | null }>> {
+    const withPackage = rows.filter(
+      (row): row is T & { packageId: string; package: { kind: unknown; formData?: unknown } } =>
+        Boolean(row.packageId) && row.package != null && row.package.kind != null,
+    );
+    const salaryByPackage = await this.salarySummaries.byPackages(
+      withPackage.map((row) => ({
+        id: row.packageId,
+        kind: row.package.kind as ContractDocumentPackageKind,
+        formData: row.package.formData,
+      })),
+    );
+    return rows.map((row) => ({
+      ...row,
+      salary: (row.packageId ? salaryByPackage.get(row.packageId) : undefined) ?? null,
+    }));
   }
 
   private async enrichFromPackage(packageId: string) {
@@ -276,7 +313,7 @@ export class RepairSchedulesService {
     if (params.staleOnly) {
       result = result.filter((row) => row.stale);
     }
-    return this.withContractInstallers(result);
+    return this.withSalarySummaries(await this.withContractInstallers(result));
   }
 
   async findMy(userId: string, params?: { status?: RepairScheduleProjectStatus; search?: string }) {

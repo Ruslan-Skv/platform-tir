@@ -177,6 +177,35 @@ export type AccruedInstallerTotal = {
   lineCount: number;
 };
 
+/** Сводка з/п мастерам по договору: полная начисленная и выданные авансы. */
+export type InstallerSalarySummary = {
+  /** Полная з/п (сумма начислений всех мастеров); null — мастера не назначены. */
+  total: number | null;
+  /** Выдано авансов по договору, ₽. */
+  paid: number;
+  /** Выдано от полной з/п, % (округлён до целого); null — полная з/п неизвестна. */
+  paidPercent: number | null;
+};
+
+/**
+ * Сводка з/п по договору из начислений заказ-нарядов и суммы выданных авансов.
+ * Единые правила для колонок «З/п» план-графиков ремонта и ОДПЖ: суммы — до
+ * копеек, % — до целых; без назначенных мастеров полная з/п неизвестна (null).
+ */
+export function summarizeInstallerSalary(
+  accrued: Map<string, AccruedInstallerTotal>,
+  paidRub: number,
+): InstallerSalarySummary {
+  const round2 = (value: number) => Math.round(value * 100) / 100;
+  let total: number | null = null;
+  for (const value of accrued.values()) total = (total ?? 0) + value.total;
+  return {
+    total: total == null ? null : round2(total),
+    paid: round2(paidRub),
+    paidPercent: total != null && total > 0 ? Math.round((paidRub / total) * 100) : null,
+  };
+}
+
 function toFiniteNumber(value: unknown): number {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
