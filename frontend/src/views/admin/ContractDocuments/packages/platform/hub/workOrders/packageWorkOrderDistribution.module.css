@@ -1,0 +1,27 @@
+/* Фон иконки «Заказ-наряд» в списках: зелёный — все позиции заказ-наряда
+   распределены мастерам, жёлтый — распределена часть позиций.
+   Двойной класс перебивает фон .button из AdminTableIconButton
+   при любом порядке стилей (как epSignedGold). */
+.workOrderDistributedFull.workOrderDistributedFull {
+  background: var(--admin-success-strong, #16a34a);
+  border-color: var(--admin-success-deep, #15803d);
+  color: #fff;
+}
+
+.workOrderDistributedFull.workOrderDistributedFull:hover:not(:disabled) {
+  background: var(--admin-success-deep, #15803d);
+  border-color: var(--admin-success-deep, #15803d);
+  color: #fff;
+}
+
+.workOrderDistributedPartial.workOrderDistributedPartial {
+  background: var(--admin-warning, #f59e0b);
+  border-color: var(--admin-warning-mustard, #ca8a04);
+  color: #3a2b04;
+}
+
+.workOrderDistributedPartial.workOrderDistributedPartial:hover:not(:disabled) {
+  background: var(--admin-warning-mustard, #ca8a04);
+  border-color: var(--admin-warning-mustard, #ca8a04);
+  color: #3a2b04;
+}

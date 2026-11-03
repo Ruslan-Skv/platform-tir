@@ -11,6 +11,11 @@ import {
   ShareIcon,
 } from '@/shared/ui/icons';
 import { PackageWorkOrdersHubIcon } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/PackageWorkOrdersHubIcon';
+import {
+  getPackageWorkOrderDistributionInfo,
+  packageWorkOrderDistributionClassName,
+  packageWorkOrderDistributionTitleSuffix,
+} from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/packageWorkOrderDistribution';
 import { formatPackageWorkOrderHubModalTitle } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/packageWorkOrderHubTabs';
 
 import styles from '../shared/InstallationSchedules.module.css';
@@ -39,8 +44,10 @@ export function InstallationScheduleRowActions({
   onReopen,
 }: Props) {
   const hasPackage = Boolean(item.packageId?.trim());
+  const workOrderDistribution = getPackageWorkOrderDistributionInfo(item.package?.formData);
   const workOrdersTitle = hasPackage
-    ? formatPackageWorkOrderHubModalTitle(item.contractNumber || undefined)
+    ? formatPackageWorkOrderHubModalTitle(item.contractNumber || undefined) +
+      packageWorkOrderDistributionTitleSuffix(workOrderDistribution)
     : 'Нет привязанного пакета договора — заказ-наряд недоступен';
 
   return (
@@ -55,6 +62,11 @@ export function InstallationScheduleRowActions({
       </AdminTableIconButton>
       <AdminTableIconButton
         disabled={!hasPackage}
+        className={
+          hasPackage
+            ? packageWorkOrderDistributionClassName(workOrderDistribution.status)
+            : undefined
+        }
         aria-label={hasPackage ? `Открыть ${workOrdersTitle}` : workOrdersTitle}
         title={workOrdersTitle}
         onClick={() => {

@@ -27,6 +27,11 @@ import { PackageInvoicesHubIcon } from '@/views/admin/ContractDocuments/packages
 import { PACKAGE_INVOICES_MODAL_TITLE } from '@/views/admin/ContractDocuments/packages/platform/hub/invoices/PackageInvoicesModal';
 import { packageListPipelineStatusLabel } from '@/views/admin/ContractDocuments/packages/platform/hub/pipeline/packagePipeline';
 import { PackageWorkOrdersHubIcon } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/PackageWorkOrdersHubIcon';
+import {
+  getPackageWorkOrderDistributionInfo,
+  packageWorkOrderDistributionClassName,
+  packageWorkOrderDistributionTitleSuffix,
+} from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/packageWorkOrderDistribution';
 import { formatPackageWorkOrderHubModalTitle } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/packageWorkOrderHubTabs';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
@@ -180,6 +185,7 @@ export function ContractListPackageRow({
   } = contractsListPipelineStatusInfo(pkg);
   const actPhotoItems = contractsListAttachedActPhotosFromForm(form, publicUploadUrl);
   const packageHref = adminContractDocumentsContractsPackageHref(pkg.id);
+  const workOrderDistribution = getPackageWorkOrderDistributionInfo(fd);
   const rowClass = childOfObject
     ? `${dataTableStyles.row} ${cdHub.contractsListClickableRow} ${cdBase.contractsListChildRow}${
         lastObjectChild ? ` ${cdHub.contractsListChildRowLast}` : ''
@@ -303,8 +309,15 @@ export function ContractListPackageRow({
               disabled={
                 loading || creating || copyingPackageId !== null || deletingPackageId !== null
               }
-              title={formatPackageWorkOrderHubModalTitle(num)}
-              aria-label={`Открыть ${formatPackageWorkOrderHubModalTitle(num)}`}
+              className={packageWorkOrderDistributionClassName(workOrderDistribution.status)}
+              title={
+                formatPackageWorkOrderHubModalTitle(num) +
+                packageWorkOrderDistributionTitleSuffix(workOrderDistribution)
+              }
+              aria-label={
+                `Открыть ${formatPackageWorkOrderHubModalTitle(num)}` +
+                packageWorkOrderDistributionTitleSuffix(workOrderDistribution)
+              }
               onClick={() => onOpenWorkOrdersHub(pkg.id)}
             >
               <PackageWorkOrdersHubIcon />

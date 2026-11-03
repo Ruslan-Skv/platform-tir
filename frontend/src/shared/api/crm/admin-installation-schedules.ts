@@ -52,6 +52,14 @@ export type InstallationSchedule = {
   createdAt: string;
   updatedAt: string;
   createdById: string | null;
+  /** Пакет договора (при связанной записи): formData нужен для статуса распределения заказ-наряда. */
+  package?: {
+    id: string;
+    kind?: string;
+    title: string | null;
+    status?: string;
+    formData?: Record<string, unknown> | null;
+  } | null;
   deletedAt?: string | null;
   deletedById?: string | null;
   permanentDeleteAt?: string | null;

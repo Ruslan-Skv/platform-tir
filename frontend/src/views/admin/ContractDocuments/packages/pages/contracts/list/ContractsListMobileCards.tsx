@@ -18,6 +18,11 @@ import { PackageInvoicesHubIcon } from '@/views/admin/ContractDocuments/packages
 import { PACKAGE_INVOICES_MODAL_TITLE } from '@/views/admin/ContractDocuments/packages/platform/hub/invoices/PackageInvoicesModal';
 import { packageListPipelineStatusLabel } from '@/views/admin/ContractDocuments/packages/platform/hub/pipeline/packagePipeline';
 import { PackageWorkOrdersHubIcon } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/PackageWorkOrdersHubIcon';
+import {
+  getPackageWorkOrderDistributionInfo,
+  packageWorkOrderDistributionClassName,
+  packageWorkOrderDistributionTitleSuffix,
+} from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/packageWorkOrderDistribution';
 import { formatPackageWorkOrderHubModalTitle } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/packageWorkOrderHubTabs';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
 
@@ -132,6 +137,7 @@ function PackageMobileCard({
   const dateLabel = formatSigningDateOnly(pkg) || '—';
   const customerPhone = contractsListCustomerPhone(fd);
   const actionsDisabled = creating;
+  const workOrderDistribution = getPackageWorkOrderDistributionInfo(fd);
 
   return (
     <article
@@ -200,8 +206,15 @@ function PackageMobileCard({
         </AdminTableIconButton>
         <AdminTableIconButton
           disabled={actionsDisabled}
-          title={formatPackageWorkOrderHubModalTitle(num)}
-          aria-label={`Открыть ${formatPackageWorkOrderHubModalTitle(num)}`}
+          className={packageWorkOrderDistributionClassName(workOrderDistribution.status)}
+          title={
+            formatPackageWorkOrderHubModalTitle(num) +
+            packageWorkOrderDistributionTitleSuffix(workOrderDistribution)
+          }
+          aria-label={
+            `Открыть ${formatPackageWorkOrderHubModalTitle(num)}` +
+            packageWorkOrderDistributionTitleSuffix(workOrderDistribution)
+          }
           onClick={() => onOpenWorkOrdersHub(pkg.id)}
         >
           <PackageWorkOrdersHubIcon />

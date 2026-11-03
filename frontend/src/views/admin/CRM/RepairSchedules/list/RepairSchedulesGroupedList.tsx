@@ -11,6 +11,11 @@ import dataTableStyles from '@/shared/ui/admin/DataTable/DataTable.module.css';
 import { DeleteIcon, EditIcon, PublishIcon } from '@/shared/ui/icons';
 import { PaidPercentBadge } from '@/views/admin/CRM/shared/PaidPercentBadge';
 import { PackageWorkOrdersHubIcon } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/PackageWorkOrdersHubIcon';
+import {
+  getPackageWorkOrderDistributionInfo,
+  packageWorkOrderDistributionClassName,
+  packageWorkOrderDistributionTitleSuffix,
+} from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/packageWorkOrderDistribution';
 import { formatPackageWorkOrderHubModalTitle } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/packageWorkOrderHubTabs';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
@@ -190,6 +195,7 @@ export function RepairSchedulesGroupedList({
 
   const renderActions = (item: RepairScheduleProject) => {
     const packageId = item.packageId;
+    const workOrderDistribution = getPackageWorkOrderDistributionInfo(item.package?.formData);
     return (
       <div className={styles.actions}>
         <AdminTableIconButton
@@ -202,7 +208,11 @@ export function RepairSchedulesGroupedList({
         {packageId ? (
           <AdminTableIconButton
             aria-label="Заказ-наряды"
-            title={formatPackageWorkOrderHubModalTitle(item.contractNumber ?? undefined)}
+            className={packageWorkOrderDistributionClassName(workOrderDistribution.status)}
+            title={
+              formatPackageWorkOrderHubModalTitle(item.contractNumber ?? undefined) +
+              packageWorkOrderDistributionTitleSuffix(workOrderDistribution)
+            }
             onClick={() => onOpenWorkOrdersHub(packageId)}
           >
             <PackageWorkOrdersHubIcon />
@@ -339,6 +349,7 @@ export function RepairSchedulesGroupedList({
 
   const renderMobileCard = (item: RepairScheduleProject) => {
     const { objectDescription, managerNote } = packageObjectTexts(item.package);
+    const workOrderDistribution = getPackageWorkOrderDistributionInfo(item.package?.formData);
     return (
       <article
         key={item.id}
@@ -405,7 +416,11 @@ export function RepairSchedulesGroupedList({
             {item.packageId ? (
               <AdminTableIconButton
                 aria-label="Заказ-наряды"
-                title={formatPackageWorkOrderHubModalTitle(item.contractNumber ?? undefined)}
+                className={packageWorkOrderDistributionClassName(workOrderDistribution.status)}
+                title={
+                  formatPackageWorkOrderHubModalTitle(item.contractNumber ?? undefined) +
+                  packageWorkOrderDistributionTitleSuffix(workOrderDistribution)
+                }
                 onClick={() => {
                   if (item.packageId) onOpenWorkOrdersHub(item.packageId);
                 }}

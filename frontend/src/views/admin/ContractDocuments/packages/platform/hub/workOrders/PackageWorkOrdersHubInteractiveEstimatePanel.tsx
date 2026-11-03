@@ -48,6 +48,21 @@ export function PackageWorkOrdersHubInteractiveEstimatePanel() {
     return counts;
   }, [form.finalEstimateInstallerAssignments]);
 
+  const allInteractiveRowKeys = useMemo(
+    () =>
+      interactiveFinalEstimateSections.flatMap((section) =>
+        section.rooms.flatMap((room) => room.lines.map((line) => line.key))
+      ),
+    [interactiveFinalEstimateSections]
+  );
+
+  const allInteractiveRowsAssignedToActive =
+    Boolean(activeInstallerId) &&
+    allInteractiveRowKeys.length > 0 &&
+    allInteractiveRowKeys.every(
+      (rowKey) => form.finalEstimateInstallerAssignments[rowKey]?.installerId === activeInstallerId
+    );
+
   const directionLabel = packageKindUiLabel(packageKind);
 
   return (
@@ -58,16 +73,30 @@ export function PackageWorkOrdersHubInteractiveEstimatePanel() {
             <h3 className={`${WO_SECTION_TITLE} ${WO_SECTION_TITLE_MAIN}`}>
               {isWindowsPackage ? 'Интерактивный счёт-заказ' : 'Интерактивная итоговая смета'}
             </h3>
-            <span
-              className={`${cdEstimatesList.interactiveUnassignedBadge} ${
-                unassignedInteractiveRowsCount === 0
-                  ? cdEstimatesList.interactiveUnassignedBadgeDone
-                  : cdEstimatesList.interactiveUnassignedBadgePending
-              }`}
-              title="Количество неприкреплённых позиций"
-            >
-              {unassignedInteractiveRowsCount}
-            </span>
+            <div className={cdEstimatesList.interactiveEstimateTitleActions}>
+              <button
+                type="button"
+                className={`${cdWorkspace.secondaryBtn} ${cdEstimatesList.interactiveEstimateAssignBtn}`}
+                disabled={!activeInstallerId || allInteractiveRowKeys.length === 0}
+                onClick={() =>
+                  assignInstallerToFinalEstimateRows(allInteractiveRowKeys, activeInstallerId)
+                }
+              >
+                {allInteractiveRowsAssignedToActive
+                  ? 'Снять активного со всех позиций'
+                  : 'Назначить активного на все позиции'}
+              </button>
+              <span
+                className={`${cdEstimatesList.interactiveUnassignedBadge} ${
+                  unassignedInteractiveRowsCount === 0
+                    ? cdEstimatesList.interactiveUnassignedBadgeDone
+                    : cdEstimatesList.interactiveUnassignedBadgePending
+                }`}
+                title="Количество неприкреплённых позиций"
+              >
+                {unassignedInteractiveRowsCount}
+              </span>
+            </div>
           </div>
           <PackageInteractiveInstallerPicker
             allInstallers={contractInstallers}

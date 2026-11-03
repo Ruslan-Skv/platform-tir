@@ -1810,6 +1810,15 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Кнопка «Назначить активного на все позиции» + бейдж неприкреплённых — справа от заголовка. */
+.interactiveEstimateTitleActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .interactiveUnassignedBadge {
