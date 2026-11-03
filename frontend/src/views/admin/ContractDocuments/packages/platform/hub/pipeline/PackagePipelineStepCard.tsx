@@ -174,6 +174,22 @@ export function PackagePipelineStepCard({
                     </button>
                   </div>
                 ) : null}
+                {hub.isSuperAdmin &&
+                (card.slotStatus === 'SIGNED' || card.slotStatus === 'PAID') &&
+                !card.canUnmarkSigned ? (
+                  <button
+                    type="button"
+                    data-modal-btn="secondary"
+                    disabled={actionsDisabled || hub.revertAddendumBusy}
+                    title={
+                      actionsTitle ??
+                      'Отменить подписание Д/с и вернуть его в работу (только супер-админ, без окна 5 секунд)'
+                    }
+                    onClick={() => hub.requestAddendumSigningRevert(card.slotIndex0)}
+                  >
+                    {hub.revertAddendumBusy ? 'Отмена…' : 'Отменить подписание Д/с'}
+                  </button>
+                ) : null}
               </div>
             ))}
           </div>

@@ -740,6 +740,26 @@ export async function revertContractDocumentPackageSigning(
   return res.json();
 }
 
+/**
+ * Супер-админ: отмена подписания доп. соглашения №ordinal вне 5-секундного
+ * окна хаба. FormData пересчитывается на сервере из хранимых данных.
+ */
+export async function revertContractDocumentPackageAddendumSigning(
+  id: string,
+  ordinal: number
+): Promise<ContractDocumentPackage> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/${id}/revert-addendum-signing`,
+    {
+      method: 'POST',
+      headers: getAdminAuthHeaders(),
+      body: JSON.stringify({ ordinal }),
+    }
+  );
+  if (!res.ok) throw new Error(await readAdminContractPackagesError(res));
+  return res.json();
+}
+
 /** Фото акта начала работ для пакета «Ремонт»; файл сохраняется на сервере, в ответе — относительный `imageUrl`. */
 export async function uploadRepairPackageWorkStartActPhoto(
   packageId: string,

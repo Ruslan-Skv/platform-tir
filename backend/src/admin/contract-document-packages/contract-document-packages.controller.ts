@@ -37,6 +37,7 @@ import { CreateFreePaymentInvoiceDto } from './dto/invoices/create-free-payment-
 import { PreviewContractNumberDto } from './dto/preview-contract-number.dto';
 import { ReserveContractNumbersDto } from './dto/reserve-contract-numbers.dto';
 import { CreateContractDocumentPackageDto } from './dto/create-contract-document-package.dto';
+import { RevertAddendumSigningDto } from './dto/revert-addendum-signing.dto';
 import { SetGlobalExecutorProfilesDto } from './dto/settings/set-global-executor-profiles.dto';
 import { SetGlobalContractTemplatesDto } from './dto/settings/set-global-contract-templates.dto';
 import { SetGlobalSignatoryProfilesDto } from './dto/settings/set-global-signatory-profiles.dto';
@@ -1417,6 +1418,17 @@ export class ContractDocumentPackagesController {
   @Roles('SUPER_ADMIN')
   revertSigning(@Param('id') id: string, @Req() req: RequestWithUser) {
     return this.service.revertSigning(id, req.user?.id);
+  }
+
+  /** Супер-админ: отмена подписания доп. соглашения вне 5-секундного окна хаба. */
+  @Post(':id/revert-addendum-signing')
+  @Roles('SUPER_ADMIN')
+  revertAddendumSigning(
+    @Param('id') id: string,
+    @Body() dto: RevertAddendumSigningDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.service.revertAddendumSigning(id, dto.ordinal, req.user?.id);
   }
 
   @Post(':id/restore')

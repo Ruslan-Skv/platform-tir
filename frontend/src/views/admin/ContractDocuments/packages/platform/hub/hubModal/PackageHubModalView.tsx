@@ -217,6 +217,19 @@ export function PackageHubModalView({
         confirmText={hub.savingPackageStatus ? 'Сохранение…' : 'Снять отказ'}
       />
 
+      <ConfirmModal
+        isOpen={hub.revertAddendumPendingOrdinal !== null}
+        onClose={() => {
+          if (hub.revertAddendumBusy) return;
+          hub.setRevertAddendumPendingOrdinal(null);
+        }}
+        onConfirm={() => void hub.confirmAddendumSigningRevert()}
+        title="Отменить подписание доп. соглашения?"
+        message={hub.revertAddendumConfirmMessage}
+        confirmText={hub.revertAddendumBusy ? 'Отмена…' : 'Отменить подписание'}
+        cancelText="Оставить подписанным"
+      />
+
       <PackageHubWorkStartModal
         hub={hub}
         workStartFileInputRef={workStartFileInputRef}

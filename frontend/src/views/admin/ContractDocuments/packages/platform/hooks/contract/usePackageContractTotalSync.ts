@@ -120,11 +120,11 @@ export function usePackageAddendumSlotActions({
         const slots = [...p.addendumSlots] as PackageFormData['addendumSlots'];
         const cur = slots[slotIndex0];
         if (!cur || cur.status !== 'OPEN') return p;
+        // Отметка оплаты не затирается: отмена оплаты — отдельное действие.
         slots[slotIndex0] = {
           ...cur,
           status: 'SIGNED',
           signedAt: new Date().toISOString(),
-          paidAt: '',
         };
         return { ...p, addendumSlots: slots };
       });

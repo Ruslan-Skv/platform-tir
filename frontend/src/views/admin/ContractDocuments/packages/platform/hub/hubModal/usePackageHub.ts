@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { useAuth } from '@/features/auth';
 import {
   type ContractDocumentPackageKind,
   type ContractDocumentPackagePayment,
@@ -11,6 +12,7 @@ import {
   getContractDocumentPackage,
   getContractDocumentPackagePayments,
   getContractDocumentTemplatePresets,
+  revertContractDocumentPackageAddendumSigning,
   updateContractDocumentPackage,
   uploadRepairPackageContractCloseActPhoto,
   uploadRepairPackageWorkStartActPhoto,
@@ -79,6 +81,8 @@ export function usePackageHub({
   getLiveForm,
   getLivePersistOptions,
 }: UsePackageHubOptions) {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const [loading, setLoading] = useState(false);
   const [contentReady, setContentReady] = useState(false);
   const hubContentReadyRef = useRef(false);
@@ -160,6 +164,11 @@ export function usePackageHub({
   const [refusalModalBusy, setRefusalModalBusy] = useState(false);
   const [refusalModalError, setRefusalModalError] = useState<string | null>(null);
   const [revertRefusalConfirmOpen, setRevertRefusalConfirmOpen] = useState(false);
+  /** Супер-админ: номер Д/с, для которого открыто подтверждение отмены подписания. */
+  const [revertAddendumPendingOrdinal, setRevertAddendumPendingOrdinal] = useState<number | null>(
+    null
+  );
+  const [revertAddendumBusy, setRevertAddendumBusy] = useState(false);
   const [contractTemplatePresets, setContractTemplatePresets] = useState<ContractTemplatePreset[]>(
     []
   );
@@ -810,11 +819,11 @@ export function usePackageHub({
       const slots = [...p.addendumSlots] as PackageFormData['addendumSlots'];
       const cur = slots[slotIndex0];
       if (!cur || cur.status !== 'OPEN') return;
+      // Отметка оплаты не затирается: отмена оплаты — отдельное действие.
       slots[slotIndex0] = {
         ...cur,
         status: 'SIGNED',
         signedAt: new Date().toISOString(),
-        paidAt: '',
       };
       const nextForm = { ...p, addendumSlots: slots };
       setSavingPackageStatus(true);
@@ -838,7 +847,8 @@ export function usePackageHub({
       const cur = slots[slotIndex0];
       if (!cur || cur.status !== 'SIGNED') return;
       if (!isWithinMsSinceIso(cur.signedAt, CONTRACT_SIGNED_REVERT_WINDOW_MS)) return;
-      slots[slotIndex0] = { ...cur, status: 'OPEN', signedAt: '', paidAt: '' };
+      // Отметка оплаты не затирается: отмена оплаты — отдельное действие.
+      slots[slotIndex0] = { ...cur, status: 'OPEN', signedAt: '' };
       const nextForm = { ...p, addendumSlots: slots };
       setSavingPackageStatus(true);
       setError(null);
@@ -853,6 +863,40 @@ export function usePackageHub({
     },
     [persistForm, notifyUpdated, hubFormBase]
   );
+
+  /** Супер-админ: запрос отмены подписания Д/с вне 5-секундного окна хаба. */
+  const requestAddendumSigningRevert = useCallback(
+    (slotIndex0: number) => {
+      if (!isSuperAdmin) return;
+      const slot = formRef.current.addendumSlots[slotIndex0];
+      if (!slot || (slot.status !== 'SIGNED' && slot.status !== 'PAID')) return;
+      setRevertAddendumPendingOrdinal(slotIndex0 + 1);
+    },
+    [isSuperAdmin]
+  );
+
+  /**
+   * Супер-админ: FormData сбрасывает сервер (отдельный эндпоинт супер-админа) —
+   * общий PATCH нейтрализуется защитой устаревшей формы.
+   */
+  const confirmAddendumSigningRevert = useCallback(async () => {
+    const ordinal = revertAddendumPendingOrdinal;
+    if (ordinal === null || !isSuperAdmin) return;
+    setRevertAddendumBusy(true);
+    setError(null);
+    try {
+      await revertContractDocumentPackageAddendumSigning(packageId, ordinal);
+      setRevertAddendumPendingOrdinal(null);
+      notifyUpdated();
+      await loadHub();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось отменить подписание Д/с');
+    } finally {
+      setRevertAddendumBusy(false);
+    }
+  }, [isSuperAdmin, packageId, revertAddendumPendingOrdinal, notifyUpdated, loadHub]);
+
+  const revertAddendumConfirmMessage = `Д/с №${revertAddendumPendingOrdinal ?? ''} вернётся в статус «Не подписано»: дата подписания сбросится, активная ссылка ЭП отзовётся. Отметка оплаты Д/с и записи в журнале оплат не изменятся; подписанный договор останется без изменений.`;
 
   const headerConcludedDateLabel =
     packageFlowStatus === 'CONTRACT_CONCLUDED'
@@ -873,6 +917,13 @@ export function usePackageHub({
     pipeline,
     savingPackageStatus,
     attachedActPhotos,
+    isSuperAdmin,
+    revertAddendumPendingOrdinal,
+    setRevertAddendumPendingOrdinal,
+    revertAddendumBusy,
+    revertAddendumConfirmMessage,
+    requestAddendumSigningRevert,
+    confirmAddendumSigningRevert,
     workStartModalOpen,
     setWorkStartModalOpen,
     workStartModalDate,

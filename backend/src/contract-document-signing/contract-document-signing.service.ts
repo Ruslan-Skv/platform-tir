@@ -323,4 +323,36 @@ export class ContractDocumentSigningService {
   cancelActiveSessionsOnManualConclusion(packageId: string): Promise<number> {
     return this.stageEffects.cancelActiveSessionsOnManualConclusion(packageId);
   }
+
+  /**
+   * Активная (PENDING/VIEWED) сессия этапного документа — например, конкретного
+   * Д/с — либо null. Используется при отмене подписания: «висящая» ссылка не
+   * должна позволить заказчику повторно подписать уже отменённый документ.
+   */
+  async findActiveSessionIdForStageTab(
+    packageId: string,
+    stageTab: string,
+  ): Promise<string | null> {
+    const rows = await this.prisma.contractDocumentSigningSession.findMany({
+      where: {
+        packageId,
+        status: {
+          in: [
+            ContractDocumentSigningSessionStatus.PENDING,
+            ContractDocumentSigningSessionStatus.VIEWED,
+          ],
+        },
+      },
+      select: { id: true, documents: true },
+    });
+    for (const row of rows) {
+      const docs = Array.isArray(row.documents)
+        ? (row.documents as Array<{ tabId?: unknown }>)
+        : [];
+      if (docs.some((d) => d && typeof d === 'object' && d.tabId === stageTab)) {
+        return row.id;
+      }
+    }
+    return null;
+  }
 }

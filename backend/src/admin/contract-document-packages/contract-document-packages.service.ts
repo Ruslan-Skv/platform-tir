@@ -72,6 +72,11 @@ export class ContractDocumentPackagesService {
     return this.signingRevert.revertSigning(id, actorUserId);
   }
 
+  /** Супер-админ: отмена подписания доп. соглашения (без окна хаба). */
+  revertAddendumSigning(id: string, ordinal: number, actorUserId?: string | null) {
+    return this.signingRevert.revertAddendumSigning(id, ordinal, actorUserId);
+  }
+
   listVersions(packageId: string) {
     return this.crud.listVersions(packageId);
   }

@@ -106,7 +106,8 @@ export class SigningStageEffectsService {
 
   /**
    * Подписание Д/с: слоту выставляется SIGNED с датой ЭП-подписи — та же отметка,
-   * что и ручной чекбокс «Д/с №… подписано» в хабе. Если слот уже не OPEN
+   * что и ручной чекбокс «Д/с №… подписано» в хабе. Отметка оплаты (paidAt)
+   * сохраняется — отмена оплаты отдельное действие. Если слот уже не OPEN
    * (отмечен вручную за время жизни ссылки) — отметка не перезаписывается.
    */
   async applyAddendumEffects(input: {
@@ -139,7 +140,6 @@ export class SigningStageEffectsService {
         ...slot,
         status: 'SIGNED',
         signedAt: input.signedAt.toISOString(),
-        paidAt: '',
       };
       await this.marker.patch(input.packageId, input.signingMarker, {
         extraFormFields: { addendumSlots: slots },

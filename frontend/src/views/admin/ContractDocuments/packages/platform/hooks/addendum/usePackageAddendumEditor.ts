@@ -177,7 +177,8 @@ export function usePackageAddendumEditor({
         const cur = slots[slotIndex0];
         if (!cur || cur.status !== 'SIGNED') return p;
         if (!isWithinMsSinceIso(cur.signedAt, CONTRACT_SIGNED_REVERT_WINDOW_MS)) return p;
-        slots[slotIndex0] = { ...cur, status: 'OPEN', signedAt: '', paidAt: '' };
+        // Отметка оплаты не затирается: отмена оплаты — отдельное действие.
+        slots[slotIndex0] = { ...cur, status: 'OPEN', signedAt: '' };
         const next = { ...p, addendumSlots: slots };
         formRef.current = next;
         return next;
