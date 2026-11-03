@@ -7,6 +7,7 @@ import { useState } from 'react';
 import type { CrmUser } from '@/shared/api/admin-crm';
 import type {
   WorkDayExcuse,
+  WorkDayHoliday,
   WorkDayJournalRow,
   WorkDayLeave,
 } from '@/shared/api/crm/admin-work-days';
@@ -20,6 +21,7 @@ import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.modul
 import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
 
 import { WorkDayExcuseModal } from './WorkDayExcuseModal';
+import { WorkDayHolidayModal } from './WorkDayHolidayModal';
 import { WorkDayLeaveModal } from './WorkDayLeaveModal';
 import styles from './WorkDaysPage.module.css';
 import type { WorkDaysPageModel } from './hooks/useWorkDaysPage';
@@ -30,6 +32,7 @@ import {
   hasUnexcusedWorkDayViolations,
   hasWorkDayExcuse,
   isWorkDayDayOffRow,
+  isWorkDayHolidayRow,
   isWorkDayLeaveRow,
   isWorkDaySyntheticRow,
   isWorkDayTruancyRow,
@@ -106,6 +109,10 @@ function excuseUserName(excuse: WorkDayExcuse): string {
   return name || user.email;
 }
 
+function holidayTitle(holiday: WorkDayHoliday): string {
+  return holiday.title?.trim() || 'Без названия';
+}
+
 function LeaveTypeBadge({ type }: { type: 'VACATION' | 'SICK' }) {
   return (
     <span className={type === 'VACATION' ? styles.leaveBadgeVacation : styles.leaveBadgeSick}>
@@ -170,6 +177,18 @@ function RowStatusCell({ row }: { row: WorkDayJournalRow }) {
     );
   }
   if (isWorkDayDayOffRow(row)) {
+    if (isWorkDayHolidayRow(row)) {
+      return (
+        <div className={styles.statusCell}>
+          <span className={styles.holidayBadge}>Праздник</span>
+          {row.holidayTitle ? (
+            <span className={styles.leaveComment} title={row.holidayTitle}>
+              {row.holidayTitle}
+            </span>
+          ) : null}
+        </div>
+      );
+    }
     return <>Выходной</>;
   }
   return (
@@ -199,15 +218,19 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
     trackedUsers,
     leaves,
     excuses,
+    holidays,
     loading,
     deletingId,
     canDelete,
     canManageLeaves,
     canManageExcuses,
+    canManageHolidays,
     savingLeave,
     deletingLeaveId,
     savingExcuse,
     deletingExcuseId,
+    savingHoliday,
+    deletingHolidayId,
     error,
     stats,
     load,
@@ -216,6 +239,8 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
     handleDeleteLeave,
     handleCreateExcuse,
     handleDeleteExcuse,
+    handleCreateHoliday,
+    handleDeleteHoliday,
   } = model;
 
   const [deleteTarget, setDeleteTarget] = useState<WorkDayJournalRow | null>(null);
@@ -223,6 +248,8 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
   const [deleteLeaveTarget, setDeleteLeaveTarget] = useState<WorkDayLeave | null>(null);
   const [excuseTarget, setExcuseTarget] = useState<WorkDayJournalRow | null>(null);
   const [deleteExcuseTarget, setDeleteExcuseTarget] = useState<WorkDayExcuse | null>(null);
+  const [holidayModalOpen, setHolidayModalOpen] = useState(false);
+  const [deleteHolidayTarget, setDeleteHolidayTarget] = useState<WorkDayHoliday | null>(null);
   const colSpan = canDelete ? 11 : 10;
   const todayIso = new Date().toISOString().slice(0, 10);
 
@@ -264,6 +291,15 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
               onClick={() => setLeaveModalOpen(true)}
             >
               Отметить отпуск / больничный
+            </button>
+          ) : null}
+          {canManageHolidays ? (
+            <button
+              type="button"
+              className={cdChrome.contractsListHeaderAddBtn}
+              onClick={() => setHolidayModalOpen(true)}
+            >
+              Объявить выходные
             </button>
           ) : null}
           <div className={cdHub.contractsHeaderIconActionsDesktop}>{refreshButton}</div>
@@ -357,6 +393,9 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
         {stats.dayOffsBySchedule > 0 ? (
           <span className={styles.statChip}>Выходных по графику: {stats.dayOffsBySchedule}</span>
         ) : null}
+        {stats.holidayDays > 0 ? (
+          <span className={styles.statChip}>Праздничных дней: {stats.holidayDays}</span>
+        ) : null}
         {stats.dayOffWork > 0 ? (
           <span className={styles.statChip}>Работа в выходной: {stats.dayOffWork}</span>
         ) : null}
@@ -426,6 +465,36 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
                 }
                 aria-label="Отменить прощение нарушения"
                 onClick={() => setDeleteExcuseTarget(excuse)}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      {canManageHolidays && holidays.length > 0 ? (
+        <div className={styles.leaves}>
+          {holidays.map((holiday) => (
+            <span key={holiday.id} className={styles.leaveChip}>
+              <span className={styles.holidayBadge}>Праздник</span>
+              <span className={styles.leaveChipName}>{holidayTitle(holiday)}</span>
+              <span className={styles.leaveChipDates}>
+                {formatWorkDayDate(holiday.dateFrom)}
+                {holiday.dateFrom !== holiday.dateTo
+                  ? ` – ${formatWorkDayDate(holiday.dateTo)}`
+                  : ''}
+              </span>
+              <button
+                data-admin-mutation
+                type="button"
+                className={styles.leaveChipDelete}
+                disabled={deletingHolidayId === holiday.id}
+                title={
+                  deletingHolidayId === holiday.id ? 'Удаление…' : 'Удалить объявленные выходные'
+                }
+                aria-label="Удалить объявленные выходные"
+                onClick={() => setDeleteHolidayTarget(holiday)}
               >
                 ×
               </button>
@@ -669,6 +738,14 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
         onSubmit={handleCreateLeave}
       />
 
+      <WorkDayHolidayModal
+        open={holidayModalOpen}
+        busy={savingHoliday}
+        todayIso={todayIso}
+        onClose={() => setHolidayModalOpen(false)}
+        onSubmit={handleCreateHoliday}
+      />
+
       <WorkDayExcuseModal
         target={excuseTarget}
         busy={savingExcuse}
@@ -704,6 +781,22 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
           }}
           onClose={() => setDeleteExcuseTarget(null)}
           confirmText={deletingExcuseId === deleteExcuseTarget.id ? 'Отмена…' : 'Отменить прощение'}
+          variant="danger"
+        />
+      ) : null}
+
+      {deleteHolidayTarget ? (
+        <ConfirmModal
+          isOpen
+          title="Удалить объявленные выходные?"
+          message={`Выходные «${holidayTitle(deleteHolidayTarget)}» с ${formatWorkDayDate(deleteHolidayTarget.dateFrom)} по ${formatWorkDayDate(deleteHolidayTarget.dateTo)} будут удалены. Дни периода снова будут учитываться по графику сотрудников.`}
+          onConfirm={() => {
+            const target = deleteHolidayTarget;
+            setDeleteHolidayTarget(null);
+            void handleDeleteHoliday(target.id);
+          }}
+          onClose={() => setDeleteHolidayTarget(null)}
+          confirmText={deletingHolidayId === deleteHolidayTarget.id ? 'Удаление…' : 'Удалить'}
           variant="danger"
         />
       ) : null}

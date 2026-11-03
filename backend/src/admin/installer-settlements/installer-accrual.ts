@@ -177,6 +177,22 @@ export type AccruedInstallerTotal = {
   lineCount: number;
 };
 
+/** Строка журнала авансов для подсказки колонки «З/п» (как в модалке «Заказ-наряды»). */
+export type InstallerSalaryAdvanceRow = {
+  id: string;
+  /** Дата выдачи (ISO YYYY-MM-DD). */
+  paidAt: string;
+  /** Сумма, ₽. */
+  amount: number;
+  /** Мастер: живое имя из справочника либо снимок из записи (мастер удалён). */
+  installerName: string | null;
+  /** CASH — наличные, BANK — банк; null — не указан (старые записи). */
+  paymentMethod: string | null;
+  note: string | null;
+  /** Кто выдал: ФИО либо email. */
+  createdByName: string | null;
+};
+
 /** Сводка з/п мастерам по договору: полная начисленная и выданные авансы. */
 export type InstallerSalarySummary = {
   /** Полная з/п (сумма начислений всех мастеров); null — мастера не назначены. */
@@ -185,16 +201,19 @@ export type InstallerSalarySummary = {
   paid: number;
   /** Выдано от полной з/п, % (округлён до целого); null — полная з/п неизвестна. */
   paidPercent: number | null;
+  /** Журнал авансов договора (подсказка колонки «З/п»); пусто — выплат не было. */
+  advances: InstallerSalaryAdvanceRow[];
 };
 
 /**
- * Сводка з/п по договору из начислений заказ-нарядов и суммы выданных авансов.
- * Единые правила для колонок «З/п» план-графиков ремонта и ОДПЖ: суммы — до
- * копеек, % — до целых; без назначенных мастеров полная з/п неизвестна (null).
+ * Сводка з/п по договору из начислений заказ-нарядов, суммы выданных авансов
+ * и их журнала. Единые правила для колонок «З/п» план-графиков ремонта и ОДПЖ:
+ * суммы — до копеек, % — до целых; без назначенных мастеров полная з/п неизвестна (null).
  */
 export function summarizeInstallerSalary(
   accrued: Map<string, AccruedInstallerTotal>,
   paidRub: number,
+  advances: InstallerSalaryAdvanceRow[] = [],
 ): InstallerSalarySummary {
   const round2 = (value: number) => Math.round(value * 100) / 100;
   let total: number | null = null;
@@ -203,6 +222,7 @@ export function summarizeInstallerSalary(
     total: total == null ? null : round2(total),
     paid: round2(paidRub),
     paidPercent: total != null && total > 0 ? Math.round((paidRub / total) * 100) : null,
+    advances,
   };
 }
 

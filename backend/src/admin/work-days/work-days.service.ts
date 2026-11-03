@@ -44,6 +44,7 @@ import {
   type WorkDayJournalListRow,
   WorkDayJournalService,
 } from './services/work-day-journal.service';
+import { WorkDayHolidaysService } from './work-day-holidays.service';
 import { WorkDayRequestsService } from './work-day-requests.service';
 import { DEFAULT_WORK_DAY_SETTINGS, WORK_DAY_RECORD_INCLUDE } from './work-day.constants';
 
@@ -63,6 +64,7 @@ export class WorkDaysService implements OnModuleInit {
     private readonly workDayNotify: WorkDayNotifyService,
     private readonly workDayRequests: WorkDayRequestsService,
     private readonly workDayJournal: WorkDayJournalService,
+    private readonly workDayHolidays: WorkDayHolidaysService,
   ) {}
 
   onModuleInit() {
@@ -237,7 +239,8 @@ export class WorkDaysService implements OnModuleInit {
     const approvedDayOff = await this.workDayRequests.hasApprovedDayOff(userId, today);
     const approvedEarlyLeave = await this.workDayRequests.hasApprovedEarlyLeave(userId, today);
     const approvedLateArrival = await this.workDayRequests.hasApprovedLateArrival(userId, today);
-    const isWorkDayToday = todaySchedule.isWorkDay && !approvedDayOff;
+    const isHolidayToday = await this.workDayHolidays.isHolidayDate(today);
+    const isWorkDayToday = todaySchedule.isWorkDay && !approvedDayOff && !isHolidayToday;
 
     // Прощённые нарушения скрываем от сотрудника и здесь (например, опоздание
     // текущего дня, прощённое суперадмином из-за сбоя приложения).
@@ -262,6 +265,8 @@ export class WorkDaysService implements OnModuleInit {
       approvedDayOff,
       approvedEarlyLeave,
       approvedLateArrival,
+      /** Сегодня нерабочий день, объявленный суперадмином (праздник). */
+      isHolidayToday,
       todayWorkDay: todayDay
         ? this.workDayJournal.sanitizeRecordForEmployee(todayDay, todayExcused)
         : null,
@@ -302,8 +307,10 @@ export class WorkDaysService implements OnModuleInit {
     const todaySchedule = resolveDaySchedule(user, user.office, settings, dayOfWeek);
     const today = getTodayDateInTimezone();
     // Выход на работу в свой выходной по графику не блокируем: день учитывается с пометкой.
+    // Выход в объявленный суперадмином праздник — то же самое.
     const approvedDayOff = await this.workDayRequests.hasApprovedDayOff(userId, today);
-    const isDayOffWork = !todaySchedule.isWorkDay || approvedDayOff;
+    const isHolidayToday = await this.workDayHolidays.isHolidayDate(today);
+    const isDayOffWork = !todaySchedule.isWorkDay || approvedDayOff || isHolidayToday;
 
     const openPrevious = await this.prisma.workDay.findFirst({
       where: { userId, status: WorkDayStatus.OPEN, workDate: { lt: today } },

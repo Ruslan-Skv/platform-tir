@@ -206,6 +206,19 @@
   color: #6d28d9;
 }
 
+.holidayBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--admin-space-md);
+  border-radius: var(--admin-radius-3xl);
+  border: 1px solid transparent;
+  background: #fef3c7;
+  color: #b45309;
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .leaveBadgeSick {
   background: #fce7f3;
   color: #be185d;
@@ -398,6 +411,11 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .leaveBadgeVacation {
   background: rgb(139 92 246 / 0.2);
   color: rgb(196 181 253);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .holidayBadge {
+  background: rgb(245 158 11 / 0.2);
+  color: rgb(253 230 138);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .leaveBadgeSick {

@@ -25,6 +25,7 @@ import {
   formatWorkDayDate,
   formatWorkDayTime,
   isWorkDayDayOffRow,
+  isWorkDayHolidayRow,
   isWorkDayLeaveRow,
   isWorkDayTruancyRow,
   workDayAbsenceMinutes,
@@ -392,6 +393,9 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
           {stats.scheduleDayOffDays ? (
             <span className={styles.statChip}>Выходных по графику: {stats.scheduleDayOffDays}</span>
           ) : null}
+          {stats.holidayDays ? (
+            <span className={styles.statChip}>Праздничных дней: {stats.holidayDays}</span>
+          ) : null}
           {stats.dayOffWorkDays ? (
             <span className={styles.statChip}>Работа в выходной: {stats.dayOffWorkDays}</span>
           ) : null}
@@ -535,7 +539,15 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
                     <td>
                       <RequestsCell row={row} />
                     </td>
-                    <td>Выходной</td>
+                    <td>
+                      {isWorkDayHolidayRow(row) ? (
+                        <span className={styles.holidayBadge} title={row.holidayTitle ?? undefined}>
+                          Праздник
+                        </span>
+                      ) : (
+                        'Выходной'
+                      )}
+                    </td>
                   </tr>
                 ) : (
                   <tr key={row.id} className={workDayRowClassName(row, styles)}>
@@ -637,7 +649,13 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
                       <strong className={styles.mobileCardDate}>
                         {formatWorkDayDate(row.workDate)}
                       </strong>
-                      <span className={styles.mobileCardStatus}>Выходной</span>
+                      {isWorkDayHolidayRow(row) ? (
+                        <span className={styles.holidayBadge} title={row.holidayTitle ?? undefined}>
+                          Праздник
+                        </span>
+                      ) : (
+                        <span className={styles.mobileCardStatus}>Выходной</span>
+                      )}
                     </div>
                     <dl className={styles.mobileCardRows}>
                       <div className={styles.mobileCardRow}>

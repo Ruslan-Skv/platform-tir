@@ -76,6 +76,8 @@ export interface WorkDayRecord {
   truancyOnly?: false;
   leaveOnly?: false;
   bySchedule?: false;
+  byHoliday?: false;
+  holidayTitle?: string | null;
 }
 
 /** Короткая карточка запроса для строк журнала рабочего времени. */
@@ -104,6 +106,10 @@ export interface WorkDayDayOffRow {
   leaveOnly?: false;
   /** true — обычный выходной по графику (не согласованный запрос). */
   bySchedule?: true;
+  /** true — нерабочий день, объявленный суперадмином (праздник). */
+  byHoliday?: true;
+  /** Название праздника для строк «byHoliday». */
+  holidayTitle?: string | null;
   office?: { id: string; name: string } | null;
   absences: [];
   user?: {
@@ -132,6 +138,7 @@ export interface WorkDayTruancyRow {
   dayOffOnly?: false;
   leaveOnly?: false;
   bySchedule?: false;
+  byHoliday?: false;
   office?: { id: string; name: string } | null;
   absences: [];
   user?: {
@@ -166,6 +173,7 @@ export interface WorkDayLeaveRow {
   truancyOnly?: false;
   dayOffOnly?: false;
   bySchedule?: false;
+  byHoliday?: false;
   office?: { id: string; name: string } | null;
   absences: [];
   user?: {
@@ -210,6 +218,8 @@ export interface WorkDayMyStatus {
   approvedDayOff?: boolean;
   approvedEarlyLeave?: boolean;
   approvedLateArrival?: boolean;
+  /** Сегодня нерабочий день, объявленный суперадмином (праздник). */
+  isHolidayToday?: boolean;
   todayWorkDay: WorkDayRecord | null;
   forgottenOpenDay: WorkDayRecord | null;
   hasOpenAbsence: boolean;
@@ -376,6 +386,8 @@ export interface MyWorkDayHistorySummary {
   scheduleDayOffDays?: number;
   /** Прогулы: рабочие дни по графику без явки и без согласованного выходного. */
   truancyDays?: number;
+  /** Нерабочие дни, объявленные суперадмином (праздники). */
+  holidayDays?: number;
   /** Выходы на работу в свой выходной по графику. */
   dayOffWorkDays?: number;
   /** Дни отпуска, отмеченного руководителем. */
@@ -580,6 +592,69 @@ export async function deleteWorkDayExcuse(id: string): Promise<{ id: string }> {
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || 'Не удалось отменить прощение');
+  }
+  return res.json();
+}
+
+/** Нерабочий день (или период дней), объявленный суперадмином для всех сотрудников. */
+export interface WorkDayHoliday {
+  id: string;
+  title: string | null;
+  dateFrom: string;
+  dateTo: string;
+  createdById: string | null;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: {
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+  } | null;
+}
+
+/** Объявленные выходные, пересекающиеся с выбранным периодом (только суперадмин). */
+export async function getWorkDayHolidays(params?: {
+  dateFrom?: string;
+  dateTo?: string;
+}): Promise<WorkDayHoliday[]> {
+  const search = new URLSearchParams();
+  if (params?.dateFrom) search.set('dateFrom', params.dateFrom);
+  if (params?.dateTo) search.set('dateTo', params.dateTo);
+  const qs = search.toString();
+  const res = await apiFetch(`${API_URL}/admin/work-days/holidays${qs ? `?${qs}` : ''}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить объявленные выходные');
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+export async function createWorkDayHoliday(body: {
+  title?: string;
+  dateFrom: string;
+  dateTo: string;
+}): Promise<WorkDayHoliday> {
+  const res = await apiFetch(`${API_URL}/admin/work-days/holidays`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось объявить выходные');
+  }
+  return res.json();
+}
+
+export async function deleteWorkDayHoliday(id: string): Promise<{ id: string }> {
+  const res = await apiFetch(`${API_URL}/admin/work-days/holidays/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось удалить объявленные выходные');
   }
   return res.json();
 }

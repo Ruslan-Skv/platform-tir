@@ -7,6 +7,7 @@ import {
   type WorkDay,
   type WorkDayAbsence,
   type WorkDayExcuseKind,
+  type WorkDayHoliday,
   type WorkDayLeave,
   type WorkDayRequest,
 } from '@prisma/client';
@@ -56,6 +57,9 @@ export type ApprovedDayOffRequestRow = WorkDayRequest & {
 
 /** Минимум полей отметки отпуска/больничного для синтетической строки журнала. */
 export type WorkDayLeaveMarker = Pick<WorkDayLeave, 'id' | 'type' | 'comment'>;
+
+/** Минимум полей объявленного выходного (праздника) для синтетической строки журнала. */
+export type WorkDayHolidayMarker = Pick<WorkDayHoliday, 'id' | 'title'>;
 
 export function toJournalUser(user: ScheduleJournalUser): WorkDayJournalUser {
   return {
@@ -111,6 +115,10 @@ export type WorkDayDayOffRow = {
   leaveOnly?: false;
   /** true — обычный выходной по графику (не согласованный запрос). */
   bySchedule?: true;
+  /** true — нерабочий день, объявленный суперадмином (праздник). */
+  byHoliday?: true;
+  /** Название праздника для строк «byHoliday». */
+  holidayTitle?: string | null;
   office: { id: string; name: string } | null;
   user: WorkDayJournalUser | null;
   absences: [];
@@ -214,6 +222,39 @@ export function buildLeaveRow(
     leaveOnly: true,
     leaveType: leave.type,
     leaveComment: leave.comment,
+    office: user.office ? { id: user.office.id, name: user.office.name } : null,
+    user: toJournalUser(user),
+    absences: [],
+    requests: [],
+  };
+}
+
+export function buildHolidayDayOffRow(
+  user: ScheduleJournalUser,
+  date: Date,
+  holiday: WorkDayHolidayMarker,
+): WorkDayDayOffRow {
+  return {
+    id: `holiday-${user.id}-${dateKey(date)}`,
+    userId: user.id,
+    officeId: user.officeId,
+    workDate: new Date(date),
+    status: WorkDayStatus.CLOSED,
+    startedAt: null,
+    endedAt: null,
+    closeReason: null,
+    autoClosedAt: null,
+    startedFromIp: null,
+    startedFromUserAgent: null,
+    endedFromIp: null,
+    lateMinutes: 0,
+    earlyLeaveMinutes: 0,
+    reportedEndAt: null,
+    reopenCount: 0,
+    isDayOffWork: false,
+    dayOffOnly: true,
+    byHoliday: true,
+    holidayTitle: holiday.title,
     office: user.office ? { id: user.office.id, name: user.office.name } : null,
     user: toJournalUser(user),
     absences: [],

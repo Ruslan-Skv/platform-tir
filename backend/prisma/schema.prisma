@@ -174,6 +174,7 @@ model User {
   workDayLeavesCreated                    WorkDayLeave[]                            @relation("WorkDayLeaveCreatedBy")
   workDayExcuses                          WorkDayExcuse[]                           @relation("WorkDayExcuseUser")
   workDayExcusesCreated                   WorkDayExcuse[]                           @relation("WorkDayExcuseCreatedBy")
+  workDayHolidaysCreated                  WorkDayHoliday[]                          @relation("WorkDayHolidayCreatedBy")
   contractDocumentNumberCounters          ContractDocumentNumberCounter[]
   contractDocumentNumberHolds             ContractDocumentNumberHold[]
   waybillTasksAsResponsible               WaybillTask[]                             @relation("WaybillTaskResponsible")
@@ -5329,6 +5330,27 @@ model WorkDayExcuse {
   @@index([userId])
   @@index([workDate])
   @@map("work_day_excuses")
+}
+
+/// Нерабочий праздничный день (или период дней), объявленный суперадмином
+/// для всех сотрудников. Такие дни не считаются рабочими по графику:
+/// прогул за них не фиксируется, а выход на работу помечается как
+/// «Работа в выходной».
+model WorkDayHoliday {
+  id          String   @id @default(cuid())
+  /// Название праздника («Новый год», «День России» и т.п.).
+  title       String?
+  dateFrom    DateTime @db.Date
+  dateTo      DateTime @db.Date
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy User? @relation("WorkDayHolidayCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([dateFrom])
+  @@index([dateTo])
+  @@map("work_day_holidays")
 }
 
 enum KanbanCardPriority {

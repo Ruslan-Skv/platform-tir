@@ -20,6 +20,21 @@ async function throwApiError(res: Response, fallback: string): Promise<never> {
 export type RepairScheduleProjectStatus = 'NEW' | 'IN_PROGRESS' | 'CLOSED';
 export type RepairScheduleEntryKind = 'WEEKLY' | 'MILESTONE' | 'NOTE';
 
+/** Строка журнала авансов мастера по договору (подсказка колонки «З/п»). */
+export type RepairScheduleSalaryAdvanceRow = {
+  id: string;
+  /** Дата выдачи (ISO). */
+  paidAt: string;
+  /** Сумма, ₽. */
+  amount: number;
+  installerName: string | null;
+  /** CASH — наличные, BANK — банк; null — не указан. */
+  paymentMethod: string | null;
+  note: string | null;
+  /** Кто выдал: ФИО либо email. */
+  createdByName: string | null;
+};
+
 /** З/п мастеров по договору: полная начисленная (итог заказ-нарядов) и выданные авансы. */
 export type RepairScheduleSalarySummary = {
   /** Полная з/п; null — мастера ещё не назначены на работы. */
@@ -28,6 +43,8 @@ export type RepairScheduleSalarySummary = {
   paid: number;
   /** Выдано от полной з/п, % (округлён до целого); null — полная з/п неизвестна. */
   paidPercent: number | null;
+  /** Журнал авансов договора (подсказка колонки «З/п»); пусто — выплат не было. */
+  advances?: RepairScheduleSalaryAdvanceRow[];
 };
 
 export type RepairContractAddendumMeta = {

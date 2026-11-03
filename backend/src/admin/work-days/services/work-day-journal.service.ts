@@ -13,6 +13,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
 import { DEFAULT_WORK_DAY_SETTINGS } from '../work-day.constants';
+import { WorkDayHolidaysService } from '../work-day-holidays.service';
 import {
   WORK_DAY_TIMEZONE,
   getDayOfWeekInTimezone,
@@ -22,6 +23,7 @@ import {
 import {
   type ApprovedDayOffRequestRow,
   type WorkDayExcuseBadge,
+  type WorkDayHolidayMarker,
   type WorkDayLeaveMarker,
   type WorkDayJournalListRow,
   type WorkDayJournalRow,
@@ -29,6 +31,7 @@ import {
   type WorkDayLeaveRow,
   type WorkDayRequestBadge,
   buildDayOffRow,
+  buildHolidayDayOffRow,
   buildLeaveRow,
   buildScheduleDayOffRow,
   buildTruancyRow,
@@ -93,6 +96,8 @@ export type WorkDayMySummary = {
   scheduleDayOffDays: number;
   /** Прогулы: рабочие дни по графику без явки и без согласованного выходного. */
   truancyDays: number;
+  /** Нерабочие дни, объявленные суперадмином (праздники). */
+  holidayDays: number;
   /** Выходы на работу в свой выходной по графику. */
   dayOffWorkDays: number;
   /** Дни отпуска, отмеченного руководителем. */
@@ -108,7 +113,10 @@ export type WorkDayMySummary = {
  */
 @Injectable()
 export class WorkDayJournalService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly workDayHolidays: WorkDayHolidaysService,
+  ) {}
 
   /** Сводка «Моего рабочего дня»: выходные, отпуска и прогулы не считаются рабочими днями. */
   summarizeMyRows(rows: WorkDayJournalListRow[]): WorkDayMySummary {
@@ -117,8 +125,9 @@ export class WorkDayJournalService {
         r.dayOffOnly !== true && r.truancyOnly !== true && r.leaveOnly !== true,
     );
     const approvedDayOffDays = rows.filter(
-      (r) => r.dayOffOnly === true && r.bySchedule !== true,
+      (r) => r.dayOffOnly === true && r.bySchedule !== true && r.byHoliday !== true,
     ).length;
+    const holidayDays = rows.filter((r) => r.dayOffOnly === true && r.byHoliday === true).length;
     const scheduleDayOffDays = rows.filter(
       (r) => r.dayOffOnly === true && r.bySchedule === true,
     ).length;
@@ -143,6 +152,7 @@ export class WorkDayJournalService {
       approvedDayOffDays,
       scheduleDayOffDays,
       truancyDays,
+      holidayDays,
       dayOffWorkDays: records.filter((r) => r.isDayOffWork).length,
       vacationDays: leaveRows.filter((r) => r.leaveType === WorkDayLeaveType.VACATION).length,
       sickDays: leaveRows.filter((r) => r.leaveType === WorkDayLeaveType.SICK).length,
@@ -367,8 +377,11 @@ export class WorkDayJournalService {
     }
 
     const leaveByUserDate = await this.buildLeaveMap(from, to, ctx.params);
+    // Объявленные суперадмином нерабочие дни (праздники) действуют на всех:
+    // важнее согласованного выходного и графика, но отпуск/больничный перекрывают их.
+    const holidayByDate = await this.workDayHolidays.buildHolidayMap(from, to);
     // Отпуск/больничный важнее согласованного выходного: строка за дату будет одна.
-    this.pushApprovedDayOffRows(rows, ctx, leaveByUserDate);
+    this.pushApprovedDayOffRows(rows, ctx, leaveByUserDate, holidayByDate);
 
     const users = await this.prisma.user.findMany({
       where: {
@@ -388,6 +401,11 @@ export class WorkDayJournalService {
         const leave = leaveByUserDate.get(key);
         if (leave) {
           rows.push(buildLeaveRow(user, date, leave));
+          continue;
+        }
+        const holiday = holidayByDate.get(dateKey(date));
+        if (holiday) {
+          rows.push(buildHolidayDayOffRow(user, date, holiday));
           continue;
         }
         if (ctx.approvedDayOffKeys.has(key)) continue;
@@ -479,12 +497,15 @@ export class WorkDayJournalService {
       approvedDayOffRows: ApprovedDayOffRequestRow[];
     },
     leaveByUserDate: Map<string, WorkDayLeaveMarker> | null,
+    holidayByDate: Map<string, WorkDayHolidayMarker> | null = null,
   ): void {
     for (const row of ctx.approvedDayOffRows) {
       const badge = toRequestBadge(row);
       const key = `${row.userId}|${badge.requestDate}`;
       if (ctx.recordKeys.has(key)) continue;
       if (leaveByUserDate?.has(key)) continue;
+      // В праздник согласованный выходной не нужен — день и так нерабочий.
+      if (holidayByDate?.has(badge.requestDate)) continue;
       ctx.recordKeys.add(key);
       rows.push(buildDayOffRow(row, badge));
     }

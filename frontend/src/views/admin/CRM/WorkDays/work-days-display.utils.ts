@@ -27,6 +27,11 @@ export function isWorkDayDayOffRow(row: WorkDayJournalRow): row is WorkDayDayOff
   return row.dayOffOnly === true;
 }
 
+/** Нерабочий день, объявленный суперадмином (праздник). */
+export function isWorkDayHolidayRow(row: WorkDayJournalRow): boolean {
+  return row.dayOffOnly === true && row.byHoliday === true;
+}
+
 export function isWorkDayTruancyRow(row: WorkDayJournalRow): row is WorkDayTruancyRow {
   return row.truancyOnly === true;
 }

@@ -225,3 +225,18 @@ export class CreateWorkDayExcuseDto {
   @IsString()
   comment?: string;
 }
+
+export class CreateWorkDayHolidayDto {
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty({ message: 'Укажите название праздника или оставьте поле пустым' })
+  title?: string;
+
+  @IsString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Дата начала должна быть в формате ГГГГ-ММ-ДД' })
+  dateFrom: string;
+
+  @IsString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Дата окончания должна быть в формате ГГГГ-ММ-ДД' })
+  dateTo: string;
+}

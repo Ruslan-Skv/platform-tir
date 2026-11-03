@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ContractDocumentPackageKind } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import {
+  type InstallerSalaryAdvanceRow,
   type InstallerSalarySummary,
   computeInstallerAccrual,
   isProductLikeKind,
@@ -19,8 +20,9 @@ const PRODUCT_KINDS = [
 
 /**
  * Сводки з/п по договорам для колонок «З/п» план-графиков (ремонт, ОДПЖ):
- * полная начисленная з/п (итоги заказ-нарядов мастеров) и выданные авансы.
- * Один сервис на оба раздела — чтобы расчёт и округления не разъезжались.
+ * полная начисленная з/п (итоги заказ-нарядов мастеров), выданные авансы
+ * и их журнал (подсказка колонки). Один сервис на оба раздела — чтобы расчёт
+ * и округления не разъезжались.
  */
 @Injectable()
 export class InstallerSalarySummariesService {
@@ -32,22 +34,53 @@ export class InstallerSalarySummariesService {
     const result = new Map<string, InstallerSalarySummary>();
     if (packages.length === 0) return result;
 
-    const [advanceSums, installers, settingsRows] = await Promise.all([
-      this.prisma.contractDocumentPackageInstallerAdvance.groupBy({
-        by: ['packageId'],
+    const [advanceRows, installers, settingsRows] = await Promise.all([
+      this.prisma.contractDocumentPackageInstallerAdvance.findMany({
         where: { packageId: { in: packages.map((p) => p.id) } },
-        _sum: { amount: true },
+        select: {
+          id: true,
+          packageId: true,
+          installerId: true,
+          installerName: true,
+          paidAt: true,
+          amount: true,
+          paymentMethod: true,
+          note: true,
+          createdBy: { select: { firstName: true, lastName: true, email: true } },
+        },
+        orderBy: [{ paidAt: 'desc' }, { createdAt: 'desc' }],
       }),
-      this.prisma.installerMaster.findMany({ select: { id: true, grade: true } }),
+      this.prisma.installerMaster.findMany({ select: { id: true, fullName: true, grade: true } }),
       this.prisma.contractDocumentRepairSettings.findMany({
         where: { kind: { in: [...PRODUCT_KINDS] } },
         select: { kind: true, windowsWorkOrderMarkupPercent: true },
       }),
     ]);
 
-    const paidByPackage = new Map(
-      advanceSums.map((row) => [row.packageId, row._sum.amount?.toNumber() ?? 0]),
-    );
+    // Суммы выплат и журналы по договорам; живое имя мастера приоритетнее снимка записи.
+    const liveNameById = new Map(installers.map((installer) => [installer.id, installer.fullName]));
+    const paidByPackage = new Map<string, number>();
+    const journalByPackage = new Map<string, InstallerSalaryAdvanceRow[]>();
+    for (const row of advanceRows) {
+      const amount = row.amount.toNumber();
+      paidByPackage.set(row.packageId, (paidByPackage.get(row.packageId) ?? 0) + amount);
+      const journal = journalByPackage.get(row.packageId) ?? [];
+      journal.push({
+        id: row.id,
+        paidAt: row.paidAt.toISOString().slice(0, 10),
+        amount,
+        installerName:
+          (row.installerId ? liveNameById.get(row.installerId) : null) ?? row.installerName ?? null,
+        paymentMethod: row.paymentMethod,
+        note: row.note,
+        createdByName: row.createdBy
+          ? [row.createdBy.firstName, row.createdBy.lastName].filter(Boolean).join(' ').trim() ||
+            row.createdBy.email
+          : null,
+      });
+      journalByPackage.set(row.packageId, journal);
+    }
+
     const installerGradeById = new Map(
       installers.map((installer) => [installer.id, installer.grade]),
     );
@@ -67,7 +100,14 @@ export class InstallerSalarySummariesService {
           : {}),
         installerGradeById,
       });
-      result.set(pkg.id, summarizeInstallerSalary(accrued, paidByPackage.get(pkg.id) ?? 0));
+      result.set(
+        pkg.id,
+        summarizeInstallerSalary(
+          accrued,
+          paidByPackage.get(pkg.id) ?? 0,
+          journalByPackage.get(pkg.id) ?? [],
+        ),
+      );
     }
     return result;
   }

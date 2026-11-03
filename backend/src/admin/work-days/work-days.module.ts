@@ -5,6 +5,7 @@ import { ExternalNotifyModule } from '../../external-notify/external-notify.modu
 import { WorkDayJournalService } from './services/work-day-journal.service';
 import { WorkDayNotifyService } from './services/work-day-notify.service';
 import { WorkDayExcusesService } from './work-day-excuses.service';
+import { WorkDayHolidaysService } from './work-day-holidays.service';
 import { WorkDayLeavesService } from './work-day-leaves.service';
 import { WorkDayOfficesService } from './work-day-offices.service';
 import { WorkDayRequestsService } from './work-day-requests.service';
@@ -23,8 +24,9 @@ import { WorkDaysService } from './work-days.service';
     WorkDayJournalService,
     WorkDayLeavesService,
     WorkDayExcusesService,
+    WorkDayHolidaysService,
     WorkDayUsersService,
   ],
-  exports: [WorkDaysService, WorkDayRequestsService, WorkDayJournalService],
+  exports: [WorkDaysService, WorkDayRequestsService, WorkDayJournalService, WorkDayHolidaysService],
 })
 export class WorkDaysModule {}

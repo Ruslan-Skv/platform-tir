@@ -20,6 +20,7 @@ import { RequestWithUser } from '../../common/types/request-with-user.types';
 import {
   CloseForgottenWorkDayDto,
   CreateWorkDayExcuseDto,
+  CreateWorkDayHolidayDto,
   CreateWorkDayLeaveDto,
   CreateWorkDayRequestDto,
   ReviewWorkDayRequestDto,
@@ -30,6 +31,7 @@ import {
   UpdateWorkDaySettingsDto,
 } from './dto/work-day.dto';
 import { WorkDayExcusesService } from './work-day-excuses.service';
+import { WorkDayHolidaysService } from './work-day-holidays.service';
 import { WorkDayLeavesService } from './work-day-leaves.service';
 import { WorkDayOfficesService } from './work-day-offices.service';
 import { WorkDayRequestsService } from './work-day-requests.service';
@@ -55,6 +57,7 @@ export class WorkDaysController {
     private readonly workDayOffices: WorkDayOfficesService,
     private readonly workDayLeaves: WorkDayLeavesService,
     private readonly workDayExcuses: WorkDayExcusesService,
+    private readonly workDayHolidays: WorkDayHolidaysService,
     private readonly workDayUsers: WorkDayUsersService,
   ) {}
 
@@ -256,6 +259,24 @@ export class WorkDaysController {
   @Roles(UserRole.SUPER_ADMIN)
   deleteExcuse(@Param('id') id: string) {
     return this.workDayExcuses.deleteExcuse(id);
+  }
+
+  @Get('holidays')
+  @Roles(UserRole.SUPER_ADMIN)
+  async listHolidays(@Query('dateFrom') dateFrom?: string, @Query('dateTo') dateTo?: string) {
+    return this.workDayHolidays.listHolidays({ dateFrom, dateTo });
+  }
+
+  @Post('holidays')
+  @Roles(UserRole.SUPER_ADMIN)
+  async createHoliday(@Req() req: RequestWithUser, @Body() dto: CreateWorkDayHolidayDto) {
+    return this.workDayHolidays.createHoliday(req.user.id, dto);
+  }
+
+  @Delete('holidays/:id')
+  @Roles(UserRole.SUPER_ADMIN)
+  deleteHoliday(@Param('id') id: string) {
+    return this.workDayHolidays.deleteHoliday(id);
   }
 
   @Get()

@@ -37,6 +37,7 @@ import {
   repairObjectGroupStatus,
   repairObjectGroupSumLabel,
 } from '../shared/repairObjectGroups';
+import { SalaryAdvancesHoverTooltip } from './SalaryAdvancesHoverTooltip';
 
 type Props = {
   items: RepairScheduleProject[];
@@ -59,11 +60,22 @@ const COL_SPAN = 11;
 /**
  * Колонка «З/п»: полная з/п мастеров договора (итог заказ-нарядов после
  * прикрепления мастеров); в скобках — выдано авансов (₽ и % от полной з/п).
+ * При наведении — всплывающий журнал авансов (как в модалке «Заказ-наряды»),
+ * поэтому родные title-подсказки внутри не нужны.
  */
 function SalaryCell({ salary }: { salary: RepairScheduleSalarySummary | null | undefined }) {
+  const content = <SalaryCellValue salary={salary} />;
+  if (!salary) return content;
+  return <SalaryAdvancesHoverTooltip salary={salary}>{content}</SalaryAdvancesHoverTooltip>;
+}
+
+function SalaryCellValue({ salary }: { salary: RepairScheduleSalarySummary | null | undefined }) {
   if (!salary || (salary.total == null && salary.paid <= 0)) {
     return (
-      <span className={styles.subline} title="Мастера ещё не назначены на работы в заказ-нарядах">
+      <span
+        className={styles.subline}
+        title={salary ? undefined : 'Мастера ещё не назначены на работы в заказ-нарядах'}
+      >
         —
       </span>
     );
@@ -72,19 +84,14 @@ function SalaryCell({ salary }: { salary: RepairScheduleSalarySummary | null | u
     return (
       <div className={styles.cellMain}>
         <div>—</div>
-        <span
-          className={styles.subline}
-          title="Полная з/п неизвестна (мастера не назначены); в скобках — выдано авансов"
-        >
-          ({formatMoney(salary.paid)})
-        </span>
+        <span className={styles.subline}>(выдано авансов: {formatMoney(salary.paid)})</span>
       </div>
     );
   }
   return (
     <div className={styles.cellMain}>
-      <div title="Полная з/п мастеров по заказ-нарядам договора">{formatMoney(salary.total)}</div>
-      <span className={styles.subline} title="Выдано авансов: сумма и % от полной з/п">
+      <div>{formatMoney(salary.total)}</div>
+      <span className={styles.subline}>
         ({formatMoney(salary.paid)} · {salary.paidPercent ?? 0}%)
       </span>
     </div>
