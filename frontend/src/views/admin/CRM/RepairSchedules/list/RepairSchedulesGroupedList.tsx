@@ -11,6 +11,7 @@ import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import dataTableStyles from '@/shared/ui/admin/DataTable/DataTable.module.css';
 import { DeleteIcon, EditIcon, PublishIcon } from '@/shared/ui/icons';
 import { PaidPercentBadge } from '@/views/admin/CRM/shared/PaidPercentBadge';
+import { SalaryAdvancesHoverTooltip } from '@/views/admin/CRM/shared/SalaryAdvancesHoverTooltip';
 import { PackageWorkOrdersHubIcon } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/PackageWorkOrdersHubIcon';
 import {
   getPackageWorkOrderDistributionInfo,
@@ -37,7 +38,6 @@ import {
   repairObjectGroupStatus,
   repairObjectGroupSumLabel,
 } from '../shared/repairObjectGroups';
-import { SalaryAdvancesHoverTooltip } from './SalaryAdvancesHoverTooltip';
 
 type Props = {
   items: RepairScheduleProject[];
@@ -84,7 +84,7 @@ function SalaryCellValue({ salary }: { salary: RepairScheduleSalarySummary | nul
     return (
       <div className={styles.cellMain}>
         <div>—</div>
-        <span className={styles.subline}>(выдано авансов: {formatMoney(salary.paid)})</span>
+        <span className={styles.subline}>({formatMoney(salary.paid)})</span>
       </div>
     );
   }

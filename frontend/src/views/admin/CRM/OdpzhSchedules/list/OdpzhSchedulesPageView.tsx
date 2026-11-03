@@ -12,6 +12,7 @@ import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton
 import dataTableStyles from '@/shared/ui/admin/DataTable/DataTable.module.css';
 import { CollapsibleFiltersPanel } from '@/views/admin/CRM/shared/CollapsibleFiltersPanel';
 import { PaidPercentBadge } from '@/views/admin/CRM/shared/PaidPercentBadge';
+import { SalaryAdvancesHoverTooltip } from '@/views/admin/CRM/shared/SalaryAdvancesHoverTooltip';
 import {
   ADMIN_LIST_PAGE_LIMIT_OPTIONS,
   type AdminListPageLimit,
@@ -138,11 +139,22 @@ function StatusBadge({ item }: { item: OdpzhScheduleRow }) {
 /**
  * Колонка «З/п»: полная з/п мастеров договора (итог заказ-нарядов после
  * прикрепления мастеров); в скобках — выдано авансов (₽ и % от полной з/п).
+ * При наведении — всплывающий журнал авансов (как в модалке «Заказ-наряды»),
+ * поэтому родные title-подсказки внутри не нужны.
  */
 function SalaryCell({ salary }: { salary: OdpzhScheduleRow['salary'] }) {
+  const content = <SalaryCellValue salary={salary} />;
+  if (!salary) return content;
+  return <SalaryAdvancesHoverTooltip salary={salary}>{content}</SalaryAdvancesHoverTooltip>;
+}
+
+function SalaryCellValue({ salary }: { salary: OdpzhScheduleRow['salary'] }) {
   if (!salary || (salary.total == null && salary.paid <= 0)) {
     return (
-      <span className={styles.subline} title="Мастера ещё не назначены на работы в заказ-нарядах">
+      <span
+        className={styles.subline}
+        title={salary ? undefined : 'Мастера ещё не назначены на работы в заказ-нарядах'}
+      >
         —
       </span>
     );
@@ -151,19 +163,14 @@ function SalaryCell({ salary }: { salary: OdpzhScheduleRow['salary'] }) {
     return (
       <div className={styles.sumCol}>
         <div>—</div>
-        <span
-          className={styles.subline}
-          title="Полная з/п неизвестна (мастера не назначены); в скобках — выдано авансов"
-        >
-          ({formatSum(salary.paid)})
-        </span>
+        <span className={styles.subline}>({formatSum(salary.paid)})</span>
       </div>
     );
   }
   return (
     <div className={styles.sumCol}>
-      <div title="Полная з/п мастеров по заказ-нарядам договора">{formatSum(salary.total)}</div>
-      <span className={styles.subline} title="Выдано авансов: сумма и % от полной з/п">
+      <div>{formatSum(salary.total)}</div>
+      <span className={styles.subline}>
         ({formatSum(salary.paid)} · {salary.paidPercent ?? 0}%)
       </span>
     </div>

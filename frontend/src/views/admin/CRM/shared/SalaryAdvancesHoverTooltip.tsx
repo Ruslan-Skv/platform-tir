@@ -7,7 +7,7 @@ import { createPortal } from 'react-dom';
 import type { RepairScheduleSalarySummary } from '@/shared/api/crm/admin-repair-schedules';
 import { formatInstallerAdvancePaymentMethod } from '@/shared/constants/installerAdvancePaymentMethod';
 
-import styles from '../shared/RepairSchedules.module.css';
+import styles from './SalaryAdvancesHoverTooltip.module.css';
 
 function formatDay(iso: string): string {
   const [y, m, d] = iso.slice(0, 10).split('-');
@@ -25,9 +25,10 @@ type Props = {
 };
 
 /**
- * Подсказка колонки «З/п»: при наведении показывает журнал авансов договора —
- * те же записи, что на вкладке «Авансы» модалки «Заказ-наряды». Рисуется
- * порталом в body (position: fixed), чтобы таблица её не обрезала при скролле.
+ * Подсказка колонки «З/п» план-графиков (ремонт, ОДПЖ): при наведении
+ * показывает журнал авансов договора — те же записи, что на вкладке «Авансы»
+ * модалки «Заказ-наряды». Рисуется порталом в body (position: fixed),
+ * чтобы таблица её не обрезала при скролле.
  */
 export function SalaryAdvancesHoverTooltip({ salary, children }: Props) {
   const triggerRef = useRef<HTMLDivElement>(null);
@@ -97,27 +98,22 @@ export function SalaryAdvancesHoverTooltip({ salary, children }: Props) {
   return (
     <div
       ref={triggerRef}
-      className={styles.salaryHoverTrigger}
+      className={styles.trigger}
       onMouseEnter={handleEnter}
       onMouseLeave={handleLeave}
     >
       {children}
       {mounted && open
         ? createPortal(
-            <div
-              ref={popupRef}
-              role="tooltip"
-              className={styles.salaryAdvancesPopup}
-              style={coords}
-            >
-              <p className={styles.salaryAdvancesTitle}>
+            <div ref={popupRef} role="tooltip" className={styles.popup} style={coords}>
+              <p className={styles.title}>
                 Журнал авансов · выдано {formatRub(salary.paid)}
                 {salary.paidPercent != null ? ` (${salary.paidPercent}%)` : ''}
               </p>
               {advances.length === 0 ? (
-                <p className={styles.salaryAdvancesEmpty}>Авансы по договору ещё не выдавались</p>
+                <p className={styles.empty}>Авансы по договору ещё не выдавались</p>
               ) : (
-                <table className={styles.salaryAdvancesTable}>
+                <table className={styles.table}>
                   <thead>
                     <tr>
                       <th>Дата</th>
@@ -130,9 +126,9 @@ export function SalaryAdvancesHoverTooltip({ salary, children }: Props) {
                   <tbody>
                     {advances.map((row) => (
                       <tr key={row.id} title={row.note?.trim() || undefined}>
-                        <td className={styles.salaryAdvancesNowrap}>{formatDay(row.paidAt)}</td>
+                        <td className={styles.nowrap}>{formatDay(row.paidAt)}</td>
                         <td>{row.installerName ?? '—'}</td>
-                        <td className={styles.salaryAdvancesNowrap}>{formatRub(row.amount)}</td>
+                        <td className={styles.nowrap}>{formatRub(row.amount)}</td>
                         <td>{formatInstallerAdvancePaymentMethod(row.paymentMethod)}</td>
                         <td>{row.createdByName ?? '—'}</td>
                       </tr>
