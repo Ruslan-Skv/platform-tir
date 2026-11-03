@@ -14,6 +14,7 @@ import {
   extractEstimatePresetIds,
   extractSignatoryCrmUserId,
 } from './form/contract-package-form-read';
+import { assertSigningDatesAreToday } from './form/signing-date-rule';
 import { CreateContractDocumentPackageDto } from './dto/create-contract-document-package.dto';
 import { UpdateContractDocumentPackageDto } from './dto/update-contract-document-package.dto';
 import { injectDefaultWorkPeriodIntoFormData } from './repair-contract-work-period';
@@ -176,6 +177,18 @@ export class ContractDocumentPackageCrudService {
     const becomingConcluded =
       statusToUpdate === ContractDocumentPackageStatus.CONTRACT_CONCLUDED &&
       row.status !== ContractDocumentPackageStatus.CONTRACT_CONCLUDED;
+
+    /**
+     * Подписание — только текущей датой (по Москве): договор подписывается
+     * с датой заключения «сегодня», Д/с — с датой документа «сегодня».
+     * Проверяется только переход статуса — ранее подписанные не затрагиваются.
+     */
+    assertSigningDatesAreToday({
+      storedStatus: row.status,
+      incomingStatus: statusToUpdate,
+      storedFormData: row.formData,
+      incomingFormData: formToUpdate !== undefined ? formToUpdate : (row.formData ?? {}),
+    });
 
     if (becomingConcluded && row.kind === ContractDocumentPackageKind.REPAIR) {
       const effectiveForm = formToUpdate !== undefined ? formToUpdate : (row.formData ?? {});

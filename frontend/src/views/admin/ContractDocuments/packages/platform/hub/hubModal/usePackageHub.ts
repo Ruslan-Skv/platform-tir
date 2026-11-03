@@ -19,6 +19,10 @@ import {
 } from '@/shared/api/admin-contract-document-packages';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 
+import {
+  isContractDateTodayDdMmYyyy,
+  todayContractDateDdMmYyyy,
+} from '../../../../core/contractDateFormat';
 import { isFurnitureLikePackageKind } from '../../../config';
 import { isProductDirectionPackageKind } from '../../../config/productDirectionPackageKind';
 import type { FurnitureActiveDocLeg } from '../../../directions/furniture/furnitureLegs';
@@ -596,6 +600,16 @@ export function usePackageHub({
       return;
     }
     /**
+     * Подписание — только текущей датой: дата заключения договора на вкладке
+     * «Данные» должна быть сегодняшней (задним числом подписывать нельзя).
+     */
+    if (!isContractDateTodayDdMmYyyy(signForm.contract.date)) {
+      setError(
+        `Договор нельзя подписать задней датой: укажите сегодняшнюю дату заключения (${todayContractDateDdMmYyyy()}) в поле «Дата закл.» на вкладке «Данные»`
+      );
+      return;
+    }
+    /**
      * Заказчик заполнен, но карточка CRM не выбрана через «Поиск заказчика в базе»
      * (данные пришли из анкеты). После подписания «Данные» блокируются, а расчёты
      * для д/с отбираются по карточке CRM — выводим её по точному совпадению телефона.
@@ -819,6 +833,16 @@ export function usePackageHub({
       const slots = [...p.addendumSlots] as PackageFormData['addendumSlots'];
       const cur = slots[slotIndex0];
       if (!cur || cur.status !== 'OPEN') return;
+      /**
+       * Подписание — только текущей датой: дата документа Д/с на вкладке
+       * «Д/с №…» должна быть сегодняшней (задним числом подписывать нельзя).
+       */
+      if (!isContractDateTodayDdMmYyyy(p.addendumDocumentDates[slotIndex0] ?? '')) {
+        setError(
+          `Д/с №${slotIndex0 + 1} нельзя подписать задней датой: укажите сегодняшнюю дату документа (${todayContractDateDdMmYyyy()}) на вкладке «Д/с №${slotIndex0 + 1}»`
+        );
+        return;
+      }
       // Отметка оплаты не затирается: отмена оплаты — отдельное действие.
       slots[slotIndex0] = {
         ...cur,

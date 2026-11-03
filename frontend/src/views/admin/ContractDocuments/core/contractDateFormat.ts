@@ -10,6 +10,16 @@ export function todayContractDateDdMmYyyy(): string {
   return formatContractDateDdMmYyyy(new Date());
 }
 
+/**
+ * Дата строки — сегодняшняя (подписание документов допускается только
+ * текущим числом). Нераспознанная/пустая дата — false.
+ */
+export function isContractDateTodayDdMmYyyy(raw: string | null | undefined): boolean {
+  const parsed = parseContractDate(raw);
+  if (!parsed) return false;
+  return formatContractDateDdMmYyyy(parsed) === todayContractDateDdMmYyyy();
+}
+
 /** Разбор yyyy-mm-dd (префикс ISO), дд.мм.гггг, дд-мм-гггг. */
 export function parseContractDate(raw: string | null | undefined): Date | null {
   if (!raw || typeof raw !== 'string') return null;
