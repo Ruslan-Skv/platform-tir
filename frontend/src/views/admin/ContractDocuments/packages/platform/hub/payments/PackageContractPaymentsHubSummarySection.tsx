@@ -83,6 +83,14 @@ export function PackageContractPaymentsHubSummarySection({
     );
   };
 
+  /**
+   * «Рекоменд. предопл.» строки сводки: 70% от стоимости этой строки —
+   * у «Изделий (спецификация)» и «Работ (счёт-заказ)» своя предоплата
+   * (как в поле договора: total × 0.7). Пустой строке предоплаты нет.
+   */
+  const renderHubRecommendedPrepayment = (amountRub: number) =>
+    amountRub > 0 ? formatMoneyRub(amountRub * 0.7) : '—';
+
   if (isHubSummaryLayout) {
     return (
       <>
@@ -116,7 +124,7 @@ export function PackageContractPaymentsHubSummarySection({
                       <td
                         className={`${cdBase.paymentsHubSummaryNumCol} ${cdBase.paymentsHubSummaryRecommendedCol}`}
                       >
-                        —
+                        {renderHubRecommendedPrepayment(windowsCostBreakdown.productsAmount)}
                       </td>
                       <td className={cdBase.paymentsHubSummaryNumCol}>—</td>
                       <td className={cdBase.paymentsHubSummaryNumCol}>—</td>
@@ -132,7 +140,7 @@ export function PackageContractPaymentsHubSummarySection({
                       <td
                         className={`${cdBase.paymentsHubSummaryNumCol} ${cdBase.paymentsHubSummaryRecommendedCol}`}
                       >
-                        {formatContractMoneyFieldRaw(form.contract.recommendedPrepayment) || '—'}
+                        {renderHubRecommendedPrepayment(windowsCostBreakdown.worksAmount)}
                       </td>
                       <td className={cdBase.paymentsHubSummaryNumCol}>—</td>
                       <td className={cdBase.paymentsHubSummaryNumCol}>—</td>
