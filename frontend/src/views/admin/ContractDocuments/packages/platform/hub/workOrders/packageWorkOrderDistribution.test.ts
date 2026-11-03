@@ -4,7 +4,7 @@ import {
   packageWorkOrderDistributionTitleSuffix,
 } from './packageWorkOrderDistribution';
 
-jest.mock('./packageWorkOrderDistribution.module.css', () => ({
+jest.mock('../../../../styles/work-order-distribution.module.css', () => ({
   workOrderDistributedFull: 'workOrderDistributedFull',
   workOrderDistributedPartial: 'workOrderDistributedPartial',
 }));

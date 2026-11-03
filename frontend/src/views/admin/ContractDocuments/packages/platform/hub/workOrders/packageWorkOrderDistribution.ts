@@ -1,6 +1,6 @@
+import distributionStyles from '../../../../styles/work-order-distribution.module.css';
 import { buildFinalEstimateSummary } from '../../editor/shared/finalEstimateSummary';
 import { mergePackageFormData } from '../../form/packageForm';
-import distributionStyles from './packageWorkOrderDistribution.module.css';
 
 /**
  * Распределение заказ-наряда договора по мастерам: 'full' — все позиции
