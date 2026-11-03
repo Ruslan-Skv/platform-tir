@@ -71,6 +71,11 @@ export function AppearanceSettingsPageView() {
     flashSaved();
   };
 
+  const resetNavOrder = () => {
+    updatePrefs({ navOrder: [] });
+    flashSaved();
+  };
+
   const desktopLabel =
     DESKTOP_OPTIONS.find((o) => o.value === prefs.desktopLayout)?.label ?? prefs.desktopLayout;
   const mobileLabel =
@@ -174,6 +179,21 @@ export function AppearanceSettingsPageView() {
           <p className={styles.optionHint}>
             {MOBILE_OPTIONS.find((o) => o.value === prefs.mobileLayout)?.hint}
           </p>
+        </section>
+
+        <section className={styles.sectionCard}>
+          <h2 className={styles.sectionTitle}>Порядок разделов</h2>
+          <p className={styles.sectionHint}>
+            Разделы меню можно расставить под себя кнопками «↑» и «↓» прямо в сайдбаре — порядок
+            сохраняется в вашем аккаунте и действует на всех устройствах.
+          </p>
+          {prefs.navOrder.length > 0 ? (
+            <button type="button" className={chipClass(false)} onClick={resetNavOrder}>
+              Вернуть стандартный порядок
+            </button>
+          ) : (
+            <p className={styles.optionHint}>Сейчас используется стандартный порядок разделов.</p>
+          )}
         </section>
 
         <p className={styles.liveHint}>

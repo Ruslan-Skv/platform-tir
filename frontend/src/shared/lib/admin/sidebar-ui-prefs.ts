@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   getAdminSidebarUiPrefs,
+  normalizeNavOrder,
   updateAdminSidebarUiPrefs as patchAdminSidebarUiPrefsApi,
 } from '@/shared/api/admin-sidebar-ui-prefs';
 
@@ -17,6 +18,8 @@ export type AdminSidebarUiPrefs = {
   mobileLayout: AdminSidebarMobileLayout;
   /** Вид десктопного меню: список или сетка 2×. */
   desktopLayout: AdminSidebarDesktopLayout;
+  /** Персональный порядок разделов верхнего уровня (href); [] — порядок по умолчанию. */
+  navOrder: string[];
 };
 
 export const ADMIN_SIDEBAR_UI_PREFS_KEY = 'admin.sidebar.uiPrefs';
@@ -26,6 +29,7 @@ export const DEFAULT_ADMIN_SIDEBAR_UI_PREFS: AdminSidebarUiPrefs = {
   hideIcons: false,
   mobileLayout: 'list',
   desktopLayout: 'list',
+  navOrder: [],
 };
 
 export function syncAdminSidebarUiPrefsDom(prefs: AdminSidebarUiPrefs): void {
@@ -58,6 +62,7 @@ export function readAdminSidebarUiPrefs(): AdminSidebarUiPrefs {
       hideIcons: Boolean(parsed.hideIcons),
       mobileLayout: parsed.mobileLayout === 'grid3' ? 'grid3' : 'list',
       desktopLayout: parsed.desktopLayout === 'grid2' ? 'grid2' : 'list',
+      navOrder: normalizeNavOrder(parsed.navOrder),
       ...fromDom,
     };
   } catch {
@@ -78,15 +83,20 @@ export function writeAdminSidebarUiPrefs(prefs: AdminSidebarUiPrefs): void {
   });
 }
 
+function navOrderEqual(a: string[], b: string[]): boolean {
+  return a.length === b.length && a.every((href, i) => href === b[i]);
+}
+
 function prefsEqual(a: AdminSidebarUiPrefs, b: AdminSidebarUiPrefs): boolean {
   return (
     a.hideIcons === b.hideIcons &&
     a.mobileLayout === b.mobileLayout &&
-    a.desktopLayout === b.desktopLayout
+    a.desktopLayout === b.desktopLayout &&
+    navOrderEqual(a.navOrder, b.navOrder)
   );
 }
 
-/** Если API не сохранил grid-режим, не откатываем локальный выбор. */
+/** Если API не сохранил порядок разделов (старый бэкенд), не откатываем локальный выбор. */
 export function mergeSidebarUiPrefsSaved(
   requested: AdminSidebarUiPrefs,
   saved: AdminSidebarUiPrefs
@@ -101,6 +111,10 @@ export function mergeSidebarUiPrefsSaved(
       requested.desktopLayout === 'grid2' && saved.desktopLayout !== 'grid2'
         ? requested.desktopLayout
         : saved.desktopLayout,
+    navOrder:
+      requested.navOrder.length > 0 && saved.navOrder.length === 0
+        ? requested.navOrder
+        : saved.navOrder,
   };
 }
 
@@ -170,12 +184,21 @@ export function useAdminSidebarUiPrefs() {
         }
 
         if (!remoteIsDefault) {
-          if (!prefsEqual(remote, local)) {
-            writeAdminSidebarUiPrefs(remote);
+          // Сервер — источник правды, но по полям: то, что сервер не сохранил
+          // (напр., navOrder на бэкенде старой версии), локальный выбор не затирает.
+          const merged = mergeSidebarUiPrefsSaved(local, remote);
+          if (!prefsEqual(merged, local)) {
+            writeAdminSidebarUiPrefs(merged);
           } else {
-            syncAdminSidebarUiPrefsDom(remote);
+            syncAdminSidebarUiPrefsDom(merged);
           }
-          if (!cancelled) setPrefs(remote);
+          if (!cancelled) setPrefs(merged);
+          if (!cancelled && !prefsEqual(merged, remote)) {
+            // бэкенд не знал части настроек — доотправляем объединённое состояние
+            void patchAdminSidebarUiPrefsApi(merged).catch(() => {
+              // локальный кэш уже обновлён
+            });
+          }
           return;
         }
 
@@ -197,6 +220,7 @@ export function useAdminSidebarUiPrefs() {
       hideIcons: patch.hideIcons ?? prefsRef.current.hideIcons,
       mobileLayout: patch.mobileLayout ?? prefsRef.current.mobileLayout,
       desktopLayout: patch.desktopLayout ?? prefsRef.current.desktopLayout,
+      navOrder: patch.navOrder ?? prefsRef.current.navOrder,
     };
     setPrefs(next);
     writeAdminSidebarUiPrefs(next);

@@ -15,6 +15,7 @@ export {
   getAdminBearerTokenFromStorage,
   getAdminRoleFromStorage,
 } from './catalog-public-edit';
+export { applyAdminSidebarNavOrder } from './admin-sidebar-nav-order';
 export {
   PUBLIC_SITE_EDIT_MODE_EVENT,
   PUBLIC_SITE_EDIT_MODE_IDLE_MS,

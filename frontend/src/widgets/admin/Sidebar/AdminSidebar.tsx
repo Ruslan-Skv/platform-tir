@@ -13,7 +13,11 @@ import {
 } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import { useAuth } from '@/features/auth';
 import { canRoleSeeAdminSettingsNav } from '@/shared/config/admin-resource-tree';
-import { useAdminSidebarUiPrefs } from '@/shared/lib/admin';
+import {
+  applyAdminSidebarNavOrder,
+  moveItemInArray,
+  useAdminSidebarUiPrefs,
+} from '@/shared/lib/admin';
 import { getSafeHref } from '@/shared/lib/sanitize';
 import { AdminPlatformBrand } from '@/shared/ui/AdminPlatformBrand';
 import { AdminAccessIcon } from '@/shared/ui/icons/AdminAccessIcon';
@@ -814,7 +818,11 @@ export function AdminSidebar({
   const [gridNavStack, setGridNavStack] = useState<GridNavFrame[]>([]);
   const resizeStartX = useRef<number>(0);
   const resizeStartWidth = useRef<number>(0);
-  const { prefs: sidebarUiPrefs, ready: sidebarUiPrefsReady } = useAdminSidebarUiPrefs();
+  const {
+    prefs: sidebarUiPrefs,
+    updatePrefs: updateSidebarUiPrefs,
+    ready: sidebarUiPrefsReady,
+  } = useAdminSidebarUiPrefs();
 
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
   /** На свёрнутой десктопной рейке иконки нужны всегда. */
@@ -935,6 +943,24 @@ export function AdminSidebar({
 
     return filtered;
   }, [hasAccess, isLoading, resourceIds.size, currentUser?.role, currentUser?.id]);
+
+  /** Видимый порядок разделов с учётом персональных настроек пользователя. */
+  const orderedNavItems = useMemo(
+    () => applyAdminSidebarNavOrder(navItems, sidebarUiPrefs.navOrder),
+    [navItems, sidebarUiPrefs.navOrder]
+  );
+
+  const moveNavItem = useCallback(
+    (href: string, direction: 'up' | 'down') => {
+      const hrefs = orderedNavItems.map((item) => item.href);
+      const index = hrefs.indexOf(href);
+      if (index < 0) return;
+      const target = direction === 'up' ? index - 1 : index + 1;
+      if (target < 0 || target >= hrefs.length) return;
+      updateSidebarUiPrefs({ navOrder: moveItemInArray(hrefs, index, target) });
+    },
+    [orderedNavItems, updateSidebarUiPrefs]
+  );
 
   /** Пункты без подменю (напр. «Договора», «Расчёты») — не дают подсвечивать hub `/admin/contract-documents` в настройках. */
   const topLevelOnlyHrefs = useMemo(
@@ -1213,9 +1239,36 @@ export function AdminSidebar({
               </div>
             </>
           ) : (
-            navItems.map((item, index) => {
+            orderedNavItems.map((item, index) => {
               const sectionNavHrefs = item.children ? collectAllNavHrefs(item.children) : [];
               const isItemExpanded = Boolean(item.children && expandedItems.includes(item.href));
+              const canMoveUp = index > 0;
+              const canMoveDown = index < orderedNavItems.length - 1;
+              const reorderControls =
+                !collapsed && !useGridNav ? (
+                  <span className={styles.reorderControls}>
+                    <button
+                      type="button"
+                      className={styles.reorderBtn}
+                      disabled={!canMoveUp}
+                      onClick={() => moveNavItem(item.href, 'up')}
+                      title="Переместить выше"
+                      aria-label={`${item.label} — переместить выше`}
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.reorderBtn}
+                      disabled={!canMoveDown}
+                      onClick={() => moveNavItem(item.href, 'down')}
+                      title="Переместить ниже"
+                      aria-label={`${item.label} — переместить ниже`}
+                    >
+                      ↓
+                    </button>
+                  </span>
+                ) : null;
               return (
                 <div
                   key={item.href}
@@ -1261,6 +1314,7 @@ export function AdminSidebar({
                             </>
                           )}
                         </button>
+                        {reorderControls}
                         {!collapsed && isSuperAdmin && item.resourceId && (
                           <button
                             type="button"
@@ -1440,6 +1494,7 @@ export function AdminSidebar({
                           </span>
                         )}
                       </Link>
+                      {reorderControls}
                       {!collapsed && isSuperAdmin && item.resourceId && (
                         <button
                           type="button"

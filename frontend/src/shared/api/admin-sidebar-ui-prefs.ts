@@ -9,7 +9,18 @@ export type AdminSidebarUiPrefsDto = {
   hideIcons: boolean;
   mobileLayout: 'list' | 'grid3';
   desktopLayout: 'list' | 'grid2';
+  navOrder: string[];
 };
+
+/** Допустимый размер сохраняемого порядка разделов (защита от битых данных). */
+const MAX_NAV_ORDER_ITEMS = 200;
+
+export function normalizeNavOrder(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((href): href is string => typeof href === 'string' && href.length > 0)
+    .slice(0, MAX_NAV_ORDER_ITEMS);
+}
 
 function getAuthHeaders(): HeadersInit {
   const token = getStoredAccessToken();
@@ -25,6 +36,7 @@ function normalizePrefs(data: Partial<AdminSidebarUiPrefsDto>): AdminSidebarUiPr
     hideIcons: Boolean(data.hideIcons),
     mobileLayout: data.mobileLayout === 'grid3' ? 'grid3' : 'list',
     desktopLayout: data.desktopLayout === 'grid2' ? 'grid2' : 'list',
+    navOrder: normalizeNavOrder(data.navOrder),
   };
 }
 

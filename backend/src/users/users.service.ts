@@ -4,6 +4,39 @@ import { hashPassword, verifyPassword } from '../auth/password-crypto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
+export type AdminSidebarUiPrefs = {
+  hideIcons: boolean;
+  mobileLayout: 'list' | 'grid3';
+  desktopLayout: 'list' | 'grid2';
+  navOrder: string[];
+};
+
+/** Безопасный разбор adminSidebarNavOrder: JSON-массив строк или значение по умолчанию. */
+function parseAdminSidebarNavOrder(raw: string | null): string[] {
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((href): href is string => typeof href === 'string').slice(0, 200);
+  } catch {
+    return [];
+  }
+}
+
+function formatAdminSidebarUiPrefs(user: {
+  adminSidebarHideIcons: boolean;
+  adminSidebarMobileLayout: string;
+  adminSidebarDesktopLayout: string;
+  adminSidebarNavOrder: string | null;
+}): AdminSidebarUiPrefs {
+  return {
+    hideIcons: Boolean(user.adminSidebarHideIcons),
+    mobileLayout: user.adminSidebarMobileLayout === 'grid3' ? 'grid3' : 'list',
+    desktopLayout: user.adminSidebarDesktopLayout === 'grid2' ? 'grid2' : 'list',
+    navOrder: parseAdminSidebarNavOrder(user.adminSidebarNavOrder),
+  };
+}
+
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
@@ -227,27 +260,20 @@ export class UsersService {
     );
   }
 
-  async getAdminSidebarUiPrefs(userId: string): Promise<{
-    hideIcons: boolean;
-    mobileLayout: 'list' | 'grid3';
-    desktopLayout: 'list' | 'grid2';
-  }> {
+  async getAdminSidebarUiPrefs(userId: string): Promise<AdminSidebarUiPrefs> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
         adminSidebarHideIcons: true,
         adminSidebarMobileLayout: true,
         adminSidebarDesktopLayout: true,
+        adminSidebarNavOrder: true,
       },
     });
     if (!user) {
       throw new NotFoundException(`User with ID ${userId} not found`);
     }
-    return {
-      hideIcons: Boolean(user.adminSidebarHideIcons),
-      mobileLayout: user.adminSidebarMobileLayout === 'grid3' ? 'grid3' : 'list',
-      desktopLayout: user.adminSidebarDesktopLayout === 'grid2' ? 'grid2' : 'list',
-    };
+    return formatAdminSidebarUiPrefs(user);
   }
 
   async updateAdminSidebarUiPrefs(
@@ -256,12 +282,9 @@ export class UsersService {
       hideIcons?: boolean;
       mobileLayout?: 'list' | 'grid3';
       desktopLayout?: 'list' | 'grid2';
+      navOrder?: string[];
     },
-  ): Promise<{
-    hideIcons: boolean;
-    mobileLayout: 'list' | 'grid3';
-    desktopLayout: 'list' | 'grid2';
-  }> {
+  ): Promise<AdminSidebarUiPrefs> {
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: {
@@ -270,18 +293,18 @@ export class UsersService {
         ...(data.desktopLayout !== undefined && {
           adminSidebarDesktopLayout: data.desktopLayout,
         }),
+        ...(data.navOrder !== undefined && {
+          adminSidebarNavOrder: data.navOrder.length > 0 ? JSON.stringify(data.navOrder) : null,
+        }),
       },
       select: {
         adminSidebarHideIcons: true,
         adminSidebarMobileLayout: true,
         adminSidebarDesktopLayout: true,
+        adminSidebarNavOrder: true,
       },
     });
-    return {
-      hideIcons: Boolean(updated.adminSidebarHideIcons),
-      mobileLayout: updated.adminSidebarMobileLayout === 'grid3' ? 'grid3' : 'list',
-      desktopLayout: updated.adminSidebarDesktopLayout === 'grid2' ? 'grid2' : 'list',
-    };
+    return formatAdminSidebarUiPrefs(updated);
   }
 
   async getNotificationHistory(userId: string, params?: { page?: number; limit?: number }) {

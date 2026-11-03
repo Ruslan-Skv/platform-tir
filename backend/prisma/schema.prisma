@@ -57,6 +57,8 @@ model User {
   adminSidebarMobileLayout                String                                    @default("list")
   /// Вид десктопного админ-меню: list | grid2
   adminSidebarDesktopLayout               String                                    @default("list")
+  /// Порядок разделов админ-сайдбара (JSON-массив href верхнего уровня; null — порядок по умолчанию)
+  adminSidebarNavOrder                    String?
   phone                                   String?
   notificationSettings                    UserNotificationSettings?
   notificationHistory                     UserNotification[]
