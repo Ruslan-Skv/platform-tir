@@ -1059,9 +1059,11 @@ function SalariesTable({ result }: { result: SalaryCalcResult }) {
 function ContractsTable({ result }: { result: SalaryCalcResult }) {
   /** Отбор таблицы по направлению ('' — все). */
   const [categoryId, setCategoryId] = useState('');
+  /** Отбор таблицы по офису ('' — все). */
+  const [officeId, setOfficeId] = useState('');
   /** Поиск по номеру договора или заказчику. */
   const [search, setSearch] = useState('');
-  // Направления, встречающиеся среди договоров периода.
+  // Направления и офисы, встречающиеся среди договоров периода.
   const categories = useMemo(() => {
     const byId = new Map<string, string>();
     for (const r of result.rows) byId.set(r.categoryId, r.categoryName);
@@ -1069,11 +1071,20 @@ function ContractsTable({ result }: { result: SalaryCalcResult }) {
       .map(([id, name]) => ({ id, name }))
       .sort((a, b) => a.name.localeCompare(b.name, 'ru'));
   }, [result.rows]);
-  // Смена периода может убрать выбранное направление — тогда показываем все.
+  const offices = useMemo(() => {
+    const byId = new Map<string, string>();
+    for (const r of result.rows) byId.set(r.officeId, r.officeName);
+    return [...byId.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+  }, [result.rows]);
+  // Смена периода может убрать выбранное направление/офис — тогда показываем все.
   const effectiveCategoryId = categories.some((c) => c.id === categoryId) ? categoryId : '';
+  const effectiveOfficeId = offices.some((o) => o.id === officeId) ? officeId : '';
   const query = search.trim().toLowerCase();
   const rows = result.rows.filter((r) => {
     if (effectiveCategoryId && r.categoryId !== effectiveCategoryId) return false;
+    if (effectiveOfficeId && r.officeId !== effectiveOfficeId) return false;
     if (query) {
       const inNumber = r.number.toLowerCase().includes(query);
       const inCustomer = (r.customerName ?? '').toLowerCase().includes(query);
@@ -1081,7 +1092,7 @@ function ContractsTable({ result }: { result: SalaryCalcResult }) {
     }
     return true;
   });
-  const hasFilters = Boolean(effectiveCategoryId) || query.length > 0;
+  const hasFilters = Boolean(effectiveCategoryId) || Boolean(effectiveOfficeId) || query.length > 0;
 
   if (result.rows.length === 0) return null;
   // Налог удерживается со всех, кроме менеджеров.
@@ -1097,6 +1108,21 @@ function ContractsTable({ result }: { result: SalaryCalcResult }) {
       }
       actions={
         <>
+          {offices.length > 1 ? (
+            <select
+              value={effectiveOfficeId}
+              onChange={(e) => setOfficeId(e.target.value)}
+              className={filterFieldClass(cdHub.contractsListSelect, Boolean(effectiveOfficeId))}
+              aria-label="Офис"
+            >
+              <option value="">Все офисы</option>
+              {offices.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.name}
+                </option>
+              ))}
+            </select>
+          ) : null}
           {categories.length > 1 ? (
             <select
               value={effectiveCategoryId}
@@ -1281,8 +1307,8 @@ function ContractsTable({ result }: { result: SalaryCalcResult }) {
         emptyMessage={
           query
             ? 'Ничего не найдено по запросу'
-            : effectiveCategoryId
-              ? 'Нет договоров выбранного направления'
+            : hasFilters
+              ? 'Нет договоров по выбранным фильтрам'
               : 'Договоров в расчёте нет'
         }
       />
