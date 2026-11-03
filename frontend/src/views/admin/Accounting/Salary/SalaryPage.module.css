@@ -128,6 +128,81 @@
   margin: var(--admin-space-sm, 6px) 0 0;
 }
 
+/* Сворачиваемый блок: строка заголовка — кнопка с шевроном + действия справа. */
+.collapsibleHeader {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-md, 8px);
+}
+
+.collapsibleToggle {
+  align-items: center;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  gap: var(--admin-space-xs, 4px);
+  padding: 0;
+}
+
+.collapsibleToggle .sectionTitle {
+  margin: 0;
+}
+
+.collapsibleToggle:hover .sectionTitle {
+  text-decoration: underline;
+  text-decoration-color: var(--admin-border, #d1d5db);
+  text-underline-offset: 3px;
+}
+
+.collapsibleChevron {
+  color: var(--admin-text-secondary, #6b7280);
+  font-size: var(--admin-font-size-sm, 0.8125rem);
+}
+
+/* Поиск по №/заказчику в заголовке таблицы договоров. */
+.contractsSearchInput {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-text-primary);
+  /* Явный светлый chrome — как у селектов фильтров, иначе тёмный системный стиль */
+  color-scheme: light;
+  -webkit-text-fill-color: var(--admin-text-primary);
+  font-size: var(--admin-font-size-sm);
+  max-width: 220px;
+  min-width: 160px;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+}
+
+.contractsSearchInput:focus {
+  border-color: var(--admin-accent, #2563eb);
+  box-shadow: var(--admin-shadow-focus-soft);
+  outline: none;
+}
+
+.contractsSearchInput::placeholder {
+  color: var(--admin-text-secondary, #6b7280);
+}
+
+/* Заполненное поле поиска подсвечивается, как активные фильтры раздела. */
+.contractsSearchInputActive {
+  background: var(--admin-info-bg-soft);
+  border-color: var(--admin-info);
+  box-shadow: 0 0 0 1px var(--admin-info-border-soft);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .contractsSearchInput.contractsSearchInputActive {
+  background: var(--admin-overlay-info-soft, rgb(59 130 246 / 0.24));
+  border-color: var(--admin-info-bright, #60a5fa);
+  box-shadow:
+    0 0 0 1px var(--admin-info-border, #93c5fd),
+    inset 0 1px 0 rgb(255 255 255 / 0.06);
+}
+
 /* ===== Баннеры ===== */
 
 .pageNotice {

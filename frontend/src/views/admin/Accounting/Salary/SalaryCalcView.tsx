@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useMemo } from 'react';
+import { useId, useMemo, useState } from 'react';
 
 import type {
   SalaryCalcResult,
@@ -12,6 +12,7 @@ import { DataTable } from '@/shared/ui/admin/DataTable';
 import dpStyles from '@/views/admin/CRM/MoneyMovements/MoneyMovements.module.css';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
 
+import { CollapsedBlocksProvider, CollapsibleSection } from './CollapsibleSection';
 import styles from './SalaryPage.module.css';
 import type { SalaryCalcModel } from './hooks/useSalaryCalc';
 import { formatDate, formatMoney, formatMoneyShort, formatPercent } from './salary-page.constants';
@@ -65,224 +66,233 @@ export function SalaryCalcView({ model, offices, users, canEdit }: CalcViewProps
 
   return (
     <div className={`${styles.tabSection}${isSnapshot ? ` ${styles.tabSectionSnapshot}` : ''}`}>
-      {isSnapshot && model.activeSettlement ? (
-        <div className={styles.snapshotBanner} role="status">
-          <span>
-            Зафиксированная ведомость за {formatDate(model.activeSettlement.dateFrom)} —{' '}
-            {formatDate(model.activeSettlement.dateTo)} ·{' '}
-            {model.activeSettlement.status === 'CONFIRMED' ? 'подтверждена' : 'черновик'}
-          </span>
-          <span className={styles.snapshotBannerActions}>
-            {model.activeSettlement.status === 'DRAFT' && canEdit ? (
-              <button
-                data-admin-mutation
-                type="button"
-                className={styles.bannerBtn}
-                onClick={() => void model.confirmSettlement(model.activeSettlement!.id)}
-                disabled={model.saving}
-              >
-                Подтвердить
+      <CollapsedBlocksProvider>
+        {isSnapshot && model.activeSettlement ? (
+          <div className={styles.snapshotBanner} role="status">
+            <span>
+              Зафиксированная ведомость за {formatDate(model.activeSettlement.dateFrom)} —{' '}
+              {formatDate(model.activeSettlement.dateTo)} ·{' '}
+              {model.activeSettlement.status === 'CONFIRMED' ? 'подтверждена' : 'черновик'}
+            </span>
+            <span className={styles.snapshotBannerActions}>
+              {model.activeSettlement.status === 'DRAFT' && canEdit ? (
+                <button
+                  data-admin-mutation
+                  type="button"
+                  className={styles.bannerBtn}
+                  onClick={() => void model.confirmSettlement(model.activeSettlement!.id)}
+                  disabled={model.saving}
+                >
+                  Подтвердить
+                </button>
+              ) : null}
+              {model.activeSettlement.status === 'DRAFT' && canEdit ? (
+                <button
+                  data-admin-mutation
+                  type="button"
+                  className={styles.bannerBtnDanger}
+                  onClick={() => model.setDeleteTarget(model.activeSettlement!)}
+                  disabled={model.deleting}
+                >
+                  Удалить черновик
+                </button>
+              ) : null}
+              <button type="button" className={styles.bannerBtn} onClick={model.closeSettlement}>
+                ← К живому расчёту
               </button>
-            ) : null}
-            {model.activeSettlement.status === 'DRAFT' && canEdit ? (
-              <button
-                data-admin-mutation
-                type="button"
-                className={styles.bannerBtnDanger}
-                onClick={() => model.setDeleteTarget(model.activeSettlement!)}
-                disabled={model.deleting}
-              >
-                Удалить черновик
-              </button>
-            ) : null}
-            <button type="button" className={styles.bannerBtn} onClick={model.closeSettlement}>
-              ← К живому расчёту
-            </button>
-          </span>
-        </div>
-      ) : null}
+            </span>
+          </div>
+        ) : null}
 
-      <section className={cdHub.contractsListFiltersPanel} aria-label="Период расчёта зарплаты">
-        <div className={cdHub.contractsListFiltersPanelHeader}>
-          <button
-            type="button"
-            className={cdHub.contractsListFiltersPanelToggle}
-            onClick={model.toggleFiltersCollapsed}
-            aria-expanded={!model.filtersCollapsed}
-            aria-controls={filtersContentId}
-            disabled={isSnapshot}
-          >
-            <span className={cdHub.contractsListFiltersPanelChevron} aria-hidden>
-              {model.filtersCollapsed ? '▸' : '▾'}
-            </span>
-            <span className={cdHub.contractsListFiltersPanelTitle}>
-              {model.filtersCollapsed ? 'Период и офис' : 'Свернуть'}
-            </span>
-          </button>
-          {model.filtersCollapsed ? (
+        <section className={cdHub.contractsListFiltersPanel} aria-label="Период расчёта зарплаты">
+          <div className={cdHub.contractsListFiltersPanelHeader}>
             <button
               type="button"
-              className={cdHub.contractsListFiltersPanelExpandLink}
+              className={cdHub.contractsListFiltersPanelToggle}
               onClick={model.toggleFiltersCollapsed}
+              aria-expanded={!model.filtersCollapsed}
+              aria-controls={filtersContentId}
               disabled={isSnapshot}
             >
-              Изменить
-            </button>
-          ) : null}
-        </div>
-
-        {model.filtersCollapsed ? (
-          <div className={cdHub.contractsListFiltersSummary}>
-            {filtersSummary.map((item) => (
-              <span
-                key={item.key}
-                className={cdHub.contractsListFiltersSummaryChip}
-                data-filter-key={item.key}
-                title={item.label}
-              >
-                {item.label}
+              <span className={cdHub.contractsListFiltersPanelChevron} aria-hidden>
+                {model.filtersCollapsed ? '▸' : '▾'}
               </span>
-            ))}
+              <span className={cdHub.contractsListFiltersPanelTitle}>
+                {model.filtersCollapsed ? 'Период и офис' : 'Свернуть'}
+              </span>
+            </button>
+            {model.filtersCollapsed ? (
+              <button
+                type="button"
+                className={cdHub.contractsListFiltersPanelExpandLink}
+                onClick={model.toggleFiltersCollapsed}
+                disabled={isSnapshot}
+              >
+                Изменить
+              </button>
+            ) : null}
           </div>
-        ) : (
-          <div id={filtersContentId} className={cdHub.contractsListFiltersPanelBody}>
-            <div className={cdHub.contractsListFiltersStack}>
-              <div className={cdHub.contractsListChipRow} role="group" aria-label="Офис">
-                <span className={cdHub.contractsListChipRowLabel}>Офис</span>
-                <button
-                  type="button"
-                  disabled={isSnapshot}
-                  className={chipClass(!model.officeId)}
-                  onClick={() => model.setOfficeId('')}
+
+          {model.filtersCollapsed ? (
+            <div className={cdHub.contractsListFiltersSummary}>
+              {filtersSummary.map((item) => (
+                <span
+                  key={item.key}
+                  className={cdHub.contractsListFiltersSummaryChip}
+                  data-filter-key={item.key}
+                  title={item.label}
                 >
-                  Все
-                </button>
-                {offices.map((o) => (
+                  {item.label}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <div id={filtersContentId} className={cdHub.contractsListFiltersPanelBody}>
+              <div className={cdHub.contractsListFiltersStack}>
+                <div className={cdHub.contractsListChipRow} role="group" aria-label="Офис">
+                  <span className={cdHub.contractsListChipRowLabel}>Офис</span>
                   <button
-                    key={o.id}
                     type="button"
                     disabled={isSnapshot}
-                    className={chipClass(model.officeId === o.id)}
-                    onClick={() => model.setOfficeId(o.id)}
+                    className={chipClass(!model.officeId)}
+                    onClick={() => model.setOfficeId('')}
                   >
-                    {o.name}
+                    Все
                   </button>
-                ))}
-              </div>
-
-              <div className={cdHub.contractsListChipRow} role="group" aria-label="Быстрый период">
-                <span className={cdHub.contractsListChipRowLabel}>Период</span>
-                <button
-                  type="button"
-                  disabled={isSnapshot}
-                  className={cdHub.contractsListChip}
-                  onClick={() => model.setPeriod('month')}
-                >
-                  Текущий месяц
-                </button>
-                <button
-                  type="button"
-                  disabled={isSnapshot}
-                  className={cdHub.contractsListChip}
-                  onClick={() => model.setPeriod('prevMonth')}
-                >
-                  Прошлый месяц
-                </button>
-              </div>
-
-              <div className={cdHub.contractsListFilters}>
-                <div className={cdHub.contractsListDateFilters}>
-                  <label className={cdHub.contractsListDateLabel}>
-                    <span className={cdHub.contractsListDateLabelText}>Период с</span>
-                    <input
-                      type="date"
-                      value={model.dateFrom}
-                      onChange={(e) => model.setDateFrom(e.target.value)}
+                  {offices.map((o) => (
+                    <button
+                      key={o.id}
+                      type="button"
                       disabled={isSnapshot}
-                      className={filterFieldClass(
-                        cdHub.contractsListDateInput,
-                        Boolean(model.dateFrom)
-                      )}
-                      aria-label="Дата начала периода"
-                    />
-                  </label>
-                  <label className={cdHub.contractsListDateLabel}>
-                    <span className={cdHub.contractsListDateLabelText}>по</span>
-                    <input
-                      type="date"
-                      value={model.dateTo}
-                      onChange={(e) => model.setDateTo(e.target.value)}
-                      disabled={isSnapshot}
-                      className={filterFieldClass(
-                        cdHub.contractsListDateInput,
-                        Boolean(model.dateTo)
-                      )}
-                      aria-label="Дата конца периода"
-                    />
-                  </label>
-                </div>
-                <select
-                  value={model.employeeId}
-                  onChange={(e) => model.setEmployeeId(e.target.value)}
-                  disabled={isSnapshot}
-                  className={filterFieldClass(cdHub.contractsListSelect, Boolean(model.employeeId))}
-                  aria-label="Сотрудник"
-                >
-                  <option value="">Все сотрудники</option>
-                  {sortedUsers.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {userName(u)}
-                    </option>
+                      className={chipClass(model.officeId === o.id)}
+                      onClick={() => model.setOfficeId(o.id)}
+                    >
+                      {o.name}
+                    </button>
                   ))}
-                </select>
-                <button
-                  type="button"
-                  className={dpStyles.resetBtn}
-                  onClick={model.resetFilters}
-                  disabled={isSnapshot}
+                </div>
+
+                <div
+                  className={cdHub.contractsListChipRow}
+                  role="group"
+                  aria-label="Быстрый период"
                 >
-                  Сбросить
-                </button>
+                  <span className={cdHub.contractsListChipRowLabel}>Период</span>
+                  <button
+                    type="button"
+                    disabled={isSnapshot}
+                    className={cdHub.contractsListChip}
+                    onClick={() => model.setPeriod('month')}
+                  >
+                    Текущий месяц
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isSnapshot}
+                    className={cdHub.contractsListChip}
+                    onClick={() => model.setPeriod('prevMonth')}
+                  >
+                    Прошлый месяц
+                  </button>
+                </div>
+
+                <div className={cdHub.contractsListFilters}>
+                  <div className={cdHub.contractsListDateFilters}>
+                    <label className={cdHub.contractsListDateLabel}>
+                      <span className={cdHub.contractsListDateLabelText}>Период с</span>
+                      <input
+                        type="date"
+                        value={model.dateFrom}
+                        onChange={(e) => model.setDateFrom(e.target.value)}
+                        disabled={isSnapshot}
+                        className={filterFieldClass(
+                          cdHub.contractsListDateInput,
+                          Boolean(model.dateFrom)
+                        )}
+                        aria-label="Дата начала периода"
+                      />
+                    </label>
+                    <label className={cdHub.contractsListDateLabel}>
+                      <span className={cdHub.contractsListDateLabelText}>по</span>
+                      <input
+                        type="date"
+                        value={model.dateTo}
+                        onChange={(e) => model.setDateTo(e.target.value)}
+                        disabled={isSnapshot}
+                        className={filterFieldClass(
+                          cdHub.contractsListDateInput,
+                          Boolean(model.dateTo)
+                        )}
+                        aria-label="Дата конца периода"
+                      />
+                    </label>
+                  </div>
+                  <select
+                    value={model.employeeId}
+                    onChange={(e) => model.setEmployeeId(e.target.value)}
+                    disabled={isSnapshot}
+                    className={filterFieldClass(
+                      cdHub.contractsListSelect,
+                      Boolean(model.employeeId)
+                    )}
+                    aria-label="Сотрудник"
+                  >
+                    <option value="">Все сотрудники</option>
+                    {sortedUsers.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {userName(u)}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className={dpStyles.resetBtn}
+                    onClick={model.resetFilters}
+                    disabled={isSnapshot}
+                  >
+                    Сбросить
+                  </button>
+                </div>
               </div>
             </div>
+          )}
+        </section>
+
+        {!shown ? (
+          <div className={styles.hintBlock}>
+            {model.loading
+              ? 'Расчёт…'
+              : 'Укажите период — расчёт выполнится автоматически. Договоры для расчёта заполняются на вкладке «Договоры».'}
           </div>
+        ) : (
+          <>
+            <EmployeeTotalsRow result={shown} />
+            <FundsTable result={shown} />
+            <OfficesTable result={shown} />
+            <PeopleTables result={shown} />
+            <SalariesTable result={shown} />
+            <ContractsTable result={shown} />
+          </>
         )}
-      </section>
 
-      {!shown ? (
-        <div className={styles.hintBlock}>
-          {model.loading
-            ? 'Расчёт…'
-            : 'Укажите период — расчёт выполнится автоматически. Договоры для расчёта заполняются на вкладке «Договоры».'}
-        </div>
-      ) : (
-        <>
-          <EmployeeTotalsRow result={shown} />
-          <FundsTable result={shown} />
-          <OfficesTable result={shown} />
-          <PeopleTables result={shown} />
-          <SalariesTable result={shown} />
-          <ContractsTable result={shown} />
-        </>
-      )}
+        <SettlementsTable model={model} canEdit={canEdit} />
 
-      <SettlementsTable model={model} canEdit={canEdit} />
-
-      <ConfirmModal
-        isOpen={model.deleteTarget != null}
-        onClose={() => model.setDeleteTarget(null)}
-        onConfirm={() => void model.handleDeleteSettlement()}
-        title="Удалить черновик ведомости"
-        message={
-          model.deleteTarget
-            ? `Черновик ведомости за ${formatDate(model.deleteTarget.dateFrom)} — ${formatDate(model.deleteTarget.dateTo)} будет удалён безвозвратно. Продолжить?`
-            : ''
-        }
-        confirmText="Удалить"
-        variant="danger"
-        closeOnConfirm={false}
-        confirmLoading={model.deleting}
-      />
+        <ConfirmModal
+          isOpen={model.deleteTarget != null}
+          onClose={() => model.setDeleteTarget(null)}
+          onConfirm={() => void model.handleDeleteSettlement()}
+          title="Удалить черновик ведомости"
+          message={
+            model.deleteTarget
+              ? `Черновик ведомости за ${formatDate(model.deleteTarget.dateFrom)} — ${formatDate(model.deleteTarget.dateTo)} будет удалён безвозвратно. Продолжить?`
+              : ''
+          }
+          confirmText="Удалить"
+          variant="danger"
+          closeOnConfirm={false}
+          confirmLoading={model.deleting}
+        />
+      </CollapsedBlocksProvider>
     </div>
   );
 }
@@ -468,10 +478,14 @@ function FundsTable({ result }: { result: SalaryCalcResult }) {
   const repairCategory = result.vsByCategory.find((v) => v.categoryCode === 'REPAIR');
 
   return (
-    <div className={styles.tableBlock}>
-      <h2 className={styles.sectionTitle}>
-        Детализация фондов за {formatDate(result.period.from)} — {formatDate(result.period.to)}
-      </h2>
+    <CollapsibleSection
+      blockKey="funds"
+      title={
+        <>
+          Детализация фондов за {formatDate(result.period.from)} — {formatDate(result.period.to)}
+        </>
+      }
+    >
       <DataTable
         data={[
           {
@@ -529,7 +543,7 @@ function FundsTable({ result }: { result: SalaryCalcResult }) {
         getRowClassName={(r) => (r.kind === 'total' ? styles.rowStrong : styles.rowIndented)}
         emptyMessage="Нет данных"
       />
-    </div>
+    </CollapsibleSection>
   );
 }
 
@@ -572,8 +586,7 @@ function OfficesTable({ result }: { result: SalaryCalcResult }) {
   ]);
 
   return (
-    <div className={styles.tableBlock}>
-      <h2 className={styles.sectionTitle}>По офисам и направлениям</h2>
+    <CollapsibleSection blockKey="offices" title="По офисам и направлениям">
       <DataTable
         data={rows}
         columns={[
@@ -608,7 +621,7 @@ function OfficesTable({ result }: { result: SalaryCalcResult }) {
         getRowClassName={(r) => (r.kind === 'total' ? styles.rowStrong : undefined)}
         emptyMessage="Нет данных по офисам"
       />
-    </div>
+    </CollapsibleSection>
   );
 }
 
@@ -625,8 +638,7 @@ function PeopleTables({ result }: { result: SalaryCalcResult }) {
   return (
     <div className={styles.tablesRow}>
       {result.byManager.length > 0 ? (
-        <div className={styles.tableBlock}>
-          <h2 className={styles.sectionTitle}>Менеджеры (личные начисления)</h2>
+        <CollapsibleSection blockKey="managers" title="Менеджеры (личные начисления)">
           <DataTable
             data={result.byManager.map((m, i) => ({ ...m, rowKey: m.managerId ?? `name-${i}` }))}
             columns={[
@@ -656,11 +668,10 @@ function PeopleTables({ result }: { result: SalaryCalcResult }) {
             keyExtractor={(m) => m.rowKey}
             emptyMessage="Нет начислений"
           />
-        </div>
+        </CollapsibleSection>
       ) : null}
       {result.bySurveyor.length > 0 ? (
-        <div className={styles.tableBlock}>
-          <h2 className={styles.sectionTitle}>Замерщики</h2>
+        <CollapsibleSection blockKey="surveyors" title="Замерщики">
           <DataTable
             data={result.bySurveyor.map((s, i) => ({ ...s, rowKey: s.surveyorId ?? `name-${i}` }))}
             columns={[
@@ -690,11 +701,10 @@ function PeopleTables({ result }: { result: SalaryCalcResult }) {
             keyExtractor={(s) => s.rowKey}
             emptyMessage="Нет начислений"
           />
-        </div>
+        </CollapsibleSection>
       ) : null}
       {leadSpecialists.length > 0 ? (
-        <div className={styles.tableBlock}>
-          <h2 className={styles.sectionTitle}>Ведущие специалисты</h2>
+        <CollapsibleSection blockKey="lead-specialists" title="Ведущие специалисты">
           <DataTable
             data={leadSpecialists.map((ls) => ({
               ...ls,
@@ -726,11 +736,10 @@ function PeopleTables({ result }: { result: SalaryCalcResult }) {
             keyExtractor={(ls) => ls.userId}
             emptyMessage="Нет начислений"
           />
-        </div>
+        </CollapsibleSection>
       ) : null}
       {brigadier && brigadier.total > 0 ? (
-        <div className={styles.tableBlock}>
-          <h2 className={styles.sectionTitle}>Бригадир</h2>
+        <CollapsibleSection blockKey="brigadier" title="Бригадир">
           <DataTable
             data={[
               {
@@ -765,11 +774,10 @@ function PeopleTables({ result }: { result: SalaryCalcResult }) {
             keyExtractor={(b) => b.id}
             emptyMessage="Нет начислений"
           />
-        </div>
+        </CollapsibleSection>
       ) : null}
       {(result.salesBonuses ?? []).length > 0 ? (
-        <div className={styles.tableBlock}>
-          <h2 className={styles.sectionTitle}>Премии за продажи (итоги ДП)</h2>
+        <CollapsibleSection blockKey="bonuses-sales" title="Премии за продажи (итоги ДП)">
           <DataTable
             data={result.salesBonuses ?? []}
             columns={[
@@ -813,11 +821,10 @@ function PeopleTables({ result }: { result: SalaryCalcResult }) {
             keyExtractor={(b) => `${b.userId}-${b.month}`}
             emptyMessage="Нет начислений"
           />
-        </div>
+        </CollapsibleSection>
       ) : null}
       {(result.salesPlanBonuses ?? []).length > 0 ? (
-        <div className={styles.tableBlock}>
-          <h2 className={styles.sectionTitle}>Премии за план продаж</h2>
+        <CollapsibleSection blockKey="bonuses-plan" title="Премии за план продаж">
           <DataTable
             data={result.salesPlanBonuses ?? []}
             columns={[
@@ -875,11 +882,10 @@ function PeopleTables({ result }: { result: SalaryCalcResult }) {
             keyExtractor={(b) => `${b.userId}-${b.month}`}
             emptyMessage="Нет начислений"
           />
-        </div>
+        </CollapsibleSection>
       ) : null}
       {(result.cashQrBonuses ?? []).length > 0 ? (
-        <div className={styles.tableBlock}>
-          <h2 className={styles.sectionTitle}>Премии «QR + Н»</h2>
+        <CollapsibleSection blockKey="bonuses-qr" title="Премии «QR + Н»">
           <DataTable
             data={result.cashQrBonuses ?? []}
             columns={[
@@ -941,7 +947,7 @@ function PeopleTables({ result }: { result: SalaryCalcResult }) {
             keyExtractor={(b) => `${b.userId}-${b.month}`}
             emptyMessage="Нет начислений"
           />
-        </div>
+        </CollapsibleSection>
       ) : null}
     </div>
   );
@@ -971,8 +977,7 @@ function SalariesTable({ result }: { result: SalaryCalcResult }) {
     return lines.length > 0 ? lines.join('\n') : undefined;
   };
   return (
-    <div className={styles.tableBlock}>
-      <h2 className={styles.sectionTitle}>Оклады</h2>
+    <CollapsibleSection blockKey="salaries" title="Оклады">
       <DataTable
         data={result.salaries ?? []}
         columns={[
@@ -1046,20 +1051,84 @@ function SalariesTable({ result }: { result: SalaryCalcResult }) {
         keyExtractor={(s) => s.userId}
         emptyMessage="Нет начислений"
       />
-    </div>
+    </CollapsibleSection>
   );
 }
 
 /** Договоры, вошедшие в расчёт; суммы ролей — к выплате (у менеджера без вычета налога). */
 function ContractsTable({ result }: { result: SalaryCalcResult }) {
+  /** Отбор таблицы по направлению ('' — все). */
+  const [categoryId, setCategoryId] = useState('');
+  /** Поиск по номеру договора или заказчику. */
+  const [search, setSearch] = useState('');
+  // Направления, встречающиеся среди договоров периода.
+  const categories = useMemo(() => {
+    const byId = new Map<string, string>();
+    for (const r of result.rows) byId.set(r.categoryId, r.categoryName);
+    return [...byId.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+  }, [result.rows]);
+  // Смена периода может убрать выбранное направление — тогда показываем все.
+  const effectiveCategoryId = categories.some((c) => c.id === categoryId) ? categoryId : '';
+  const query = search.trim().toLowerCase();
+  const rows = result.rows.filter((r) => {
+    if (effectiveCategoryId && r.categoryId !== effectiveCategoryId) return false;
+    if (query) {
+      const inNumber = r.number.toLowerCase().includes(query);
+      const inCustomer = (r.customerName ?? '').toLowerCase().includes(query);
+      if (!inNumber && !inCustomer) return false;
+    }
+    return true;
+  });
+  const hasFilters = Boolean(effectiveCategoryId) || query.length > 0;
+
   if (result.rows.length === 0) return null;
   // Налог удерживается со всех, кроме менеджеров.
   const toNet = (value: number) => Math.round(value * result.settings.netFactor * 100) / 100;
   return (
-    <div className={styles.tableBlock}>
-      <h2 className={styles.sectionTitle}>Договоры в расчёте ({result.rows.length})</h2>
+    <CollapsibleSection
+      blockKey="contracts"
+      title={
+        <>
+          Договоры в расчёте{' '}
+          {hasFilters ? `(${rows.length} из ${result.rows.length})` : `(${result.rows.length})`}
+        </>
+      }
+      actions={
+        <>
+          {categories.length > 1 ? (
+            <select
+              value={effectiveCategoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+              className={filterFieldClass(cdHub.contractsListSelect, Boolean(effectiveCategoryId))}
+              aria-label="Направление"
+            >
+              <option value="">Все направления</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          ) : null}
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className={
+              query.length > 0
+                ? `${styles.contractsSearchInput} ${styles.contractsSearchInputActive}`
+                : styles.contractsSearchInput
+            }
+            placeholder="Поиск: № или заказчик"
+            aria-label="Поиск по номеру договора или заказчику"
+          />
+        </>
+      }
+    >
       <DataTable
-        data={result.rows}
+        data={rows}
         columns={[
           {
             key: 'number',
@@ -1115,7 +1184,7 @@ function ContractsTable({ result }: { result: SalaryCalcResult }) {
           },
           {
             key: 'baseAmount',
-            title: 'Стоимость',
+            title: 'СД (без д/с)',
             sortable: true,
             render: (r) => (
               <span
@@ -1138,7 +1207,7 @@ function ContractsTable({ result }: { result: SalaryCalcResult }) {
                   className={dpStyles.amountCell}
                   title={
                     r.paidPercent != null
-                      ? `Оплачено ${r.paidPercent}% от стоимости договора`
+                      ? `Оплачено ${r.paidPercent}% от полной стоимости (договор + доп. соглашения)`
                       : undefined
                   }
                 >
@@ -1209,9 +1278,15 @@ function ContractsTable({ result }: { result: SalaryCalcResult }) {
           },
         ]}
         keyExtractor={(r) => r.id}
-        emptyMessage="Договоров в расчёте нет"
+        emptyMessage={
+          query
+            ? 'Ничего не найдено по запросу'
+            : effectiveCategoryId
+              ? 'Нет договоров выбранного направления'
+              : 'Договоров в расчёте нет'
+        }
       />
-    </div>
+    </CollapsibleSection>
   );
 }
 
@@ -1219,8 +1294,7 @@ function ContractsTable({ result }: { result: SalaryCalcResult }) {
 function SettlementsTable({ model, canEdit }: { model: SalaryCalcModel; canEdit: boolean }) {
   if (model.settlements.length === 0) return null;
   return (
-    <div className={styles.tableBlock}>
-      <h2 className={styles.sectionTitle}>Зафиксированные ведомости</h2>
+    <CollapsibleSection blockKey="settlements" title="Зафиксированные ведомости">
       <DataTable
         data={model.settlements}
         columns={[
@@ -1307,6 +1381,6 @@ function SettlementsTable({ model, canEdit }: { model: SalaryCalcModel; canEdit:
         keyExtractor={(s: SalarySettlementListItem) => s.id}
         emptyMessage="Ведомостей нет"
       />
-    </div>
+    </CollapsibleSection>
   );
 }

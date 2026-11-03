@@ -103,6 +103,9 @@ export function buildSalaryCalcRows(input: {
 
     const managerAmount = round2(signPart + closePart + extraPart);
 
+    // Полная стоимость (договор + все доп. соглашения) — база 100% для колонки «Оплачено».
+    const fullAmount = round2(base + toNum(contractSum(contract)));
+
     const managerName =
       contract.managerName ||
       [contract.manager?.lastName, contract.manager?.firstName].filter(Boolean).join(' ').trim() ||
@@ -156,10 +159,10 @@ export function buildSalaryCalcRows(input: {
       paidAmount: contract.sourcePackageId
         ? (paidByPackage.get(contract.sourcePackageId) ?? 0)
         : null,
-      /** Оплачено, % от стоимости договора (null — нет данных/нулевая стоимость). */
+      /** Оплачено, % от полной стоимости с учётом доп. соглашений (null — нет данных/нулевая стоимость). */
       paidPercent:
-        contract.sourcePackageId && base > 0
-          ? round2(((paidByPackage.get(contract.sourcePackageId) ?? 0) / base) * 100)
+        contract.sourcePackageId && fullAmount > 0
+          ? round2(((paidByPackage.get(contract.sourcePackageId) ?? 0) / fullAmount) * 100)
           : null,
       extraBillsAmount: round2(extraBase),
       extraBills: extraBillsInPeriod.map((b) => ({
@@ -180,7 +183,7 @@ export function buildSalaryCalcRows(input: {
       brigadierAmount,
       signedInPeriod: signedIn,
       closedInPeriod: closedIn,
-      totalAmount: round2(base + toNum(contractSum(contract))),
+      totalAmount: fullAmount,
     };
   });
 }
