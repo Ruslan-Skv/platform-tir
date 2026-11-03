@@ -27,7 +27,7 @@
 
 .empty {
   margin: 0;
-  font-size: var(--admin-font-size-sm);
+  font-size: var(--admin-font-size-xs, 0.75rem);
   color: var(--admin-text-muted);
 }
 
