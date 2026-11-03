@@ -67,7 +67,10 @@
   line-height: 0;
 }
 
-.logoSidebarMark {
+/* Специфичность через `.brand` обязательна: классы `.logo`/`.logoMark` из Logo.module.css
+   задают свою высоту с той же специфичностью, и в проде (иной порядок CSS-чанков, чем в dev)
+   они перебивают размер знака — логотип увеличивается почти вдвое. */
+.brand .logoSidebarMark {
   --admin-logo-mark-height: 1.625rem;
   height: var(--admin-logo-mark-height);
   width: calc(var(--admin-logo-mark-height) * 194.48 / 237.78);
@@ -75,7 +78,7 @@
   flex-shrink: 0;
 }
 
-.logoHeaderMark {
+.brand .logoHeaderMark {
   --admin-logo-mark-height: 1.75rem;
   height: var(--admin-logo-mark-height);
   width: calc(var(--admin-logo-mark-height) * 194.48 / 237.78);
@@ -83,7 +86,7 @@
   flex-shrink: 0;
 }
 
-.logoLoginMark {
+.brand .logoLoginMark {
   --admin-logo-mark-height: 2.5rem;
   height: var(--admin-logo-mark-height);
   width: calc(var(--admin-logo-mark-height) * 194.48 / 237.78);
