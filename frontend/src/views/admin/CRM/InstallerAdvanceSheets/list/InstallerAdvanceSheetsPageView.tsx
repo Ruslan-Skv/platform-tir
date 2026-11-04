@@ -14,6 +14,7 @@ import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.modul
 import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
 
 import type { InstallerAdvanceSheetsPageModel } from '../hooks/useInstallerAdvanceSheetsPage';
+import { InstallerAdvanceSheetCreateModal } from '../shared/InstallerAdvanceSheetCreateModal';
 import styles from '../shared/InstallerAdvanceSheets.module.css';
 import {
   IAS_PAGE_LIMIT_OPTIONS,
@@ -89,6 +90,8 @@ export function InstallerAdvanceSheetsPageView({
   /** Всегда свёрнуто при открытии страницы — как в журнале ДП. */
   const [filtersCollapsed, setFiltersCollapsed] = useState(true);
   const toggleFiltersCollapsed = () => setFiltersCollapsed((value) => !value);
+  /** Модалка создания ведомости — форма бывшей страницы /new. */
+  const [createOpen, setCreateOpen] = useState(false);
 
   const columns = [
     {
@@ -197,13 +200,14 @@ export function InstallerAdvanceSheetsPageView({
         </div>
         <div className={`${cdChrome.headerButtonsRow} ${cdHub.contractsListHeaderActions}`}>
           {canCreateSheets ? (
-            <Link
-              href="/admin/installer-advance-sheets/new"
+            <button
+              type="button"
               data-admin-mutation
               className={cdChrome.contractsListHeaderAddBtn}
+              onClick={() => setCreateOpen(true)}
             >
               + Ведомость
-            </Link>
+            </button>
           ) : null}
           <div className={cdHub.contractsHeaderIconActionsDesktop}>
             <AdminListRefreshButton
@@ -381,6 +385,17 @@ export function InstallerAdvanceSheetsPageView({
         paginationClassName={cdHub.contractsListPagination}
         paginationActiveClassName={cdHub.contractsListPaginationPageActive}
       />
+
+      {createOpen ? (
+        <InstallerAdvanceSheetCreateModal
+          isOpen
+          onClose={() => setCreateOpen(false)}
+          onCreated={(sheet) => {
+            setMessage(`Ведомость № ${sheet.number} создана`);
+            void refresh();
+          }}
+        />
+      ) : null}
     </div>
   );
 }

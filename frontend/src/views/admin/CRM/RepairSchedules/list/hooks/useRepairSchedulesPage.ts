@@ -16,6 +16,7 @@ import {
   getRepairScheduleTrashCount,
   setRepairScheduleProjectStatus,
 } from '@/shared/api/crm/admin-repair-schedules';
+import { isIasSheetAuthor } from '@/views/admin/CRM/InstallerAdvanceSheets/shared/installer-advance-sheets-page.constants';
 import { useAdminListPagination } from '@/views/admin/CRM/shared/list-pagination';
 
 import {
@@ -102,6 +103,8 @@ export function useRepairSchedulesPage() {
     [user?.role, items]
   );
   const [installers, setInstallers] = useState<InstallerMaster[]>([]);
+  /** Создание ведомостей авансов — только роли-авторы ведомостей. */
+  const canCreateAdvanceSheets = isIasSheetAuthor(user?.role);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -416,6 +419,8 @@ export function useRepairSchedulesPage() {
     /** Счётчики секций «Все» по всей выборке — заголовки секций при пагинации. */
     statusTotals,
     repairInstallers,
+    /** Создание ведомостей авансов — только роли-авторы ведомостей. */
+    canCreateAdvanceSheets,
     loading,
     message,
     setMessage,

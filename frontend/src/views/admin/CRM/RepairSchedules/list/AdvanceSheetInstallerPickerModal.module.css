@@ -1,0 +1,44 @@
+/* Список прикреплённых мастеров — вертикальные кнопки выбора. */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pickBtn {
+  align-items: center;
+  background: var(--admin-surface-soft, #f9fafb);
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-sm, 6px);
+  color: var(--admin-text-primary, #111827);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: 8px;
+  justify-content: space-between;
+  padding: 8px 12px;
+  text-align: left;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.pickBtn:hover {
+  background: var(--admin-surface-hover, #f3f4f6);
+  border-color: var(--admin-border-strong, #d1d5db);
+}
+
+.pickName {
+  font-weight: 600;
+}
+
+.pickGrade {
+  color: var(--admin-text-muted, #6b7280);
+  font-size: var(--admin-font-size-xs, 0.75rem);
+}
+
+/* Кнопки внизу — в столбик на узкой модалке. */
+.actions {
+  flex-direction: column;
+  gap: 6px;
+}

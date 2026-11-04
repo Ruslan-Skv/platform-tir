@@ -1,3 +1,3 @@
 export { InstallerAdvanceSheetsPage } from './list/InstallerAdvanceSheetsPage';
-export { InstallerAdvanceSheetCreatePage } from './create/InstallerAdvanceSheetCreatePage';
+export { InstallerAdvanceSheetCreateModal } from './shared/InstallerAdvanceSheetCreateModal';
 export { InstallerAdvanceSheetDetailPage } from './detail/InstallerAdvanceSheetDetailPage';

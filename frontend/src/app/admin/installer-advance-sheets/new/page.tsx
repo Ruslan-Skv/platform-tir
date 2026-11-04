@@ -1,17 +1,6 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import dynamic from 'next/dynamic';
-
-import { PageSuspenseFallback } from '@/shared/ui/PageSuspenseFallback';
-
-const InstallerAdvanceSheetCreatePage = dynamic(
-  () =>
-    import('@/views/admin/CRM/InstallerAdvanceSheets').then(
-      (m) => m.InstallerAdvanceSheetCreatePage
-    ),
-  { ssr: false, loading: () => <PageSuspenseFallback compact message="Загрузка..." /> }
-);
-
+/** Форма создания ведомости переехала в модалку списка «Расчётники мастеров». */
 export default function AdminInstallerAdvanceSheetCreatePage() {
-  return <InstallerAdvanceSheetCreatePage />;
+  redirect('/admin/installer-advance-sheets');
 }

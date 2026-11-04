@@ -10,6 +10,7 @@ import {
   AdminListRefreshButton,
   AdminToolbarTrashButton,
 } from '@/shared/ui/admin/AdminToolbarIconButton';
+import { InstallerAdvanceSheetCreateModal } from '@/views/admin/CRM/InstallerAdvanceSheets/shared/InstallerAdvanceSheetCreateModal';
 import { CollapsibleFiltersPanel } from '@/views/admin/CRM/shared/CollapsibleFiltersPanel';
 import {
   ADMIN_LIST_PAGE_LIMIT_OPTIONS,
@@ -24,6 +25,7 @@ import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-worksp
 import styles from '../shared/RepairSchedules.module.css';
 import { REPAIR_STATUS_GROUP_LABELS, repairStatusChangeTexts } from '../shared/repair-schedules';
 import { buildRepairObjectGroups } from '../shared/repairObjectGroups';
+import { AdvanceSheetInstallerPickerModal } from './AdvanceSheetInstallerPickerModal';
 import { RepairProjectForm } from './RepairProjectForm';
 import { RepairScheduleTrashModal } from './RepairScheduleTrashModal';
 import { RepairSchedulesGanttTimeline } from './RepairSchedulesGanttTimeline';
@@ -70,6 +72,7 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
     setLimit,
     statusTotals,
     repairInstallers,
+    canCreateAdvanceSheets,
     loading,
     message,
     setMessage,
@@ -99,6 +102,32 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
   const [successVisible, setSuccessVisible] = useState(false);
   const [successText, setSuccessText] = useState('');
   const [workOrdersHubPackageId, setWorkOrdersHubPackageId] = useState<string | null>(null);
+  /** Договор + мастер, для которых открыта модалка создания ведомости авансов. */
+  const [advanceSheetContext, setAdvanceSheetContext] = useState<{
+    item: RepairSchedulesPageModel['items'][number];
+    installerId?: string;
+  } | null>(null);
+  /** Договор с несколькими прикреплёнными мастерами — ждёт выбора в мини-модалке. */
+  const [advanceSheetPickItem, setAdvanceSheetPickItem] = useState<
+    RepairSchedulesPageModel['items'][number] | null
+  >(null);
+
+  /**
+   * Ведомость создаётся на одного мастера. Если в «Заказ-нарядах» договора
+   * прикреплён ровно один мастер (или мастеров нет, но заполнен мастер
+   * план-графика) — подставляем его сразу; если несколько — предлагаем выбрать.
+   */
+  const openAdvanceSheet = (item: RepairSchedulesPageModel['items'][number]) => {
+    const attached = item.attachedInstallers ?? [];
+    if (attached.length > 1) {
+      setAdvanceSheetPickItem(item);
+      return;
+    }
+    setAdvanceSheetContext({
+      item,
+      installerId: attached[0]?.id ?? item.installerId ?? undefined,
+    });
+  };
   /** Запрошенная смена статуса — ждёт подтверждения в модалке. */
   const [statusChange, setStatusChange] = useState<{
     item: RepairSchedulesPageModel['items'][number];
@@ -348,6 +377,8 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
             moveStatus={(item, status) => setStatusChange({ item, status })}
             onDelete={setDeleteItem}
             canDeleteProject={canDeleteProject}
+            canCreateAdvanceSheets={canCreateAdvanceSheets}
+            onOpenAdvanceSheet={openAdvanceSheet}
           />
           <AdminTablePagination
             page={page}
@@ -366,6 +397,51 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
           isOpen
           onClose={() => setWorkOrdersHubPackageId(null)}
           onUpdated={() => void refresh()}
+        />
+      ) : null}
+
+      {advanceSheetPickItem ? (
+        <AdvanceSheetInstallerPickerModal
+          isOpen
+          onClose={() => setAdvanceSheetPickItem(null)}
+          contractNumber={advanceSheetPickItem.contractNumber}
+          installers={advanceSheetPickItem.attachedInstallers ?? []}
+          onPick={(installerId) => {
+            setAdvanceSheetPickItem(null);
+            setAdvanceSheetContext({ item: advanceSheetPickItem, installerId });
+          }}
+          onPickFromRegistry={() => {
+            setAdvanceSheetPickItem(null);
+            setAdvanceSheetContext({ item: advanceSheetPickItem });
+          }}
+        />
+      ) : null}
+
+      {advanceSheetContext ? (
+        <InstallerAdvanceSheetCreateModal
+          isOpen
+          onClose={() => setAdvanceSheetContext(null)}
+          installerId={advanceSheetContext.installerId}
+          items={
+            advanceSheetContext.item.packageId
+              ? [
+                  {
+                    packageId: advanceSheetContext.item.packageId,
+                    label:
+                      [
+                        advanceSheetContext.item.contractNumber,
+                        advanceSheetContext.item.customerName,
+                      ]
+                        .filter(Boolean)
+                        .join(' — ') || 'Договор без номера',
+                  },
+                ]
+              : undefined
+          }
+          onCreated={(sheet) => {
+            flashSuccess(`Ведомость № ${sheet.number} создана`);
+            void refresh();
+          }}
         />
       ) : null}
 

@@ -1,5 +1,7 @@
 'use client';
 
+import { ClipboardDocumentCheckIcon } from '@heroicons/react/24/outline';
+
 import { Fragment, useEffect, useMemo, useState } from 'react';
 
 import type {
@@ -53,6 +55,10 @@ type Props = {
   onDelete: (item: RepairScheduleProject) => void;
   /** Удаление в корзину доступно только для созданных вручную проектов (без пакета). */
   canDeleteProject: (item: RepairScheduleProject) => boolean;
+  /** Создание ведомостей авансов — только роли-авторы ведомостей. */
+  canCreateAdvanceSheets: boolean;
+  /** Открыть модалку создания ведомости авансов по договору строки. */
+  onOpenAdvanceSheet: (item: RepairScheduleProject) => void;
 };
 
 const COL_SPAN = 11;
@@ -175,6 +181,8 @@ export function RepairSchedulesGroupedList({
   moveStatus,
   onDelete,
   canDeleteProject,
+  canCreateAdvanceSheets,
+  onOpenAdvanceSheet,
 }: Props) {
   const sections = useMemo<StatusSection[]>(() => {
     if (statusFilter !== 'ALL') {
@@ -259,6 +267,15 @@ export function RepairSchedulesGroupedList({
             onClick={() => onOpenWorkOrdersHub(packageId)}
           >
             <PackageWorkOrdersHubIcon />
+          </AdminTableIconButton>
+        ) : null}
+        {packageId && canCreateAdvanceSheets ? (
+          <AdminTableIconButton
+            aria-label="Создать ведомость"
+            title="Создать ведомость авансов по договору"
+            onClick={() => onOpenAdvanceSheet(item)}
+          >
+            <ClipboardDocumentCheckIcon aria-hidden />
           </AdminTableIconButton>
         ) : null}
         {!item.packageId && item.status === 'NEW' ? (
@@ -491,6 +508,15 @@ export function RepairSchedulesGroupedList({
                 }}
               >
                 <PackageWorkOrdersHubIcon />
+              </AdminTableIconButton>
+            ) : null}
+            {item.packageId && canCreateAdvanceSheets ? (
+              <AdminTableIconButton
+                aria-label="Создать ведомость"
+                title="Создать ведомость авансов по договору"
+                onClick={() => onOpenAdvanceSheet(item)}
+              >
+                <ClipboardDocumentCheckIcon aria-hidden />
               </AdminTableIconButton>
             ) : null}
           </div>

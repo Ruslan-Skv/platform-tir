@@ -158,6 +158,8 @@ export function InstallerAdvanceSheetForm({
   mode,
   installers,
   sheet,
+  initialInstallerId,
+  initialItems,
   submitting,
   onSubmit,
   onCancel,
@@ -168,14 +170,26 @@ export function InstallerAdvanceSheetForm({
   installers: InstallerMaster[];
   /** Ведомость для редактирования; null/undefined — создание. */
   sheet?: InstallerAdvanceSheetDetail | null;
+  /** Предзаполнение мастера при создании (напр. из строки план-графика). */
+  initialInstallerId?: string;
+  /** Предзаполненные строки договоров при создании; суммы вводит пользователь. */
+  initialItems?: Array<{ packageId: string; label: string }>;
   submitting: boolean;
   onSubmit: (values: FormValues) => Promise<void>;
   onCancel?: () => void;
   cancelHref?: string;
 }) {
-  const [installerId, setInstallerId] = useState(sheet?.installer.id ?? '');
+  const [installerId, setInstallerId] = useState(sheet?.installer.id ?? initialInstallerId ?? '');
   const [note, setNote] = useState(sheet?.note ?? '');
   const [rows, setRows] = useState<FormRow[]>(() => {
+    if (!sheet && initialItems && initialItems.length > 0) {
+      return initialItems.map((item) => ({
+        key: nextRowKey(),
+        packageId: item.packageId,
+        label: item.label,
+        amount: '',
+      }));
+    }
     if (!sheet) return [];
     // Редактирование: невыплатенные строки — в таблицу, выплаченные — замороженными.
     return sheet.items
