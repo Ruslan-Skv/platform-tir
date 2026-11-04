@@ -7,6 +7,7 @@ import hubStyles from './SettingsHubPage.module.css';
 
 const SETTINGS_LINKS = [
   { href: '/admin/settings/appearance', label: 'Внешний вид админки' },
+  { href: '/admin/settings/logo', label: 'Настройка логотипа админки' },
   { href: '/admin/settings/product-templates', label: 'Шаблоны товаров' },
   { href: '/admin/settings/partner-products', label: 'Товары партнёра' },
   { href: '/admin/settings/reviews', label: 'Отзывы и оценки' },

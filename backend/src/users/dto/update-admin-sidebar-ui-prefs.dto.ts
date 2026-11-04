@@ -41,4 +41,12 @@ export class UpdateAdminSidebarUiPrefsDto {
   @IsString({ each: true })
   @Length(1, 200, { each: true })
   navOrder?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Вариант логотипа админки (шрифт подписи «Виртуальный офис»)',
+    enum: ['classic', 'mission'],
+  })
+  @IsOptional()
+  @IsIn(['classic', 'mission'])
+  logoVariant?: 'classic' | 'mission';
 }

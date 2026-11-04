@@ -9,6 +9,7 @@ export type AdminSidebarUiPrefs = {
   mobileLayout: 'list' | 'grid3';
   desktopLayout: 'list' | 'grid2';
   navOrder: string[];
+  logoVariant: 'classic' | 'mission';
 };
 
 /** Безопасный разбор adminSidebarNavOrder: JSON-массив строк или значение по умолчанию. */
@@ -28,12 +29,14 @@ function formatAdminSidebarUiPrefs(user: {
   adminSidebarMobileLayout: string;
   adminSidebarDesktopLayout: string;
   adminSidebarNavOrder: string | null;
+  adminLogoVariant: string;
 }): AdminSidebarUiPrefs {
   return {
     hideIcons: Boolean(user.adminSidebarHideIcons),
     mobileLayout: user.adminSidebarMobileLayout === 'grid3' ? 'grid3' : 'list',
     desktopLayout: user.adminSidebarDesktopLayout === 'grid2' ? 'grid2' : 'list',
     navOrder: parseAdminSidebarNavOrder(user.adminSidebarNavOrder),
+    logoVariant: user.adminLogoVariant === 'mission' ? 'mission' : 'classic',
   };
 }
 
@@ -268,6 +271,7 @@ export class UsersService {
         adminSidebarMobileLayout: true,
         adminSidebarDesktopLayout: true,
         adminSidebarNavOrder: true,
+        adminLogoVariant: true,
       },
     });
     if (!user) {
@@ -283,6 +287,7 @@ export class UsersService {
       mobileLayout?: 'list' | 'grid3';
       desktopLayout?: 'list' | 'grid2';
       navOrder?: string[];
+      logoVariant?: 'classic' | 'mission';
     },
   ): Promise<AdminSidebarUiPrefs> {
     const updated = await this.prisma.user.update({
@@ -296,12 +301,14 @@ export class UsersService {
         ...(data.navOrder !== undefined && {
           adminSidebarNavOrder: data.navOrder.length > 0 ? JSON.stringify(data.navOrder) : null,
         }),
+        ...(data.logoVariant !== undefined && { adminLogoVariant: data.logoVariant }),
       },
       select: {
         adminSidebarHideIcons: true,
         adminSidebarMobileLayout: true,
         adminSidebarDesktopLayout: true,
         adminSidebarNavOrder: true,
+        adminLogoVariant: true,
       },
     });
     return formatAdminSidebarUiPrefs(updated);

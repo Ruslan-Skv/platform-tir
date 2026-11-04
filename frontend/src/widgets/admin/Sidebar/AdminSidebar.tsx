@@ -585,6 +585,11 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.settings.appearance',
       },
       {
+        label: 'Настройка логотипа админки',
+        href: '/admin/settings/logo',
+        resourceId: 'admin.settings.logo',
+      },
+      {
         label: 'Шаблоны товаров',
         href: '/admin/settings/product-templates',
         resourceId: 'admin.settings.product-templates',

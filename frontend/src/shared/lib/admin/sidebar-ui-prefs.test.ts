@@ -29,4 +29,16 @@ describe('mergeSidebarUiPrefsSaved', () => {
     const saved = prefs({ navOrder: [] });
     expect(mergeSidebarUiPrefsSaved(requested, saved).navOrder).toEqual([]);
   });
+
+  it('сервер без logoVariant (старый бэкенд) не откатывает локальный «mission»', () => {
+    const requested = prefs({ logoVariant: 'mission' });
+    const saved = prefs({ logoVariant: 'classic' });
+    expect(mergeSidebarUiPrefsSaved(requested, saved).logoVariant).toBe('mission');
+  });
+
+  it('сохранённый на сервере вариант логотипа выигрывает при классическом локальном', () => {
+    const requested = prefs({ logoVariant: 'classic' });
+    const saved = prefs({ logoVariant: 'mission' });
+    expect(mergeSidebarUiPrefsSaved(requested, saved).logoVariant).toBe('mission');
+  });
 });

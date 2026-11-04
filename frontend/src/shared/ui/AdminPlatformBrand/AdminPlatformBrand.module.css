@@ -199,6 +199,42 @@
   }
 }
 
+/* ===== Вариант «Миссия»: подпись шрифтом Great Vibes (шрифт текста миссии на /mission) ===== */
+.brand[data-logo-variant='mission'] .platformTitle {
+  font-family: 'great vibes', cursive;
+  font-weight: 400;
+  /* 1.3125rem: рукописный кегль компенсирует мелкий рост строчных, но строка
+     «Виртуальный офис» не должна обрезаться в сайдбаре (место ещё занимает кнопка сворачивания) */
+  font-size: 1.3125rem;
+  line-height: 1.2;
+  letter-spacing: 0;
+  text-transform: none;
+  text-shadow: 0 2px 12px rgb(37 99 235 / 0.35);
+}
+
+.brand[data-logo-variant='mission'] .platformTitle.platformTitleStacked {
+  font-size: 0.9375rem;
+  line-height: 1.15;
+  letter-spacing: 0;
+  text-shadow: 0 1px 8px rgb(37 99 235 / 0.25);
+}
+
+.brand[data-logo-variant='mission'].login .platformTitle {
+  font-size: 1.75rem;
+}
+
+:global(:where(html[data-theme='dark'], [data-app-theme='dark']))
+  .brand[data-logo-variant='mission']
+  .platformTitle {
+  text-shadow: 0 2px 14px rgb(56 189 248 / 0.4);
+}
+
+:global(:where(html[data-theme='dark'], [data-app-theme='dark']))
+  .brand[data-logo-variant='mission']
+  .platformTitle.platformTitleStacked {
+  text-shadow: 0 1px 10px rgb(56 189 248 / 0.35);
+}
+
 :global(:where(html[data-theme='dark'], [data-app-theme='dark'])) .platformTitle {
   color: #38bdf8;
   text-shadow:

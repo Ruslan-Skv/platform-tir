@@ -284,6 +284,11 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     path: '/admin/settings/appearance',
   },
   {
+    id: 'admin.settings.logo',
+    label: 'Настройка логотипа админки',
+    path: '/admin/settings/logo',
+  },
+  {
     id: 'admin.settings.product-templates',
     label: 'Шаблоны товаров',
     path: '/admin/settings/product-templates',

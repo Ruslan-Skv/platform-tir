@@ -1,0 +1,124 @@
+.headerSuccessNotice {
+  min-width: 0;
+}
+
+.helpPanel {
+  margin-bottom: var(--admin-space-md);
+}
+
+.helpText {
+  margin: 0;
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  line-height: 1.5;
+}
+
+.variantGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--admin-space-md);
+  margin-bottom: var(--admin-space-md);
+}
+
+.variantCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+  padding: var(--admin-space-lg) var(--admin-space-xl);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  background: var(--admin-surface);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.variantCard:hover {
+  border-color: var(--admin-info, #2563eb);
+}
+
+.variantCardActive {
+  border-color: var(--admin-info, #2563eb);
+  box-shadow: 0 0 0 3px var(--admin-info-bg-soft, #eff6ff);
+}
+
+.variantName {
+  font-size: var(--admin-font-size-base);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+}
+
+.variantHint {
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  line-height: 1.45;
+}
+
+.previewRow {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  min-width: 0;
+  margin-top: var(--admin-space-xs);
+  padding-top: var(--admin-space-md);
+  border-top: 1px dashed var(--admin-border);
+}
+
+/* Специфичность через `.previewRow` обязательна (как в AdminPlatformBrand): классы `.logo`/`.logoMark`
+   из Logo.module.css задают свою высоту с той же специфичностью, и в проде порядок CSS-чанков
+   может их поставить позже. */
+.previewRow .previewMark {
+  height: 1.75rem;
+  width: calc(1.75rem * 194.48 / 237.78);
+  max-width: none;
+  flex-shrink: 0;
+}
+
+/* Копия текущего вида подписи (AdminPlatformBrand.module.css → .platformTitle) */
+.previewTitleClassic {
+  font-family: play, oswald, arial, system-ui, sans-serif;
+  font-size: 1.0625rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+  color: #1d4ed8;
+  text-shadow:
+    0 1px 0 #2563eb,
+    0 2px 0 #1e40af,
+    0 3px 10px rgb(37 99 235 / 0.28);
+}
+
+/* Вид «Миссия» — Great Vibes (шрифт текста миссии на /mission) */
+.previewTitleMission {
+  font-family: 'great vibes', cursive;
+  font-size: 1.875rem;
+  font-weight: 400;
+  line-height: 1.2;
+  color: #1d4ed8;
+  text-shadow: 0 2px 12px rgb(37 99 235 / 0.35);
+}
+
+:global(:where(html[data-theme='dark'], [data-app-theme='dark'])) .previewTitleClassic {
+  color: #38bdf8;
+  text-shadow:
+    0 1px 0 #0ea5e9,
+    0 2px 0 #0284c7,
+    0 3px 12px rgb(56 189 248 / 0.35);
+}
+
+:global(:where(html[data-theme='dark'], [data-app-theme='dark'])) .previewTitleMission {
+  color: #38bdf8;
+  text-shadow: 0 2px 14px rgb(56 189 248 / 0.4);
+}
+
+.liveHint {
+  margin: 0;
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  line-height: 1.45;
+}

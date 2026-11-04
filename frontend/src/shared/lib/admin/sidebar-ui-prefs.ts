@@ -11,6 +11,9 @@ import {
 export type AdminSidebarMobileLayout = 'list' | 'grid3';
 export type AdminSidebarDesktopLayout = 'list' | 'grid2';
 
+/** Вариант логотипа админки: classic — Play (как сейчас), mission — Great Vibes (шрифт миссии). */
+export type AdminLogoVariant = 'classic' | 'mission';
+
 export type AdminSidebarUiPrefs = {
   /** Скрыть эмодзи-иконки у пунктов меню (на свёрнутой десктопной рейке иконки остаются). */
   hideIcons: boolean;
@@ -20,6 +23,8 @@ export type AdminSidebarUiPrefs = {
   desktopLayout: AdminSidebarDesktopLayout;
   /** Персональный порядок разделов верхнего уровня (href); [] — порядок по умолчанию. */
   navOrder: string[];
+  /** Вариант логотипа админки (шрифт подписи «Виртуальный офис»). */
+  logoVariant: AdminLogoVariant;
 };
 
 export const ADMIN_SIDEBAR_UI_PREFS_KEY = 'admin.sidebar.uiPrefs';
@@ -30,6 +35,7 @@ export const DEFAULT_ADMIN_SIDEBAR_UI_PREFS: AdminSidebarUiPrefs = {
   mobileLayout: 'list',
   desktopLayout: 'list',
   navOrder: [],
+  logoVariant: 'classic',
 };
 
 export function syncAdminSidebarUiPrefsDom(prefs: AdminSidebarUiPrefs): void {
@@ -63,6 +69,7 @@ export function readAdminSidebarUiPrefs(): AdminSidebarUiPrefs {
       mobileLayout: parsed.mobileLayout === 'grid3' ? 'grid3' : 'list',
       desktopLayout: parsed.desktopLayout === 'grid2' ? 'grid2' : 'list',
       navOrder: normalizeNavOrder(parsed.navOrder),
+      logoVariant: parsed.logoVariant === 'mission' ? 'mission' : 'classic',
       ...fromDom,
     };
   } catch {
@@ -92,6 +99,7 @@ function prefsEqual(a: AdminSidebarUiPrefs, b: AdminSidebarUiPrefs): boolean {
     a.hideIcons === b.hideIcons &&
     a.mobileLayout === b.mobileLayout &&
     a.desktopLayout === b.desktopLayout &&
+    a.logoVariant === b.logoVariant &&
     navOrderEqual(a.navOrder, b.navOrder)
   );
 }
@@ -115,6 +123,10 @@ export function mergeSidebarUiPrefsSaved(
       requested.navOrder.length > 0 && saved.navOrder.length === 0
         ? requested.navOrder
         : saved.navOrder,
+    logoVariant:
+      requested.logoVariant === 'mission' && saved.logoVariant !== 'mission'
+        ? requested.logoVariant
+        : saved.logoVariant,
   };
 }
 
@@ -221,6 +233,7 @@ export function useAdminSidebarUiPrefs() {
       mobileLayout: patch.mobileLayout ?? prefsRef.current.mobileLayout,
       desktopLayout: patch.desktopLayout ?? prefsRef.current.desktopLayout,
       navOrder: patch.navOrder ?? prefsRef.current.navOrder,
+      logoVariant: patch.logoVariant ?? prefsRef.current.logoVariant,
     };
     setPrefs(next);
     writeAdminSidebarUiPrefs(next);
@@ -239,4 +252,31 @@ export function useAdminSidebarUiPrefs() {
   }, []);
 
   return { prefs, updatePrefs, ready };
+}
+
+/** Текущий вариант логотипа из локального кэша (без запроса к API — работает и на логине). */
+export function readAdminLogoVariant(): AdminLogoVariant {
+  return readAdminSidebarUiPrefs().logoVariant;
+}
+
+/** Вариант логотипа админки для бренд-компонентов (сайдбар, шапка, страница логина). */
+export function useAdminLogoVariant(): AdminLogoVariant {
+  // null до первого эффекта: SSR не знает localStorage и рендерит дефолт, поэтому
+  // первый клиентский рендер тоже даёт дефолт, а реальное значение применяется
+  // сразу после монтирования — иначе атрибут data-logo-variant «залипает» в
+  // серверном значении (React не видит расхождение и не обновляет DOM).
+  const [variant, setVariant] = useState<AdminLogoVariant | null>(null);
+
+  useEffect(() => {
+    const sync = () => setVariant(readAdminLogoVariant());
+    sync();
+    window.addEventListener(ADMIN_SIDEBAR_UI_PREFS_EVENT, sync);
+    window.addEventListener('storage', sync);
+    return () => {
+      window.removeEventListener(ADMIN_SIDEBAR_UI_PREFS_EVENT, sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, []);
+
+  return variant ?? DEFAULT_ADMIN_SIDEBAR_UI_PREFS.logoVariant;
 }

@@ -1710,6 +1710,7 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 
 .interactiveAssignedInstaller {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--admin-space-sm);
@@ -1735,10 +1736,23 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   font-size: var(--admin-font-size-2xs);
   line-height: 1;
   border-radius: var(--admin-radius-sm);
+  /* Наследованный от ячейки word-break: break-word иначе ломает «Снять»
+     в вертикальный столбик букв в узкой колонке */
+  white-space: nowrap;
+  word-break: keep-all;
+  overflow-wrap: normal;
 }
 
 .interactiveEstimateTable {
   font-size: var(--admin-font-size-xs);
+}
+
+/* Удвоенный класс перебивает `table-layout: fixed` из estimateA4Table
+   (documents-preview.module.css) при любом порядке CSS-бандла. При fixed
+   колонка «Мастер» получает width: 9% из nth-child-сетки (min-width на ней
+   не работает), кнопка «Снять» сжимается до столбика букв и раздувает
+   строки по высоте. */
+.interactiveEstimateTable.interactiveEstimateTable {
   table-layout: auto;
 }
 

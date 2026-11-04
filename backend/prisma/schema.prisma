@@ -59,6 +59,8 @@ model User {
   adminSidebarDesktopLayout               String                                    @default("list")
   /// Порядок разделов админ-сайдбара (JSON-массив href верхнего уровня; null — порядок по умолчанию)
   adminSidebarNavOrder                    String?
+  /// Вариант логотипа админки (шрифт подписи «Виртуальный офис»): classic | mission
+  adminLogoVariant                        String                                    @default("classic")
   phone                                   String?
   notificationSettings                    UserNotificationSettings?
   notificationHistory                     UserNotification[]
