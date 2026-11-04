@@ -201,6 +201,8 @@ export function usePackageDocumentEditorController({
     setEstimateGroups,
   } = catalog;
   const [packageRefreshing, setPackageRefreshing] = useState(false);
+  /** Есть подписанные (SIGNED) сессии ЭП — золотая тонировка кнопки «ЭП» в шапке. */
+  const [hasSignedSigningSessions, setHasSignedSigningSessions] = useState(false);
   const [packageFlowStatus, setPackageFlowStatus] =
     useState<ContractDocumentPackageStatus>('IN_PROGRESS');
   const packageFlowStatusRef = useRef<ContractDocumentPackageStatus>('IN_PROGRESS');
@@ -315,6 +317,7 @@ export function usePackageDocumentEditorController({
       setPackageKind,
       setWindowsWorkOrderMarkupPercent,
       setPaymentInvoiceCount,
+      setHasSignedSigningSessions,
       setDraftTitle,
       setPackageFlowStatus,
       setLinkedCrmCustomerId,
@@ -760,6 +763,7 @@ export function usePackageDocumentEditorController({
     signedAddendumOrdinals,
     paymentInvoiceCount,
     unassignedInteractiveRowsCount,
+    hasSignedSigningSessions,
     form,
     onOpenPackageHub: openPackageHub,
     onOpenInvoicesHub: headerHubActions.onOpenInvoicesHub,

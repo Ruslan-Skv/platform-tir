@@ -37,6 +37,8 @@ export type PackageDocumentEditorMainViewProps = {
   signedAddendumOrdinals: number[];
   paymentInvoiceCount: number;
   unassignedInteractiveRowsCount: number;
+  /** Есть подписанные (SIGNED) сессии ЭП — золотая тонировка кнопки «ЭП» в шапке. */
+  hasSignedSigningSessions: boolean;
   form: PackageFormData;
   onOpenPackageHub: () => void;
   onOpenInvoicesHub: () => void;
@@ -78,6 +80,7 @@ export function PackageDocumentEditorMainView({
   signedAddendumOrdinals,
   paymentInvoiceCount,
   unassignedInteractiveRowsCount,
+  hasSignedSigningSessions,
   form,
   onOpenPackageHub,
   onOpenInvoicesHub,
@@ -120,6 +123,7 @@ export function PackageDocumentEditorMainView({
           unsignedAddendumOrdinals={unsignedAddendumOrdinals}
           paymentInvoiceCount={paymentInvoiceCount}
           unassignedInteractiveRowsCount={unassignedInteractiveRowsCount}
+          hasSignedSigningSessions={hasSignedSigningSessions}
           form={form}
           onOpenPackageHub={onOpenPackageHub}
           onOpenInvoicesHub={onOpenInvoicesHub}

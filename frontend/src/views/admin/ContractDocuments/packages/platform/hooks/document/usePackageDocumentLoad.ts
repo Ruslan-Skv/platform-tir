@@ -25,6 +25,7 @@ import {
 import type { InstallerMaster } from '@/shared/api/admin-crm';
 import { getInstallers } from '@/shared/api/admin-crm';
 import { listPackagePaymentInvoices } from '@/shared/api/admin-payment-invoices';
+import { listPackageSigningSessions } from '@/shared/api/contract-documents/admin-contract-document-signing';
 import { normalizeExecutorRequisiteProfile } from '@/views/admin/ContractDocuments/packages/platform/form/executorBankFields';
 
 import {
@@ -89,6 +90,8 @@ export type PackageDocumentLoadSetters = {
   setPackageKind: React.Dispatch<React.SetStateAction<ContractDocumentPackageKind>>;
   setWindowsWorkOrderMarkupPercent: React.Dispatch<React.SetStateAction<number>>;
   setPaymentInvoiceCount: React.Dispatch<React.SetStateAction<number>>;
+  /** Золотая тонировка кнопки «ЭП» в шапке: есть подписанные (SIGNED) сессии ЭП. */
+  setHasSignedSigningSessions: React.Dispatch<React.SetStateAction<boolean>>;
   setDraftTitle: React.Dispatch<React.SetStateAction<string>>;
   setPackageFlowStatus: React.Dispatch<React.SetStateAction<ContractDocumentPackageStatus>>;
   setLinkedCrmCustomerId: React.Dispatch<React.SetStateAction<string | null>>;
@@ -146,6 +149,7 @@ export function usePackageDocumentLoad({
     setPackageKind,
     setWindowsWorkOrderMarkupPercent,
     setPaymentInvoiceCount,
+    setHasSignedSigningSessions,
     setDraftTitle,
     setPackageFlowStatus,
     setLinkedCrmCustomerId,
@@ -198,6 +202,7 @@ export function usePackageDocumentLoad({
           installersRes,
           packageSettingsRes,
           paymentInvoicesRes,
+          signingSessionsRes,
         ] = await Promise.all([
           getContractDocumentExecutorProfiles(profilesKind).catch(() => ({
             items: [] as ExecutorRequisiteProfile[],
@@ -247,6 +252,8 @@ export function usePackageDocumentLoad({
             }));
           })(),
           listPackagePaymentInvoices(packageId).catch(() => []),
+          // Сессии ЭП — для золотой тонировки кнопки «ЭП» в шапке (как в списке договоров).
+          listPackageSigningSessions(packageId).catch(() => []),
         ]);
         setPackageKind(currentKind);
         if (isProductDirectionPackageKind(currentKind)) {
@@ -258,6 +265,9 @@ export function usePackageDocumentLoad({
           );
         }
         setPaymentInvoiceCount(paymentInvoicesRes.length);
+        setHasSignedSigningSessions(
+          signingSessionsRes.some((session) => session.status === 'SIGNED')
+        );
         setDraftTitle(row.title ?? '');
         setResponsibleManagerId(
           row.responsibleManagerId?.trim() || row.createdById?.trim() || null
@@ -499,6 +509,7 @@ export function usePackageDocumentLoad({
       setExcelMessage,
       setExecutorProfiles,
       setForm,
+      setHasSignedSigningSessions,
       setLinkedCrmCustomerId,
       setResponsibleManagerId,
       setLoading,

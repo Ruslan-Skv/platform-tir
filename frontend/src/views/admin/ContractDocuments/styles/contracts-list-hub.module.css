@@ -1791,3 +1791,34 @@
   border-color: #a87f18;
   color: #241a00;
 }
+
+/* Кнопка «ЭП» в шапке редактора договора: золотой фон, если есть подписанные
+   через ЭП документы (тот же признак, что epSignedGold выше в списках).
+   Тройной класс перебивает фон .secondaryBtn, цвет .estimatesPageRefreshIconBtn
+   (двойные классы) при любом порядке стилей в бандле — как у тонировки
+   «Заказ-наряды» в work-order-distribution.module.css. */
+.editorEpSignedGold.editorEpSignedGold.editorEpSignedGold {
+  background: #e7b93c;
+  border-color: #c29a2a;
+  color: #4a3a05;
+}
+
+.editorEpSignedGold.editorEpSignedGold.editorEpSignedGold:hover:not(:disabled) {
+  background: #dba92e;
+  border-color: #ad8f22;
+  color: #4a3a05;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .editorEpSignedGold.editorEpSignedGold.editorEpSignedGold {
+  background: #c9971d;
+  border-color: #8a6713;
+  color: #241a00;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .editorEpSignedGold.editorEpSignedGold.editorEpSignedGold:hover:not(:disabled) {
+  background: #d9a72e;
+  border-color: #a87f18;
+  color: #241a00;
+}

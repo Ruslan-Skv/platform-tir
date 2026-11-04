@@ -35,6 +35,7 @@ type PackageDocumentEditorHeaderActionsProps = Pick<
   | 'unsignedAddendumOrdinals'
   | 'paymentInvoiceCount'
   | 'unassignedInteractiveRowsCount'
+  | 'hasSignedSigningSessions'
   | 'form'
   | 'onOpenPackageHub'
   | 'onOpenInvoicesHub'
@@ -63,6 +64,7 @@ export function PackageDocumentEditorHeaderActions({
   unsignedAddendumOrdinals,
   paymentInvoiceCount,
   unassignedInteractiveRowsCount,
+  hasSignedSigningSessions,
   form,
   onOpenPackageHub,
   onOpenInvoicesHub,
@@ -204,12 +206,15 @@ export function PackageDocumentEditorHeaderActions({
         {!loading ? (
           <button
             type="button"
-            className={`${cdWorkspace.secondaryBtn} ${cdChrome.estimatesPageRefreshIconBtn}`}
+            className={`${cdWorkspace.secondaryBtn} ${cdChrome.estimatesPageRefreshIconBtn}${
+              hasSignedSigningSessions ? ` ${cdHub.editorEpSignedGold}` : ''
+            }`}
             onClick={onOpenRemoteSigning}
             title={
-              headerContractNumberLabel
+              (headerContractNumberLabel
                 ? `Отправить на подписание договор №${headerContractNumberLabel}`
-                : 'Отправить на подписание'
+                : 'Отправить на подписание') +
+              (hasSignedSigningSessions ? ' (есть подписанные через ЭП документы)' : '')
             }
             aria-label="Отправить на дистанционное подписание"
           >
