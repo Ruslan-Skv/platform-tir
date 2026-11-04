@@ -1,1 +1,4 @@
+# Текстовые файлы: в репозитории всегда LF, на диске LF на любой платформе
+* text=auto eol=lf
+
 backend/certs/*.pem text eol=lf
