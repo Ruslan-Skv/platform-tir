@@ -1,5 +1,7 @@
 'use client';
 
+import { useMemo } from 'react';
+
 import { ShareIcon } from '@/shared/ui/icons';
 import { VersionsHistoryIcon } from '@/shared/ui/icons/VersionsHistoryIcon';
 import { PackageHubIcon } from '@/views/admin/ContractDocuments/packages/platform/hub/hubModal/PackageHubIcon';
@@ -9,6 +11,11 @@ import { PACKAGE_INVOICES_MODAL_TITLE } from '@/views/admin/ContractDocuments/pa
 import { PackageQuestionnairesHubIcon } from '@/views/admin/ContractDocuments/packages/platform/hub/questionnaires/PackageQuestionnairesHubIcon';
 import { defaultPackageQuestionnaireHubTab } from '@/views/admin/ContractDocuments/packages/platform/hub/questionnaires/packageQuestionnaireHubTabs';
 import { PackageWorkOrdersHubIcon } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/PackageWorkOrdersHubIcon';
+import {
+  getPackageWorkOrderDistributionInfo,
+  packageWorkOrderDistributionClassName,
+  packageWorkOrderDistributionTitleSuffix,
+} from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/packageWorkOrderDistribution';
 import { defaultPackageWorkOrderHubTab } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/packageWorkOrderHubTabs';
 import type { PackageDocumentTabId } from '@/views/admin/ContractDocuments/packages/platform/tabs/packageDocumentTabs';
 
@@ -69,6 +76,10 @@ export function PackageDocumentEditorHeaderActions({
 }: PackageDocumentEditorHeaderActionsProps) {
   const printLabel = printActionLabel(activeTab);
 
+  /** Распределение позиций заказ-наряда мастерам — тот же расчёт, что в списках,
+   *  для тонировки кнопки «Заказ-наряды» (зелёный — всё, жёлтый — часть). */
+  const workOrderDistribution = useMemo(() => getPackageWorkOrderDistributionInfo(form), [form]);
+
   return (
     <div className={cdHub.headerActions}>
       <div className={cdHub.packageEditorDraftTitleRow}>
@@ -119,16 +130,23 @@ export function PackageDocumentEditorHeaderActions({
         {!loading ? (
           <button
             type="button"
-            className={`${cdWorkspace.secondaryBtn} ${cdChrome.estimatesPageRefreshIconBtn} ${cdDataTab.packageEditorHubPrimaryBtn}`}
+            className={[
+              cdWorkspace.secondaryBtn,
+              cdChrome.estimatesPageRefreshIconBtn,
+              cdDataTab.packageEditorHubPrimaryBtn,
+              packageWorkOrderDistributionClassName(workOrderDistribution.status),
+            ]
+              .filter(Boolean)
+              .join(' ')}
             onClick={() =>
               onOpenWorkOrdersHub(
                 defaultPackageWorkOrderHubTab(null, form.addendumSlotCount, packageKind)
               )
             }
             title={
-              headerContractNumberLabel
+              (headerContractNumberLabel
                 ? `Заказ-наряды договора №${headerContractNumberLabel}`
-                : 'Заказ-наряды'
+                : 'Заказ-наряды') + packageWorkOrderDistributionTitleSuffix(workOrderDistribution)
             }
             aria-label={
               headerContractNumberLabel

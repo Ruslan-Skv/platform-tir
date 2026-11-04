@@ -1,27 +1,50 @@
 /* Фон иконки «Заказ-наряд» в списках: зелёный — все позиции заказ-наряда
    распределены мастерам, жёлтый — распределена часть позиций.
-   Двойной класс перебивает фон .button из AdminTableIconButton
-   при любом порядке стилей (как epSignedGold). */
-.workOrderDistributedFull.workOrderDistributedFull {
-  background: var(--admin-success-strong, #16a34a);
-  border-color: var(--admin-success-deep, #15803d);
-  color: #fff;
+   Тройной класс перебивает фон .button из AdminTableIconButton и синий
+   акцент .packageEditorHubPrimaryBtn (двойные классы) в шапке редактора
+   договора при любом порядке стилей в бандле.
+   Фон и рамка полупрозрачные (50%), чтобы зелёный/жёлтый не выглядели
+   слишком ярко; при наведении прозрачность лишь немного усиливается (70%). */
+.workOrderDistributedFull.workOrderDistributedFull.workOrderDistributedFull {
+  background: color-mix(in srgb, var(--admin-success-strong, #16a34a) 50%, transparent);
+  border-color: color-mix(in srgb, var(--admin-success-deep, #15803d) 50%, transparent);
+  color: var(--admin-success-text-strong, #166534);
 }
 
-.workOrderDistributedFull.workOrderDistributedFull:hover:not(:disabled) {
-  background: var(--admin-success-deep, #15803d);
-  border-color: var(--admin-success-deep, #15803d);
-  color: #fff;
+.workOrderDistributedFull.workOrderDistributedFull.workOrderDistributedFull:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--admin-success-strong, #16a34a) 70%, transparent);
+  border-color: color-mix(in srgb, var(--admin-success-deep, #15803d) 70%, transparent);
+  color: var(--admin-success-text-strong, #166534);
 }
 
-.workOrderDistributedPartial.workOrderDistributedPartial {
-  background: var(--admin-warning, #f59e0b);
-  border-color: var(--admin-warning-mustard, #ca8a04);
+.workOrderDistributedPartial.workOrderDistributedPartial.workOrderDistributedPartial {
+  background: color-mix(in srgb, var(--admin-warning, #f59e0b) 50%, transparent);
+  border-color: color-mix(in srgb, var(--admin-warning-mustard, #ca8a04) 50%, transparent);
   color: #3a2b04;
 }
 
-.workOrderDistributedPartial.workOrderDistributedPartial:hover:not(:disabled) {
-  background: var(--admin-warning-mustard, #ca8a04);
-  border-color: var(--admin-warning-mustard, #ca8a04);
+.workOrderDistributedPartial.workOrderDistributedPartial.workOrderDistributedPartial:hover:not(
+    :disabled
+  ) {
+  background: color-mix(in srgb, var(--admin-warning, #f59e0b) 70%, transparent);
+  border-color: color-mix(in srgb, var(--admin-warning-mustard, #ca8a04) 70%, transparent);
   color: #3a2b04;
+}
+
+/* Тёмная тема: полупрозрачный цвет смешивается с тёмной поверхностью строки,
+   поэтому иконка делается светлой, чтобы не теряться на фоне. */
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .workOrderDistributedFull.workOrderDistributedFull.workOrderDistributedFull,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .workOrderDistributedFull.workOrderDistributedFull.workOrderDistributedFull:hover:not(:disabled) {
+  color: #fff;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .workOrderDistributedPartial.workOrderDistributedPartial.workOrderDistributedPartial,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .workOrderDistributedPartial.workOrderDistributedPartial.workOrderDistributedPartial:hover:not(
+    :disabled
+  ) {
+  color: #fde68a;
 }
