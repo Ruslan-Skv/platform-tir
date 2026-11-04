@@ -1,12 +1,13 @@
-import type {
-  WorkDayDayOffRow,
-  WorkDayExcuseKind,
-  WorkDayJournalRow,
-  WorkDayLeaveRow,
-  WorkDayLeaveType,
-  WorkDayRecord,
-  WorkDayRequestBadge,
-  WorkDayTruancyRow,
+import {
+  type WorkDayDayOffRow,
+  type WorkDayExcuseKind,
+  type WorkDayJournalRow,
+  type WorkDayLeaveRow,
+  type WorkDayLeaveType,
+  type WorkDayRecord,
+  type WorkDayRequestBadge,
+  type WorkDayTruancyRow,
+  isWorkDayPeriodRequestType,
 } from '@/shared/api/crm/admin-work-days';
 
 export function formatWorkDayTime(iso: string): string {
@@ -160,6 +161,8 @@ const REQUEST_TYPE_SHORT_LABELS: Record<WorkDayRequestBadge['type'], string> = {
   DAY_OFF: 'Выходной',
   EARLY_LEAVE: 'Уйти пораньше',
   LATE_ARRIVAL: 'Прийти попозже',
+  SICK_LEAVE: 'Больничный',
+  VACATION_LEAVE: 'Отпуск',
 };
 
 const REQUEST_STATUS_SHORT_LABELS: Record<WorkDayRequestBadge['status'], string> = {
@@ -169,12 +172,22 @@ const REQUEST_STATUS_SHORT_LABELS: Record<WorkDayRequestBadge['status'], string>
   CANCELLED: 'отменён',
 };
 
-/** «Выходной · согласован», «Уйти пораньше до 17:00 · ожидает» */
+/** «Выходной · согласован», «Уйти пораньше до 17:00 · ожидает», «Больничный 03.11–07.11 · ожидает» */
 export function workDayRequestBadgeLabel(req: WorkDayRequestBadge): string {
   const base = REQUEST_TYPE_SHORT_LABELS[req.type] ?? req.type;
   const timePart = req.proposedEndTime
     ? ` ${req.type === 'LATE_ARRIVAL' ? 'к' : 'до'} ${req.proposedEndTime}`
     : '';
+  const rangePart =
+    isWorkDayPeriodRequestType(req.type) &&
+    req.requestDateTo &&
+    req.requestDateTo !== req.requestDate
+      ? ` ${shortDateLabel(req.requestDate)}–${shortDateLabel(req.requestDateTo)}`
+      : '';
   const statusPart = REQUEST_STATUS_SHORT_LABELS[req.status] ?? req.status;
-  return `${base}${timePart} · ${statusPart}`;
+  return `${base}${timePart}${rangePart} · ${statusPart}`;
+}
+
+function shortDateLabel(iso: string): string {
+  return new Date(iso).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
 }

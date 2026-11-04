@@ -86,6 +86,8 @@ export interface WorkDayRequestBadge {
   type: WorkDayRequestType;
   status: WorkDayRequestStatus;
   requestDate: string;
+  /** Конец периода больничного (для остальных типов — null). */
+  requestDateTo: string | null;
   proposedEndTime: string | null;
   comment: string | null;
   createdAt: string;
@@ -721,7 +723,22 @@ export async function updateWorkDayUser(
   return res.json();
 }
 
-export type WorkDayRequestType = 'DAY_OFF' | 'EARLY_LEAVE' | 'LATE_ARRIVAL';
+export type WorkDayRequestType =
+  | 'DAY_OFF'
+  | 'EARLY_LEAVE'
+  | 'LATE_ARRIVAL'
+  | 'SICK_LEAVE'
+  | 'VACATION_LEAVE';
+
+/** Типы запросов за период дней (больничный/отпуск). */
+export type WorkDayPeriodRequestType = 'SICK_LEAVE' | 'VACATION_LEAVE';
+
+export function isWorkDayPeriodRequestType(
+  type: WorkDayRequestType | null | undefined
+): type is WorkDayPeriodRequestType {
+  return type === 'SICK_LEAVE' || type === 'VACATION_LEAVE';
+}
+
 export type WorkDayRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 
 export interface WorkDayRequest {
@@ -730,6 +747,8 @@ export interface WorkDayRequest {
   type: WorkDayRequestType;
   status: WorkDayRequestStatus;
   requestDate: string;
+  /** Конец периода больничного (для остальных типов — null). */
+  requestDateTo: string | null;
   proposedEndTime: string | null;
   comment: string | null;
   reviewedById: string | null;
@@ -755,6 +774,8 @@ export interface WorkDayRequest {
 export async function createMyWorkDayRequest(body: {
   type: WorkDayRequestType;
   requestDate: string;
+  /** Конец периода для запроса больничного/отпуска (необязательно — один день). */
+  requestDateTo?: string;
   proposedEndTime?: string;
   comment?: string;
 }): Promise<WorkDayRequest> {

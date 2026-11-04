@@ -18,6 +18,7 @@ import {
   WORK_DAY_TIMEZONE,
   getDayOfWeekInTimezone,
   getTodayDateInTimezone,
+  isWorkDayPeriodRequestType,
   resolveDaySchedule,
 } from '../utils/work-day.utils';
 import {
@@ -65,6 +66,7 @@ function toRequestBadge(row: WorkDayRequest): WorkDayRequestBadge {
     type: row.type,
     status: row.status,
     requestDate: dateKey(row.requestDate),
+    requestDateTo: row.requestDateTo ? dateKey(row.requestDateTo) : null,
     proposedEndTime: row.proposedEndTime,
     comment: row.comment,
     createdAt: row.createdAt,
@@ -250,16 +252,25 @@ export class WorkDayJournalService {
 
     const requestWhere: {
       status: { in: WorkDayRequestStatus[] };
-      requestDate?: { gte?: Date; lte?: Date };
+      AND?: object[];
       userId?: string;
       user?: { officeId?: string };
     } = {
       status: { in: [WorkDayRequestStatus.APPROVED, WorkDayRequestStatus.PENDING] },
     };
     if (bounds.from || bounds.to) {
-      requestWhere.requestDate = {};
-      if (bounds.from) requestWhere.requestDate.gte = bounds.from;
-      if (bounds.to) requestWhere.requestDate.lte = bounds.to;
+      // Больничный и отпуск запрашиваются за период — берём запросы, пересекающие окно журнала.
+      const and: object[] = [];
+      if (bounds.to) and.push({ requestDate: { lte: bounds.to } });
+      if (bounds.from) {
+        and.push({
+          OR: [
+            { requestDateTo: { gte: bounds.from } },
+            { requestDateTo: null, requestDate: { gte: bounds.from } },
+          ],
+        });
+      }
+      requestWhere.AND = and;
     }
     if (params.userId) requestWhere.userId = params.userId;
     if (params.officeId) requestWhere.user = { officeId: params.officeId };
@@ -285,10 +296,12 @@ export class WorkDayJournalService {
     const requestsByKey = new Map<string, WorkDayRequestBadge[]>();
     for (const row of requestRows) {
       const badge = toRequestBadge(row);
-      const key = `${row.userId}|${badge.requestDate}`;
-      const list = requestsByKey.get(key) ?? [];
-      list.push(badge);
-      requestsByKey.set(key, list);
+      // Больничный за период помечаем бейджем каждый день периода внутри окна журнала.
+      for (const key of this.requestBadgeKeys(row, bounds)) {
+        const list = requestsByKey.get(key) ?? [];
+        list.push(badge);
+        requestsByKey.set(key, list);
+      }
     }
 
     // Прощённые нарушения: прикрепляются к строкам журнала (записям и прогулам),
@@ -331,6 +344,26 @@ export class WorkDayJournalService {
     });
 
     return enrichedRows;
+  }
+
+  /**
+   * Ключи строк журнала для бейджа запроса: дата запроса, а для больничного/отпуска
+   * за период — каждый день периода, попадающий в окно журнала.
+   */
+  private requestBadgeKeys(
+    row: Pick<WorkDayRequest, 'userId' | 'type' | 'requestDate' | 'requestDateTo'>,
+    bounds: { from: Date | null; to: Date | null },
+  ): string[] {
+    if (!isWorkDayPeriodRequestType(row.type) || !row.requestDateTo) {
+      return [`${row.userId}|${dateKey(row.requestDate)}`];
+    }
+    const from = bounds.from && bounds.from > row.requestDate ? bounds.from : row.requestDate;
+    const to = bounds.to && bounds.to < row.requestDateTo ? bounds.to : row.requestDateTo;
+    const keys: string[] = [];
+    for (let d = new Date(from); d <= to; d.setUTCDate(d.getUTCDate() + 1)) {
+      keys.push(`${row.userId}|${dateKey(d)}`);
+    }
+    return keys;
   }
 
   /**

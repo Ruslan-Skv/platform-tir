@@ -54,13 +54,17 @@ export type AdminBellWorkDayNotification = {
     | 'reported_close'
     | 'day_off_request'
     | 'early_leave_request'
-    | 'late_arrival_request';
+    | 'late_arrival_request'
+    | 'sick_leave_request'
+    | 'vacation_leave_request';
   kindLabel: string;
   workDayId: string | null;
   requestId?: string | null;
   userId: string;
   userName: string;
   workDate: string;
+  /** Конец периода больничного/отпуска (для остальных событий — null). */
+  requestDateTo?: string | null;
   lateMinutes: number;
   earlyLeaveMinutes: number;
   occurredAt: string;
@@ -70,9 +74,11 @@ export type AdminBellWorkDayRequestReviewNotification = {
   id: string;
   requestId: string;
   status: 'approved' | 'rejected';
-  requestType: 'DAY_OFF' | 'EARLY_LEAVE' | 'LATE_ARRIVAL';
+  requestType: 'DAY_OFF' | 'EARLY_LEAVE' | 'LATE_ARRIVAL' | 'SICK_LEAVE' | 'VACATION_LEAVE';
   requestTypeLabel: string;
   workDate: string;
+  /** Конец периода больничного/отпуска (для остальных типов — null). */
+  requestDateTo: string | null;
   proposedEndTime: string | null;
   reviewComment: string | null;
   reviewedAt: string;
@@ -339,6 +345,10 @@ export function workDayToBellNotificationItem(
   item: AdminBellWorkDayNotification
 ): AdminBellNotificationItem {
   const workDateLabel = new Date(item.workDate).toLocaleDateString('ru-RU');
+  const dateLabel =
+    item.requestDateTo && item.requestDateTo !== item.workDate
+      ? `${workDateLabel}–${new Date(item.requestDateTo).toLocaleDateString('ru-RU')}`
+      : workDateLabel;
   let suffix = '';
   if (item.kind === 'late' && item.lateMinutes > 0) {
     suffix = ` (+${item.lateMinutes} мин)`;
@@ -348,7 +358,9 @@ export function workDayToBellNotificationItem(
   const isRequest =
     item.kind === 'day_off_request' ||
     item.kind === 'early_leave_request' ||
-    item.kind === 'late_arrival_request';
+    item.kind === 'late_arrival_request' ||
+    item.kind === 'sick_leave_request' ||
+    item.kind === 'vacation_leave_request';
   const link = isRequest
     ? item.requestId
       ? `/admin/crm/work-day-requests?id=${item.requestId}`
@@ -359,7 +371,7 @@ export function workDayToBellNotificationItem(
     id: item.id,
     date: item.occurredAt,
     link,
-    text: `${item.kindLabel}${suffix}: ${item.userName} — ${workDateLabel}`,
+    text: `${item.kindLabel}${suffix}: ${item.userName} — ${dateLabel}`,
   };
 }
 
@@ -367,8 +379,13 @@ export function workDayRequestReviewToBellNotificationItem(
   item: AdminBellWorkDayRequestReviewNotification
 ): AdminBellNotificationItem {
   const workDateLabel = new Date(item.workDate).toLocaleDateString('ru-RU');
+  const periodLabel =
+    item.requestDateTo && item.requestDateTo !== item.workDate
+      ? `${workDateLabel}–${new Date(item.requestDateTo).toLocaleDateString('ru-RU')}`
+      : workDateLabel;
   const timePart =
-    item.proposedEndTime != null && item.requestType !== 'DAY_OFF'
+    item.proposedEndTime != null &&
+    (item.requestType === 'EARLY_LEAVE' || item.requestType === 'LATE_ARRIVAL')
       ? ` ${item.requestType === 'LATE_ARRIVAL' ? 'к' : 'до'} ${item.proposedEndTime}`
       : '';
   const decision = item.status === 'approved' ? 'согласован' : 'отклонён';
@@ -378,7 +395,7 @@ export function workDayRequestReviewToBellNotificationItem(
     id: item.id,
     date: item.reviewedAt,
     link: '/admin/crm/my-work-day',
-    text: `Запрос «${item.requestTypeLabel}»${timePart} ${decision} — ${workDateLabel}${commentSuffix}`,
+    text: `Запрос «${item.requestTypeLabel}»${timePart} ${decision} — ${periodLabel}${commentSuffix}`,
   };
 }
 

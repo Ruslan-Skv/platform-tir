@@ -12,7 +12,9 @@ export type WorkDayNotifyKind =
   | 'reported_close'
   | 'day_off_request'
   | 'early_leave_request'
-  | 'late_arrival_request';
+  | 'late_arrival_request'
+  | 'sick_leave_request'
+  | 'vacation_leave_request';
 
 const KIND_LABELS: Record<WorkDayNotifyKind, string> = {
   late: 'Опоздание',
@@ -22,6 +24,8 @@ const KIND_LABELS: Record<WorkDayNotifyKind, string> = {
   day_off_request: 'Запрос выходного',
   early_leave_request: 'Запрос уйти пораньше',
   late_arrival_request: 'Запрос прийти попозже',
+  sick_leave_request: 'Запрос больничного',
+  vacation_leave_request: 'Запрос отпуска',
 };
 
 const NOTIFY_FIELD: Partial<
@@ -79,9 +83,10 @@ export class WorkDayNotifyService {
   onRequestReviewed(request: {
     id: string;
     userId: string;
-    type: 'DAY_OFF' | 'EARLY_LEAVE' | 'LATE_ARRIVAL';
+    type: 'DAY_OFF' | 'EARLY_LEAVE' | 'LATE_ARRIVAL' | 'SICK_LEAVE' | 'VACATION_LEAVE';
     status: WorkDayRequestStatus;
     requestDate: Date;
+    requestDateTo: Date | null;
     proposedEndTime: string | null;
   }): void {
     if (
@@ -96,17 +101,26 @@ export class WorkDayNotifyService {
         ? 'Запрос выходного'
         : request.type === 'EARLY_LEAVE'
           ? 'Запрос уйти пораньше'
-          : 'Запрос прийти попозже';
+          : request.type === 'SICK_LEAVE'
+            ? 'Запрос больничного'
+            : request.type === 'VACATION_LEAVE'
+              ? 'Запрос отпуска'
+              : 'Запрос прийти попозже';
     const workDateLabel = request.requestDate.toLocaleDateString('ru-RU');
+    const periodLabel =
+      request.requestDateTo && request.requestDateTo > request.requestDate
+        ? ` — ${workDateLabel}–${request.requestDateTo.toLocaleDateString('ru-RU')}`
+        : ` — ${workDateLabel}`;
     const timePart =
-      request.proposedEndTime != null && request.type !== 'DAY_OFF'
+      request.proposedEndTime != null &&
+      (request.type === 'EARLY_LEAVE' || request.type === 'LATE_ARRIVAL')
         ? ` ${request.type === 'LATE_ARRIVAL' ? 'к' : 'до'} ${request.proposedEndTime}`
         : '';
 
     void this.adminBellPush
       .notifyUsers([request.userId], 'work_day_request_review', {
         title: approved ? 'Запрос согласован' : 'Запрос отклонён',
-        body: `${kindLabel}${timePart} — ${workDateLabel}`,
+        body: `${kindLabel}${timePart}${periodLabel}`,
         url: '/admin/crm/my-work-day',
         tag: `work-day-request-review-${request.id}`,
       })
@@ -127,27 +141,40 @@ export class WorkDayNotifyService {
         ? 'day_off_request'
         : request.type === 'EARLY_LEAVE'
           ? 'early_leave_request'
-          : 'late_arrival_request';
+          : request.type === 'SICK_LEAVE'
+            ? 'sick_leave_request'
+            : request.type === 'VACATION_LEAVE'
+              ? 'vacation_leave_request'
+              : 'late_arrival_request';
     const employeeName =
       [request.user.firstName, request.user.lastName].filter(Boolean).join(' ').trim() ||
       request.user.email;
     const workDateLabel = request.requestDate.toLocaleDateString('ru-RU');
     const kindLabel = KIND_LABELS[kind];
+    // Для больничного/отпуска на несколько дней показываем период «дата — дата».
+    const rangeSuffix =
+      request.requestDateTo && request.requestDateTo > request.requestDate
+        ? ` — ${request.requestDateTo.toLocaleDateString('ru-RU')}`
+        : '';
     const detailLine =
       request.type === 'EARLY_LEAVE' && request.proposedEndTime
         ? `Желаемое время ухода: ${request.proposedEndTime}`
         : request.type === 'LATE_ARRIVAL' && request.proposedEndTime
           ? `Желаемое время прихода: ${request.proposedEndTime}`
-          : request.comment
-            ? `Комментарий: ${request.comment}`
-            : null;
+          : request.type === 'SICK_LEAVE'
+            ? `Период больничного: ${workDateLabel}${rangeSuffix}`
+            : request.type === 'VACATION_LEAVE'
+              ? `Период отпуска: ${workDateLabel}${rangeSuffix}`
+              : request.comment
+                ? `Комментарий: ${request.comment}`
+                : null;
 
-    const subject = `${kindLabel}: ${employeeName} (${workDateLabel})`;
+    const subject = `${kindLabel}: ${employeeName} (${workDateLabel}${rangeSuffix})`;
     const text = [
       'Учёт рабочего времени',
       '',
       `Событие: ${kindLabel}`,
-      `Дата: ${workDateLabel}`,
+      `Дата: ${workDateLabel}${rangeSuffix}`,
       `Сотрудник: ${employeeName}`,
       `Email: ${request.user.email}`,
       request.user.role ? `Роль: ${request.user.role}` : null,
@@ -166,6 +193,9 @@ export class WorkDayNotifyService {
     });
 
     const bodyParts = [employeeName, workDateLabel];
+    if (rangeSuffix) {
+      bodyParts.push(request.requestDateTo!.toLocaleDateString('ru-RU'));
+    }
     if (
       (request.type === 'EARLY_LEAVE' || request.type === 'LATE_ARRIVAL') &&
       request.proposedEndTime

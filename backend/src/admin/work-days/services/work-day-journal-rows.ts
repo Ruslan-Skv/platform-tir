@@ -12,12 +12,14 @@ import {
   type WorkDayRequest,
 } from '@prisma/client';
 
-/** Короткая карточка запроса (выходной / пораньше / попозже) для строк журнала. */
+/** Короткая карточка запроса (выходной / пораньше / попозже / больничный) для строк журнала. */
 export type WorkDayRequestBadge = {
   id: string;
   type: WorkDayRequestType;
   status: WorkDayRequestStatus;
   requestDate: string;
+  /** Конец периода больничного (для остальных типов — null). */
+  requestDateTo: string | null;
   proposedEndTime: string | null;
   comment: string | null;
   createdAt: Date;

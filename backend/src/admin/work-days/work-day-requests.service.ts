@@ -13,7 +13,7 @@ import {
 import { PrismaService } from '../../database/prisma.service';
 import { CreateWorkDayRequestDto, ReviewWorkDayRequestDto } from './dto/work-day.dto';
 import { WorkDayNotifyService } from './services/work-day-notify.service';
-import { getTodayDateInTimezone } from './utils/work-day.utils';
+import { getTodayDateInTimezone, isWorkDayPeriodRequestType } from './utils/work-day.utils';
 
 const REQUEST_INCLUDE = {
   user: {
@@ -79,24 +79,57 @@ export class WorkDayRequestsService {
       throw new BadRequestException('Укажите желаемое время прихода.');
     }
 
-    const duplicate = await this.prisma.workDayRequest.findFirst({
-      where: {
-        userId,
-        type: dto.type as WorkDayRequestType,
-        status: WorkDayRequestStatus.PENDING,
-        requestDate,
-      },
-    });
-    if (duplicate) {
-      throw new BadRequestException('У вас уже есть ожидающий запрос этого типа на эту дату.');
+    const type = dto.type as WorkDayRequestType;
+    // Больничный и отпуск запрашиваются за период: requestDate … requestDateTo (или один день).
+    const isPeriod = isWorkDayPeriodRequestType(type);
+    const requestDateTo = isPeriod ? this.parseLeaveRange(requestDate, dto.requestDateTo) : null;
+
+    if (isPeriod) {
+      const overlappingLeave = await this.findOverlappingLeave(userId, requestDate, requestDateTo!);
+      if (overlappingLeave) {
+        const kind = overlappingLeave.type === 'VACATION' ? 'отпуском' : 'больничным';
+        throw new BadRequestException(
+          `Даты пересекаются с уже отмеченным ${kind} с ${overlappingLeave.dateFrom.toISOString().slice(0, 10)} по ${overlappingLeave.dateTo.toISOString().slice(0, 10)}.`,
+        );
+      }
+      const overlappingPending = await this.prisma.workDayRequest.findFirst({
+        where: {
+          userId,
+          type: { in: [WorkDayRequestType.SICK_LEAVE, WorkDayRequestType.VACATION_LEAVE] },
+          status: WorkDayRequestStatus.PENDING,
+          requestDate: { lte: requestDateTo! },
+          requestDateTo: { gte: requestDate },
+        },
+        select: { id: true },
+      });
+      if (overlappingPending) {
+        throw new BadRequestException(
+          'У вас уже есть ожидающий запрос больничного или отпуска на пересекающиеся даты.',
+        );
+      }
+    } else {
+      const duplicate = await this.prisma.workDayRequest.findFirst({
+        where: {
+          userId,
+          type,
+          status: WorkDayRequestStatus.PENDING,
+          requestDate,
+        },
+      });
+      if (duplicate) {
+        throw new BadRequestException('У вас уже есть ожидающий запрос этого типа на эту дату.');
+      }
     }
 
     const needsTime = dto.type === 'EARLY_LEAVE' || dto.type === 'LATE_ARRIVAL';
     const created = await this.prisma.workDayRequest.create({
       data: {
         userId,
-        type: dto.type as WorkDayRequestType,
+        type,
         requestDate,
+        // Для больничных и отпусков конец периода хранится всегда (для одного дня — равен началу),
+        // чтобы поиск пересечений по диапазону работал и без отдельной проверки NULL.
+        requestDateTo,
         proposedEndTime: needsTime ? dto.proposedEndTime : null,
         comment: dto.comment?.trim() || null,
       },
@@ -113,13 +146,25 @@ export class WorkDayRequestsService {
   ) {
     const where: {
       userId: string;
-      requestDate?: { gte?: Date; lte?: Date };
+      AND?: object[];
       status?: WorkDayRequestStatus;
     } = { userId };
     if (params.dateFrom || params.dateTo) {
-      where.requestDate = {};
-      if (params.dateFrom) where.requestDate.gte = this.parseDateOnly(params.dateFrom);
-      if (params.dateTo) where.requestDate.lte = this.parseDateOnly(params.dateTo);
+      // Запрос попадает в выборку, если его дата (для больничного — период) пересекает окно фильтра.
+      const and: object[] = [];
+      if (params.dateTo) {
+        and.push({ requestDate: { lte: this.parseDateOnly(params.dateTo) } });
+      }
+      if (params.dateFrom) {
+        const from = this.parseDateOnly(params.dateFrom);
+        and.push({
+          OR: [
+            { requestDateTo: { gte: from } },
+            { requestDateTo: null, requestDate: { gte: from } },
+          ],
+        });
+      }
+      where.AND = and;
     }
     if (params.status && ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'].includes(params.status)) {
       where.status = params.status as WorkDayRequestStatus;
@@ -180,6 +225,9 @@ export class WorkDayRequestsService {
     if (row.status !== WorkDayRequestStatus.PENDING) {
       throw new BadRequestException('Запрос уже обработан');
     }
+    if (status === WorkDayRequestStatus.APPROVED && isWorkDayPeriodRequestType(row.type)) {
+      return this.approveLeaveRequest(row, reviewerId, dto);
+    }
     const updated = await this.prisma.workDayRequest.update({
       where: { id: requestId },
       data: {
@@ -190,6 +238,65 @@ export class WorkDayRequestsService {
       },
       include: REQUEST_INCLUDE,
     });
+    this.workDayNotify.onRequestReviewed(updated);
+    return updated;
+  }
+
+  /**
+   * Подтверждение больничного или отпуска: вместе со сменой статуса создаётся отметка
+   * workDayLeave на весь запрошенный период — дни перестают считаться прогулами
+   * так же, как при отметке суперадмином вручную.
+   */
+  private async approveLeaveRequest(
+    row: {
+      id: string;
+      userId: string;
+      type: WorkDayRequestType;
+      requestDate: Date;
+      requestDateTo: Date | null;
+      comment: string | null;
+    },
+    reviewerId: string,
+    dto: ReviewWorkDayRequestDto,
+  ) {
+    const dateFrom = row.requestDate;
+    const dateTo = row.requestDateTo ?? row.requestDate;
+    const leaveType = row.type === WorkDayRequestType.VACATION_LEAVE ? 'VACATION' : 'SICK';
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const overlapping = await tx.workDayLeave.findFirst({
+        where: { userId: row.userId, dateFrom: { lte: dateTo }, dateTo: { gte: dateFrom } },
+      });
+      if (overlapping) {
+        const kind = overlapping.type === 'VACATION' ? 'отпуск' : 'больничный';
+        throw new BadRequestException(
+          `Согласовать нельзя: у сотрудника уже есть ${kind} с ${overlapping.dateFrom.toISOString().slice(0, 10)} по ${overlapping.dateTo.toISOString().slice(0, 10)}, который пересекается с запрошенными датами.`,
+        );
+      }
+
+      await tx.workDayLeave.create({
+        data: {
+          userId: row.userId,
+          type: leaveType,
+          dateFrom,
+          dateTo,
+          comment: row.comment,
+          createdById: reviewerId,
+        },
+      });
+
+      return tx.workDayRequest.update({
+        where: { id: row.id },
+        data: {
+          status: WorkDayRequestStatus.APPROVED,
+          reviewedById: reviewerId,
+          reviewedAt: new Date(),
+          reviewComment: dto.reviewComment?.trim() || null,
+        },
+        include: REQUEST_INCLUDE,
+      });
+    });
+
     this.workDayNotify.onRequestReviewed(updated);
     return updated;
   }
@@ -210,6 +317,23 @@ export class WorkDayRequestsService {
       throw new BadRequestException('Некорректная дата');
     }
     return new Date(`${value}T00:00:00.000Z`);
+  }
+
+  /** Конец периода больничного/отпуска: не раньше начала; без даты окончания — один день. */
+  private parseLeaveRange(dateFrom: Date, dateTo?: string): Date {
+    if (!dateTo) return dateFrom;
+    const parsed = this.parseDateOnly(dateTo);
+    if (parsed < dateFrom) {
+      throw new BadRequestException('Дата окончания не может быть раньше даты начала.');
+    }
+    return parsed;
+  }
+
+  private findOverlappingLeave(userId: string, dateFrom: Date, dateTo: Date) {
+    return this.prisma.workDayLeave.findFirst({
+      where: { userId, dateFrom: { lte: dateTo }, dateTo: { gte: dateFrom } },
+      orderBy: { dateFrom: 'asc' },
+    });
   }
 
   mapRequest(
@@ -235,6 +359,11 @@ export class WorkDayRequestsService {
         row.requestDate instanceof Date
           ? row.requestDate.toISOString().slice(0, 10)
           : String(row.requestDate).slice(0, 10),
+      requestDateTo: row.requestDateTo
+        ? row.requestDateTo instanceof Date
+          ? row.requestDateTo.toISOString().slice(0, 10)
+          : String(row.requestDateTo).slice(0, 10)
+        : null,
     };
   }
 }

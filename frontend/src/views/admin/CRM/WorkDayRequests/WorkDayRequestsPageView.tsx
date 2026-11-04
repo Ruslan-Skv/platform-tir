@@ -1,6 +1,10 @@
 'use client';
 
-import type { WorkDayRequestStatus, WorkDayRequestType } from '@/shared/api/crm/admin-work-days';
+import {
+  type WorkDayRequestStatus,
+  type WorkDayRequestType,
+  isWorkDayPeriodRequestType,
+} from '@/shared/api/crm/admin-work-days';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
@@ -18,6 +22,8 @@ const TYPE_LABELS: Record<WorkDayRequestType, string> = {
   DAY_OFF: 'Выходной',
   EARLY_LEAVE: 'Уйти пораньше',
   LATE_ARRIVAL: 'Прийти попозже',
+  SICK_LEAVE: 'Больничный',
+  VACATION_LEAVE: 'Отпуск',
 };
 
 const STATUS_FILTERS: { value: WorkDayRequestStatus | 'ALL'; label: string }[] = [
@@ -103,7 +109,14 @@ export function WorkDayRequestsPageView({ model }: WorkDayRequestsPageViewProps)
             >
               <div className={styles.cardTop}>
                 <h2 className={styles.cardTitle}>{TYPE_LABELS[row.type]}</h2>
-                <span className={styles.cardMeta}>{formatDate(row.requestDate)}</span>
+                <span className={styles.cardMeta}>
+                  {formatDate(row.requestDate)}
+                  {isWorkDayPeriodRequestType(row.type) &&
+                  row.requestDateTo &&
+                  row.requestDateTo !== row.requestDate
+                    ? ` – ${formatDate(row.requestDateTo)}`
+                    : ''}
+                </span>
                 {row.proposedEndTime ? (
                   <span className={styles.cardMeta}>
                     {row.type === 'LATE_ARRIVAL' ? 'к' : 'до'} {row.proposedEndTime}

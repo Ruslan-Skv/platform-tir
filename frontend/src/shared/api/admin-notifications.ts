@@ -534,13 +534,17 @@ export type AdminBellWorkDayNotification = {
     | 'reported_close'
     | 'day_off_request'
     | 'early_leave_request'
-    | 'late_arrival_request';
+    | 'late_arrival_request'
+    | 'sick_leave_request'
+    | 'vacation_leave_request';
   kindLabel: string;
   workDayId: string | null;
   requestId?: string | null;
   userId: string;
   userName: string;
   workDate: string;
+  /** Конец периода больничного/отпуска (для остальных событий — null). */
+  requestDateTo?: string | null;
   lateMinutes: number;
   earlyLeaveMinutes: number;
   occurredAt: string;
@@ -562,9 +566,11 @@ export type AdminBellWorkDayRequestReviewNotification = {
   id: string;
   requestId: string;
   status: 'approved' | 'rejected';
-  requestType: 'DAY_OFF' | 'EARLY_LEAVE' | 'LATE_ARRIVAL';
+  requestType: 'DAY_OFF' | 'EARLY_LEAVE' | 'LATE_ARRIVAL' | 'SICK_LEAVE' | 'VACATION_LEAVE';
   requestTypeLabel: string;
   workDate: string;
+  /** Конец периода больничного/отпуска (для остальных типов — null). */
+  requestDateTo: string | null;
   proposedEndTime: string | null;
   reviewComment: string | null;
   reviewedAt: string;

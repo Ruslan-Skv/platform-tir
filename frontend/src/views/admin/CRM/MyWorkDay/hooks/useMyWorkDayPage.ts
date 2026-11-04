@@ -67,6 +67,7 @@ export function useMyWorkDayPage() {
     async (payload: {
       type: WorkDayRequestType;
       requestDate: string;
+      requestDateTo?: string;
       proposedEndTime?: string;
       comment?: string;
     }) => {

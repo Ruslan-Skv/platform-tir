@@ -5243,6 +5243,8 @@ enum WorkDayRequestType {
   DAY_OFF
   EARLY_LEAVE
   LATE_ARRIVAL
+  SICK_LEAVE
+  VACATION_LEAVE
 }
 
 enum WorkDayRequestStatus {
@@ -5258,6 +5260,7 @@ model WorkDayRequest {
   type            WorkDayRequestType
   status          WorkDayRequestStatus @default(PENDING)
   requestDate     DateTime             @db.Date
+  requestDateTo   DateTime?            @db.Date // конец периода для SICK_LEAVE (null — один день)
   proposedEndTime String? // HH:mm — уход (EARLY_LEAVE) или приход (LATE_ARRIVAL)
   comment         String?              @db.Text
   reviewedById    String?

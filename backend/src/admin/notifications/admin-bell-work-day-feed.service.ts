@@ -14,7 +14,9 @@ export type WorkDayBellKind =
   | 'reported_close'
   | 'day_off_request'
   | 'early_leave_request'
-  | 'late_arrival_request';
+  | 'late_arrival_request'
+  | 'sick_leave_request'
+  | 'vacation_leave_request';
 
 export type AdminBellWorkDayNotification = {
   id: string;
@@ -25,6 +27,8 @@ export type AdminBellWorkDayNotification = {
   userId: string;
   userName: string;
   workDate: string;
+  /** Конец периода больничного/отпуска (для остальных событий — null). */
+  requestDateTo: string | null;
   lateMinutes: number;
   earlyLeaveMinutes: number;
   occurredAt: string;
@@ -38,6 +42,8 @@ export type AdminBellWorkDayRequestReviewNotification = {
   requestType: WorkDayRequestType;
   requestTypeLabel: string;
   workDate: string;
+  /** Конец периода больничного (для остальных типов — null). */
+  requestDateTo: string | null;
   proposedEndTime: string | null;
   reviewComment: string | null;
   reviewedAt: string;
@@ -51,12 +57,24 @@ const KIND_LABELS: Record<WorkDayBellKind, string> = {
   day_off_request: 'Запрос выходного',
   early_leave_request: 'Запрос уйти пораньше',
   late_arrival_request: 'Запрос прийти попозже',
+  sick_leave_request: 'Запрос больничного',
+  vacation_leave_request: 'Запрос отпуска',
 };
 
 const REQUEST_TYPE_LABELS: Record<WorkDayRequestType, string> = {
   DAY_OFF: 'Выходной',
   EARLY_LEAVE: 'Уйти пораньше',
   LATE_ARRIVAL: 'Прийти попозже',
+  SICK_LEAVE: 'Больничный',
+  VACATION_LEAVE: 'Отпуск',
+};
+
+const REQUEST_KIND_BY_TYPE: Record<WorkDayRequestType, WorkDayBellKind> = {
+  DAY_OFF: 'day_off_request',
+  EARLY_LEAVE: 'early_leave_request',
+  LATE_ARRIVAL: 'late_arrival_request',
+  SICK_LEAVE: 'sick_leave_request',
+  VACATION_LEAVE: 'vacation_leave_request',
 };
 
 @Injectable()
@@ -164,12 +182,7 @@ export class AdminBellWorkDayFeedService {
       const userName =
         [req.user.firstName, req.user.lastName].filter(Boolean).join(' ').trim() || req.user.email;
       const workDate = req.requestDate.toISOString().slice(0, 10);
-      const kind: WorkDayBellKind =
-        req.type === 'DAY_OFF'
-          ? 'day_off_request'
-          : req.type === 'EARLY_LEAVE'
-            ? 'early_leave_request'
-            : 'late_arrival_request';
+      const kind = REQUEST_KIND_BY_TYPE[req.type];
       items.push({
         id: `${kind}:${req.id}`,
         kind,
@@ -179,6 +192,7 @@ export class AdminBellWorkDayFeedService {
         userId: req.userId,
         userName,
         workDate,
+        requestDateTo: req.requestDateTo ? req.requestDateTo.toISOString().slice(0, 10) : null,
         lateMinutes: 0,
         earlyLeaveMinutes: 0,
         occurredAt: req.createdAt.toISOString(),
@@ -218,6 +232,7 @@ export class AdminBellWorkDayFeedService {
       requestType: req.type,
       requestTypeLabel: REQUEST_TYPE_LABELS[req.type],
       workDate: req.requestDate.toISOString().slice(0, 10),
+      requestDateTo: req.requestDateTo ? req.requestDateTo.toISOString().slice(0, 10) : null,
       proposedEndTime: req.proposedEndTime,
       reviewComment: req.reviewComment,
       reviewedAt: (req.reviewedAt ?? req.updatedAt).toISOString(),
@@ -242,6 +257,7 @@ export class AdminBellWorkDayFeedService {
       userId,
       userName,
       workDate,
+      requestDateTo: null,
       lateMinutes: row.lateMinutes,
       earlyLeaveMinutes: row.earlyLeaveMinutes,
       occurredAt: occurredAt.toISOString(),

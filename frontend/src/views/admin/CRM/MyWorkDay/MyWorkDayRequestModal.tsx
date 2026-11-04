@@ -2,15 +2,20 @@
 
 import { type FormEvent, useEffect, useState } from 'react';
 
-import type { WorkDayRequestType } from '@/shared/api/crm/admin-work-days';
+import {
+  type WorkDayRequestType,
+  isWorkDayPeriodRequestType,
+} from '@/shared/api/crm/admin-work-days';
 import { Modal } from '@/shared/ui/Modal';
 import crmFormStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
 import modalStyles from '@/views/admin/Catalog/Components/shared/ComponentCatalogModal.module.css';
 
 const REQUEST_TYPE_LABELS: Record<WorkDayRequestType, string> = {
-  DAY_OFF: 'Запросить выходной',
+  DAY_OFF: 'Взять выходной',
   EARLY_LEAVE: 'Уйти пораньше',
   LATE_ARRIVAL: 'Прийти попозже',
+  SICK_LEAVE: 'Отметить больничный',
+  VACATION_LEAVE: 'Отметить отпуск',
 };
 
 const REQUEST_HINTS: Record<WorkDayRequestType, string> = {
@@ -19,6 +24,10 @@ const REQUEST_HINTS: Record<WorkDayRequestType, string> = {
   EARLY_LEAVE:
     'После подтверждения можно завершить рабочий день раньше окончания смены без штрафа за ранний уход.',
   LATE_ARRIVAL: 'После подтверждения можно начать день позже начала смены без штрафа за опоздание.',
+  SICK_LEAVE:
+    'Выбранные дни будут отмечены больничным после подтверждения руководителем и не будут считаться прогулами. Если нужен один день, укажите только дату начала.',
+  VACATION_LEAVE:
+    'Выбранные дни будут отмечены отпуском после подтверждения руководителем и не будут считаться прогулами. Если нужен один день, укажите только дату начала.',
 };
 
 const DEFAULT_TIME: Record<'EARLY_LEAVE' | 'LATE_ARRIVAL', string> = {
@@ -41,6 +50,7 @@ type MyWorkDayRequestModalProps = {
   onSubmit: (payload: {
     type: WorkDayRequestType;
     requestDate: string;
+    requestDateTo?: string;
     proposedEndTime?: string;
     comment?: string;
   }) => Promise<void>;
@@ -55,6 +65,7 @@ export function MyWorkDayRequestModal({
   onSubmit,
 }: MyWorkDayRequestModalProps) {
   const [formDate, setFormDate] = useState(todayIso);
+  const [formDateTo, setFormDateTo] = useState(todayIso);
   const [formTime, setFormTime] = useState('17:00');
   const [formComment, setFormComment] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +73,7 @@ export function MyWorkDayRequestModal({
   useEffect(() => {
     if (!open) return;
     setFormDate(todayIso);
+    setFormDateTo(todayIso);
     setFormTime(needsProposedTime(type) ? DEFAULT_TIME[type] : '17:00');
     setFormComment('');
     setError(null);
@@ -85,12 +97,20 @@ export function MyWorkDayRequestModal({
       );
       return;
     }
+    if (isWorkDayPeriodRequestType(type) && formDateTo && formDateTo < formDate) {
+      setError('Дата окончания не может быть раньше даты начала');
+      return;
+    }
 
     setError(null);
     try {
       await onSubmit({
         type,
         requestDate: formDate,
+        requestDateTo:
+          isWorkDayPeriodRequestType(type) && formDateTo && formDateTo !== formDate
+            ? formDateTo
+            : undefined,
         proposedEndTime: needsProposedTime(type) ? formTime : undefined,
         comment: formComment.trim() || undefined,
       });
@@ -124,16 +144,37 @@ export function MyWorkDayRequestModal({
 
         <div data-modal-form-grid>
           <div data-modal-form-group {...(type === 'DAY_OFF' ? { 'data-modal-span': true } : {})}>
-            <label htmlFor="my-work-day-request-date">Дата *</label>
+            <label htmlFor="my-work-day-request-date">
+              {isWorkDayPeriodRequestType(type) ? 'Дата начала *' : 'Дата *'}
+            </label>
             <input
               id="my-work-day-request-date"
               type="date"
               value={formDate}
               disabled={busy}
               required
-              onChange={(e) => setFormDate(e.target.value)}
+              onChange={(e) => {
+                setFormDate(e.target.value);
+                if (isWorkDayPeriodRequestType(type) && formDateTo < e.target.value) {
+                  setFormDateTo(e.target.value);
+                }
+              }}
             />
           </div>
+
+          {isWorkDayPeriodRequestType(type) ? (
+            <div data-modal-form-group>
+              <label htmlFor="my-work-day-request-date-to">Дата окончания</label>
+              <input
+                id="my-work-day-request-date-to"
+                type="date"
+                value={formDateTo}
+                min={formDate || undefined}
+                disabled={busy}
+                onChange={(e) => setFormDateTo(e.target.value)}
+              />
+            </div>
+          ) : null}
 
           {needsProposedTime(type) ? (
             <div data-modal-form-group>

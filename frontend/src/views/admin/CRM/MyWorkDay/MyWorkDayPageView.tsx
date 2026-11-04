@@ -8,10 +8,11 @@ import {
   hasWorkDayViolations,
 } from '@/features/admin/work-day/work-day-summary';
 import { useAuth } from '@/features/auth';
-import type {
-  WorkDayJournalRow,
-  WorkDayRecord,
-  WorkDayRequestType,
+import {
+  type WorkDayJournalRow,
+  type WorkDayRecord,
+  type WorkDayRequestType,
+  isWorkDayPeriodRequestType,
 } from '@/shared/api/crm/admin-work-days';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { contractsListFilterFieldClass } from '@/views/admin/ContractDocuments/packages/pages/contracts/list/contractsListFormatters';
@@ -48,6 +49,8 @@ const REQUEST_TYPE_LABELS: Record<WorkDayRequestType, string> = {
   DAY_OFF: 'Выходной',
   EARLY_LEAVE: 'Уйти пораньше',
   LATE_ARRIVAL: 'Прийти попозже',
+  SICK_LEAVE: 'Больничный',
+  VACATION_LEAVE: 'Отпуск',
 };
 
 const REQUEST_STATUS_LABELS: Record<string, string> = {
@@ -206,7 +209,7 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
             disabled={requestBusy}
             onClick={() => openModal('DAY_OFF')}
           >
-            Запросить выходной
+            Взять выходной
           </button>
           <button
             type="button"
@@ -223,6 +226,24 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
             onClick={() => openModal('EARLY_LEAVE')}
           >
             Уйти пораньше
+          </button>
+          <button
+            type="button"
+            className={cdChrome.contractsListHeaderAddBtn}
+            disabled={requestBusy}
+            title="Отправить руководителю запрос на больничный за период"
+            onClick={() => openModal('SICK_LEAVE')}
+          >
+            Отметить больничный
+          </button>
+          <button
+            type="button"
+            className={cdChrome.contractsListHeaderAddBtn}
+            disabled={requestBusy}
+            title="Отправить руководителю запрос на отпуск за период"
+            onClick={() => openModal('VACATION_LEAVE')}
+          >
+            Отметить отпуск
           </button>
           {hasOpenAbsence ? (
             <button
@@ -423,7 +444,14 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
               <li key={req.id} className={styles.requestItem}>
                 <div className={styles.requestMain}>
                   <strong>{REQUEST_TYPE_LABELS[req.type]}</strong>
-                  <span>{formatWorkDayDate(req.requestDate)}</span>
+                  <span>
+                    {formatWorkDayDate(req.requestDate)}
+                    {isWorkDayPeriodRequestType(req.type) &&
+                    req.requestDateTo &&
+                    req.requestDateTo !== req.requestDate
+                      ? ` – ${formatWorkDayDate(req.requestDateTo)}`
+                      : ''}
+                  </span>
                   {req.proposedEndTime ? (
                     <span>
                       {req.type === 'LATE_ARRIVAL' ? 'к' : 'до'} {req.proposedEndTime}

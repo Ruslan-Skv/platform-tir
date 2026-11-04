@@ -1,4 +1,4 @@
-import { WorkDay, WorkDayCloseReason, WorkDaySettings } from '@prisma/client';
+import { WorkDay, WorkDayCloseReason, WorkDayRequestType, WorkDaySettings } from '@prisma/client';
 
 import { MAX_WORK_DAY_RESTARTS_PER_DAY } from '../work-day.constants';
 import {
@@ -10,6 +10,13 @@ import {
 } from './weekly-schedule.types';
 
 export const WORK_DAY_TIMEZONE = 'Europe/Moscow';
+
+/** Типы запросов за период дней (больничный/отпуск): requestDateTo всегда заполнен. */
+export function isWorkDayPeriodRequestType(
+  type: WorkDayRequestType,
+): type is Extract<WorkDayRequestType, 'SICK_LEAVE' | 'VACATION_LEAVE'> {
+  return type === WorkDayRequestType.SICK_LEAVE || type === WorkDayRequestType.VACATION_LEAVE;
+}
 
 export interface ResolvedDaySchedule extends DayScheduleEntry {
   isWorkDay: boolean;

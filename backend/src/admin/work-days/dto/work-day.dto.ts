@@ -163,12 +163,17 @@ export class CloseForgottenWorkDayDto {
 }
 
 export class CreateWorkDayRequestDto {
-  @IsIn(['DAY_OFF', 'EARLY_LEAVE', 'LATE_ARRIVAL'])
-  type: 'DAY_OFF' | 'EARLY_LEAVE' | 'LATE_ARRIVAL';
+  @IsIn(['DAY_OFF', 'EARLY_LEAVE', 'LATE_ARRIVAL', 'SICK_LEAVE', 'VACATION_LEAVE'])
+  type: 'DAY_OFF' | 'EARLY_LEAVE' | 'LATE_ARRIVAL' | 'SICK_LEAVE' | 'VACATION_LEAVE';
 
   @IsString()
   @Matches(/^\d{4}-\d{2}-\d{2}$/)
   requestDate: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Дата окончания должна быть в формате ГГГГ-ММ-ДД' })
+  requestDateTo?: string;
 
   @IsOptional()
   @IsString()
