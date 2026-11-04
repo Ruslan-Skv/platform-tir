@@ -19,6 +19,7 @@ const LOGO_VARIANTS: {
   label: string;
   hint: string;
   previewTitleClassName: string;
+  previewRowClassName?: string;
 }[] = [
   {
     value: 'classic',
@@ -31,6 +32,7 @@ const LOGO_VARIANTS: {
     label: '«Миссия» — Great Vibes',
     hint: 'Рукописный шрифт текста миссии компании (territory-interior.ru/mission).',
     previewTitleClassName: styles.previewTitleMission,
+    previewRowClassName: styles.previewRowMission,
   },
 ];
 
@@ -96,7 +98,7 @@ export function LogoSettingsPageView() {
             >
               <span className={styles.variantName}>{variant.label}</span>
               <span className={styles.variantHint}>{variant.hint}</span>
-              <span className={styles.previewRow}>
+              <span className={`${styles.previewRow} ${variant.previewRowClassName ?? ''}`.trim()}>
                 <Logo markOnly unlinked className={styles.previewMark} />
                 <span className={variant.previewTitleClassName}>Виртуальный офис</span>
               </span>

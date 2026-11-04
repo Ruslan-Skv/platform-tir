@@ -78,6 +78,18 @@
   flex-shrink: 0;
 }
 
+/* Карточка «Миссия»: как в живом логотипе — подпись на базовой линии домика,
+   домик меньше, чтобы знак и рукописная подпись были в одном масштабе */
+.previewRowMission {
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.previewRow.previewRowMission .previewMark {
+  height: 1.5rem;
+  width: calc(1.5rem * 194.48 / 237.78);
+}
+
 /* Копия текущего вида подписи (AdminPlatformBrand.module.css → .platformTitle) */
 .previewTitleClassic {
   font-family: play, oswald, arial, system-ui, sans-serif;
@@ -96,9 +108,9 @@
 /* Вид «Миссия» — Great Vibes (шрифт текста миссии на /mission) */
 .previewTitleMission {
   font-family: 'great vibes', cursive;
-  font-size: 1.875rem;
+  font-size: 2rem;
   font-weight: 400;
-  line-height: 1.2;
+  line-height: 1.7; /* росчерки и хвосты не срезаются */
   color: #1d4ed8;
   text-shadow: 0 2px 12px rgb(37 99 235 / 0.35);
 }

@@ -42,6 +42,12 @@ export function syncAdminSidebarUiPrefsDom(prefs: AdminSidebarUiPrefs): void {
   if (typeof document === 'undefined') return;
   document.documentElement.setAttribute('data-admin-sidebar-desktop-layout', prefs.desktopLayout);
   document.documentElement.setAttribute('data-admin-sidebar-mobile-layout', prefs.mobileLayout);
+  // Вариант логотипа живёт на <html> (ставится и инлайн-скриптом до гидрации),
+  // чтобы нужный шрифт был виден с первого кадра — без мигания классического вида.
+  document.documentElement.setAttribute(
+    'data-admin-logo-variant',
+    prefs.logoVariant === 'mission' ? 'mission' : 'classic'
+  );
 }
 
 export function readAdminSidebarUiPrefsFromDom(): Partial<AdminSidebarUiPrefs> {
@@ -252,31 +258,4 @@ export function useAdminSidebarUiPrefs() {
   }, []);
 
   return { prefs, updatePrefs, ready };
-}
-
-/** Текущий вариант логотипа из локального кэша (без запроса к API — работает и на логине). */
-export function readAdminLogoVariant(): AdminLogoVariant {
-  return readAdminSidebarUiPrefs().logoVariant;
-}
-
-/** Вариант логотипа админки для бренд-компонентов (сайдбар, шапка, страница логина). */
-export function useAdminLogoVariant(): AdminLogoVariant {
-  // null до первого эффекта: SSR не знает localStorage и рендерит дефолт, поэтому
-  // первый клиентский рендер тоже даёт дефолт, а реальное значение применяется
-  // сразу после монтирования — иначе атрибут data-logo-variant «залипает» в
-  // серверном значении (React не видит расхождение и не обновляет DOM).
-  const [variant, setVariant] = useState<AdminLogoVariant | null>(null);
-
-  useEffect(() => {
-    const sync = () => setVariant(readAdminLogoVariant());
-    sync();
-    window.addEventListener(ADMIN_SIDEBAR_UI_PREFS_EVENT, sync);
-    window.addEventListener('storage', sync);
-    return () => {
-      window.removeEventListener(ADMIN_SIDEBAR_UI_PREFS_EVENT, sync);
-      window.removeEventListener('storage', sync);
-    };
-  }, []);
-
-  return variant ?? DEFAULT_ADMIN_SIDEBAR_UI_PREFS.logoVariant;
 }

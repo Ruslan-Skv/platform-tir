@@ -200,37 +200,57 @@
 }
 
 /* ===== Вариант «Миссия»: подпись шрифтом Great Vibes (шрифт текста миссии на /mission) ===== */
-.brand[data-logo-variant='mission'] .platformTitle {
+/* Вариант включается атрибутом <html data-admin-logo-variant='mission'>: его ставит
+   инлайн-скрипт лейаута до гидрации (buildAdminSidebarBootstrapScript) и
+   syncAdminSidebarUiPrefsDom при смене настройки — нужный шрифт виден с первого
+   кадра, без мигания классического вида после перезагрузки. */
+:global(html[data-admin-logo-variant='mission']) .brandRow {
+  /* Рукописную подпись ставим на базовую линию домика: на линии лежат основания
+     букв, а хвосты-дескендеры («у», «р») уходят чуть ниже — как при письме от руки. */
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+/* Мобильная шапка: подпись в две строки — оставляем центрирование */
+:global(html[data-admin-logo-variant='mission']) .headerBrandRow {
+  align-items: center;
+}
+
+/* Домик в сайдбаре меньше, чтобы знак и рукописная подпись были в одном масштабе
+   (у Great Vibes мелкий рост строчных — при равных px знак выглядит крупнее).
+   На странице входа места много — домик остаётся стандартного размера. */
+:global(html[data-admin-logo-variant='mission']) .logoSidebarMark {
+  --admin-logo-mark-height: 1.25rem;
+}
+
+:global(html[data-admin-logo-variant='mission']) .platformTitle {
   font-family: 'great vibes', cursive;
   font-weight: 400;
-  /* 1.3125rem: рукописный кегль компенсирует мелкий рост строчных, но строка
-     «Виртуальный офис» не должна обрезаться в сайдбаре (место ещё занимает кнопка сворачивания) */
-  font-size: 1.3125rem;
-  line-height: 1.2;
+  font-size: 1.375rem;
+  /* 1.7: запас на росчерки сверху и хвосты снизу — рамка с ellipsis
+     (overflow: hidden в сайдбаре) не срезает верх букв */
+  line-height: 1.7;
   letter-spacing: 0;
   text-transform: none;
   text-shadow: 0 2px 12px rgb(37 99 235 / 0.35);
 }
 
-.brand[data-logo-variant='mission'] .platformTitle.platformTitleStacked {
+:global(html[data-admin-logo-variant='mission']) .platformTitle.platformTitleStacked {
   font-size: 0.9375rem;
-  line-height: 1.15;
+  line-height: 1.35;
   letter-spacing: 0;
   text-shadow: 0 1px 8px rgb(37 99 235 / 0.25);
 }
 
-.brand[data-logo-variant='mission'].login .platformTitle {
-  font-size: 1.75rem;
+:global(html[data-admin-logo-variant='mission']) .login .platformTitle {
+  font-size: 2rem;
 }
 
-:global(:where(html[data-theme='dark'], [data-app-theme='dark']))
-  .brand[data-logo-variant='mission']
-  .platformTitle {
+:global(html[data-theme='dark'][data-admin-logo-variant='mission']) .platformTitle {
   text-shadow: 0 2px 14px rgb(56 189 248 / 0.4);
 }
 
-:global(:where(html[data-theme='dark'], [data-app-theme='dark']))
-  .brand[data-logo-variant='mission']
+:global(html[data-theme='dark'][data-admin-logo-variant='mission'])
   .platformTitle.platformTitleStacked {
   text-shadow: 0 1px 10px rgb(56 189 248 / 0.35);
 }

@@ -1,8 +1,5 @@
-'use client';
-
 import Link from 'next/link';
 
-import { useAdminLogoVariant } from '@/shared/lib/admin';
 import { getSafeHref } from '@/shared/lib/sanitize';
 import { Logo } from '@/shared/ui/Logo';
 
@@ -26,7 +23,6 @@ export function AdminPlatformBrand({
   publicSiteHref,
   className,
 }: AdminPlatformBrandProps) {
-  const logoVariant = useAdminLogoVariant();
   const showTitle = (size === 'sidebar' && !collapsed) || size === 'header' || size === 'login';
   const markClassName =
     size === 'login'
@@ -69,7 +65,6 @@ export function AdminPlatformBrand({
 
   return (
     <span
-      data-logo-variant={logoVariant}
       className={[
         styles.brand,
         size === 'login' ? styles.login : size === 'header' ? styles.header : styles.sidebar,
