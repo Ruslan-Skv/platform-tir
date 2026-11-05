@@ -7,6 +7,7 @@ DOMAIN_MAIN="territory-interior.ru"
 DOMAIN2="xn-----mlcbabasabfm9bcdf6aacfbc3aeg7f4dwdza7f.xn--p1ai"  # территория-интерьерных-решений.рф
 DOMAIN3="601270.ru"
 DOMAIN4="psk-pobeda.ru"
+DOMAIN5="www.psk-pobeda.ru"
 
 echo "=== 1. Останавливаем nginx (освобождаем порт 80) ==="
 cd "$(dirname "$0")/.."
@@ -21,7 +22,7 @@ fi
 
 echo ""
 echo "=== 3. Получение сертификатов ==="
-sudo certbot certonly --standalone -d "$DOMAIN_MAIN" -d "$DOMAIN2" -d "$DOMAIN3" -d "$DOMAIN4" --non-interactive --agree-tos --email admin@"$DOMAIN_MAIN"
+sudo certbot certonly --standalone -d "$DOMAIN_MAIN" -d "$DOMAIN2" -d "$DOMAIN3" -d "$DOMAIN4" -d "$DOMAIN5" --non-interactive --agree-tos --email admin@"$DOMAIN_MAIN"
 
 echo ""
 echo "=== 4. Копирование сертификатов в проект ==="
