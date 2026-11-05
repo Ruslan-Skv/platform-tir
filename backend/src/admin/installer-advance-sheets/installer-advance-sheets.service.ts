@@ -7,6 +7,7 @@ import {
 
 import { PrismaService } from '../../database/prisma.service';
 import { InstallerAdvanceSheetNotifyService } from './installer-advance-sheet-notify.service';
+import { InstallerAdvanceSheetPaymentsService } from './installer-advance-sheet-payments.service';
 import {
   computeInstallerAccrual,
   isProductLikeKind,
@@ -18,7 +19,6 @@ import { UpdateInstallerAdvanceSheetDto } from './dto/update-installer-advance-s
 import {
   DETAIL_INCLUDE,
   SHEET_INCLUDE,
-  isoDate,
   round2,
   serializeDetail,
   serializeSummary,
@@ -27,14 +27,12 @@ import {
 /** До 10 договоров в ведомости — с запасом. */
 const MAX_ITEMS_PER_SHEET = 50;
 
-/** Как в ContractDocumentPackageInstallerAdvancesService — лимит журнала на договор. */
-const MAX_ADVANCES_PER_PACKAGE = 300;
-
 @Injectable()
 export class InstallerAdvanceSheetsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notify: InstallerAdvanceSheetNotifyService,
+    private readonly payments: InstallerAdvanceSheetPaymentsService,
   ) {}
 
   async findAll(params?: {
@@ -460,61 +458,26 @@ export class InstallerAdvanceSheetsService {
     return { ok: true };
   }
 
-  /** Выплатить одну строку: создаёт запись журнала авансов и замораживает строку. */
+  /** Выплатить одну строку (супер-админ); журнал авансов ведёт payments-сервис. */
   async payItem(
     sheetId: string,
     itemId: string,
     dto: PayInstallerAdvanceSheetDto,
     paidById?: string,
   ) {
-    const { sheet, item } = await this.loadSheetAndItem(sheetId, itemId);
-    if (item.status === InstallerAdvanceSheetItemStatus.PAID) {
-      throw new BadRequestException('Строка уже выплачена');
-    }
-    await this.payItemsTx(sheet, [item], dto, paidById);
+    await this.payments.payItem(sheetId, itemId, dto, paidById);
     return this.findOne(sheetId);
   }
 
   /** Выплатить все оставшиеся строки ведомости одной датой и способом. */
   async payAll(sheetId: string, dto: PayInstallerAdvanceSheetDto, paidById?: string) {
-    const sheet = await this.prisma.installerAdvanceSheet.findUnique({
-      where: { id: sheetId },
-      include: {
-        installer: { select: { id: true, fullName: true } },
-        items: { where: { status: { not: InstallerAdvanceSheetItemStatus.PAID } } },
-      },
-    });
-    if (!sheet) {
-      throw new NotFoundException('Ведомость не найдена');
-    }
-    if (sheet.items.length === 0) {
-      throw new BadRequestException('В ведомости не осталось невыданных строк');
-    }
-    await this.payItemsTx(sheet, sheet.items, dto, paidById);
+    await this.payments.payAll(sheetId, dto, paidById);
     return this.findOne(sheetId);
   }
 
-  /** Отменить выплату: удаляет запись из журнала авансов, строка снова ожидает. */
+  /** Отменить выплату: запись уйдёт из журнала авансов, строка снова ожидает. */
   async unpayItem(sheetId: string, itemId: string) {
-    const { item } = await this.loadSheetAndItem(sheetId, itemId);
-    if (item.status !== InstallerAdvanceSheetItemStatus.PAID) {
-      throw new BadRequestException('Строка не выплачена');
-    }
-    await this.prisma.$transaction(async (tx) => {
-      // Запись могла быть удалена вручную из журнала договора — тогда просто возвращаем строку.
-      await tx.contractDocumentPackageInstallerAdvance.deleteMany({
-        where: { sheetItemId: item.id },
-      });
-      await tx.installerAdvanceSheetItem.update({
-        where: { id: item.id },
-        data: {
-          status: InstallerAdvanceSheetItemStatus.PENDING,
-          paidAt: null,
-          paymentMethod: null,
-          paidById: null,
-        },
-      });
-    });
+    await this.payments.unpayItem(sheetId, itemId);
     return this.findOne(sheetId);
   }
 
@@ -580,62 +543,6 @@ export class InstallerAdvanceSheetsService {
       throw new NotFoundException('Строка ведомости не найдена');
     }
     return { sheet, item };
-  }
-
-  /** Создание записей журнала авансов + перевод строк в PAID — одной транзакцией. */
-  private async payItemsTx(
-    sheet: { number: number; createdAt: Date; installer: { id: string; fullName: string } },
-    items: Array<{ id: string; packageId: string; amount: Prisma.Decimal }>,
-    dto: PayInstallerAdvanceSheetDto,
-    paidById?: string,
-  ) {
-    const paidAt = new Date(dto.paidAt);
-    const note = `Ведомость №${sheet.number} от ${isoDate(sheet.createdAt)}`;
-
-    await this.prisma.$transaction(async (tx) => {
-      // Лимит журнала на договор — как при ручной выдаче из модалки договора.
-      const packageIds = [...new Set(items.map((item) => item.packageId))];
-      const counts = await tx.contractDocumentPackageInstallerAdvance.groupBy({
-        by: ['packageId'],
-        where: { packageId: { in: packageIds } },
-        _count: { id: true },
-      });
-      const countByPackage = new Map(counts.map((row) => [row.packageId, row._count.id]));
-      const perPackage = new Map<string, number>();
-      for (const item of items) {
-        const already =
-          (countByPackage.get(item.packageId) ?? 0) + (perPackage.get(item.packageId) ?? 0);
-        if (already >= MAX_ADVANCES_PER_PACKAGE) {
-          throw new BadRequestException(
-            `По одному договору допускается не более ${MAX_ADVANCES_PER_PACKAGE} записей авансов`,
-          );
-        }
-        perPackage.set(item.packageId, already + 1);
-
-        await tx.contractDocumentPackageInstallerAdvance.create({
-          data: {
-            packageId: item.packageId,
-            installerId: sheet.installer.id,
-            installerName: sheet.installer.fullName,
-            paidAt,
-            amount: item.amount,
-            paymentMethod: dto.paymentMethod ?? null,
-            note,
-            createdById: paidById ?? null,
-            sheetItemId: item.id,
-          },
-        });
-        await tx.installerAdvanceSheetItem.update({
-          where: { id: item.id },
-          data: {
-            status: InstallerAdvanceSheetItemStatus.PAID,
-            paidAt,
-            paymentMethod: dto.paymentMethod ?? null,
-            paidById: paidById ?? null,
-          },
-        });
-      }
-    });
   }
 
   private async assertPackagesValid(packageIds: string[]) {
