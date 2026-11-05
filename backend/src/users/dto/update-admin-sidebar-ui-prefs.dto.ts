@@ -44,9 +44,9 @@ export class UpdateAdminSidebarUiPrefsDto {
 
   @ApiPropertyOptional({
     description: 'Вариант логотипа админки (шрифт подписи «Виртуальный офис»)',
-    enum: ['classic', 'mission'],
+    enum: ['classic', 'mission', 'squares'],
   })
   @IsOptional()
-  @IsIn(['classic', 'mission'])
-  logoVariant?: 'classic' | 'mission';
+  @IsIn(['classic', 'mission', 'squares'])
+  logoVariant?: 'classic' | 'mission' | 'squares';
 }

@@ -15,6 +15,7 @@ import {
 } from './repair-schedule-notify.service';
 import { RepairScheduleRowEnrichmentService } from './repair-schedule-row-enrichment.service';
 import {
+  PACKAGE_NOT_IN_TRASH,
   PROJECT_DETAIL_INCLUDE,
   PROJECT_INCLUDE,
   decimalOrNull,
@@ -223,6 +224,7 @@ export class RepairSchedulesService {
     const search = params.search?.trim();
     const where: Prisma.RepairScheduleProjectWhereInput = {
       deletedAt: null,
+      AND: [PACKAGE_NOT_IN_TRASH],
       ...(status ? { status } : {}),
       ...(params.installerId?.trim() ? { installerId: params.installerId.trim() } : {}),
       ...(search
@@ -258,6 +260,7 @@ export class RepairSchedulesService {
     const rows = await this.prisma.repairScheduleProject.findMany({
       where: {
         deletedAt: null,
+        AND: [PACKAGE_NOT_IN_TRASH],
         installer: { userId },
         ...(params?.status ? { status: params.status } : {}),
         ...(search

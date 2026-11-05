@@ -11,8 +11,13 @@ import {
 export type AdminSidebarMobileLayout = 'list' | 'grid3';
 export type AdminSidebarDesktopLayout = 'list' | 'grid2';
 
-/** Вариант логотипа админки: classic — Play (как сейчас), mission — Great Vibes (шрифт миссии). */
-export type AdminLogoVariant = 'classic' | 'mission';
+/** Вариант логотипа админки: classic — Play (как сейчас), mission — Great Vibes (шрифт миссии),
+ *  squares — только цветные квадраты без домика, вплотную к классической подписи. */
+export type AdminLogoVariant = 'classic' | 'mission' | 'squares';
+
+export function normalizeAdminLogoVariant(value: unknown): AdminLogoVariant {
+  return value === 'mission' || value === 'squares' ? value : 'classic';
+}
 
 export type AdminSidebarUiPrefs = {
   /** Скрыть эмодзи-иконки у пунктов меню (на свёрнутой десктопной рейке иконки остаются). */
@@ -46,7 +51,7 @@ export function syncAdminSidebarUiPrefsDom(prefs: AdminSidebarUiPrefs): void {
   // чтобы нужный шрифт был виден с первого кадра — без мигания классического вида.
   document.documentElement.setAttribute(
     'data-admin-logo-variant',
-    prefs.logoVariant === 'mission' ? 'mission' : 'classic'
+    normalizeAdminLogoVariant(prefs.logoVariant)
   );
 }
 
@@ -75,7 +80,7 @@ export function readAdminSidebarUiPrefs(): AdminSidebarUiPrefs {
       mobileLayout: parsed.mobileLayout === 'grid3' ? 'grid3' : 'list',
       desktopLayout: parsed.desktopLayout === 'grid2' ? 'grid2' : 'list',
       navOrder: normalizeNavOrder(parsed.navOrder),
-      logoVariant: parsed.logoVariant === 'mission' ? 'mission' : 'classic',
+      logoVariant: normalizeAdminLogoVariant(parsed.logoVariant),
       ...fromDom,
     };
   } catch {
@@ -130,7 +135,7 @@ export function mergeSidebarUiPrefsSaved(
         ? requested.navOrder
         : saved.navOrder,
     logoVariant:
-      requested.logoVariant === 'mission' && saved.logoVariant !== 'mission'
+      requested.logoVariant !== 'classic' && saved.logoVariant !== requested.logoVariant
         ? requested.logoVariant
         : saved.logoVariant,
   };

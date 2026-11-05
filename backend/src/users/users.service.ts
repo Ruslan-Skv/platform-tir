@@ -9,7 +9,7 @@ export type AdminSidebarUiPrefs = {
   mobileLayout: 'list' | 'grid3';
   desktopLayout: 'list' | 'grid2';
   navOrder: string[];
-  logoVariant: 'classic' | 'mission';
+  logoVariant: 'classic' | 'mission' | 'squares';
 };
 
 /** Безопасный разбор adminSidebarNavOrder: JSON-массив строк или значение по умолчанию. */
@@ -36,7 +36,10 @@ function formatAdminSidebarUiPrefs(user: {
     mobileLayout: user.adminSidebarMobileLayout === 'grid3' ? 'grid3' : 'list',
     desktopLayout: user.adminSidebarDesktopLayout === 'grid2' ? 'grid2' : 'list',
     navOrder: parseAdminSidebarNavOrder(user.adminSidebarNavOrder),
-    logoVariant: user.adminLogoVariant === 'mission' ? 'mission' : 'classic',
+    logoVariant:
+      user.adminLogoVariant === 'mission' || user.adminLogoVariant === 'squares'
+        ? user.adminLogoVariant
+        : 'classic',
   };
 }
 
@@ -287,7 +290,7 @@ export class UsersService {
       mobileLayout?: 'list' | 'grid3';
       desktopLayout?: 'list' | 'grid2';
       navOrder?: string[];
-      logoVariant?: 'classic' | 'mission';
+      logoVariant?: 'classic' | 'mission' | 'squares';
     },
   ): Promise<AdminSidebarUiPrefs> {
     const updated = await this.prisma.user.update({

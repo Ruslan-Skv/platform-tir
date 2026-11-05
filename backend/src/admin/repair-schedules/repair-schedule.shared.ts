@@ -63,6 +63,14 @@ export const PROJECT_TRASH_INCLUDE: Prisma.RepairScheduleProjectInclude = {
   deletedBy: { select: USER_SELECT },
 };
 
+/**
+ * Проекты договоров, отправленных в корзину пакетов документов, не показываются
+ * в план-графике: у действующего проекта договор либо не привязан, либо не в корзине.
+ */
+export const PACKAGE_NOT_IN_TRASH: Prisma.RepairScheduleProjectWhereInput = {
+  OR: [{ packageId: null }, { package: { deletedAt: null } }],
+};
+
 /** Срок хранения договора в корзине до безвозвратного удаления. */
 export const REPAIR_SCHEDULE_TRASH_RETENTION_DAYS = 30;
 export const REPAIR_SCHEDULE_TRASH_RETENTION_MS =

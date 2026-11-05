@@ -36,6 +36,12 @@ describe('mergeSidebarUiPrefsSaved', () => {
     expect(mergeSidebarUiPrefsSaved(requested, saved).logoVariant).toBe('mission');
   });
 
+  it('сервер без logoVariant (старый бэкенд) не откатывает локальный «squares»', () => {
+    const requested = prefs({ logoVariant: 'squares' });
+    const saved = prefs({ logoVariant: 'classic' });
+    expect(mergeSidebarUiPrefsSaved(requested, saved).logoVariant).toBe('squares');
+  });
+
   it('сохранённый на сервере вариант логотипа выигрывает при классическом локальном', () => {
     const requested = prefs({ logoVariant: 'classic' });
     const saved = prefs({ logoVariant: 'mission' });

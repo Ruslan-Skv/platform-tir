@@ -2,6 +2,7 @@ export {
   ADMIN_SIDEBAR_UI_PREFS_EVENT,
   ADMIN_SIDEBAR_UI_PREFS_KEY,
   DEFAULT_ADMIN_SIDEBAR_UI_PREFS,
+  normalizeAdminLogoVariant,
   readAdminSidebarUiPrefs,
   useAdminSidebarUiPrefs,
   writeAdminSidebarUiPrefs,

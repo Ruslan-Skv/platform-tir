@@ -255,6 +255,48 @@
   text-shadow: 0 1px 10px rgb(56 189 248 / 0.35);
 }
 
+/* ===== Вариант «Квадратики»: знак без контура домика — только цветные квадраты, вплотную к подписи ===== */
+/* Как и «Миссия», включается атрибутом <html data-admin-logo-variant='squares'> (инлайн-скрипт до гидрации),
+   поэтому нужный знак виден с первого кадра. Знаки рисуются оба (Logo.tsx), здесь выбирается видимый. */
+:global(html[data-admin-logo-variant='squares']) .brand :global(.tir-logo-mark-house) {
+  display: none;
+}
+
+:global(html[data-admin-logo-variant='squares']) .brand :global(.tir-logo-mark-squares) {
+  display: block;
+}
+
+/* Квадраты чуть меньше домика той же высоты: сетка квадратов «тяжелее»
+   вытянутого домика, поэтому знак уменьшаем, чтобы визуально совпадал по массе.
+   Ширина ниже считается от этой же переменной. */
+:global(html[data-admin-logo-variant='squares']) .brand .logoSidebarMark {
+  --admin-logo-mark-height: 1.375rem;
+}
+
+:global(html[data-admin-logo-variant='squares']) .brand .logoHeaderMark {
+  --admin-logo-mark-height: 1.5rem;
+}
+
+:global(html[data-admin-logo-variant='squares']) .brand .logoLoginMark {
+  --admin-logo-mark-height: 2.125rem;
+}
+
+/* Квадраты при той же высоте шире домика (аспект 116.27 × 113.14) — пересчитываем ширину знака */
+:global(html[data-admin-logo-variant='squares']) .brand .logoSidebarMark,
+:global(html[data-admin-logo-variant='squares']) .brand .logoHeaderMark,
+:global(html[data-admin-logo-variant='squares']) .brand .logoLoginMark {
+  width: calc(var(--admin-logo-mark-height) * 116.27 / 113.14);
+}
+
+:global(html[data-admin-logo-variant='squares']) .brandRow {
+  gap: 0.25rem;
+}
+
+/* Мобильная шапка: подпись в две строки */
+:global(html[data-admin-logo-variant='squares']) .headerBrandRow {
+  gap: 0.1875rem;
+}
+
 :global(:where(html[data-theme='dark'], [data-app-theme='dark'])) .platformTitle {
   color: #38bdf8;
   text-shadow:

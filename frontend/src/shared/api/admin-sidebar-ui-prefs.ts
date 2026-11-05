@@ -10,7 +10,7 @@ export type AdminSidebarUiPrefsDto = {
   mobileLayout: 'list' | 'grid3';
   desktopLayout: 'list' | 'grid2';
   navOrder: string[];
-  logoVariant: 'classic' | 'mission';
+  logoVariant: 'classic' | 'mission' | 'squares';
 };
 
 /** Допустимый размер сохраняемого порядка разделов (защита от битых данных). */
@@ -38,7 +38,10 @@ function normalizePrefs(data: Partial<AdminSidebarUiPrefsDto>): AdminSidebarUiPr
     mobileLayout: data.mobileLayout === 'grid3' ? 'grid3' : 'list',
     desktopLayout: data.desktopLayout === 'grid2' ? 'grid2' : 'list',
     navOrder: normalizeNavOrder(data.navOrder),
-    logoVariant: data.logoVariant === 'mission' ? 'mission' : 'classic',
+    logoVariant:
+      data.logoVariant === 'mission' || data.logoVariant === 'squares'
+        ? data.logoVariant
+        : 'classic',
   };
 }
 

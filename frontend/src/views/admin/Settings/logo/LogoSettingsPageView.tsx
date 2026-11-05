@@ -34,6 +34,13 @@ const LOGO_VARIANTS: {
     previewTitleClassName: styles.previewTitleMission,
     previewRowClassName: styles.previewRowMission,
   },
+  {
+    value: 'squares',
+    label: '«Квадратики»',
+    hint: 'Классическая подпись Play, но знак — только цветные квадраты, без домика, вплотную к тексту.',
+    previewTitleClassName: styles.previewTitleClassic,
+    previewRowClassName: styles.previewRowSquares,
+  },
 ];
 
 export function LogoSettingsPageView() {

@@ -90,6 +90,25 @@
   width: calc(1.5rem * 194.48 / 237.78);
 }
 
+/* Карточка «Квадратики»: как в живом логотипе — знак без домика, только цветные
+   квадраты, и они вплотную к подписи (ширина по аспекту квадратов 116.27 × 113.14) */
+.previewRowSquares {
+  gap: 0.25rem;
+}
+
+.previewRowSquares :global(.tir-logo-mark-house) {
+  display: none;
+}
+
+.previewRowSquares :global(.tir-logo-mark-squares) {
+  display: block;
+}
+
+.previewRow.previewRowSquares .previewMark {
+  height: 1.5rem;
+  width: calc(1.5rem * 116.27 / 113.14);
+}
+
 /* Копия текущего вида подписи (AdminPlatformBrand.module.css → .platformTitle) */
 .previewTitleClassic {
   font-family: play, oswald, arial, system-ui, sans-serif;
