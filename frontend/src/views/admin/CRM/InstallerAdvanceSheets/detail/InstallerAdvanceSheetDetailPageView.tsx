@@ -35,7 +35,8 @@ function itemStatusTone(status: InstallerAdvanceSheetItem['status']): string {
   return 'pending';
 }
 
-function SheetStatusBadge({ status, paidCount }: { status: string; paidCount: number }) {
+/** Бейдж статуса ведомости — в заголовке страницы и в titleAside модалки. */
+export function SheetStatusBadge({ status, paidCount }: { status: string; paidCount: number }) {
   const label =
     status === 'PAID'
       ? 'Выплачена'
@@ -57,8 +58,11 @@ function SheetStatusBadge({ status, paidCount }: { status: string; paidCount: nu
 
 export function InstallerAdvanceSheetDetailPageView({
   model,
+  inModal = false,
 }: {
   model: InstallerAdvanceSheetDetailPageModel;
+  /** Модальный режим (напр., из чипов план-графика): без обёртки страницы и ссылки назад. */
+  inModal?: boolean;
 }) {
   const {
     sheet,
@@ -101,9 +105,18 @@ export function InstallerAdvanceSheetDetailPageView({
     resolveQuestion,
   } = model;
 
+  const backLink = inModal ? null : (
+    <Link href="/admin/installer-advance-sheets" className={styles.detailBackLink}>
+      ← Расчётники мастеров
+    </Link>
+  );
+  const shellClass = inModal
+    ? styles.detailModalShell
+    : `${cdBase.page} ${cdWorkspace.pageWide} ${isStyles.pageFull} ${cdHub.contractsListPage}`;
+
   if (loading && !sheet) {
     return (
-      <div className={`${cdBase.page} ${cdWorkspace.pageWide} ${isStyles.pageFull}`}>
+      <div className={shellClass}>
         <p className={styles.detailNote}>Загрузка…</p>
       </div>
     );
@@ -111,7 +124,7 @@ export function InstallerAdvanceSheetDetailPageView({
 
   if (!sheet) {
     return (
-      <div className={`${cdBase.page} ${cdWorkspace.pageWide} ${isStyles.pageFull}`}>
+      <div className={shellClass}>
         {message ? (
           <div className={isStyles.pageMessage}>
             <span>{message}</span>
@@ -120,9 +133,7 @@ export function InstallerAdvanceSheetDetailPageView({
             </button>
           </div>
         ) : null}
-        <Link href="/admin/installer-advance-sheets" className={styles.detailBackLink}>
-          ← Расчётники мастеров
-        </Link>
+        {backLink}
       </div>
     );
   }
@@ -130,98 +141,31 @@ export function InstallerAdvanceSheetDetailPageView({
   const pendingCount = sheet.itemsCount - sheet.paidCount;
   const canDelete = canEditSheets && sheet.paidCount === 0;
 
-  return (
-    <div
-      className={`${cdBase.page} ${cdWorkspace.pageWide} ${isStyles.pageFull} ${cdHub.contractsListPage}`}
-    >
-      <Link href="/admin/installer-advance-sheets" className={styles.detailBackLink}>
-        ← Расчётники мастеров
-      </Link>
-
-      <div className={cdHub.editorHeader}>
-        <div className={cdHub.contractsListHeaderLeft}>
-          <div className={cdHub.contractsHeaderTitleRow}>
-            <div className={cdHub.contractsHeaderTitleCluster}>
-              <h1 className={cdHub.title}>Ведомость № {sheet.number}</h1>
-              <SheetStatusBadge status={sheet.status} paidCount={sheet.paidCount} />
-            </div>
-          </div>
-          <p className={styles.detailMetaRow}>
-            <span>от {formatIasDate(sheet.createdAt)}</span>
-            <span>
-              Мастер:{' '}
-              <strong>
-                {sheet.installer.name}
-                {formatIasGradeShort(sheet.installer.grade)
-                  ? ` (${formatIasGradeShort(sheet.installer.grade)})`
-                  : ''}
-              </strong>
-            </span>
-            <span>Создал: {sheet.createdBy?.name || '—'}</span>
-            <span>
-              Выдано: {sheet.paidCount} из {sheet.itemsCount} на {formatIasMoney(sheet.paidAmount)}{' '}
-              из {formatIasMoney(sheet.totalAmount)}
-            </span>
-          </p>
-          {sheet.note?.trim() ? (
-            <p className={styles.detailNote}>Примечание: {sheet.note}</p>
-          ) : null}
-        </div>
-        <div className={`${cdChrome.headerButtonsRow} ${cdHub.contractsListHeaderActions}`}>
-          <button
-            type="button"
-            className={styles.itemActionBtn}
-            onClick={() => printInstallerAdvanceSheet(sheet)}
-          >
-            Печать
-          </button>
-          <button
-            type="button"
-            className={styles.itemActionBtn}
-            onClick={() => void downloadInstallerAdvanceSheetPdf(sheet)}
-          >
-            PDF
-          </button>
-          {canManagePayments && pendingCount > 0 ? (
-            <button
-              type="button"
-              data-admin-mutation
-              className={`${styles.itemActionBtn} ${styles.itemActionPrimary}`}
-              onClick={() => openPayModal({ kind: 'all' })}
-            >
-              Выплатить все ({pendingCount})
-            </button>
-          ) : null}
-          {canEditSheets && !editMode ? (
-            <button
-              type="button"
-              data-admin-mutation
-              className={styles.itemActionBtn}
-              onClick={() => setEditMode(true)}
-            >
-              Редактировать
-            </button>
-          ) : null}
-          {canDelete ? (
-            <button
-              type="button"
-              data-admin-mutation
-              className={`${styles.itemActionBtn} ${styles.itemActionDanger}`}
-              onClick={() => setDeleteOpen(true)}
-            >
-              Удалить
-            </button>
-          ) : null}
-          <AdminListRefreshButton
-            disabled={loading}
-            busy={loading}
-            title="Обновить ведомость"
-            aria-label="Обновить ведомость"
-            onClick={() => void refresh()}
-          />
-        </div>
-      </div>
-
+  /** Строка метаданных (дата, мастер, автор, прогресс выплат) — общая для страницы и модалки. */
+  const metaRow = (
+    <p className={styles.detailMetaRow}>
+      <span>от {formatIasDate(sheet.createdAt)}</span>
+      <span>
+        Мастер:{' '}
+        <strong>
+          {sheet.installer.name}
+          {formatIasGradeShort(sheet.installer.grade)
+            ? ` (${formatIasGradeShort(sheet.installer.grade)})`
+            : ''}
+        </strong>
+      </span>
+      <span>Создал: {sheet.createdBy?.name || '—'}</span>
+      <span>
+        Выдано: {sheet.paidCount} из {sheet.itemsCount} на {formatIasMoney(sheet.paidAmount)} из{' '}
+        {formatIasMoney(sheet.totalAmount)}
+      </span>
+    </p>
+  );
+  const noteBlock = sheet.note?.trim() ? (
+    <p className={styles.detailNote}>Примечание: {sheet.note}</p>
+  ) : null;
+  const alerts = (
+    <>
       {message ? (
         <div className={isStyles.pageMessage}>
           <span>{message}</span>
@@ -235,67 +179,79 @@ export function InstallerAdvanceSheetDetailPageView({
           <span>{notice}</span>
         </div>
       ) : null}
+    </>
+  );
 
-      {editMode && canEditSheets ? (
-        <InstallerAdvanceSheetForm
-          mode="edit"
-          installers={model.installers}
-          sheet={sheet}
-          submitting={saving}
-          onSubmit={submitEdit}
-          onCancel={() => setEditMode(false)}
-        />
-      ) : (
-        <section className={styles.itemsCard} aria-label="Строки ведомости">
-          <h2 className={styles.itemsTitle}>
-            Авансы по договорам{' '}
-            {sheet.questionCount > 0 ? (
-              <span className={styles.questionCountSubline}>
-                вопросов открыто: {sheet.questionCount}
-              </span>
-            ) : null}
-          </h2>
-          <div className={styles.itemsTableWrap}>
-            <table className={styles.itemsTable}>
-              <thead>
-                <tr>
-                  <th className={styles.colIndex}>№</th>
-                  <th>Договор</th>
-                  <th>Заказчик, адрес</th>
-                  <th className={styles.colAmount}>Сумма</th>
-                  <th className={styles.colStatus}>Статус</th>
-                  <th className={styles.colActions}>Действия</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sheet.items.map((item, index) => (
-                  <ItemRow
-                    key={item.id}
-                    item={item}
-                    index={index}
-                    canManagePayments={canManagePayments}
-                    canComment={canComment}
-                    commentsOpen={openCommentsItemId === item.id}
-                    commentDraft={commentDrafts[item.id] ?? ''}
-                    commentBusy={commentBusyItemId === item.id}
-                    onToggleComments={() => toggleComments(item.id)}
-                    onCommentDraft={(value) => setCommentDraft(item.id, value)}
-                    onCommentSubmit={() => void submitComment(item.id)}
-                    onPay={() => openPayModal({ kind: 'item', itemId: item.id })}
-                    onUnpay={() => setUnpayTarget(item.id)}
-                    onResolveQuestion={() => void resolveQuestion(item.id)}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className={styles.detailNote}>
-            Отметка «Выплачено» создаёт запись в журнале авансов договора — она же появляется в
-            разделе «Расчёт мастеров». Выплаты отмечает только супер-админ.
-          </p>
-        </section>
-      )}
+  /** Режим правки — форма со своими кнопками (сама рисует бланк data-modal-form). */
+  const editForm =
+    editMode && canEditSheets ? (
+      <InstallerAdvanceSheetForm
+        mode="edit"
+        installers={model.installers}
+        sheet={sheet}
+        submitting={saving}
+        onSubmit={submitEdit}
+        onCancel={() => setEditMode(false)}
+      />
+    ) : null;
 
+  /** Таблица строк — белая карточка (на странице и на голубом бланке модалки). */
+  const itemsSection = (
+    <section className={styles.itemsCard} aria-label="Строки ведомости">
+      <h2 className={styles.itemsTitle}>
+        Авансы по договорам{' '}
+        {sheet.questionCount > 0 ? (
+          <span className={styles.questionCountSubline}>
+            вопросов открыто: {sheet.questionCount}
+          </span>
+        ) : null}
+      </h2>
+      <div className={styles.itemsTableWrap}>
+        <table className={styles.itemsTable}>
+          <thead>
+            <tr>
+              <th className={styles.colIndex}>№</th>
+              <th>Договор</th>
+              <th>Заказчик, адрес</th>
+              <th className={styles.colAmount}>Сумма</th>
+              <th className={styles.colStatus}>Статус</th>
+              <th className={styles.colActions}>Действия</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sheet.items.map((item, index) => (
+              <ItemRow
+                key={item.id}
+                item={item}
+                index={index}
+                canManagePayments={canManagePayments}
+                canComment={canComment}
+                commentsOpen={openCommentsItemId === item.id}
+                commentDraft={commentDrafts[item.id] ?? ''}
+                commentBusy={commentBusyItemId === item.id}
+                onToggleComments={() => toggleComments(item.id)}
+                onCommentDraft={(value) => setCommentDraft(item.id, value)}
+                onCommentSubmit={() => void submitComment(item.id)}
+                onPay={() => openPayModal({ kind: 'item', itemId: item.id })}
+                onUnpay={() => setUnpayTarget(item.id)}
+                onResolveQuestion={() => void resolveQuestion(item.id)}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className={styles.detailNote}>
+        Отметка «Выплачено» создаёт запись в журнале авансов договора — она же появляется в разделе
+        «Расчёт мастеров». Выплаты отмечает только супер-админ.
+      </p>
+    </section>
+  );
+
+  const editOrItems = editForm ?? itemsSection;
+
+  /** Вложенные модалки: выплата, отмена выплаты, удаление. */
+  const nestedDialogs = (
+    <>
       {payTarget ? (
         <Modal
           isOpen
@@ -397,6 +353,147 @@ export function InstallerAdvanceSheetDetailPageView({
           confirmLoading={deleteSubmitting}
         />
       ) : null}
+    </>
+  );
+
+  /**
+   * Модальный вид — как у новых модалок админки (напр., «Добавить клиента в базу»):
+   * заголовок, статус и сервисные кнопки («Печать»/«PDF»/«Обновить») даёт Modal
+   * (title/titleAside), контент — на голубом бланке data-modal-form: подсказка,
+   * компактные реквизиты, таблица строк; внизу — основные действия.
+   */
+  if (inModal) {
+    if (editForm) {
+      return (
+        <div className={shellClass}>
+          {alerts}
+          {editForm}
+          {nestedDialogs}
+        </div>
+      );
+    }
+
+    return (
+      <div className={shellClass}>
+        {alerts}
+        <div className={styles.detailFormShell} data-modal-form data-modal-density="compact">
+          <p data-modal-form-hint>
+            Ведомость авансов одного мастера по нескольким договорам. Отметка «Выплачено» создаёт
+            запись в журнале авансов договора — она же видна в разделе «Расчёт мастеров». Выплаты
+            отмечает только супер-админ.
+          </p>
+
+          {metaRow}
+          {noteBlock}
+
+          {itemsSection}
+
+          {pendingCount > 0 ? (
+            <div data-modal-form-actions>
+              <button
+                type="button"
+                data-admin-mutation
+                data-modal-btn="primary"
+                className={styles.payAllBtn}
+                disabled={!canManagePayments}
+                title={
+                  canManagePayments
+                    ? `Выплатить все невыданные строки (${pendingCount})`
+                    : 'Отметить выплату может только супер-админ'
+                }
+                onClick={() => openPayModal({ kind: 'all' })}
+              >
+                Выплатить все ({pendingCount})
+              </button>
+            </div>
+          ) : null}
+        </div>
+        {nestedDialogs}
+      </div>
+    );
+  }
+
+  return (
+    <div className={shellClass}>
+      {backLink}
+
+      <div className={cdHub.editorHeader}>
+        <div className={cdHub.contractsListHeaderLeft}>
+          <div className={cdHub.contractsHeaderTitleRow}>
+            <div className={cdHub.contractsHeaderTitleCluster}>
+              <h1 className={cdHub.title}>Ведомость № {sheet.number}</h1>
+              <SheetStatusBadge status={sheet.status} paidCount={sheet.paidCount} />
+            </div>
+          </div>
+          {metaRow}
+          {noteBlock}
+        </div>
+        <div className={`${cdChrome.headerButtonsRow} ${cdHub.contractsListHeaderActions}`}>
+          <button
+            type="button"
+            className={styles.itemActionBtn}
+            onClick={() => printInstallerAdvanceSheet(sheet)}
+          >
+            Печать
+          </button>
+          <button
+            type="button"
+            className={styles.itemActionBtn}
+            onClick={() => void downloadInstallerAdvanceSheetPdf(sheet)}
+          >
+            PDF
+          </button>
+          {canManagePayments && pendingCount > 0 ? (
+            <button
+              type="button"
+              data-admin-mutation
+              className={`${styles.itemActionBtn} ${styles.itemActionPrimary}`}
+              onClick={() => openPayModal({ kind: 'all' })}
+            >
+              Выплатить все ({pendingCount})
+            </button>
+          ) : null}
+          {canEditSheets && !editMode ? (
+            <button
+              type="button"
+              data-admin-mutation
+              className={styles.itemActionBtn}
+              disabled={sheet.status === 'PAID' && !canManagePayments}
+              title={
+                sheet.status === 'PAID'
+                  ? canManagePayments
+                    ? 'Ведомость выплачена — редактирование доступно только супер-админу'
+                    : 'Ведомость выплачена — редактировать может только супер-админ'
+                  : undefined
+              }
+              onClick={() => setEditMode(true)}
+            >
+              Редактировать
+            </button>
+          ) : null}
+          {canDelete ? (
+            <button
+              type="button"
+              data-admin-mutation
+              className={`${styles.itemActionBtn} ${styles.itemActionDanger}`}
+              onClick={() => setDeleteOpen(true)}
+            >
+              Удалить
+            </button>
+          ) : null}
+          <AdminListRefreshButton
+            disabled={loading}
+            busy={loading}
+            title="Обновить ведомость"
+            aria-label="Обновить ведомость"
+            onClick={() => void refresh()}
+          />
+        </div>
+      </div>
+
+      {alerts}
+      {editOrItems}
+      {nestedDialogs}
     </div>
   );
 }

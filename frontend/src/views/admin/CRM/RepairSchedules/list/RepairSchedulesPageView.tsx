@@ -11,6 +11,13 @@ import {
   AdminToolbarTrashButton,
 } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { InstallerAdvanceSheetCreateModal } from '@/views/admin/CRM/InstallerAdvanceSheets/shared/InstallerAdvanceSheetCreateModal';
+import { InstallerAdvanceSheetDetailModal } from '@/views/admin/CRM/InstallerAdvanceSheets/shared/InstallerAdvanceSheetDetailModal';
+import {
+  formatIasCreatedMessage,
+  formatIasDate,
+  formatIasMoney,
+  formatIasShortName,
+} from '@/views/admin/CRM/InstallerAdvanceSheets/shared/installer-advance-sheets-page.constants';
 import { CollapsibleFiltersPanel } from '@/views/admin/CRM/shared/CollapsibleFiltersPanel';
 import {
   ADMIN_LIST_PAGE_LIMIT_OPTIONS,
@@ -87,6 +94,8 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
     statusCounts,
     deadlineCounts,
     refresh,
+    unpaidAdvanceSheets,
+    refreshUnpaidAdvanceSheets,
     openCreate,
     saveCreate,
     moveStatus,
@@ -107,10 +116,24 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
     item: RepairSchedulesPageModel['items'][number];
     installerId?: string;
   } | null>(null);
-  /** Договор с несколькими прикреплёнными мастерами — ждёт выбора в мини-модалке. */
+  /**
+   * Модалка создания смонтирована постоянно и управляется этим флагом —
+   * иначе открытие/закрытие обходилось бы без анимаций (условный рендер).
+   */
+  const [createSheetOpen, setCreateSheetOpen] = useState(false);
+  /**
+   * Договор с несколькими прикреплёнными мастерами — ждёт выбора в мини-модалке.
+   * Модалка выбора смонтирована постоянно и управляется флагом — ради анимаций.
+   */
   const [advanceSheetPickItem, setAdvanceSheetPickItem] = useState<
     RepairSchedulesPageModel['items'][number] | null
   >(null);
+  const [installerPickerOpen, setInstallerPickerOpen] = useState(false);
+  /**
+   * Ведомость из чипа. id держим и после закрытия — модалка смонтирована
+   * постоянно, чтобы успевала проигрываться анимация закрытия.
+   */
+  const [advanceSheet, setAdvanceSheet] = useState<{ id: string; open: boolean } | null>(null);
 
   /**
    * Ведомость создаётся на одного мастера. Если в «Заказ-нарядах» договора
@@ -121,12 +144,14 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
     const attached = item.attachedInstallers ?? [];
     if (attached.length > 1) {
       setAdvanceSheetPickItem(item);
+      setInstallerPickerOpen(true);
       return;
     }
     setAdvanceSheetContext({
       item,
       installerId: attached[0]?.id ?? item.installerId ?? undefined,
     });
+    setCreateSheetOpen(true);
   };
   /** Запрошенная смена статуса — ждёт подтверждения в модалке. */
   const [statusChange, setStatusChange] = useState<{
@@ -244,21 +269,42 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
         </div>
       ) : null}
 
-      <div className={styles.viewModeRow} role="group" aria-label="Режим отображения">
-        <button
-          type="button"
-          className={`${styles.viewModeBtn}${viewMode === 'list' ? ` ${styles.viewModeBtnActive}` : ''}`}
-          onClick={() => setViewMode('list')}
-        >
-          Список
-        </button>
-        <button
-          type="button"
-          className={`${styles.viewModeBtn}${viewMode === 'timeline' ? ` ${styles.viewModeBtnActive}` : ''}`}
-          onClick={() => setViewMode('timeline')}
-        >
-          Таймлайн
-        </button>
+      <div className={styles.viewModeBar}>
+        <div className={styles.viewModeRow} role="group" aria-label="Режим отображения">
+          <button
+            type="button"
+            className={`${styles.viewModeBtn}${viewMode === 'list' ? ` ${styles.viewModeBtnActive}` : ''}`}
+            onClick={() => setViewMode('list')}
+          >
+            Список
+          </button>
+          <button
+            type="button"
+            className={`${styles.viewModeBtn}${viewMode === 'timeline' ? ` ${styles.viewModeBtnActive}` : ''}`}
+            onClick={() => setViewMode('timeline')}
+          >
+            Таймлайн
+          </button>
+        </div>
+        {unpaidAdvanceSheets.length > 0 ? (
+          <div className={styles.unpaidSheetsRow} aria-label="Невыплаченные ведомости авансов">
+            {unpaidAdvanceSheets.map((sheet) => (
+              <button
+                key={sheet.id}
+                type="button"
+                className={
+                  sheet.status === 'QUESTION'
+                    ? `${styles.unpaidSheetChip} ${styles.unpaidSheetChipQuestion}`
+                    : styles.unpaidSheetChip
+                }
+                title={`Ведомость № ${sheet.number} от ${formatIasDate(sheet.createdAt)} — ${sheet.installer.name}: выдано ${sheet.paidCount} из ${sheet.itemsCount}`}
+                onClick={() => setAdvanceSheet({ id: sheet.id, open: true })}
+              >
+                {formatIasShortName(sheet.installer.name)} · {formatIasMoney(sheet.totalAmount)}
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <CollapsibleFiltersPanel
@@ -400,50 +446,56 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
         />
       ) : null}
 
-      {advanceSheetPickItem ? (
-        <AdvanceSheetInstallerPickerModal
-          isOpen
-          onClose={() => setAdvanceSheetPickItem(null)}
-          contractNumber={advanceSheetPickItem.contractNumber}
-          installers={advanceSheetPickItem.attachedInstallers ?? []}
-          onPick={(installerId) => {
-            setAdvanceSheetPickItem(null);
-            setAdvanceSheetContext({ item: advanceSheetPickItem, installerId });
-          }}
-          onPickFromRegistry={() => {
-            setAdvanceSheetPickItem(null);
-            setAdvanceSheetContext({ item: advanceSheetPickItem });
-          }}
-        />
-      ) : null}
+      <InstallerAdvanceSheetDetailModal
+        isOpen={Boolean(advanceSheet?.open)}
+        sheetId={advanceSheet?.id ?? ''}
+        onClose={() => {
+          setAdvanceSheet((current) => (current ? { ...current, open: false } : current));
+          void refreshUnpaidAdvanceSheets();
+        }}
+      />
 
-      {advanceSheetContext ? (
-        <InstallerAdvanceSheetCreateModal
-          isOpen
-          onClose={() => setAdvanceSheetContext(null)}
-          installerId={advanceSheetContext.installerId}
-          items={
-            advanceSheetContext.item.packageId
-              ? [
-                  {
-                    packageId: advanceSheetContext.item.packageId,
-                    label:
-                      [
-                        advanceSheetContext.item.contractNumber,
-                        advanceSheetContext.item.customerName,
-                      ]
-                        .filter(Boolean)
-                        .join(' — ') || 'Договор без номера',
-                  },
-                ]
-              : undefined
-          }
-          onCreated={(sheet) => {
-            flashSuccess(`Ведомость № ${sheet.number} создана`);
-            void refresh();
-          }}
-        />
-      ) : null}
+      <AdvanceSheetInstallerPickerModal
+        isOpen={installerPickerOpen}
+        onClose={() => setInstallerPickerOpen(false)}
+        contractNumber={advanceSheetPickItem?.contractNumber}
+        installers={advanceSheetPickItem?.attachedInstallers ?? []}
+        onPick={(installerId) => {
+          setInstallerPickerOpen(false);
+          if (!advanceSheetPickItem) return;
+          setAdvanceSheetContext({ item: advanceSheetPickItem, installerId });
+          setCreateSheetOpen(true);
+        }}
+        onPickFromRegistry={() => {
+          setInstallerPickerOpen(false);
+          if (!advanceSheetPickItem) return;
+          setAdvanceSheetContext({ item: advanceSheetPickItem });
+          setCreateSheetOpen(true);
+        }}
+      />
+
+      <InstallerAdvanceSheetCreateModal
+        isOpen={createSheetOpen}
+        onClose={() => setCreateSheetOpen(false)}
+        installerId={advanceSheetContext?.installerId}
+        items={
+          advanceSheetContext?.item.packageId
+            ? [
+                {
+                  packageId: advanceSheetContext.item.packageId,
+                  label:
+                    [advanceSheetContext.item.contractNumber, advanceSheetContext.item.customerName]
+                      .filter(Boolean)
+                      .join(' — ') || 'Договор без номера',
+                },
+              ]
+            : undefined
+        }
+        onCreated={(sheet) => {
+          flashSuccess(formatIasCreatedMessage(sheet));
+          void refresh();
+        }}
+      />
 
       <Modal
         isOpen={createOpen}

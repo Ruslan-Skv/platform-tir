@@ -1,5 +1,9 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { InstallerAdvanceSheetItemStatus, Prisma } from '@prisma/client';
+import {
+  ContractDocumentPackageKind,
+  InstallerAdvanceSheetItemStatus,
+  Prisma,
+} from '@prisma/client';
 
 import { PrismaService } from '../../database/prisma.service';
 import { InstallerAdvanceSheetNotifyService } from './installer-advance-sheet-notify.service';
@@ -35,6 +39,8 @@ export class InstallerAdvanceSheetsService {
 
   async findAll(params?: {
     status?: 'PENDING' | 'QUESTION' | 'PAID';
+    unpaid?: boolean;
+    packageKind?: ContractDocumentPackageKind;
     installerId?: string;
     dateFrom?: string;
     dateTo?: string;
@@ -42,7 +48,17 @@ export class InstallerAdvanceSheetsService {
     page?: number;
     limit?: number;
   }) {
-    const { status, installerId, dateFrom, dateTo, search, page = 1, limit = 50 } = params || {};
+    const {
+      status,
+      unpaid,
+      packageKind,
+      installerId,
+      dateFrom,
+      dateTo,
+      search,
+      page = 1,
+      limit = 50,
+    } = params || {};
     const take = Math.min(Math.max(limit, 1), 200);
     const skip = (page - 1) * take;
 
@@ -71,8 +87,20 @@ export class InstallerAdvanceSheetsService {
             ...(createdAtTo ? { lt: createdAtTo } : {}),
           }
         : undefined;
-    if (createdAt) {
-      where.AND = [{ createdAt }];
+
+    // Условия по строкам нельзя выразить одним ключом items — собираем в AND.
+    const andConditions: Prisma.InstallerAdvanceSheetWhereInput[] = [];
+    if (createdAt) andConditions.push({ createdAt });
+    if (unpaid) {
+      andConditions.push({
+        items: { some: { status: { not: InstallerAdvanceSheetItemStatus.PAID } } },
+      });
+    }
+    if (packageKind) {
+      andConditions.push({ items: { some: { package: { kind: packageKind } } } });
+    }
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
     }
 
     const q = search?.trim();
@@ -192,6 +220,13 @@ export class InstallerAdvanceSheetsService {
     };
   }
 
+  /**
+   * Создание ведомости. Если у мастера уже есть созданные сегодня невыплаченные
+   * ведомости (мастеру часто выдают аванс сразу по нескольким договорам с разных
+   * строк план-графика) — новые строки добавляются в самую раннюю из них, а
+   * остальные вливаются туда же и удаляются: одна невыплаченная ведомость на
+   * мастера в день. Выплаченные/частично выплаченные ведомости не трогаем.
+   */
   async create(dto: CreateInstallerAdvanceSheetDto, createdById?: string) {
     const installer = await this.prisma.installerMaster.findUnique({
       where: { id: dto.installerId.trim() },
@@ -207,36 +242,117 @@ export class InstallerAdvanceSheetsService {
     }
     await this.assertPackagesValid(dto.items.map((item) => item.packageId));
 
-    const created = await this.prisma.installerAdvanceSheet.create({
-      data: {
-        installerId: installer.id,
-        note: dto.note?.trim() ? dto.note.trim() : null,
-        createdById: createdById ?? null,
-        items: {
-          create: dto.items.map((item) => ({
-            packageId: item.packageId,
-            amount: item.amount,
-          })),
+    const { sheet, mergedFrom, appendedToExisting } = await this.prisma.$transaction(async (tx) => {
+      const candidates = await tx.installerAdvanceSheet.findMany({
+        where: {
+          installerId: installer.id,
+          createdAt: this.todayBounds(),
+          items: { every: { status: { not: InstallerAdvanceSheetItemStatus.PAID } } },
         },
-      },
-      include: SHEET_INCLUDE,
+        select: { id: true, number: true, note: true, items: { select: { packageId: true } } },
+        orderBy: { createdAt: 'asc' },
+      });
+
+      if (candidates.length === 0) {
+        const created = await tx.installerAdvanceSheet.create({
+          data: {
+            installerId: installer.id,
+            note: dto.note?.trim() ? dto.note.trim() : null,
+            createdById: createdById ?? null,
+            items: {
+              create: dto.items.map((item) => ({
+                packageId: item.packageId,
+                amount: item.amount,
+              })),
+            },
+          },
+          include: SHEET_INCLUDE,
+        });
+        return { sheet: created, mergedFrom: [] as number[], appendedToExisting: false as const };
+      }
+
+      const [target, ...rest] = candidates;
+
+      // После объединения двух строк по одному договору в ведомости быть не может.
+      const sheetNumberOfPackage = new Map<string, number>();
+      for (const candidate of candidates) {
+        for (const item of candidate.items) {
+          sheetNumberOfPackage.set(item.packageId, candidate.number);
+        }
+      }
+      const duplicate = dto.items.find((item) => sheetNumberOfPackage.has(item.packageId));
+      if (duplicate) {
+        throw new BadRequestException(
+          `Договор уже добавлен в созданную сегодня ведомость № ${sheetNumberOfPackage.get(
+            duplicate.packageId,
+          )} — измените сумму в ней`,
+        );
+      }
+      const totalItems =
+        candidates.reduce((sum, candidate) => sum + candidate.items.length, 0) + dto.items.length;
+      if (totalItems > MAX_ITEMS_PER_SHEET) {
+        throw new BadRequestException(
+          `В ведомости допускается не более ${MAX_ITEMS_PER_SHEET} строк`,
+        );
+      }
+
+      // Строки остальных ведомостей переезжают в целевую вместе с перепиской;
+      // колокольчики лишних ведомостей удаляются каскадом.
+      if (rest.length > 0) {
+        await tx.installerAdvanceSheetItem.updateMany({
+          where: { sheetId: { in: rest.map((candidate) => candidate.id) } },
+          data: { sheetId: target.id },
+        });
+        await tx.installerAdvanceSheet.deleteMany({
+          where: { id: { in: rest.map((candidate) => candidate.id) } },
+        });
+      }
+
+      const sheet = await tx.installerAdvanceSheet.update({
+        where: { id: target.id },
+        data: {
+          items: {
+            create: dto.items.map((item) => ({
+              packageId: item.packageId,
+              amount: item.amount,
+            })),
+          },
+          // Примечание целевой ведомости не затираем — берём новое, только если его нет.
+          ...(dto.note?.trim() && !target.note ? { note: dto.note.trim() } : {}),
+        },
+        include: SHEET_INCLUDE,
+      });
+      return {
+        sheet,
+        mergedFrom: rest.map((candidate) => candidate.number),
+        appendedToExisting: true as const,
+      };
     });
 
     this.notify.onCreated(
       {
-        id: created.id,
-        number: created.number,
+        id: sheet.id,
+        number: sheet.number,
         installerName: installer.fullName,
-        totalAmount: round2(created.items.reduce((sum, item) => sum + item.amount.toNumber(), 0)),
-        itemCount: created.items.length,
+        totalAmount: round2(sheet.items.reduce((sum, item) => sum + item.amount.toNumber(), 0)),
+        itemCount: sheet.items.length,
+        ...(appendedToExisting ? { appendedToExisting } : {}),
       },
       createdById,
     );
 
-    return serializeSummary(created);
+    return {
+      ...serializeSummary(sheet),
+      ...(appendedToExisting || mergedFrom.length > 0 ? { appendedToExisting: true as const } : {}),
+      ...(mergedFrom.length > 0 ? { mergedFrom } : {}),
+    };
   }
 
-  async update(id: string, dto: UpdateInstallerAdvanceSheetDto) {
+  async update(
+    id: string,
+    dto: UpdateInstallerAdvanceSheetDto,
+    actor?: { id?: string; role?: string },
+  ) {
     const sheet = await this.prisma.installerAdvanceSheet.findUnique({
       where: { id },
       select: {
@@ -251,6 +367,16 @@ export class InstallerAdvanceSheetsService {
     const hasPaid = sheet.items.some(
       (item) => item.status === InstallerAdvanceSheetItemStatus.PAID,
     );
+    const allPaid =
+      sheet.items.length > 0 &&
+      sheet.items.every((item) => item.status === InstallerAdvanceSheetItemStatus.PAID);
+
+    // Выплаченная ведомость — «замороженный» документ: правит только супер-админ.
+    if (allPaid && actor?.role !== 'SUPER_ADMIN') {
+      throw new BadRequestException(
+        'Ведомость полностью выплачена — редактировать её может только супер-админ',
+      );
+    }
 
     if (dto.installerId !== undefined && dto.installerId.trim() !== sheet.installerId) {
       if (hasPaid) {
@@ -427,6 +553,15 @@ export class InstallerAdvanceSheetsService {
       data: { status: InstallerAdvanceSheetItemStatus.PENDING },
     });
     return this.findOne(sheetId);
+  }
+
+  /** Границы текущих суток по локальному времени сервера (как фильтр даты в списке). */
+  private todayBounds(): { gte: Date; lt: Date } {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+    return { gte: start, lt: end };
   }
 
   private async loadSheetAndItem(sheetId: string, itemId: string) {

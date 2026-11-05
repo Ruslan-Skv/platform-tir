@@ -15,12 +15,14 @@ import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-worksp
 
 import type { InstallerAdvanceSheetsPageModel } from '../hooks/useInstallerAdvanceSheetsPage';
 import { InstallerAdvanceSheetCreateModal } from '../shared/InstallerAdvanceSheetCreateModal';
+import { InstallerAdvanceSheetDetailModal } from '../shared/InstallerAdvanceSheetDetailModal';
 import styles from '../shared/InstallerAdvanceSheets.module.css';
 import {
   IAS_PAGE_LIMIT_OPTIONS,
   IAS_STATUS_OPTIONS,
   type IasPageLimit,
   formatIasCountLabel,
+  formatIasCreatedMessage,
   formatIasDate,
   formatIasGradeShort,
   formatIasMoney,
@@ -92,13 +94,30 @@ export function InstallerAdvanceSheetsPageView({
   const toggleFiltersCollapsed = () => setFiltersCollapsed((value) => !value);
   /** Модалка создания ведомости — форма бывшей страницы /new. */
   const [createOpen, setCreateOpen] = useState(false);
+  /**
+   * Ведомость, открытая модалкой прямо со списка. id держим и после закрытия —
+   * модалка смонтирована постоянно, чтобы играли анимации открытия/закрытия
+   * (навигация на /[id] перемонтировала бы всю страницу списка — «дёргалось»).
+   */
+  const [detailSheet, setDetailSheet] = useState<{ id: string; open: boolean } | null>(null);
+
+  /** Клик по ссылке строки: модалка на месте; Cmd/Ctrl-клик — новая вкладка. */
+  const openSheetLocal = (event: React.MouseEvent, item: InstallerAdvanceSheetSummary) => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    setDetailSheet({ id: item.id, open: true });
+  };
 
   const columns = [
     {
       key: 'number',
       title: 'Ведомость',
       render: (item: InstallerAdvanceSheetSummary) => (
-        <Link href={`/admin/installer-advance-sheets/${item.id}`} className={styles.sheetLink}>
+        <Link
+          href={`/admin/installer-advance-sheets/${item.id}`}
+          className={styles.sheetLink}
+          onClick={(e) => openSheetLocal(e, item)}
+        >
           № {item.number}
           <span className={isStyles.cellSubline}>от {formatIasDate(item.createdAt)}</span>
         </Link>
@@ -159,6 +178,7 @@ export function InstallerAdvanceSheetsPageView({
           href={`/admin/installer-advance-sheets/${item.id}`}
           className={styles.openLink}
           aria-label={`Открыть ведомость № ${item.number}`}
+          onClick={(e) => openSheetLocal(e, item)}
         >
           Открыть
         </Link>
@@ -386,16 +406,24 @@ export function InstallerAdvanceSheetsPageView({
         paginationActiveClassName={cdHub.contractsListPaginationPageActive}
       />
 
-      {createOpen ? (
-        <InstallerAdvanceSheetCreateModal
-          isOpen
-          onClose={() => setCreateOpen(false)}
-          onCreated={(sheet) => {
-            setMessage(`Ведомость № ${sheet.number} создана`);
-            void refresh();
-          }}
-        />
-      ) : null}
+      {/* Модалка смонтирована постоянно: анимации открытия/закрытия + свежая форма на каждый запуск */}
+      <InstallerAdvanceSheetCreateModal
+        isOpen={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreated={(sheet) => {
+          setMessage(formatIasCreatedMessage(sheet));
+          void refresh();
+        }}
+      />
+
+      <InstallerAdvanceSheetDetailModal
+        isOpen={Boolean(detailSheet?.open)}
+        sheetId={detailSheet?.id ?? ''}
+        onClose={() => {
+          setDetailSheet((current) => (current ? { ...current, open: false } : current));
+          void refresh();
+        }}
+      />
     </div>
   );
 }

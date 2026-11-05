@@ -91,6 +91,14 @@ export function toLocalIsoDate(date: Date) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
+/** ФИО мастера кратко: «Иванов Иван» → «Иванов И.». */
+export function formatIasShortName(fullName: string | null | undefined): string {
+  const parts = (fullName ?? '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '—';
+  const [surname, name] = parts;
+  return name ? `${surname} ${name[0]!.toUpperCase()}.` : surname;
+}
+
 export function todayIsoDate() {
   return toLocalIsoDate(new Date());
 }
@@ -103,4 +111,25 @@ export function formatIasCountLabel(total: number): string {
   if (mod10 === 1 && mod100 !== 11) word = 'ведомость';
   else if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) word = 'ведомости';
   return `${total} ${word}`;
+}
+
+/**
+ * Сообщение об успешном создании ведомости: если бэкенд добавил строки в уже
+ * созданную сегодня ведомость (автообъединение за день), говорим об этом явно,
+ * а не «создана».
+ */
+export function formatIasCreatedMessage(sheet: {
+  number: number;
+  appendedToExisting?: boolean;
+  mergedFrom?: number[];
+}): string {
+  const mergedFrom = sheet.mergedFrom ?? [];
+  if (mergedFrom.length > 0) {
+    const numbers = mergedFrom.map((number) => `№ ${number}`).join(', ');
+    return `Строки добавлены в ведомость № ${sheet.number} (объединена с ${numbers})`;
+  }
+  if (sheet.appendedToExisting) {
+    return `Строки добавлены в сегодняшнюю ведомость № ${sheet.number}`;
+  }
+  return `Ведомость № ${sheet.number} создана`;
 }

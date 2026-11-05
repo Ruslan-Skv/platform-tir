@@ -5,8 +5,8 @@ import { useEffect, useState } from 'react';
 import type { InstallerMaster } from '@/shared/api/admin-crm';
 import { getInstallers } from '@/shared/api/admin-crm';
 import {
+  type InstallerAdvanceSheetCreateResult,
   type InstallerAdvanceSheetItemParams,
-  type InstallerAdvanceSheetSummary,
   createInstallerAdvanceSheet,
 } from '@/shared/api/crm/admin-installer-advance-sheets';
 import { Modal } from '@/shared/ui/Modal';
@@ -29,7 +29,7 @@ export function InstallerAdvanceSheetCreateModal({
   isOpen: boolean;
   onClose: () => void;
   /** Успешное создание: модалка закрывается сама, вызывающий показывает уведомление. */
-  onCreated?: (sheet: InstallerAdvanceSheetSummary) => void;
+  onCreated?: (sheet: InstallerAdvanceSheetCreateResult) => void;
   /** Предзаполнение мастера (напр. мастер договора из план-графика). */
   installerId?: string;
   /** Предзаполненные строки договоров (суммы вводит пользователь). */

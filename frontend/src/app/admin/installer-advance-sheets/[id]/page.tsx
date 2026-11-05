@@ -1,17 +1,23 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { useParams } from 'next/navigation';
 
 import { PageSuspenseFallback } from '@/shared/ui/PageSuspenseFallback';
 
-const InstallerAdvanceSheetDetailPage = dynamic(
+/** Роут карточки ведомости: список ведомостей + модалка самой ведомости. */
+const InstallerAdvanceSheetDetailRoutePage = dynamic(
   () =>
     import('@/views/admin/CRM/InstallerAdvanceSheets').then(
-      (m) => m.InstallerAdvanceSheetDetailPage
+      (m) => m.InstallerAdvanceSheetDetailRoutePage
     ),
   { ssr: false, loading: () => <PageSuspenseFallback compact message="Загрузка..." /> }
 );
 
 export default function AdminInstallerAdvanceSheetDetailPage() {
-  return <InstallerAdvanceSheetDetailPage />;
+  const params = useParams<{ id: string }>();
+  const sheetId = typeof params?.id === 'string' ? params.id : '';
+  if (!sheetId) return null;
+
+  return <InstallerAdvanceSheetDetailRoutePage sheetId={sheetId} />;
 }

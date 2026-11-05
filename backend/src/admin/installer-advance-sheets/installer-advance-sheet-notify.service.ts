@@ -12,6 +12,8 @@ export type InstallerAdvanceSheetNotifyData = {
   totalAmount: number;
   /** Количество строк (договоров) в ведомости. */
   itemCount: number;
+  /** Строки добавлены в уже созданную сегодня ведомость (автообъединение за день). */
+  appendedToExisting?: boolean;
 };
 
 /**
@@ -56,7 +58,9 @@ export class InstallerAdvanceSheetNotifyService {
     ).filter((id) => id !== actorUserId);
     if (recipients.length === 0) return;
 
-    const title = `Ведомость авансов №${sheet.number} создана`;
+    const title = sheet.appendedToExisting
+      ? `Ведомость авансов №${sheet.number} пополнена`
+      : `Ведомость авансов №${sheet.number} создана`;
     const message = this.buildMessage(sheet);
     const href = `/admin/installer-advance-sheets/${sheet.id}`;
 

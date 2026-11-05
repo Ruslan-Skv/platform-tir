@@ -61,6 +61,137 @@
 
 /* — Карточка ведомости — */
 
+/* Обёртка карточки внутри модалки: без паддингов страницы, ширина — панель модалки. */
+.detailModalShell {
+  min-width: 0;
+}
+
+/* Шапка модалки — как у «Добавить клиента в базу»: бейдж статуса рядом с заголовком. */
+.detailModalPanel :global([class*='titleRow']) {
+  align-items: center;
+  gap: var(--admin-space-sm, 6px);
+}
+
+.detailModalPanel :global([class*='titleAside']) {
+  color: inherit;
+  flex-shrink: 0;
+  font-size: inherit;
+  font-weight: inherit;
+  max-width: none;
+  text-align: left;
+}
+
+/*
+ * Контент модалки на голубом бланке data-modal-form (compact) — единый вид
+ * новых модалок админки: плотные отступы, компактные кнопки внизу бланка.
+ */
+.detailFormShell:global([data-modal-form]) {
+  gap: var(--admin-space-xs, 4px);
+  padding: var(--admin-space-xs, 4px);
+}
+
+/* Подсказка сверху — без лишнего отступа (расстояние даёт gap бланка). */
+.detailFormShell :global([data-modal-form-hint]) {
+  margin-top: 0;
+}
+
+/* Компактная строка реквизитов и примечание — прямо на бланке, без полей. */
+.detailFormShell .detailMetaRow {
+  margin-top: 0;
+  padding: 0 var(--admin-space-sm, 6px);
+}
+
+.detailFormShell .detailNote {
+  margin-top: 0;
+  padding: 0 var(--admin-space-sm, 6px);
+}
+
+/* Белая карточка таблицы — расстояние даёт gap бланка. */
+.detailFormShell .itemsCard {
+  margin-top: 0;
+}
+
+/* Шапка модалки: статус ведомости + сервисные кнопки «Печать»/«PDF»/«Обновить». */
+.detailHeaderAside {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-md, 8px);
+}
+
+/*
+ * Кнопки «Печать»/«PDF» в шапке: titleAside лежит вне .content, где действуют
+ * стили data-modal-btn — поэтому красим их явно, в тот же вторичный вид.
+ */
+.detailHeaderBtn {
+  align-items: center;
+  background: var(--modal-surface, #ffffff);
+  border: 1px solid var(--admin-border-strong, #d1d5db);
+  border-radius: var(--admin-radius-md, 8px);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
+  color: var(--modal-text, #374151);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: var(--modal-fs-sm, 0.8125rem);
+  font-weight: 600;
+  justify-content: center;
+  margin: 0;
+  min-height: 1.75rem;
+  padding: 2px 12px;
+}
+
+.detailHeaderBtn:hover {
+  background: var(--admin-surface-soft, #f3f4f6);
+}
+
+.detailHeaderBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* «Удалить» в шапке — акцент опасности. */
+.detailHeaderBtnDanger {
+  color: var(--admin-error-text, #b91c1c);
+  border-color: #fca5a5;
+}
+
+.detailHeaderBtnDanger:hover {
+  background: var(--admin-error-bg-soft, #fee2e2);
+}
+
+/* Компактные кнопки во всей модалке — в шапке и в ряду действий на бланке. */
+.detailModalPanel :global([data-modal-btn='primary']),
+.detailModalPanel :global([data-modal-btn='secondary']) {
+  min-height: 1.75rem !important;
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+}
+
+.detailFormShell :global([data-modal-form-actions]) {
+  margin-top: var(--admin-space-xs, 4px);
+  padding: var(--admin-space-xs, 4px) var(--admin-space-sm, 6px);
+  gap: var(--admin-space-sm, 6px);
+}
+
+/* «Выплатить все» — синяя, а не стандартный акцент модалки. */
+.detailFormShell :global([data-modal-form-actions]) .payAllBtn {
+  background: var(--admin-info-strong, #1d4ed8);
+}
+
+.detailFormShell :global([data-modal-form-actions]) .payAllBtn:hover {
+  background: var(--admin-info-bright, #3b82f6);
+}
+
+/* Кнопка «Удалить» в ряду действий модалки — акцент опасности. */
+.detailFormShell :global([data-modal-btn='secondary']).modalActionDanger {
+  color: var(--admin-error-text, #b91c1c);
+}
+
+.detailFormShell :global([data-modal-btn='secondary']).modalActionDanger:hover {
+  background: var(--admin-error-bg-soft, #fee2e2);
+}
+
 .detailBackLink {
   display: inline-block;
   margin-bottom: 8px;

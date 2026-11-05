@@ -26,10 +26,23 @@ import { isIasSheetAuthor, todayIsoDate } from '../shared/installer-advance-shee
 /** Цель модалки выплаты: строка ведомости или вся ведомость целиком. */
 type PayTarget = { kind: 'item'; itemId: string } | { kind: 'all' } | null;
 
-export function useInstallerAdvanceSheetDetailPage() {
+/**
+ * Карточка ведомости. По умолчанию — страница /admin/installer-advance-sheets/[id];
+ * через options работает в модалке над любой страницей (напр., чипы план-графика).
+ */
+export function useInstallerAdvanceSheetDetailPage(options?: {
+  /** id ведомости из вызова (модалка); по умолчанию — параметр маршрута [id]. */
+  sheetId?: string;
+  /** Вместо перехода к списку после удаления ведомости (модалка закрывается сама). */
+  onDeleted?: () => void;
+  /** false — модалка закрыта: не грузим и не обновляем данные (модалка смонтирована ради анимации). */
+  active?: boolean;
+}) {
   const router = useRouter();
   const params = useParams<{ id: string }>();
-  const sheetId = typeof params?.id === 'string' ? params.id : '';
+  const routeSheetId = typeof params?.id === 'string' ? params.id : '';
+  const sheetId = options?.sheetId !== undefined ? options.sheetId : routeSheetId;
+  const active = options?.active ?? true;
   const { user } = useAuth();
 
   const canManagePayments = user?.role === 'SUPER_ADMIN';
@@ -77,8 +90,17 @@ export function useInstallerAdvanceSheetDetailPage() {
     };
   }, []);
 
+  /** Смена ведомости (одна модалка переиспользуется) — сбрасываем локальный UI-стейт. */
+  useEffect(() => {
+    setEditMode(false);
+    setOpenCommentsItemId(null);
+    setPayTarget(null);
+    setUnpayTarget(null);
+    setDeleteOpen(false);
+  }, [sheetId]);
+
   const refresh = useCallback(async () => {
-    if (!sheetId) return;
+    if (!sheetId || !active) return;
     setLoading(true);
     try {
       const detail = await getInstallerAdvanceSheet(sheetId);
@@ -89,7 +111,7 @@ export function useInstallerAdvanceSheetDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [sheetId]);
+  }, [sheetId, active]);
 
   useEffect(() => {
     void refresh();
@@ -161,13 +183,17 @@ export function useInstallerAdvanceSheetDetailPage() {
     setDeleteSubmitting(true);
     try {
       await deleteInstallerAdvanceSheet(sheet.id);
-      router.push('/admin/installer-advance-sheets');
+      if (options?.onDeleted) {
+        options.onDeleted();
+      } else {
+        router.push('/admin/installer-advance-sheets');
+      }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Не удалось удалить ведомость');
     } finally {
       setDeleteSubmitting(false);
     }
-  }, [sheet, router]);
+  }, [sheet, router, options]);
 
   const submitEdit = useCallback(
     async (values: {

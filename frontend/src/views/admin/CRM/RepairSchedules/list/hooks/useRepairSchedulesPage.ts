@@ -7,6 +7,10 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/features/auth';
 import { type InstallerMaster, getInstallers } from '@/shared/api/admin-crm';
 import {
+  type InstallerAdvanceSheetSummary,
+  getInstallerAdvanceSheets,
+} from '@/shared/api/crm/admin-installer-advance-sheets';
+import {
   type RepairScheduleProject,
   type RepairScheduleProjectStatus,
   autoSyncRepairSchedules,
@@ -127,6 +131,27 @@ export function useRepairSchedulesPage() {
     void refreshTrashCount();
   }, [refreshTrashCount]);
 
+  /** Невыплаченные ведомости авансов по договорам «Ремонта» — чипы у переключателя вида. */
+  const [unpaidAdvanceSheets, setUnpaidAdvanceSheets] = useState<InstallerAdvanceSheetSummary[]>(
+    []
+  );
+  const refreshUnpaidAdvanceSheets = useCallback(async () => {
+    try {
+      const res = await getInstallerAdvanceSheets({
+        unpaid: true,
+        packageKind: 'REPAIR',
+        limit: 20,
+      });
+      setUnpaidAdvanceSheets(res.data);
+    } catch {
+      setUnpaidAdvanceSheets([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshUnpaidAdvanceSheets();
+  }, [refreshUnpaidAdvanceSheets]);
+
   const repairInstallers = useMemo(
     () => installers.filter((i) => i.directions?.includes('REPAIR')),
     [installers]
@@ -134,6 +159,8 @@ export function useRepairSchedulesPage() {
 
   const refresh = useCallback(async () => {
     setLoading(true);
+    // Чипы ведомостей обновляем и на общем обновлении (создание/выплата ведомости).
+    void refreshUnpaidAdvanceSheets();
     try {
       try {
         await autoSyncRepairSchedules();
@@ -152,7 +179,7 @@ export function useRepairSchedulesPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, staleOnly]);
+  }, [search, staleOnly, refreshUnpaidAdvanceSheets]);
 
   useEffect(() => {
     void refresh();
@@ -435,6 +462,9 @@ export function useRepairSchedulesPage() {
     statusCounts,
     deadlineCounts,
     refresh,
+    /** Невыплаченные ведомости авансов «Ремонта» — чипы у переключателя вида. */
+    unpaidAdvanceSheets,
+    refreshUnpaidAdvanceSheets,
     openCreate,
     saveCreate,
     moveStatus,

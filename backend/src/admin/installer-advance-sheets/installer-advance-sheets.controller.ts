@@ -65,6 +65,8 @@ export class InstallerAdvanceSheetsController {
   findAll(@Query() query: QueryInstallerAdvanceSheetsDto) {
     return this.installerAdvanceSheets.findAll({
       status: query.status,
+      unpaid: query.unpaid,
+      packageKind: query.packageKind,
       installerId: query.installerId,
       dateFrom: query.dateFrom,
       dateTo: query.dateTo,
@@ -100,8 +102,12 @@ export class InstallerAdvanceSheetsController {
 
   @Patch(':id')
   @Roles(...SHEET_AUTHOR_ROLES)
-  update(@Param('id') id: string, @Body() dto: UpdateInstallerAdvanceSheetDto) {
-    return this.installerAdvanceSheets.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateInstallerAdvanceSheetDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.installerAdvanceSheets.update(id, dto, req.user);
   }
 
   @Delete(':id')

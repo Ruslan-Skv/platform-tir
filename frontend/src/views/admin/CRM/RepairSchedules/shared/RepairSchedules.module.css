@@ -69,6 +69,58 @@
   background: var(--admin-accent-soft, #eff6ff);
 }
 
+/* Переключатель вида + чипы невыплаченных ведомостей в одной строке. */
+.viewModeBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-md);
+  margin: var(--admin-space-sm) 0 var(--admin-space-md);
+}
+
+.viewModeBar .viewModeRow {
+  margin: 0;
+}
+
+.unpaidSheetsRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* Чип ведомости: «Иванов И. · 45 000 ₽» — клик открывает ведомость в модалке. */
+.unpaidSheetChip {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  padding: 4px 12px;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font: inherit;
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* По ведомости есть открытый вопрос супер-админа. */
+.unpaidSheetChipQuestion {
+  border-color: #fde68a;
+  background: #fef3c7;
+  color: #b45309;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .unpaidSheetChip:hover {
+    filter: brightness(0.95);
+  }
+}
+
 .viewPanels {
   position: relative;
   display: grid;

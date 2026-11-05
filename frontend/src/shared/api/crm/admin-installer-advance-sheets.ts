@@ -89,6 +89,10 @@ export async function getInstallerAdvanceSheets(params?: {
   dateFrom?: string;
   dateTo?: string;
   search?: string;
+  /** Только ведомости, где есть невыплаченные строки (ожидает или вопрос). */
+  unpaid?: boolean;
+  /** Направление договоров в строках ведомости (напр. REPAIR — план-график ремонта). */
+  packageKind?: string;
   page?: number;
   limit?: number;
 }): Promise<InstallerAdvanceSheetsListResponse> {
@@ -98,6 +102,8 @@ export async function getInstallerAdvanceSheets(params?: {
   if (params?.dateFrom) search.set('dateFrom', params.dateFrom);
   if (params?.dateTo) search.set('dateTo', params.dateTo);
   if (params?.search) search.set('search', params.search);
+  if (params?.unpaid) search.set('unpaid', 'true');
+  if (params?.packageKind) search.set('packageKind', params.packageKind);
   search.set('page', String(params?.page ?? 1));
   search.set('limit', String(params?.limit ?? 50));
   const res = await apiFetch(`${API_URL}/admin/installer-advance-sheets?${search}`, {
@@ -149,11 +155,21 @@ export type InstallerAdvanceSheetItemParams = {
   amount: number;
 };
 
+/**
+ * Ответ создания ведомости. appendedToExisting — строки добавлены в уже
+ * созданную сегодня невыплаченную ведомость этого мастера; mergedFrom — номера
+ * ведомостей, которые при этом были в неё объединены.
+ */
+export type InstallerAdvanceSheetCreateResult = InstallerAdvanceSheetSummary & {
+  appendedToExisting?: boolean;
+  mergedFrom?: number[];
+};
+
 export async function createInstallerAdvanceSheet(params: {
   installerId: string;
   note?: string;
   items: InstallerAdvanceSheetItemParams[];
-}): Promise<InstallerAdvanceSheetSummary> {
+}): Promise<InstallerAdvanceSheetCreateResult> {
   const res = await apiFetch(`${API_URL}/admin/installer-advance-sheets`, {
     method: 'POST',
     headers: getAdminAuthHeaders(),

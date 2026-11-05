@@ -1,4 +1,5 @@
-import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { ContractDocumentPackageKind } from '@prisma/client';
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 /** Статус ведомости (производный от статусов строк). */
 export const INSTALLER_ADVANCE_SHEET_STATUSES = ['PENDING', 'QUESTION', 'PAID'] as const;
@@ -10,6 +11,16 @@ export class QueryInstallerAdvanceSheetsDto {
   @IsOptional()
   @IsIn(INSTALLER_ADVANCE_SHEET_STATUSES)
   status?: InstallerAdvanceSheetStatusFilter;
+
+  /** true — ведомости, где есть невыплаченные строки (ожидает или вопрос). */
+  @IsOptional()
+  @IsBoolean()
+  unpaid?: boolean;
+
+  /** Направление договоров в строках ведомости (напр. REPAIR — план-график ремонта). */
+  @IsOptional()
+  @IsIn(Object.values(ContractDocumentPackageKind))
+  packageKind?: ContractDocumentPackageKind;
 
   /** Мастер из справочника «Мастера (монтажники)». */
   @IsOptional()
