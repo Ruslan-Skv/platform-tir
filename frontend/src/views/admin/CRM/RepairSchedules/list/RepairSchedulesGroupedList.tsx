@@ -344,19 +344,6 @@ export function RepairSchedulesGroupedList({
           </button>
         </td>
         <td>
-          <div className={styles.cellMain}>
-            <div>{item.installerName || '—'}</div>
-            {(item.attachedInstallers ?? []).length > 0 ? (
-              <span
-                className={styles.subline}
-                title="Мастера, прикреплённые в модалке «Заказ-наряды» договора"
-              >
-                {item.attachedInstallers!.map((m) => m.fullName).join(', ')}
-              </span>
-            ) : null}
-          </div>
-        </td>
-        <td>
           {hideCustomer ? (
             <span className={styles.subline}>—</span>
           ) : (
@@ -376,8 +363,8 @@ export function RepairSchedulesGroupedList({
             {item.paidPercent != null ? <PaidPercentBadge percent={item.paidPercent} /> : null}
           </div>
         </td>
-        <td>
-          <SalaryCell salary={item.salary} />
+        <td className={styles.noteCell} title={managerNote ?? undefined}>
+          {managerNote ? <span className={styles.noteText}>{managerNote}</span> : '—'}
         </td>
         <td title="Дата подписания акта начала работ">
           <div className={styles.cellMain}>
@@ -395,6 +382,22 @@ export function RepairSchedulesGroupedList({
         </td>
         <td>
           <div className={styles.cellMain}>
+            <div>{item.installerName || '—'}</div>
+            {(item.attachedInstallers ?? []).length > 0 ? (
+              <span
+                className={styles.subline}
+                title="Мастера, прикреплённые в модалке «Заказ-наряды» договора"
+              >
+                {item.attachedInstallers!.map((m) => m.fullName).join(', ')}
+              </span>
+            ) : null}
+          </div>
+        </td>
+        <td>
+          <SalaryCell salary={item.salary} />
+        </td>
+        <td>
+          <div className={styles.cellMain}>
             {item.latestEntry ? (
               <>
                 <div>{formatDate(item.latestEntry.date)}</div>
@@ -407,9 +410,6 @@ export function RepairSchedulesGroupedList({
               <div className={styles.stale}>Нет записи &gt; {item.staleDays} дн.</div>
             ) : null}
           </div>
-        </td>
-        <td className={styles.noteCell} title={managerNote ?? undefined}>
-          {managerNote ? <span className={styles.noteText}>{managerNote}</span> : '—'}
         </td>
         <td>
           <StatusBadge item={item} />
@@ -615,9 +615,12 @@ export function RepairSchedulesGroupedList({
               <thead>
                 <tr>
                   <th>Договор</th>
-                  <th>Мастер</th>
                   <th>Заказчик / адрес</th>
                   <th title="Стоимость договора с доп. соглашениями (всё к оплате)">СД + д/с</th>
+                  <th>Примечание</th>
+                  <th title="Дата подписания акта начала работ">Дата АНР</th>
+                  <th>Срок окончания</th>
+                  <th>Мастер</th>
                   <th
                     title={
                       'Полная з/п мастеров по заказ-нарядам договора; ' +
@@ -626,10 +629,7 @@ export function RepairSchedulesGroupedList({
                   >
                     З/п
                   </th>
-                  <th title="Дата подписания акта начала работ">Дата АНР</th>
-                  <th>Срок окончания</th>
                   <th>Последняя запись</th>
-                  <th>Примечание</th>
                   <th>Статус</th>
                   <th>Действия</th>
                 </tr>
