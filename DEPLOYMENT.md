@@ -144,14 +144,14 @@ Access-токен хранится в `localStorage`, refresh — в httpOnly co
 ## Несколько доменов и зеркалирование
 
 **Основной домен:** territory-interior.ru  
-**Зеркала (301 → основной):** территория-интерьерных-решений.рф, 601270.ru
+**Зеркала (301 → основной):** территория-интерьерных-решений.рф, 601270.ru, psk-pobeda.ru
 
 1. **NEXT_PUBLIC_API_URL** — относительный путь `/api/v1`.
 2. **CORS_ORIGIN** — все домены (на случай запросов до редиректа):
    ```
-   CORS_ORIGIN=https://territory-interior.ru,https://xn-----mlcbabasabfm9bcdf6aacfbc3aeg7f4dwdza7f.xn--p1ai,https://601270.ru
+   CORS_ORIGIN=https://territory-interior.ru,https://xn-----mlcbabasabfm9bcdf6aacfbc3aeg7f4dwdza7f.xn--p1ai,https://601270.ru,https://psk-pobeda.ru
    ```
-3. **SSL:** все домены должны быть в сертификате Let's Encrypt. При первом запуске `setup-ssl.sh` включает все три. Для добавления 601270.ru к уже существующему сертификату:
+3. **SSL:** все домены должны быть в сертификате Let's Encrypt. При первом запуске `setup-ssl.sh` включает основной домен и зеркала. Для добавления нового домена (например, psk-pobeda.ru) к уже существующему сертификату:
    ```bash
    chmod +x scripts/expand-ssl-domains.sh
    ./scripts/expand-ssl-domains.sh

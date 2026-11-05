@@ -8,6 +8,7 @@ DOMAIN2="xn-----mlcbabasabfm9bcdf6aacfbc3aeg7f4dwdza7f.xn--p1ai"  # террит
 DOMAIN3="601270.ru"
 DOMAIN4="mebel-na-zakaz-51.ru"
 DOMAIN5="remont-kvartir-51.ru"
+DOMAIN6="psk-pobeda.ru"
 
 COMPOSE="docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml -f docker-compose.ssl.yml"
 
@@ -23,6 +24,7 @@ sudo certbot certonly --standalone --expand \
   -d "$DOMAIN3" \
   -d "$DOMAIN4" \
   -d "$DOMAIN5" \
+  -d "$DOMAIN6" \
   --non-interactive
 
 echo ""
@@ -38,4 +40,4 @@ $COMPOSE up -d nginx
 
 echo ""
 echo "✅ Сертификат расширен. Домены:"
-echo "   $DOMAIN_MAIN, территория-интерьерных-решений.рф, $DOMAIN3, $DOMAIN4, $DOMAIN5"
+echo "   $DOMAIN_MAIN, территория-интерьерных-решений.рф, $DOMAIN3, $DOMAIN4, $DOMAIN5, $DOMAIN6"
