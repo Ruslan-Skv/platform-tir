@@ -4,7 +4,9 @@ import Link from 'next/link';
 
 import styles from './Logo.module.css';
 
-const FULL_VIEWBOX = '0 0 847.15 237.78';
+// Ширина 852.5 вместо 847.16 (реальный правый край текста): буквы Я/Х/Й упирались
+// в границу viewBox и срезались при растеризации — добавлен запас справа.
+const FULL_VIEWBOX = '0 0 852.5 237.78';
 /** Только домик (без «ТИР» и «Территория интерьерных решений»). Небольшой inset — чтобы края не срезались при масштабе. */
 const MARK_VIEWBOX = '-3 -3 200.48 243.78';
 /** Только цветные квадраты — вариант знака без контура домика ( bbox квадратов 44.58..154.85 × 91.91..199.05 + inset ). */
@@ -184,6 +186,22 @@ function LogoSvg({ className, markOnly }: { className?: string; markOnly?: boole
   return markOnly ? <LogoMarkSvg className={className} /> : <LogoFullSvg className={className} />;
 }
 
+/** Буква «П» из логотипа старого сайта psk-pobeda.ru (ПСК «Победа») —
+    фирменный знак компании-предшественника справа от текста логотипа,
+    в красном круге с толщиной линии как обводка домика. */
+function PobedaMark() {
+  return (
+    <span aria-hidden className={styles.pobedaBadge}>
+      <img
+        src="/images/logo-pobeda-p.png"
+        alt=""
+        className={styles.pobedaBadgeLetter}
+        decoding="async"
+      />
+    </span>
+  );
+}
+
 export const Logo: React.FC<LogoProps> = ({
   href = '/',
   className,
@@ -196,7 +214,10 @@ export const Logo: React.FC<LogoProps> = ({
 
   if (unlinked) {
     return (
-      <span className={[styles.logoLink, linkClassName].filter(Boolean).join(' ')}>{svg}</span>
+      <span className={[styles.logoLink, linkClassName].filter(Boolean).join(' ')}>
+        {svg}
+        {!markOnly && <PobedaMark />}
+      </span>
     );
   }
 
@@ -207,6 +228,7 @@ export const Logo: React.FC<LogoProps> = ({
       aria-label={ariaLabel}
     >
       {svg}
+      {!markOnly && <PobedaMark />}
     </Link>
   );
 };

@@ -32,6 +32,30 @@
   flex-shrink: 0;
 }
 
+/* Буква «П» со старого логотипа psk-pobeda.ru — справа от текста логотипа,
+   в красном круге. Толщина обводки 1.4px ≈ линия домика (7 ед. из 237.78 при
+   высоте логотипа 2.875rem ≈ 1.35px). Поднята к строке «ТИР». */
+.pobedaBadge {
+  align-self: flex-start;
+  margin-left: 0.75rem;
+  margin-top: 0.125rem;
+  width: 1.65rem;
+  height: 1.65rem;
+  border: 1.4px solid #d62027;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.pobedaBadgeLetter {
+  height: 58%;
+  width: auto;
+  display: block;
+}
+
 /* Два знака рядом: домик (по умолчанию) и квадраты без домика — вариант
    «squares» включается CSS-потребителем (админский бренд, превью в настройках). */
 .logoMarkSquares {
@@ -201,5 +225,13 @@
 @media (width <= 1023px) {
   .logo {
     height: 1.75rem;
+  }
+
+  .pobedaBadge {
+    width: 1rem;
+    height: 1rem;
+    margin-left: 0.45rem;
+    margin-top: 0.0625rem;
+    border-width: 0.85px;
   }
 }
