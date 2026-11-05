@@ -1,4 +1,4 @@
-import { PACKAGE_NOT_IN_TRASH } from './repair-schedule.shared';
+import { PACKAGE_NOT_IN_TRASH } from '../contract-document-packages/shared/package-not-in-trash';
 import { RepairSchedulesService } from './repair-schedules.service';
 
 type FindManyArgs = { where?: unknown };

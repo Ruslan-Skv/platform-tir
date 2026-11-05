@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { PACKAGE_NOT_IN_TRASH } from '../contract-document-packages/shared/package-not-in-trash';
 
 export type AdminBellRepairScheduleNotification = {
   id: string;
@@ -31,6 +32,11 @@ export class AdminBellRepairScheduleFeedService {
       where: {
         recipientId: userId,
         createdAt: { gte: since },
+        // События корзины план-графика и удалённых договоров в фиде не показываем.
+        project: {
+          deletedAt: null,
+          ...PACKAGE_NOT_IN_TRASH,
+        },
       },
       orderBy: { createdAt: 'desc' },
       take: Math.min(50, Math.max(1, limit)),

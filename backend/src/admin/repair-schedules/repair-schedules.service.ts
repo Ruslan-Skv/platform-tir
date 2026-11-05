@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Prisma, RepairScheduleEntryKind, RepairScheduleProjectStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+import { PACKAGE_NOT_IN_TRASH } from '../contract-document-packages/shared/package-not-in-trash';
 import { CreateRepairScheduleEntryDto } from './dto/create-repair-schedule-entry.dto';
 import { CreateRepairScheduleProjectDto } from './dto/create-repair-schedule-project.dto';
 import {
@@ -15,7 +16,6 @@ import {
 } from './repair-schedule-notify.service';
 import { RepairScheduleRowEnrichmentService } from './repair-schedule-row-enrichment.service';
 import {
-  PACKAGE_NOT_IN_TRASH,
   PROJECT_DETAIL_INCLUDE,
   PROJECT_INCLUDE,
   decimalOrNull,

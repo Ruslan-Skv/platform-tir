@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Prisma, FurnitureScheduleEntryKind, FurnitureScheduleProjectStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+import { PACKAGE_NOT_IN_TRASH } from '../contract-document-packages/shared/package-not-in-trash';
 import { CreateFurnitureScheduleEntryDto } from './dto/create-furniture-schedule-entry.dto';
 import { CreateFurnitureScheduleProjectDto } from './dto/create-furniture-schedule-project.dto';
 import {
@@ -217,6 +218,7 @@ export class FurnitureSchedulesService {
     const status = params.status;
     const search = params.search?.trim();
     const where: Prisma.FurnitureScheduleProjectWhereInput = {
+      AND: [PACKAGE_NOT_IN_TRASH],
       ...(status ? { status } : {}),
       ...(params.installerId?.trim() ? { installerId: params.installerId.trim() } : {}),
       ...(search
@@ -255,6 +257,7 @@ export class FurnitureSchedulesService {
     const search = params?.search?.trim();
     const rows = await this.prisma.furnitureScheduleProject.findMany({
       where: {
+        AND: [PACKAGE_NOT_IN_TRASH],
         installer: { userId },
         ...(params?.status ? { status: params.status } : {}),
         ...(search

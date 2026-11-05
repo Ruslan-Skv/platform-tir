@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { FurnitureScheduleProjectStatus, RepairScheduleProjectStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+import { PACKAGE_NOT_IN_TRASH } from '../contract-document-packages/shared/package-not-in-trash';
 import {
   JointObjectsListResult,
   JointRawNode,
@@ -40,6 +41,7 @@ export class JointObjectsService {
       this.prisma.installationScheduleEntry.findMany({
         where: {
           deletedAt: null,
+          AND: [PACKAGE_NOT_IN_TRASH],
           date: { gte: installFrom, lte: installTo },
         },
         select: {
@@ -61,7 +63,11 @@ export class JointObjectsService {
         take: 5000,
       }),
       this.prisma.repairScheduleProject.findMany({
-        where: includeClosed ? undefined : { status: { not: RepairScheduleProjectStatus.CLOSED } },
+        where: {
+          deletedAt: null,
+          AND: [PACKAGE_NOT_IN_TRASH],
+          ...(includeClosed ? {} : { status: { not: RepairScheduleProjectStatus.CLOSED } }),
+        },
         include: {
           package: {
             select: {
@@ -79,9 +85,10 @@ export class JointObjectsService {
         take: 3000,
       }),
       this.prisma.furnitureScheduleProject.findMany({
-        where: includeClosed
-          ? undefined
-          : { status: { not: FurnitureScheduleProjectStatus.CLOSED } },
+        where: {
+          AND: [PACKAGE_NOT_IN_TRASH],
+          ...(includeClosed ? {} : { status: { not: FurnitureScheduleProjectStatus.CLOSED } }),
+        },
         include: {
           package: {
             select: {

@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { InstallationScheduleStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+import { PACKAGE_NOT_IN_TRASH } from '../contract-document-packages/shared/package-not-in-trash';
 import { CompleteInstallationScheduleDto } from './dto/complete-installation-schedule.dto';
 import { CreateInstallationScheduleDto } from './dto/create-installation-schedule.dto';
 import { FailInstallationScheduleDto } from './dto/fail-installation-schedule.dto';
@@ -234,6 +235,7 @@ export class InstallationSchedulesService {
       where: {
         ...overlappingDateRangeWhere(params),
         deletedAt: null,
+        AND: [PACKAGE_NOT_IN_TRASH],
         ...(direction ? { direction } : {}),
         ...(params.installerId?.trim()
           ? {
@@ -275,9 +277,14 @@ export class InstallationSchedulesService {
       where: {
         ...overlappingDateRangeWhere(params),
         deletedAt: null,
-        OR: [
-          { installerId: { in: myInstallerIds } },
-          { installerIds: { hasSome: myInstallerIds } },
+        AND: [
+          PACKAGE_NOT_IN_TRASH,
+          {
+            OR: [
+              { installerId: { in: myInstallerIds } },
+              { installerIds: { hasSome: myInstallerIds } },
+            ],
+          },
         ],
       },
       include: ENTRY_INCLUDE,
