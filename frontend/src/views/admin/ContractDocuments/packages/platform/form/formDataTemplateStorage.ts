@@ -115,6 +115,15 @@ export function buildPersistedFormData(
   options?: BuildPersistedFormDataOptions
 ): Record<string, unknown> {
   const base = { ...(form as unknown as Record<string, unknown>) };
+  if (base.workOrder != null && typeof base.workOrder === 'object') {
+    // «Показывать стоимость в каждой позиции» — настройка просмотра, не персистим
+    // (при загрузке чек-бокс всегда выключен).
+    const { showLineAmounts: _showLineAmounts, ...workOrder } = base.workOrder as Record<
+      string,
+      unknown
+    >;
+    base.workOrder = workOrder;
+  }
   const linkedCrmCustomerId = options?.linkedCrmCustomerId?.trim();
   if (linkedCrmCustomerId) {
     base._linkedCrmCustomerId = linkedCrmCustomerId;

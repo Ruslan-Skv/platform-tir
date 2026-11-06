@@ -140,7 +140,7 @@ export function defaultPackageFormData(): PackageFormData {
     workOrder: {
       taxPercent: '',
       markupPercent: '',
-      showLineAmounts: true,
+      showLineAmounts: false,
       gradeIncreasePercent: 0,
     },
     selectedRepairInstallerIds: [],

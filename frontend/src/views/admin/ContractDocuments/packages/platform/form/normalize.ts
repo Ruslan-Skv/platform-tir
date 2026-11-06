@@ -523,10 +523,17 @@ export function mergePackageFormData(raw: unknown): PackageFormData {
     addendumSlots,
     addendumDocumentDates
   );
+  // «Показывать стоимость в каждой позиции» заказ-нарядов — настройка просмотра, а не данные пакета:
+  // чек-бокс при загрузке всегда выключен, сохранённое значение не учитываем.
+  const mergedWorkOrder = {
+    ...merged.workOrder,
+    showLineAmounts: false,
+  };
   return syncPackageDiscountDerivedFields({
     ...merged,
     customer: mergedCustomer,
     executor: mergedExecutor,
+    workOrder: mergedWorkOrder,
     contract: {
       ...merged.contract,
       discountType: normalizeContractDiscountType(merged.contract?.discountType),
