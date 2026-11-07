@@ -7,9 +7,12 @@ import { useSearchParams } from 'next/navigation';
 import {
   type WorkDayRequest,
   type WorkDayRequestStatus,
+  type WorkDayRequestType,
   approveWorkDayRequest,
   getAdminWorkDayRequests,
+  getWorkDaySettings,
   rejectWorkDayRequest,
+  updateWorkDaySettings,
 } from '@/shared/api/crm/admin-work-days';
 
 export function useWorkDayRequestsPage() {
@@ -20,6 +23,9 @@ export function useWorkDayRequestsPage() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [autoApprovedTypes, setAutoApprovedTypes] = useState<WorkDayRequestType[]>([]);
+  const [settingsLoading, setSettingsLoading] = useState(true);
+  const [settingsBusyType, setSettingsBusyType] = useState<WorkDayRequestType | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -37,9 +43,25 @@ export function useWorkDayRequestsPage() {
     }
   }, [statusFilter]);
 
+  const loadSettings = useCallback(async () => {
+    setSettingsLoading(true);
+    try {
+      const settings = await getWorkDaySettings();
+      setAutoApprovedTypes(settings.autoApprovedRequestTypes ?? []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось загрузить настройки запросов');
+    } finally {
+      setSettingsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    void loadSettings();
+  }, [loadSettings]);
 
   useEffect(() => {
     if (!highlightId || loading || rows.length === 0) return;
@@ -73,6 +95,25 @@ export function useWorkDayRequestsPage() {
     }
   };
 
+  /** Включить/выключить автоудовлетворение запросов одного типа. */
+  const toggleAutoApprove = async (type: WorkDayRequestType) => {
+    setSettingsBusyType(type);
+    setError(null);
+    const next = autoApprovedTypes.includes(type)
+      ? autoApprovedTypes.filter((t) => t !== type)
+      : [...autoApprovedTypes, type];
+    try {
+      const settings = await updateWorkDaySettings({
+        autoApprovedRequestTypes: next,
+      });
+      setAutoApprovedTypes(settings.autoApprovedRequestTypes ?? next);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось сохранить настройку');
+    } finally {
+      setSettingsBusyType(null);
+    }
+  };
+
   return {
     rows,
     loading,
@@ -84,6 +125,10 @@ export function useWorkDayRequestsPage() {
     load,
     approve,
     reject,
+    autoApprovedTypes,
+    settingsLoading,
+    settingsBusyType,
+    toggleAutoApprove,
   };
 }
 

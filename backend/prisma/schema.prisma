@@ -5169,18 +5169,20 @@ enum WorkDayCloseReason {
 }
 
 model WorkDaySettings {
-  id                        String     @id @default("main")
-  isEnabled                 Boolean    @default(true)
-  trackedRoles              UserRole[] @default([MANAGER])
-  blockAdminWithoutWorkDay  Boolean    @default(true)
-  requireOfficeIp           Boolean    @default(true)
-  blockMobileDevices        Boolean    @default(true)
-  autoCloseHour             Int        @default(22)
-  autoCloseMinute           Int        @default(0)
-  defaultGracePeriodMinutes Int        @default(10)
-  greetingMessages          String[]   @default(["Доброго дня, {имя}! Желаем продуктивной работы.", "С добрым утром, {имя}! Отличного рабочего дня!", "{имя}, желаем хорошего дня и отличной работы!"])
-  createdAt                 DateTime   @default(now())
-  updatedAt                 DateTime   @updatedAt
+  id                        String               @id @default("main")
+  isEnabled                 Boolean              @default(true)
+  trackedRoles              UserRole[]           @default([MANAGER])
+  blockAdminWithoutWorkDay  Boolean              @default(true)
+  requireOfficeIp           Boolean              @default(true)
+  blockMobileDevices        Boolean              @default(true)
+  autoCloseHour             Int                  @default(22)
+  autoCloseMinute           Int                  @default(0)
+  defaultGracePeriodMinutes Int                  @default(10)
+  // Типы запросов, которые удовлетворяются автоматически сразу при отправке (без ручного согласования суперадмином).
+  autoApprovedRequestTypes  WorkDayRequestType[] @default([])
+  greetingMessages          String[]             @default(["Доброго дня, {имя}! Желаем продуктивной работы.", "С добрым утром, {имя}! Отличного рабочего дня!", "{имя}, желаем хорошего дня и отличной работы!"])
+  createdAt                 DateTime             @default(now())
+  updatedAt                 DateTime             @updatedAt
 
   @@map("work_day_settings")
 }

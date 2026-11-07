@@ -10,6 +10,7 @@ export const DEFAULT_WORK_DAY_SETTINGS: Omit<WorkDaySettings, 'createdAt' | 'upd
   autoCloseHour: 22,
   autoCloseMinute: 0,
   defaultGracePeriodMinutes: 10,
+  autoApprovedRequestTypes: [],
   greetingMessages: [
     'Доброго дня, {имя}! Желаем продуктивной работы.',
     'С добрым утром, {имя}! Отличного рабочего дня!',

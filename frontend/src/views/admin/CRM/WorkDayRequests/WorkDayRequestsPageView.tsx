@@ -26,11 +26,27 @@ const TYPE_LABELS: Record<WorkDayRequestType, string> = {
   VACATION_LEAVE: 'Отпуск',
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  PENDING: 'Ожидает',
+  APPROVED: 'Подтверждён',
+  REJECTED: 'Отклонён',
+  CANCELLED: 'Отменён',
+};
+
 const STATUS_FILTERS: { value: WorkDayRequestStatus | 'ALL'; label: string }[] = [
   { value: 'PENDING', label: 'Ожидают' },
   { value: 'APPROVED', label: 'Подтверждённые' },
   { value: 'REJECTED', label: 'Отклонённые' },
   { value: 'ALL', label: 'Все' },
+];
+
+/** Типы запросов с переключателем автоудовлетворения (подписи как у кнопок сотрудника). */
+const AUTO_APPROVE_TYPES: { type: WorkDayRequestType; label: string }[] = [
+  { type: 'LATE_ARRIVAL', label: 'Прийти попозже' },
+  { type: 'EARLY_LEAVE', label: 'Уйти пораньше' },
+  { type: 'SICK_LEAVE', label: 'Отметить больничный' },
+  { type: 'DAY_OFF', label: 'Взять выходной' },
+  { type: 'VACATION_LEAVE', label: 'Отметить отпуск' },
 ];
 
 function userLabel(row: {
@@ -57,6 +73,10 @@ export function WorkDayRequestsPageView({ model }: WorkDayRequestsPageViewProps)
     load,
     approve,
     reject,
+    autoApprovedTypes,
+    settingsLoading,
+    settingsBusyType,
+    toggleAutoApprove,
   } = model;
 
   return (
@@ -94,6 +114,29 @@ export function WorkDayRequestsPageView({ model }: WorkDayRequestsPageViewProps)
       </div>
 
       {error ? <p className={styles.error}>{error}</p> : null}
+
+      <section className={styles.settingsCard} aria-label="Настройки автоудовлетворения запросов">
+        <h2 className={styles.settingsTitle}>Автоудовлетворение запросов</h2>
+        <p className={styles.settingsHint}>
+          Включённые типы запросов согласовываются сразу при отправке сотрудником — без ожидания
+          ручного подтверждения суперадмином.
+        </p>
+        <ul className={styles.settingsList}>
+          {AUTO_APPROVE_TYPES.map((item) => (
+            <li key={item.type}>
+              <label className={styles.settingsLabel}>
+                <input
+                  type="checkbox"
+                  checked={autoApprovedTypes.includes(item.type)}
+                  disabled={settingsLoading || settingsBusyType === item.type}
+                  onChange={() => void toggleAutoApprove(item.type)}
+                />
+                <span>{item.label}</span>
+              </label>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       {loading ? (
         <p className={styles.empty}>Загрузка…</p>
@@ -148,7 +191,10 @@ export function WorkDayRequestsPageView({ model }: WorkDayRequestsPageViewProps)
                   </button>
                 </div>
               ) : (
-                <p className={styles.cardMeta}>Статус: {row.status}</p>
+                <p className={styles.cardMeta}>
+                  Статус: {STATUS_LABELS[row.status] ?? row.status}
+                  {row.reviewComment ? ` · ${row.reviewComment}` : ''}
+                </p>
               )}
             </li>
           ))}

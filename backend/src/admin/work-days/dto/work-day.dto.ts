@@ -13,7 +13,7 @@ import {
   Max,
   Min,
 } from 'class-validator';
-import { UserRole, WorkDayExcuseKind } from '@prisma/client';
+import { UserRole, WorkDayExcuseKind, WorkDayRequestType } from '@prisma/client';
 
 export class UpdateWorkDaySettingsDto {
   @IsOptional()
@@ -54,6 +54,12 @@ export class UpdateWorkDaySettingsDto {
   @Min(0)
   @Max(120)
   defaultGracePeriodMinutes?: number;
+
+  /** Типы запросов, удовлетворяемых автоматически сразу при отправке сотрудником. */
+  @IsOptional()
+  @IsArray()
+  @IsEnum(WorkDayRequestType, { each: true })
+  autoApprovedRequestTypes?: WorkDayRequestType[];
 
   @IsOptional()
   @IsArray()

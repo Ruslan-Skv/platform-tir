@@ -8,6 +8,7 @@ import {
   UserRole,
   WorkDayRequestStatus,
   WorkDayRequestType,
+  type Prisma,
   type WorkDayRequest,
 } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
@@ -23,6 +24,13 @@ const REQUEST_INCLUDE = {
     select: { id: true, email: true, firstName: true, lastName: true },
   },
 } as const;
+
+type WorkDayRequestWithRelations = Prisma.WorkDayRequestGetPayload<{
+  include: typeof REQUEST_INCLUDE;
+}>;
+
+/** Комментарий, который остаётся на запросе, согласованном автоматически по настройкам. */
+const AUTO_APPROVED_REVIEW_COMMENT = 'Удовлетворён автоматически по настройкам';
 
 @Injectable()
 export class WorkDayRequestsService {
@@ -136,8 +144,52 @@ export class WorkDayRequestsService {
       include: REQUEST_INCLUDE,
     });
 
+    // Для типов из настройки автоудовлетворения запрос согласовывается сразу,
+    // без ожидания ручного решения суперадмина.
+    if (await this.isAutoApprovedType(type)) {
+      return this.autoApproveRequest(created);
+    }
+
     this.workDayNotify.onRequestCreated(created.id);
     return created;
+  }
+
+  /** Тип запроса включён суперадмином в режим автоудовлетворения. */
+  private async isAutoApprovedType(type: WorkDayRequestType): Promise<boolean> {
+    const settings = await this.prisma.workDaySettings.findUnique({
+      where: { id: 'main' },
+      select: { autoApprovedRequestTypes: true },
+    });
+    return (settings?.autoApprovedRequestTypes ?? []).includes(type);
+  }
+
+  /**
+   * Мгновенное согласование только что созданного запроса: статус APPROVED без reviewer'а,
+   * для больничного/отпуска дополнительно создаётся отметка workDayLeave на весь период.
+   * Если автосогласование не удалось (например, пересечение с уже отмеченным больничным),
+   * запрос остаётся ожидающим на ручное рассмотрение суперадмина.
+   */
+  private async autoApproveRequest(row: WorkDayRequestWithRelations) {
+    try {
+      const updated = isWorkDayPeriodRequestType(row.type)
+        ? await this.approveLeaveRequest(row, null, {
+            reviewComment: AUTO_APPROVED_REVIEW_COMMENT,
+          })
+        : await this.prisma.workDayRequest.update({
+            where: { id: row.id },
+            data: {
+              status: WorkDayRequestStatus.APPROVED,
+              reviewedAt: new Date(),
+              reviewComment: AUTO_APPROVED_REVIEW_COMMENT,
+            },
+            include: REQUEST_INCLUDE,
+          });
+      this.workDayNotify.onRequestReviewed(updated);
+      return updated;
+    } catch {
+      this.workDayNotify.onRequestCreated(row.id);
+      return row;
+    }
   }
 
   async listMyRequests(
@@ -256,7 +308,7 @@ export class WorkDayRequestsService {
       requestDateTo: Date | null;
       comment: string | null;
     },
-    reviewerId: string,
+    reviewerId: string | null,
     dto: ReviewWorkDayRequestDto,
   ) {
     const dateFrom = row.requestDate;

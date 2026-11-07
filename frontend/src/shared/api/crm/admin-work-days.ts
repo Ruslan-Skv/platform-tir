@@ -205,6 +205,8 @@ export interface WorkDaySettings {
   autoCloseHour: number;
   autoCloseMinute: number;
   defaultGracePeriodMinutes: number;
+  /** Типы запросов, удовлетворяемых автоматически при отправке (без ручного согласования). */
+  autoApprovedRequestTypes: WorkDayRequestType[];
   greetingMessages: string[];
 }
 
