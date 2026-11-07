@@ -14,7 +14,7 @@ import {
   normalizeProductMarkupPercent,
 } from '../installer-settlements/installer-accrual';
 import { CreateInstallerAdvanceSheetDto } from './dto/create-installer-advance-sheet.dto';
-import { CreateInstallerAdvanceSheetItemDto } from './dto/installer-advance-sheet-items.dto';
+import { normalizeInstallerAdvanceSheetItems } from './installer-advance-sheet-items.util';
 import { PayInstallerAdvanceSheetDto } from './dto/pay-installer-advance-sheet.dto';
 import { UpdateInstallerAdvanceSheetDto } from './dto/update-installer-advance-sheet.dto';
 import {
@@ -241,7 +241,7 @@ export class InstallerAdvanceSheetsService {
         `В ведомости допускается не более ${MAX_ITEMS_PER_SHEET} строк`,
       );
     }
-    const items = this.normalizeItems(dto.items);
+    const items = normalizeInstallerAdvanceSheetItems(dto.items);
     await this.assertPackagesValid(items);
 
     const { sheet, mergedFrom, appendedToExisting } = await this.prisma.$transaction(async (tx) => {
@@ -405,7 +405,7 @@ export class InstallerAdvanceSheetsService {
           `В ведомости допускается не более ${MAX_ITEMS_PER_SHEET} строк`,
         );
       }
-      const items = this.normalizeItems(dto.items);
+      const items = normalizeInstallerAdvanceSheetItems(dto.items);
       const paidPackageIds = new Set(
         sheet.items
           .filter((item) => item.status === InstallerAdvanceSheetItemStatus.PAID)
@@ -554,34 +554,6 @@ export class InstallerAdvanceSheetsService {
       throw new NotFoundException('Строка ведомости не найдена');
     }
     return { sheet, item };
-  }
-
-  /**
-   * Строки ведомости после нормализации: договор (packageId) либо ручное
-   * назначение выдачи (purpose) — строго что-то одно. Строка без договора
-   * в журнал авансов и «Расчёт мастеров» не попадает.
-   */
-  private normalizeItems(
-    items: CreateInstallerAdvanceSheetItemDto[],
-  ): Array<{ packageId: string | null; purpose: string | null; amount: number }> {
-    if (items.length === 0) {
-      throw new BadRequestException('Добавьте хотя бы одну строку ведомости');
-    }
-    return items.map((item, index) => {
-      const packageId = typeof item.packageId === 'string' ? item.packageId.trim() : '';
-      const purpose = typeof item.purpose === 'string' ? item.purpose.trim() : '';
-      if (packageId && purpose) {
-        throw new BadRequestException(
-          `Строка №${index + 1}: укажите либо договор, либо назначение выдачи — не оба сразу`,
-        );
-      }
-      if (!packageId && !purpose) {
-        throw new BadRequestException(
-          `Строка №${index + 1}: укажите договор или назначение выдачи`,
-        );
-      }
-      return { packageId: packageId || null, purpose: purpose || null, amount: item.amount };
-    });
   }
 
   /** Строки-договоры: без дублей и только существующие договоры. */
