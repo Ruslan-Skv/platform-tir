@@ -91,10 +91,14 @@ export class InstallerAdvanceSheetPaymentsService {
     return { sheet, item };
   }
 
-  /** Создание записей журнала авансов + перевод строк в PAID — одной транзакцией. */
+  /**
+   * Создание записей журнала авансов + перевод строк в PAID — одной транзакцией.
+   * Строки без договора (packageId = null) в журнал авансов не попадают —
+   * отметка о выдаче остаётся только в самой ведомости.
+   */
   private async payItemsTx(
     sheet: { number: number; createdAt: Date; installer: { id: string; fullName: string } },
-    items: Array<{ id: string; packageId: string; amount: Prisma.Decimal }>,
+    items: Array<{ id: string; packageId: string | null; amount: Prisma.Decimal }>,
     dto: PayInstallerAdvanceSheetDto,
     paidById?: string,
   ) {
@@ -103,37 +107,48 @@ export class InstallerAdvanceSheetPaymentsService {
 
     await this.prisma.$transaction(async (tx) => {
       // Лимит журнала на договор — как при ручной выдаче из модалки договора.
-      const packageIds = [...new Set(items.map((item) => item.packageId))];
-      const counts = await tx.contractDocumentPackageInstallerAdvance.groupBy({
-        by: ['packageId'],
-        where: { packageId: { in: packageIds } },
-        _count: { id: true },
-      });
+      const packageIds = [
+        ...new Set(
+          items
+            .map((item) => item.packageId)
+            .filter((packageId): packageId is string => packageId !== null),
+        ),
+      ];
+      const counts =
+        packageIds.length > 0
+          ? await tx.contractDocumentPackageInstallerAdvance.groupBy({
+              by: ['packageId'],
+              where: { packageId: { in: packageIds } },
+              _count: { id: true },
+            })
+          : [];
       const countByPackage = new Map(counts.map((row) => [row.packageId, row._count.id]));
       const perPackage = new Map<string, number>();
       for (const item of items) {
-        const already =
-          (countByPackage.get(item.packageId) ?? 0) + (perPackage.get(item.packageId) ?? 0);
-        if (already >= MAX_ADVANCES_PER_PACKAGE) {
-          throw new BadRequestException(
-            `По одному договору допускается не более ${MAX_ADVANCES_PER_PACKAGE} записей авансов`,
-          );
-        }
-        perPackage.set(item.packageId, already + 1);
+        if (item.packageId) {
+          const already =
+            (countByPackage.get(item.packageId) ?? 0) + (perPackage.get(item.packageId) ?? 0);
+          if (already >= MAX_ADVANCES_PER_PACKAGE) {
+            throw new BadRequestException(
+              `По одному договору допускается не более ${MAX_ADVANCES_PER_PACKAGE} записей авансов`,
+            );
+          }
+          perPackage.set(item.packageId, already + 1);
 
-        await tx.contractDocumentPackageInstallerAdvance.create({
-          data: {
-            packageId: item.packageId,
-            installerId: sheet.installer.id,
-            installerName: sheet.installer.fullName,
-            paidAt,
-            amount: item.amount,
-            paymentMethod: dto.paymentMethod ?? null,
-            note,
-            createdById: paidById ?? null,
-            sheetItemId: item.id,
-          },
-        });
+          await tx.contractDocumentPackageInstallerAdvance.create({
+            data: {
+              packageId: item.packageId,
+              installerId: sheet.installer.id,
+              installerName: sheet.installer.fullName,
+              paidAt,
+              amount: item.amount,
+              paymentMethod: dto.paymentMethod ?? null,
+              note,
+              createdById: paidById ?? null,
+              sheetItemId: item.id,
+            },
+          });
+        }
         await tx.installerAdvanceSheetItem.update({
           where: { id: item.id },
           data: {

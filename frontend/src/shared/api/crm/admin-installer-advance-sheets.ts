@@ -35,16 +35,20 @@ export type InstallerAdvanceSheetItemComment = {
 /** Строка ведомости в карточке: аванс по договору + реквизиты договора + переписка. */
 export type InstallerAdvanceSheetItem = {
   id: string;
-  packageId: string;
+  /** null — строка без привязки к договору (тогда заполнен purpose). */
+  packageId: string | null;
+  /** Назначение выдачи — только у строк без привязки к договору. */
+  purpose: string | null;
   amount: string;
   status: InstallerAdvanceSheetItemStatus;
   /** Дата выплаты (YYYY-MM-DD); null — ещё не выдано. */
   paidAt: string | null;
   paymentMethod: ContractDocumentPackageInstallerAdvancePaymentMethod | null;
   paidBy: { id: string; name: string } | null;
-  packageKind: string;
-  direction: string;
-  packageStatus: string;
+  /** Реквизиты договора; null у строк без привязки к договору. */
+  packageKind: string | null;
+  direction: string | null;
+  packageStatus: string | null;
   contractNumber: string | null;
   customerName: string | null;
   objectAddress: string | null;
@@ -151,7 +155,10 @@ export async function getInstallerAdvancePackageBalance(
 }
 
 export type InstallerAdvanceSheetItemParams = {
-  packageId: string;
+  /** Договор; не задан — выдача без привязки к договору (тогда обязателен purpose). */
+  packageId?: string;
+  /** Назначение выдачи для строки без договора. */
+  purpose?: string;
   amount: number;
 };
 

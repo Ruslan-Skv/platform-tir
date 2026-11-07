@@ -465,6 +465,33 @@
   font-size: var(--modal-fs-xs, 0.75rem);
 }
 
+/* Кнопка «+ Выдача без договора» — под панелью поиска заказа. */
+.addManualRowBtn {
+  align-self: flex-start;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px dashed var(--admin-border-strong, #d1d5db);
+  border-radius: var(--admin-radius-md, 8px);
+  background: var(--admin-surface, #ffffff);
+  color: var(--admin-text, #334155);
+  font-size: var(--modal-fs-sm);
+  cursor: pointer;
+}
+
+.addManualRowBtn:hover:not(:disabled) {
+  background: var(--admin-surface-soft, #f3f4f6);
+}
+
+.addManualRowBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Поле «Назначение выдачи» в строке без договора. */
+.rowPurposeInput {
+  min-width: 0;
+}
+
 /* Таблица строк: договор → сумма → остаток з/п. */
 .rowsTable {
   display: flex;

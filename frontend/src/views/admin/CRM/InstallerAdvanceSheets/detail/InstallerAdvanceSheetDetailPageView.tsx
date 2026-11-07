@@ -140,6 +140,9 @@ export function InstallerAdvanceSheetDetailPageView({
 
   const pendingCount = sheet.itemsCount - sheet.paidCount;
   const canDelete = canEditSheets && sheet.paidCount === 0;
+  /** Строка выплаты в модалке — подсказка зависит от наличия договора. */
+  const payTargetItem =
+    payTarget?.kind === 'item' ? sheet.items.find((item) => item.id === payTarget.itemId) : null;
 
   /** Строка метаданных (дата, мастер, автор, прогресс выплат) — общая для страницы и модалки. */
   const metaRow = (
@@ -242,7 +245,8 @@ export function InstallerAdvanceSheetDetailPageView({
       </div>
       <p className={styles.detailNote}>
         Отметка «Выплачено» создаёт запись в журнале авансов договора — она же появляется в разделе
-        «Расчёт мастеров». Выплаты отмечает только супер-админ.
+        «Расчёт мастеров». Строки без привязки к договору в журнал не попадают. Выплаты отмечает
+        только супер-админ.
       </p>
     </section>
   );
@@ -301,8 +305,17 @@ export function InstallerAdvanceSheetDetailPageView({
               </div>
             </div>
             <p data-modal-form-hint>
-              Будет создана запись журнала авансов по договору — она же появится в разделе «Расчёт
-              мастеров».
+              {payTargetItem && !payTargetItem.packageId ? (
+                <>
+                  Строка без привязки к договору — запись в журнале авансов и «Расчёте мастеров» не
+                  создаётся, отметка о выдаче остаётся только в ведомости.
+                </>
+              ) : (
+                <>
+                  Будет создана запись журнала авансов по договору — она же появится в разделе
+                  «Расчёт мастеров».
+                </>
+              )}
             </p>
             <div data-modal-form-actions>
               <button
@@ -532,13 +545,22 @@ function ItemRow({
       <tr>
         <td>{index + 1}</td>
         <td>
-          <strong>{item.contractNumber || '—'}</strong>
-          <span className={isStyles.cellSubline}>
-            {item.direction}
-            {IAS_PACKAGE_STATUS_LABELS[item.packageStatus]
-              ? ` · ${IAS_PACKAGE_STATUS_LABELS[item.packageStatus]}`
-              : ''}
-          </span>
+          {item.packageId ? (
+            <>
+              <strong>{item.contractNumber || '—'}</strong>
+              <span className={isStyles.cellSubline}>
+                {item.direction}
+                {item.packageStatus && IAS_PACKAGE_STATUS_LABELS[item.packageStatus]
+                  ? ` · ${IAS_PACKAGE_STATUS_LABELS[item.packageStatus]}`
+                  : ''}
+              </span>
+            </>
+          ) : (
+            <>
+              <strong>{item.purpose || 'Выдача без договора'}</strong>
+              <span className={isStyles.cellSubline}>Без привязки к договору</span>
+            </>
+          )}
         </td>
         <td>
           <div className={isStyles.customerCell}>

@@ -1,12 +1,26 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsNumber, IsString, Min } from 'class-validator';
+import { IsNumber, IsString, MaxLength, Min, ValidateIf } from 'class-validator';
 
-/** Строка ведомости: аванс по конкретному договору. */
+/**
+ * Строка ведомости: аванс по договору (packageId) либо выдача денег без
+ * привязки к договору — тогда обязателен purpose («Назначение выдачи»).
+ */
 export class CreateInstallerAdvanceSheetItemDto {
-  @ApiProperty({ description: 'Договор (пакет документов), по которому планируется аванс' })
+  @ApiPropertyOptional({
+    description: 'Договор (пакет документов); null — выдача без привязки к договору',
+  })
+  @ValidateIf((o) => !o.purpose)
   @IsString()
-  packageId: string;
+  packageId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Назначение выдачи для строки без договора (обязательно, если packageId не задан)',
+  })
+  @ValidateIf((o) => !o.packageId)
+  @IsString()
+  @MaxLength(500)
+  purpose?: string;
 
   @ApiProperty({ description: 'Сумма аванса, руб.' })
   @Type(() => Number)

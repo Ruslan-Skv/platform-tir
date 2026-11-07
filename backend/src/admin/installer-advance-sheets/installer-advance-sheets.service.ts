@@ -14,6 +14,7 @@ import {
   normalizeProductMarkupPercent,
 } from '../installer-settlements/installer-accrual';
 import { CreateInstallerAdvanceSheetDto } from './dto/create-installer-advance-sheet.dto';
+import { CreateInstallerAdvanceSheetItemDto } from './dto/installer-advance-sheet-items.dto';
 import { PayInstallerAdvanceSheetDto } from './dto/pay-installer-advance-sheet.dto';
 import { UpdateInstallerAdvanceSheetDto } from './dto/update-installer-advance-sheet.dto';
 import {
@@ -120,6 +121,8 @@ export class InstallerAdvanceSheetsService {
             },
           },
         },
+        // Назначение выдачи строк без договора
+        { items: { some: { purpose: { contains: q, mode: 'insensitive' } } } },
       ];
     }
 
@@ -238,7 +241,8 @@ export class InstallerAdvanceSheetsService {
         `В ведомости допускается не более ${MAX_ITEMS_PER_SHEET} строк`,
       );
     }
-    await this.assertPackagesValid(dto.items.map((item) => item.packageId));
+    const items = this.normalizeItems(dto.items);
+    await this.assertPackagesValid(items);
 
     const { sheet, mergedFrom, appendedToExisting } = await this.prisma.$transaction(async (tx) => {
       const candidates = await tx.installerAdvanceSheet.findMany({
@@ -258,8 +262,9 @@ export class InstallerAdvanceSheetsService {
             note: dto.note?.trim() ? dto.note.trim() : null,
             createdById: createdById ?? null,
             items: {
-              create: dto.items.map((item) => ({
+              create: items.map((item) => ({
                 packageId: item.packageId,
+                purpose: item.purpose,
                 amount: item.amount,
               })),
             },
@@ -275,11 +280,13 @@ export class InstallerAdvanceSheetsService {
       const sheetNumberOfPackage = new Map<string, number>();
       for (const candidate of candidates) {
         for (const item of candidate.items) {
-          sheetNumberOfPackage.set(item.packageId, candidate.number);
+          if (item.packageId) sheetNumberOfPackage.set(item.packageId, candidate.number);
         }
       }
-      const duplicate = dto.items.find((item) => sheetNumberOfPackage.has(item.packageId));
-      if (duplicate) {
+      const duplicate = items.find(
+        (item) => item.packageId && sheetNumberOfPackage.has(item.packageId),
+      );
+      if (duplicate?.packageId) {
         throw new BadRequestException(
           `Договор уже добавлен в созданную сегодня ведомость № ${sheetNumberOfPackage.get(
             duplicate.packageId,
@@ -287,7 +294,7 @@ export class InstallerAdvanceSheetsService {
         );
       }
       const totalItems =
-        candidates.reduce((sum, candidate) => sum + candidate.items.length, 0) + dto.items.length;
+        candidates.reduce((sum, candidate) => sum + candidate.items.length, 0) + items.length;
       if (totalItems > MAX_ITEMS_PER_SHEET) {
         throw new BadRequestException(
           `В ведомости допускается не более ${MAX_ITEMS_PER_SHEET} строк`,
@@ -310,8 +317,9 @@ export class InstallerAdvanceSheetsService {
         where: { id: target.id },
         data: {
           items: {
-            create: dto.items.map((item) => ({
+            create: items.map((item) => ({
               packageId: item.packageId,
+              purpose: item.purpose,
               amount: item.amount,
             })),
           },
@@ -397,18 +405,20 @@ export class InstallerAdvanceSheetsService {
           `В ведомости допускается не более ${MAX_ITEMS_PER_SHEET} строк`,
         );
       }
+      const items = this.normalizeItems(dto.items);
       const paidPackageIds = new Set(
         sheet.items
           .filter((item) => item.status === InstallerAdvanceSheetItemStatus.PAID)
-          .map((item) => item.packageId),
+          .map((item) => item.packageId)
+          .filter((packageId): packageId is string => packageId !== null),
       );
-      const overlap = dto.items.filter((item) => paidPackageIds.has(item.packageId));
+      const overlap = items.filter((item) => item.packageId && paidPackageIds.has(item.packageId));
       if (overlap.length > 0) {
         throw new BadRequestException(
           'Договор уже выплачен в этой ведомости — уберите дублирующую строку',
         );
       }
-      await this.assertPackagesValid(dto.items.map((item) => item.packageId));
+      await this.assertPackagesValid(items);
 
       // Строки заменяются целиком: выплаченные остаются, остальные пересоздаются
       // (комментарии удалённых строк убираются вместе с ними).
@@ -420,8 +430,9 @@ export class InstallerAdvanceSheetsService {
           where: { id },
           data: {
             items: {
-              create: dto.items.map((item) => ({
+              create: items.map((item) => ({
                 packageId: item.packageId,
+                purpose: item.purpose,
                 amount: item.amount,
               })),
             },
@@ -545,14 +556,44 @@ export class InstallerAdvanceSheetsService {
     return { sheet, item };
   }
 
-  private async assertPackagesValid(packageIds: string[]) {
+  /**
+   * Строки ведомости после нормализации: договор (packageId) либо ручное
+   * назначение выдачи (purpose) — строго что-то одно. Строка без договора
+   * в журнал авансов и «Расчёт мастеров» не попадает.
+   */
+  private normalizeItems(
+    items: CreateInstallerAdvanceSheetItemDto[],
+  ): Array<{ packageId: string | null; purpose: string | null; amount: number }> {
+    if (items.length === 0) {
+      throw new BadRequestException('Добавьте хотя бы одну строку ведомости');
+    }
+    return items.map((item, index) => {
+      const packageId = typeof item.packageId === 'string' ? item.packageId.trim() : '';
+      const purpose = typeof item.purpose === 'string' ? item.purpose.trim() : '';
+      if (packageId && purpose) {
+        throw new BadRequestException(
+          `Строка №${index + 1}: укажите либо договор, либо назначение выдачи — не оба сразу`,
+        );
+      }
+      if (!packageId && !purpose) {
+        throw new BadRequestException(
+          `Строка №${index + 1}: укажите договор или назначение выдачи`,
+        );
+      }
+      return { packageId: packageId || null, purpose: purpose || null, amount: item.amount };
+    });
+  }
+
+  /** Строки-договоры: без дублей и только существующие договоры. */
+  private async assertPackagesValid(items: Array<{ packageId: string | null }>): Promise<void> {
+    const packageIds = items
+      .map((item) => item.packageId)
+      .filter((packageId): packageId is string => packageId !== null);
     const ids = [...new Set(packageIds)];
     if (ids.length !== packageIds.length) {
       throw new BadRequestException('В ведомости не может быть двух строк по одному договору');
     }
-    if (ids.length === 0) {
-      throw new BadRequestException('Добавьте хотя бы одну строку с договором');
-    }
+    if (ids.length === 0) return;
     const packages = await this.prisma.contractDocumentPackage.findMany({
       where: { id: { in: ids }, deletedAt: null },
       select: { id: true },

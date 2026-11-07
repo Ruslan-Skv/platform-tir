@@ -42,7 +42,7 @@ export function buildInstallerAdvanceSheetInnerHtml(sheet: InstallerAdvanceSheet
       (item, index) => `
       <tr>
         <td style="text-align:center;">${index + 1}</td>
-        <td>${escapeHtml(item.contractNumber || '—')}</td>
+        <td>${escapeHtml(item.contractNumber || (item.purpose ? `${item.purpose} (без договора)` : '—'))}</td>
         <td>${escapeHtml([item.customerName, item.objectAddress].filter(Boolean).join(', ') || '—')}</td>
         <td style="text-align:right; white-space:nowrap;">${formatMoney(item.amount)} ₽</td>
         <td style="width:22%;"></td>

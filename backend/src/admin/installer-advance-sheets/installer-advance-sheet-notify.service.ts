@@ -10,7 +10,7 @@ export type InstallerAdvanceSheetNotifyData = {
   installerName: string;
   /** Сумма всех строк ведомости. */
   totalAmount: number;
-  /** Количество строк (договоров) в ведомости. */
+  /** Количество строк в ведомости (авансы по договорам и выдачи без договора). */
   itemCount: number;
   /** Строки добавлены в уже созданную сегодня ведомость (автообъединение за день). */
   appendedToExisting?: boolean;
@@ -45,8 +45,16 @@ export class InstallerAdvanceSheetNotifyService {
     const amount = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 }).format(
       sheet.totalAmount,
     );
-    const lines = sheet.itemCount === 1 ? '1 договор' : `${sheet.itemCount} договора`;
-    return `${lines} · ${amount} ₽ · ${sheet.installerName}`;
+    // Строки бывают не только по договорам, поэтому считаем «позициями».
+    const mod10 = sheet.itemCount % 10;
+    const mod100 = sheet.itemCount % 100;
+    const word =
+      mod10 === 1 && mod100 !== 11
+        ? 'позиция'
+        : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)
+          ? 'позиции'
+          : 'позиций';
+    return `${sheet.itemCount} ${word} · ${amount} ₽ · ${sheet.installerName}`;
   }
 
   private async notify(

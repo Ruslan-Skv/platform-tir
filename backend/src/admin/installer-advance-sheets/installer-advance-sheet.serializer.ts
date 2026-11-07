@@ -65,7 +65,7 @@ function userLabel(user: {
 }
 
 /** Номер договора / заказчик / адрес — из formData пакета (как в «Расчёте мастеров»). */
-function packageSummaryFromFormData(formData: Prisma.JsonValue) {
+function packageSummaryFromFormData(formData: Prisma.JsonValue | undefined | null) {
   const data = (formData ?? {}) as {
     contract?: { number?: unknown };
     customer?: { fullName?: unknown };
@@ -129,15 +129,19 @@ export function serializeDetail(sheet: SheetDetail) {
   const items = sheet.items.map((item) => ({
     id: item.id,
     packageId: item.packageId,
+    /** Назначение выдачи — только у строк без привязки к договору. */
+    purpose: item.purpose,
     amount: item.amount.toString(),
     status: item.status,
     paidAt: item.paidAt ? isoDate(item.paidAt) : null,
     paymentMethod: item.paymentMethod,
     paidBy: item.paidBy ? { id: item.paidBy.id, name: userLabel(item.paidBy) } : null,
-    packageKind: String(item.package.kind),
-    direction: KIND_TO_DIRECTION_NAME[item.package.kind] ?? String(item.package.kind),
-    packageStatus: String(item.package.status),
-    ...packageSummaryFromFormData(item.package.formData),
+    packageKind: item.package ? String(item.package.kind) : null,
+    direction: item.package
+      ? (KIND_TO_DIRECTION_NAME[item.package.kind] ?? String(item.package.kind))
+      : null,
+    packageStatus: item.package ? String(item.package.status) : null,
+    ...packageSummaryFromFormData(item.package?.formData),
     /** Запись журнала авансов, созданная выплатой этой строки. */
     advanceId: item.advance?.id ?? null,
     comments: item.comments.map((comment) => ({

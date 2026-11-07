@@ -20,10 +20,12 @@ import { formatIasGradeShort, formatIasMoney } from './installer-advance-sheets-
 
 type FormRow = {
   key: string;
-  /** Выбранный договор. */
-  packageId: string;
+  /** Выбранный договор; undefined — строка с ручным назначением выдачи. */
+  packageId?: string;
   /** Подпись договора (№ + заказчик) в таблице строк. */
   label: string;
+  /** Назначение выдачи (только для строк без договора). */
+  purpose: string;
   amount: string;
 };
 
@@ -187,6 +189,7 @@ export function InstallerAdvanceSheetForm({
         key: nextRowKey(),
         packageId: item.packageId,
         label: item.label,
+        purpose: '',
         amount: '',
       }));
     }
@@ -196,10 +199,12 @@ export function InstallerAdvanceSheetForm({
       .filter((item) => item.status !== 'PAID')
       .map((item) => ({
         key: nextRowKey(),
-        packageId: item.packageId,
-        label:
-          [item.contractNumber, item.customerName].filter(Boolean).join(' — ') ||
-          'Договор без номера',
+        packageId: item.packageId ?? undefined,
+        label: item.packageId
+          ? [item.contractNumber, item.customerName].filter(Boolean).join(' — ') ||
+            'Договор без номера'
+          : '',
+        purpose: item.purpose ?? '',
         amount: item.amount,
       }));
   });
@@ -235,8 +240,19 @@ export function InstallerAdvanceSheetForm({
       return;
     }
     setPanelError(null);
-    setRows((current) => [...current, { key: nextRowKey(), packageId: pkg.id, label, amount: '' }]);
+    setRows((current) => [
+      ...current,
+      { key: nextRowKey(), packageId: pkg.id, label, purpose: '', amount: '' },
+    ]);
     setPanelSearchValue('');
+  };
+
+  /** Строка «выдача без договора»: назначение вводится вручную, остаток не считается. */
+  const addManualRow = () => {
+    setRows((current) => [
+      ...current,
+      { key: nextRowKey(), packageId: undefined, label: '', purpose: '', amount: '' },
+    ]);
   };
 
   const updateRow = (key: string, patch: Partial<FormRow>) => {
@@ -253,23 +269,34 @@ export function InstallerAdvanceSheetForm({
       setError('Выберите мастера');
       return;
     }
-    const seenPackages = new Set<string>(paidRows.map((item) => item.packageId));
+    const seenPackages = new Set<string>(
+      paidRows.flatMap((item) => (item.packageId ? [item.packageId] : []))
+    );
     const items: InstallerAdvanceSheetItemParams[] = [];
     for (const row of rows) {
       const amount = parseRowAmount(row.amount);
+      const rowLabel = row.packageId ? row.label : 'строки без договора';
       if (!Number.isFinite(amount) || amount <= 0) {
-        setError(`Укажите сумму аванса (положительное число) для «${row.label}»`);
+        setError(`Укажите сумму аванса (положительное число) для «${rowLabel}»`);
         return;
       }
-      if (seenPackages.has(row.packageId)) {
-        setError('В ведомости не может быть двух строк по одному договору');
+      if (!row.packageId && !row.purpose.trim()) {
+        setError('Укажите назначение выдачи для строки без договора');
         return;
       }
-      seenPackages.add(row.packageId);
-      items.push({ packageId: row.packageId, amount: Math.round(amount * 100) / 100 });
+      if (row.packageId) {
+        if (seenPackages.has(row.packageId)) {
+          setError('В ведомости не может быть двух строк по одному договору');
+          return;
+        }
+        seenPackages.add(row.packageId);
+        items.push({ packageId: row.packageId, amount: Math.round(amount * 100) / 100 });
+      } else {
+        items.push({ purpose: row.purpose.trim(), amount: Math.round(amount * 100) / 100 });
+      }
     }
     if (items.length === 0) {
-      setError('Добавьте хотя бы одну строку с договором');
+      setError('Добавьте хотя бы одну строку — договор или выдачу без договора');
       return;
     }
     setError(null);
@@ -293,8 +320,9 @@ export function InstallerAdvanceSheetForm({
           <p data-modal-form-hint>
             Ведомость — еженедельный список авансов одного мастера по нескольким договорам. Найдите
             заказ панелью поиска — он добавится строкой в таблицу; после ввода суммы рядом виден
-            остаток з/п по договору. Если у мастера уже есть созданная сегодня невыплаченная
-            ведомость, строки автоматически добавятся в неё. Выплаты отмечает супер-админ.
+            остаток з/п по договору. Можно добавить и выдачу без привязки к договору — укажите
+            назначение вручную. Если у мастера уже есть созданная сегодня невыплаченная ведомость,
+            строки автоматически добавятся в неё. Выплаты отмечает супер-админ.
           </p>
         ) : null}
 
@@ -326,7 +354,9 @@ export function InstallerAdvanceSheetForm({
         </div>
 
         <div className={styles.rowsCard}>
-          <span className={styles.rowsCardLabel}>Строки ведомости (договор → сумма) *</span>
+          <span className={styles.rowsCardLabel}>
+            Строки ведомости (договор или назначение выдачи → сумма) *
+          </span>
 
           <div className={styles.searchPanelWrap}>
             <PackageOrderSearch
@@ -346,12 +376,25 @@ export function InstallerAdvanceSheetForm({
             {panelError ? <p className={styles.panelError}>{panelError}</p> : null}
           </div>
 
+          <button
+            type="button"
+            className={styles.addManualRowBtn}
+            onClick={addManualRow}
+            disabled={submitting}
+            title="Добавить строку о выдаче денег без привязки к договору"
+          >
+            + Выдача без договора
+          </button>
+
           {paidRows.map((item) => (
             <div key={item.id} className={styles.frozenRow}>
               <span>
                 Выплачено {item.paidAt ? `(${item.paidAt.split('-').reverse().join('.')})` : ''}:{' '}
-                {item.contractNumber || 'Договор без номера'}
-                {item.customerName ? ` — ${item.customerName}` : ''}
+                {item.packageId
+                  ? `${item.contractNumber || 'Договор без номера'}${
+                      item.customerName ? ` — ${item.customerName}` : ''
+                    }`
+                  : `${item.purpose || 'Выдача без договора'} (без договора)`}
               </span>
               <strong className={styles.frozenRowAmount}>{formatIasMoney(item.amount)}</strong>
             </div>
@@ -360,14 +403,27 @@ export function InstallerAdvanceSheetForm({
           {rows.length > 0 ? (
             <div className={styles.rowsTable}>
               <div className={`${styles.rowsTableRow} ${styles.rowsTableHead}`}>
-                <span>Договор</span>
+                <span>Договор / Назначение выдачи</span>
                 <span>Сумма аванса, ₽</span>
                 <span>Остаток з/п</span>
                 <span />
               </div>
               {rows.map((row) => (
                 <div key={row.key} className={styles.rowsTableRow}>
-                  <div className={styles.rowContract}>{row.label}</div>
+                  {row.packageId ? (
+                    <div className={styles.rowContract}>{row.label}</div>
+                  ) : (
+                    <input
+                      className={styles.rowPurposeInput}
+                      placeholder="Напр. Подъём материалов на этаж"
+                      value={row.purpose}
+                      onChange={(e) => updateRow(row.key, { purpose: e.target.value })}
+                      disabled={submitting}
+                      autoComplete="off"
+                      maxLength={500}
+                      aria-label="Назначение выдачи (строка без договора)"
+                    />
+                  )}
                   <input
                     inputMode="decimal"
                     placeholder="0"
@@ -375,14 +431,18 @@ export function InstallerAdvanceSheetForm({
                     onChange={(e) => updateRow(row.key, { amount: e.target.value })}
                     disabled={submitting}
                     autoComplete="off"
-                    aria-label={`Сумма аванса: ${row.label}`}
+                    aria-label={`Сумма аванса: ${row.packageId ? row.label : 'выдача без договора'}`}
                   />
                   <div className={styles.rowBalanceCell}>
-                    <RowBalanceHint
-                      installerId={installerId}
-                      packageId={row.packageId}
-                      amount={row.amount}
-                    />
+                    {row.packageId ? (
+                      <RowBalanceHint
+                        installerId={installerId}
+                        packageId={row.packageId}
+                        amount={row.amount}
+                      />
+                    ) : (
+                      <span className={styles.rowBalanceMuted}>без привязки к договору</span>
+                    )}
                   </div>
                   <button
                     type="button"
@@ -390,7 +450,9 @@ export function InstallerAdvanceSheetForm({
                     onClick={() => removeRow(row.key)}
                     disabled={submitting}
                     title="Убрать строку"
-                    aria-label={`Убрать строку: ${row.label}`}
+                    aria-label={`Убрать строку: ${
+                      row.packageId ? row.label : 'выдача без договора'
+                    }`}
                   >
                     ×
                   </button>
@@ -399,7 +461,8 @@ export function InstallerAdvanceSheetForm({
             </div>
           ) : (
             <p className={styles.rowsEmpty}>
-              Найдите заказ панелью поиска выше — выбранный договор появится здесь строкой.
+              Найдите заказ панелью поиска выше — выбранный договор появится здесь строкой. Или
+              добавьте выдачу без договора, указав назначение вручную.
             </p>
           )}
         </div>

@@ -3806,12 +3806,16 @@ model InstallerAdvanceSheet {
   @@map("installer_advance_sheets")
 }
 
-/// Строка ведомости: аванс по конкретному договору. Пока PENDING/QUESTION —
-/// редактируется ведущим специалистом; после выплаты замораживается.
+/// Строка ведомости: аванс по договору (packageId) либо выдача без привязки
+/// к договору — тогда заполнен purpose («Назначение выдачи»). Пока
+/// PENDING/QUESTION — редактируется ведущим специалистом; после выплаты замораживается.
 model InstallerAdvanceSheetItem {
   id            String                          @id @default(cuid())
   sheetId       String
-  packageId     String
+  /// null — строка без привязки к договору (ручное назначение выдачи в purpose).
+  packageId     String?
+  /// Назначение выдачи для строки без договора (packageId = null).
+  purpose       String?                         @db.Text
   amount        Decimal                         @db.Decimal(12, 2)
   status        InstallerAdvanceSheetItemStatus @default(PENDING)
   paidAt        DateTime?                       @db.Date
@@ -3822,7 +3826,7 @@ model InstallerAdvanceSheetItem {
   updatedAt     DateTime                        @updatedAt
 
   sheet    InstallerAdvanceSheet                    @relation(fields: [sheetId], references: [id], onDelete: Cascade)
-  package  ContractDocumentPackage                  @relation(fields: [packageId], references: [id], onDelete: Restrict)
+  package  ContractDocumentPackage?                 @relation(fields: [packageId], references: [id], onDelete: Restrict)
   paidBy   User?                                    @relation("InstallerAdvanceSheetItemPaidBy", fields: [paidById], references: [id], onDelete: SetNull)
   comments InstallerAdvanceSheetItemComment[]
   /// Запись журнала авансов, созданная при выплате этой строки (для отмены выплаты).
