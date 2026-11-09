@@ -11,6 +11,7 @@ export {
   WeatherstripSettingsSection,
 } from './catalog';
 export { QuoteFormSection } from './forms/QuoteFormSection';
+export { MeasurementFormSection } from './forms/MeasurementFormSection';
 export { CatalogFilterBlockSection } from './catalog-filters/CatalogFilterBlockSection';
 export { CatalogHubPreviewSection } from './catalog-hub/CatalogHubPreviewSection';
 export { ReviewsSection } from './reviews/ReviewsSection';

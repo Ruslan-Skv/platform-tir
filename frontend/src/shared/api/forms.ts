@@ -9,6 +9,13 @@ export async function getQuoteFormOptions(): Promise<{ options: string[] }> {
   return res.json();
 }
 
+/** Публичные опции формы «Записаться на замер» (список «Интересующий товар») */
+export async function getMeasurementFormOptions(): Promise<{ options: string[] }> {
+  const res = await apiFetch(`${API_URL}/forms/measurement-form-options`);
+  if (!res.ok) throw new Error('Не удалось загрузить опции формы');
+  return res.json();
+}
+
 export interface MeasurementFormPayload {
   name: string;
   phone: string;

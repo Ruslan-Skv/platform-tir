@@ -99,6 +99,7 @@ export const ADMIN_RESOURCE_PARENT: Readonly<Record<string, string>> = {
   'admin.settings.delivery': 'admin.settings',
   'admin.settings.admin-link': 'admin.settings',
   'admin.settings.quote-form': 'admin.settings',
+  'admin.settings.measurement-form': 'admin.settings',
   'admin.settings.pwa': 'admin.settings',
   'admin.settings.work-days': 'admin.settings',
   'admin.settings.auth': 'admin.settings',

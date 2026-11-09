@@ -441,13 +441,14 @@ model DirectorMessageBlock {
   @@map("director_message_block")
 }
 
-/// Настройки формы «Записаться на замер»: каналы уведомлений при подаче заявки
+/// Настройки формы «Записаться на замер»: каналы уведомлений и список позиций «Интересующий товар»
 model MeasurementFormBlock {
-  id                String   @id @default("main")
-  notifyEmails      Json? // string[]
-  notifyTelegramIds Json? // string[]
-  notifyMaxIds      Json? // string[]
-  updatedAt         DateTime @updatedAt
+  id                 String   @id @default("main")
+  notifyEmails       Json? // string[]
+  notifyTelegramIds  Json? // string[]
+  notifyMaxIds       Json? // string[]
+  productTypeOptions Json? // Массив строк — позиции списка «Интересующий товар» (настраивается в админке)
+  updatedAt          DateTime @updatedAt
 
   @@map("measurement_form_block")
 }

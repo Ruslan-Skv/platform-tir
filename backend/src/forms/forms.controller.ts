@@ -24,6 +24,15 @@ export class FormsController {
     return this.formsService.getQuoteFormOptions();
   }
 
+  @Get('measurement-form-options')
+  @ApiOperation({
+    summary: 'Список позиций «Интересующий товар» для формы «Записаться на замер» (публичный)',
+  })
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  async getMeasurementFormOptions() {
+    return this.formsService.getMeasurementFormOptions();
+  }
+
   @Post('measurement')
   @ApiOperation({ summary: 'Запись на бесплатный замер' })
   async submitMeasurement(@Body() dto: SubmitMeasurementDto) {

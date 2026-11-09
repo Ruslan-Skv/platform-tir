@@ -707,6 +707,11 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.settings.quote-form',
       },
       {
+        label: 'Запись на замер (товары)',
+        href: '/admin/settings/measurement-form',
+        resourceId: 'admin.settings.measurement-form',
+      },
+      {
         label: 'PWA и обновления',
         href: '/admin/settings/pwa',
         resourceId: 'admin.settings.pwa',

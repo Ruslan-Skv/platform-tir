@@ -111,32 +111,54 @@ export class AdminFormsService {
     const block = await this.prisma.measurementFormBlock.findUnique({
       where: { id: 'main' },
     });
+    const opts = block?.productTypeOptions;
+    const options = Array.isArray(opts) ? opts : [];
     if (!block) {
       return {
         notifyEmails: [],
         notifyTelegramIds: [],
         notifyMaxIds: [],
+        productTypeOptions: options,
         updatedAt: null,
       };
     }
-    return mapNotifyChannels(block);
+    return {
+      ...mapNotifyChannels(block),
+      productTypeOptions: options,
+    };
   }
 
   async updateMeasurementFormSettings(dto: UpdateMeasurementFormBlockDto) {
     const notifyData = buildNotifyChannelsUpdate(dto);
+    const productTypeOptionsValue: Prisma.InputJsonValue | typeof Prisma.JsonNull | undefined =
+      dto.productTypeOptions === undefined
+        ? undefined
+        : dto.productTypeOptions === null
+          ? Prisma.JsonNull
+          : (dto.productTypeOptions as Prisma.InputJsonValue);
+
     const block = await this.prisma.measurementFormBlock.upsert({
       where: { id: 'main' },
       create: {
         id: 'main',
         ...notifyData,
+        productTypeOptions: dto.productTypeOptions ?? undefined,
         updatedAt: new Date(),
       },
       update: {
         ...notifyData,
+        ...(productTypeOptionsValue !== undefined && {
+          productTypeOptions: productTypeOptionsValue,
+        }),
         updatedAt: new Date(),
       },
     });
-    return mapNotifyChannels(block);
+    const opts = block.productTypeOptions;
+    const options = Array.isArray(opts) ? opts : [];
+    return {
+      ...mapNotifyChannels(block),
+      productTypeOptions: options,
+    };
   }
 
   async getCallbackFormSettings() {

@@ -37,6 +37,16 @@ export class FormsService {
     return { options };
   }
 
+  async getMeasurementFormOptions(): Promise<{ options: string[] }> {
+    const block = await this.prisma.measurementFormBlock.findUnique({
+      where: { id: 'main' },
+    });
+    const opts = block?.productTypeOptions;
+    const raw = Array.isArray(opts) ? opts : [];
+    const options = raw.filter((x): x is string => typeof x === 'string');
+    return { options };
+  }
+
   async submitMeasurement(dto: SubmitMeasurementDto) {
     const submission = await this.prisma.formSubmission.create({
       data: {

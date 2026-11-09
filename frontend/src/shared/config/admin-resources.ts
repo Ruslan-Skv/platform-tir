@@ -405,6 +405,11 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     path: '/admin/settings/quote-form',
   },
   {
+    id: 'admin.settings.measurement-form',
+    label: 'Запись на замер (товары)',
+    path: '/admin/settings/measurement-form',
+  },
+  {
     id: 'admin.settings.pwa',
     label: 'PWA и обновления',
     path: '/admin/settings/pwa',

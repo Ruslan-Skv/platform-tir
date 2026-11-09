@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsEmail, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsEmail, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class UpdateMeasurementFormBlockDto {
   @ApiPropertyOptional({
@@ -10,6 +10,16 @@ export class UpdateMeasurementFormBlockDto {
   @IsArray()
   @IsEmail({}, { each: true })
   notifyEmails?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Список позиций «Интересующий товар» в форме записи на замер',
+    example: ['Межкомнатные двери', 'Окна', 'Ремонт квартиры'],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @MaxLength(150, { each: true })
+  productTypeOptions?: string[] | null;
 
   @ApiPropertyOptional({
     type: [String],

@@ -1,12 +1,25 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { SiteConsentField } from '@/features/site-consent';
+import { getMeasurementFormOptions } from '@/shared/api/forms';
 import { Button } from '@/shared/ui/Button';
 
 import type { MeasurementFormData } from '../../types/forms';
 import styles from './MeasurementForm.module.css';
+
+const DEFAULT_PRODUCT_TYPES = [
+  'Межкомнатные двери',
+  'Входные двери',
+  'Окна',
+  'Потолки',
+  'Жалюзи',
+  'Мебель',
+  'Ремонт квартиры',
+  'Ремонт помещения',
+  'Не знаю, нужна консультация',
+];
 
 export interface MeasurementFormProps {
   onSubmit: (data: MeasurementFormData) => void;
@@ -30,6 +43,23 @@ export const MeasurementForm: React.FC<MeasurementFormProps> = ({
     comments: '',
   });
   const [consent, setConsent] = useState(false);
+  const [productTypes, setProductTypes] = useState<string[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getMeasurementFormOptions()
+      .then(({ options }) => {
+        if (!cancelled) setProductTypes(options);
+      })
+      .catch(() => {
+        if (!cancelled) setProductTypes([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const displayProductTypes = productTypes.length > 0 ? productTypes : DEFAULT_PRODUCT_TYPES;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,16 +91,6 @@ export const MeasurementForm: React.FC<MeasurementFormProps> = ({
 
     return dates;
   };
-
-  const productTypes = [
-    'Межкомнатные двери',
-    'Входные двери',
-    'Окна',
-    'Потолки',
-    'Жалюзи',
-    'Мебель',
-    'Не знаю, нужна консультация',
-  ];
 
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
@@ -155,7 +175,7 @@ export const MeasurementForm: React.FC<MeasurementFormProps> = ({
             className={styles.select}
           >
             <option value="">Не выбрано</option>
-            {productTypes.map((type) => (
+            {displayProductTypes.map((type) => (
               <option key={type} value={type}>
                 {type}
               </option>
