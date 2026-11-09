@@ -2,6 +2,8 @@ import React from 'react';
 
 import Link from 'next/link';
 
+import { BadgeTooltip } from '@/shared/ui/BadgeTooltip';
+
 import styles from './Logo.module.css';
 
 // Ширина 852.5 вместо 847.16 (реальный правый край текста): буквы Я/Х/Й упирались
@@ -188,17 +190,37 @@ function LogoSvg({ className, markOnly }: { className?: string; markOnly?: boole
 
 /** Буква «П» из логотипа старого сайта psk-pobeda.ru (ПСК «Победа») —
     фирменный знак компании-предшественника справа от текста логотипа,
-    в красном круге с толщиной линии как обводка домика. */
+    в красном круге с толщиной линии как обводка домика.
+    Живёт отдельной анимацией (см. .pobedaBadge), при наведении рассказывает
+    историю ребрендинга. */
+const POBEDA_TOOLTIP_TITLE =
+  'Ранее — «Первая строительная компания Победа». Мы выросли. Теперь мы — «Территория интерьерных решений»';
+const POBEDA_TOOLTIP_TEXT =
+  '«Первая строительная компания Победа» расширила направления работы. Чтобы название отражало всё, чем мы занимаемся — от отделки и окон до мебели и дизайна, — мы обновили бренд. Для вас ничего не меняется: та же команда, те же обязательства, тот же подход.';
+
 function PobedaMark() {
   return (
-    <span aria-hidden className={styles.pobedaBadge}>
-      <img
-        src="/images/logo-pobeda-p.png"
-        alt=""
-        className={styles.pobedaBadgeLetter}
-        decoding="async"
-      />
-    </span>
+    <BadgeTooltip
+      side="bottom"
+      wide
+      maxWidth={420}
+      showDelayMs={200}
+      content={
+        <span className={styles.pobedaTooltip}>
+          <span className={styles.pobedaTooltipTitle}>{POBEDA_TOOLTIP_TITLE}</span>
+          <span className={styles.pobedaTooltipText}>{POBEDA_TOOLTIP_TEXT}</span>
+        </span>
+      }
+    >
+      <span aria-hidden className={styles.pobedaBadge}>
+        <img
+          src="/images/logo-pobeda-p.png"
+          alt=""
+          className={styles.pobedaBadgeLetter}
+          decoding="async"
+        />
+      </span>
+    </BadgeTooltip>
   );
 }
 

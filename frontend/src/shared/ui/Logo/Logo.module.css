@@ -34,7 +34,9 @@
 
 /* Буква «П» со старого логотипа psk-pobeda.ru — справа от текста логотипа,
    в красном круге. Толщина обводки 1.4px ≈ линия домика (7 ед. из 237.78 при
-   высоте логотипа 2.875rem ≈ 1.35px). Поднята к строке «ТИР». */
+   высоте логотипа 2.875rem ≈ 1.35px). Поднята к строке «ТИР».
+   Круг «живёт»: мягкое сердцебиение с расходящейся волной привлекает взгляд
+   и подсказывает, что при наведении появится история ребрендинга. */
 .pobedaBadge {
   align-self: flex-start;
   margin-left: 0.75rem;
@@ -48,12 +50,69 @@
   justify-content: center;
   flex-shrink: 0;
   box-sizing: border-box;
+  animation: pobedaHeartbeat 3.4s ease-in-out infinite;
+  transition: border-color 0.25s ease;
 }
 
 .pobedaBadgeLetter {
   height: 58%;
   width: auto;
   display: block;
+  transition: transform 0.25s ease;
+}
+
+/* Наведение на логотип: круг наливается красным, буква «П» подаётся вперёд
+   с лёгким наклоном — как монетка. */
+.logoLink:hover .pobedaBadge {
+  border-color: #ef2b32;
+}
+
+.logoLink:hover .pobedaBadgeLetter {
+  transform: scale(1.15) rotate(-6deg);
+}
+
+/* Сердцебиение знака «Победа»: двойной удар (сильный + слабый) и затухающая
+   волна box-shadow, затем пауза до следующего цикла. */
+@keyframes pobedaHeartbeat {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgb(214 32 39 / 0);
+  }
+  9% {
+    transform: scale(1.12);
+    box-shadow: 0 0 0 5px rgb(214 32 39 / 0.22);
+  }
+  19% {
+    transform: scale(1);
+    box-shadow: 0 0 0 8px rgb(214 32 39 / 0);
+  }
+  27% {
+    transform: scale(1.07);
+    box-shadow: 0 0 0 4px rgb(214 32 39 / 0.16);
+  }
+  38% {
+    transform: scale(1);
+    box-shadow: 0 0 0 7px rgb(214 32 39 / 0);
+  }
+}
+
+/* Текст подсказки о ребрендинге внутри BadgeTooltip (side=bottom) */
+.pobedaTooltip {
+  display: block;
+}
+
+.pobedaTooltipTitle {
+  display: block;
+  font-weight: 600;
+  font-size: 0.875rem;
+  letter-spacing: 0.01em;
+}
+
+.pobedaTooltipText {
+  display: block;
+  margin-top: 0.45rem;
+  opacity: 0.82;
 }
 
 /* Два знака рядом: домик (по умолчанию) и квадраты без домика — вариант
@@ -233,5 +292,16 @@
     margin-left: 0.45rem;
     margin-top: 0.0625rem;
     border-width: 0.85px;
+  }
+}
+
+/* Меньше движения: сердцебиение знака выключаем, остаётся статичный круг */
+@media (prefers-reduced-motion: reduce) {
+  .pobedaBadge {
+    animation: none;
+  }
+
+  .pobedaBadgeLetter {
+    transition: none;
   }
 }

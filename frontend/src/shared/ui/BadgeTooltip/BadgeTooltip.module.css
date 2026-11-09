@@ -50,6 +50,16 @@
   border-left-color: #f3f4f6;
 }
 
+/* Сторона bottom: стрелка сверху, у левого края — указывает на маленький якорь
+   (знак «Победа» в логотипе шапки), под которым появляется подсказка */
+.tooltip_side_bottom::after {
+  top: 0;
+  left: 0.55rem;
+  transform: translateY(-99%);
+  border: 7px solid transparent;
+  border-bottom-color: #ffffff;
+}
+
 /* Тёмная тема: чуть светлее фона карточки, светлый текст и видимая обводка */
 :global(html[data-theme='dark']) .tooltip,
 :global([data-app-theme='dark']) .tooltip {
@@ -70,6 +80,11 @@
 :global(html[data-theme='dark']) .tooltip_side_left::after,
 :global([data-app-theme='dark']) .tooltip_side_left::after {
   border-left-color: #3d4655;
+}
+
+:global(html[data-theme='dark']) .tooltip_side_bottom::after,
+:global([data-app-theme='dark']) .tooltip_side_bottom::after {
+  border-bottom-color: #525d6e;
 }
 
 .tooltipCompact {
