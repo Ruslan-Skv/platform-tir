@@ -1,4 +1,5 @@
 import {
+  ceilingsCornersQtyByCeiling,
   computeCeilingsSpecificationNetTotal,
   defaultCeilingsSpecification,
   flattenCeilingsSpecificationRows,
@@ -98,6 +99,25 @@ describe('ceilingsSpecification', () => {
       extras: [newCeilingsManualQtyLine({ name: 'УГЛЫ', qty: '6' })],
     });
     expect(sumCeilingsCornersQty(spec)).toBe(12 + 4.5 + 6);
+  });
+
+  it('returns corners qty per ceiling block in specification order', () => {
+    const spec = defaultCeilingsSpecification();
+    spec.ceilings[0]!.extras = [newCeilingsNamedQtyLine({ name: 'Углы', qty: '8' })];
+    spec.ceilings.push({
+      ...spec.ceilings[0]!,
+      id: 'ceiling-2',
+      title: 'Потолок №2',
+      extras: [newCeilingsNamedQtyLine({ name: 'Фотопечать', qty: '2' })],
+    });
+    spec.ceilings.push({
+      ...spec.ceilings[0]!,
+      id: 'ceiling-3',
+      title: 'Потолок №3',
+      extras: [newCeilingsNamedQtyLine({ name: 'углы', qty: '5,5' })],
+    });
+    // Потолок без углов всё равно занимает свой порядковый индекс.
+    expect(ceilingsCornersQtyByCeiling(spec)).toEqual([8, 0, 5.5]);
   });
 
   it('returns zero corners when spec has no «Углы» extras', () => {

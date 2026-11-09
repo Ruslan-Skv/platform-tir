@@ -125,38 +125,74 @@ function buildWorkOrderComputed(
 type WorkOrderComputedForHtml = ReturnType<typeof buildWorkOrderComputed>;
 
 /**
- * Заказ-наряд «Потолки»: добавляет блок «Доп. работы» со строкой «Углы»
- * (кол-во — из спецификации договора, цена за штуку — из настроек наценок).
+ * Заказ-наряд «Потолки»: добавляет строку «Углы» (кол-во — из спецификации договора,
+ * цена за штуку — из настроек наценок) в помещение заказ-наряда по порядку потолков
+ * спецификации: i-й потолок ↔ i-е помещение (лишние потолки — в последнее помещение).
+ * Без помещений — отдельным блоком «Доп. работы».
  * Цена из настроек окончательная: скидка по договору и наценка заказ-наряда к ней не применяются.
  */
 export function appendCeilingsCornersWorkOrderRoom(
   computed: WorkOrderComputedForHtml,
-  cornerQty: number,
+  cornerQtysByCeiling: number[],
   cornerPrice: number
 ): WorkOrderComputedForHtml {
-  if (!(cornerQty > 0) || !(cornerPrice > 0)) return computed;
-  const amount = cornerQty * cornerPrice;
-  const cornersRoom: WorkOrderRoom = {
-    name: 'Доп. работы',
-    originalTotal: amount,
-    adjustedTotal: amount,
-    lines: [
-      {
-        name: 'Углы',
-        unit: 'шт',
-        quantity: cornerQty,
-        originalPrice: cornerPrice,
-        originalAmount: amount,
-        adjustedPrice: cornerPrice,
-        adjustedAmount: amount,
-      },
-    ],
-  };
+  if (!(cornerPrice > 0)) return computed;
+  const hasCorners = cornerQtysByCeiling.some((qty) => qty > 0);
+  if (!hasCorners) return computed;
+
+  /** Кол-во углов по целевым помещениям заказ-наряда (индекс комнаты → суммарное кол-во). */
+  const qtyByRoomIdx = new Map<number, number>();
+  const roomCount = computed.rooms.length;
+  cornerQtysByCeiling.forEach((qty, ceilingIdx) => {
+    if (!(qty > 0)) return;
+    const roomIdx = roomCount > 0 ? Math.min(ceilingIdx, roomCount - 1) : 0;
+    qtyByRoomIdx.set(roomIdx, (qtyByRoomIdx.get(roomIdx) ?? 0) + qty);
+  });
+
+  const cornersLineFor = (quantity: number, amount: number) => ({
+    name: 'Углы',
+    unit: 'шт',
+    quantity,
+    originalPrice: cornerPrice,
+    originalAmount: amount,
+    adjustedPrice: cornerPrice,
+    adjustedAmount: amount,
+  });
+
+  if (roomCount === 0) {
+    const quantity = [...qtyByRoomIdx.values()].reduce((sum, qty) => sum + qty, 0);
+    const amount = quantity * cornerPrice;
+    const cornersRoom: WorkOrderRoom = {
+      name: 'Доп. работы',
+      originalTotal: amount,
+      adjustedTotal: amount,
+      lines: [cornersLineFor(quantity, amount)],
+    };
+    return {
+      ...computed,
+      rooms: [cornersRoom],
+      originalTotal: computed.originalTotal + amount,
+      adjustedTotal: computed.adjustedTotal + amount,
+    };
+  }
+
+  const rooms = computed.rooms.map((room, index) => {
+    const quantity = qtyByRoomIdx.get(index) ?? 0;
+    if (!(quantity > 0)) return room;
+    const amount = quantity * cornerPrice;
+    return {
+      ...room,
+      lines: [...room.lines, cornersLineFor(quantity, amount)],
+      originalTotal: room.originalTotal + amount,
+      adjustedTotal: room.adjustedTotal + amount,
+    };
+  });
+  const cornersAmount = [...qtyByRoomIdx.values()].reduce((sum, qty) => sum + qty, 0) * cornerPrice;
   return {
     ...computed,
-    rooms: [...computed.rooms, cornersRoom],
-    originalTotal: computed.originalTotal + amount,
-    adjustedTotal: computed.adjustedTotal + amount,
+    rooms,
+    originalTotal: computed.originalTotal + cornersAmount,
+    adjustedTotal: computed.adjustedTotal + cornersAmount,
   };
 }
 

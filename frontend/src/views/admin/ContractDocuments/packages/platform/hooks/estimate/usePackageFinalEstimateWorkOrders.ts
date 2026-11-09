@@ -4,7 +4,7 @@ import { useEffect, useMemo } from 'react';
 
 import type { InstallerMaster } from '@/shared/api/admin-crm';
 
-import { sumCeilingsCornersQty } from '../../../families/product-like/ceilings/ceilingsSpecification';
+import { ceilingsCornersQtyByCeiling } from '../../../families/product-like/ceilings/ceilingsSpecification';
 import { normalizeWindowsWorkOrderMarkupPercent } from '../../../families/product-like/print/productWorkOrder';
 import {
   type FinalEstimateSummaryRow,
@@ -33,7 +33,7 @@ export type UsePackageFinalEstimateWorkOrdersOptions = {
   setActiveFinalWorkOrderDocId: (id: string) => void;
 };
 
-/** Ключ строки «Углы» (блок из спецификации потолков) в итоговом заказ-наряде. */
+/** Префикс ключей строк «Углы» (из спецификации потолков) в заказ-нарядах; ключ — `префикс::помещение`. */
 export const CEILINGS_CORNERS_WORK_ORDER_LINE_KEY = 'ceilings-corners';
 
 export function usePackageFinalEstimateWorkOrders({
@@ -112,6 +112,39 @@ export function usePackageFinalEstimateWorkOrders({
     }
     return [...roomMap.values()];
   }, [finalEstimateSummary.rows]);
+
+  /**
+   * Потолки: строки «Углы» по помещениям заказ-наряда — кол-во из спецификации
+   * (блок «Доп.»), i-й потолок спецификации ↔ i-е помещение сметы (лишние потолки —
+   * в последнее помещение; без помещений — блок «Доп. работы»).
+   * Цена за штуку из настроек наценок; цена окончательная (без наценки/скидки).
+   */
+  const ceilingsCornersByRoom = useMemo(() => {
+    if (!isProductDirectionPackage) return [];
+    if (ceilingsWorkOrderCornerPrice == null || ceilingsWorkOrderCornerPrice <= 0) return [];
+    const qtysByCeiling = ceilingsCornersQtyByCeiling(form.ceilingsSpecification);
+    if (!qtysByCeiling.some((qty) => qty > 0)) return [];
+    const roomNames =
+      finalEstimateRooms.length > 0 ? finalEstimateRooms.map((room) => room.name) : ['Доп. работы'];
+    const qtyByRoom = new Map<string, number>();
+    qtysByCeiling.forEach((qty, ceilingIdx) => {
+      if (!(qty > 0)) return;
+      const roomName = roomNames[Math.min(ceilingIdx, roomNames.length - 1)]!;
+      qtyByRoom.set(roomName, (qtyByRoom.get(roomName) ?? 0) + qty);
+    });
+    return [...qtyByRoom.entries()].map(([roomName, quantity]) => ({
+      roomName,
+      key: `${CEILINGS_CORNERS_WORK_ORDER_LINE_KEY}::${roomName}`,
+      quantity,
+      price: ceilingsWorkOrderCornerPrice,
+      amount: quantity * ceilingsWorkOrderCornerPrice,
+    }));
+  }, [
+    isProductDirectionPackage,
+    ceilingsWorkOrderCornerPrice,
+    form.ceilingsSpecification,
+    finalEstimateRooms,
+  ]);
 
   const interactiveFinalEstimateSections = useMemo(() => {
     const rowByKey = new Map(
@@ -222,32 +255,73 @@ export function usePackageFinalEstimateWorkOrders({
         rooms: [...ungroupedByRoom.entries()].map(([name, lines]) => ({ name, lines })),
       });
     }
+    /**
+     * Потолки: строка «Углы» — в помещение интерактивного счёт-заказа по порядку
+     * потолков спецификации (первое вхождение комнаты по категориям);
+     * комнаты без пары в категориях — в отдельную категорию «Доп. работы».
+     */
+    if (ceilingsCornersByRoom.length > 0) {
+      const unmatched: typeof ceilingsCornersByRoom = [];
+      for (const corners of ceilingsCornersByRoom) {
+        const cornersLine = {
+          key: corners.key,
+          workName: 'Углы',
+          unit: 'шт',
+          quantity: corners.quantity,
+          amount: corners.amount,
+          installerId: form.finalEstimateInstallerAssignments[corners.key]?.installerId ?? '',
+        };
+        let matched = false;
+        for (let s = 0; s < sections.length && !matched; s++) {
+          const section = sections[s]!;
+          const roomIdx = section.rooms.findIndex((room) => room.name === corners.roomName);
+          if (roomIdx < 0) continue;
+          sections[s] = {
+            ...section,
+            rooms: section.rooms.map((room, idx) =>
+              idx === roomIdx ? { ...room, lines: [...room.lines, cornersLine] } : room
+            ),
+          };
+          matched = true;
+        }
+        if (!matched) unmatched.push(corners);
+      }
+      if (unmatched.length > 0) {
+        sections.push({
+          categoryName: 'Доп. работы',
+          rooms: [
+            {
+              name: 'Доп. работы',
+              lines: unmatched.map((corners) => ({
+                key: corners.key,
+                workName: 'Углы',
+                unit: 'шт',
+                quantity: corners.quantity,
+                amount: corners.amount,
+                installerId: form.finalEstimateInstallerAssignments[corners.key]?.installerId ?? '',
+              })),
+            },
+          ],
+        });
+      }
+    }
     return sections;
-  }, [finalEstimateSummary.rows, form.finalEstimateInstallerAssignments, selectedEstimateSections]);
+  }, [
+    finalEstimateSummary.rows,
+    form.finalEstimateInstallerAssignments,
+    selectedEstimateSections,
+    ceilingsCornersByRoom,
+  ]);
 
-  const unassignedInteractiveRowsCount = useMemo(
-    () =>
-      finalEstimateSummary.rows.filter(
-        (row) => !form.finalEstimateInstallerAssignments[row.key]?.installerId
-      ).length,
-    [finalEstimateSummary.rows, form.finalEstimateInstallerAssignments]
-  );
-
-  /**
-   * Потолки: строка «Углы» для заказ-наряда — кол-во из спецификации (блок «Доп.»),
-   * цена за штуку из настроек наценок; цена окончательная (без наценки/скидки).
-   */
-  const ceilingsCorners = useMemo(() => {
-    if (!isProductDirectionPackage) return null;
-    if (ceilingsWorkOrderCornerPrice == null || ceilingsWorkOrderCornerPrice <= 0) return null;
-    const quantity = sumCeilingsCornersQty(form.ceilingsSpecification);
-    if (quantity <= 0) return null;
-    return {
-      quantity,
-      price: ceilingsWorkOrderCornerPrice,
-      amount: quantity * ceilingsWorkOrderCornerPrice,
-    };
-  }, [isProductDirectionPackage, ceilingsWorkOrderCornerPrice, form.ceilingsSpecification]);
+  const unassignedInteractiveRowsCount = useMemo(() => {
+    const unassigned = finalEstimateSummary.rows.filter(
+      (row) => !form.finalEstimateInstallerAssignments[row.key]?.installerId
+    ).length;
+    const cornersUnassigned = ceilingsCornersByRoom.filter(
+      (corners) => !form.finalEstimateInstallerAssignments[corners.key]?.installerId
+    ).length;
+    return unassigned + cornersUnassigned;
+  }, [finalEstimateSummary.rows, form.finalEstimateInstallerAssignments, ceilingsCornersByRoom]);
 
   const finalWorkOrderComputed = useMemo(() => {
     const { factorFor: discountFactorFor } = finalEstimateDiscountFactors;
@@ -317,35 +391,80 @@ export function usePackageFinalEstimateWorkOrders({
       roomTotals.push(adjustedTotal);
       return { ...room, lines, adjustedTotal };
     });
-    /** Блок «Углы» (потолки) — без привязки к мастеру, цена из настроек окончательная. */
-    const cornersRoom = ceilingsCorners
-      ? {
+    /**
+     * Потолки: строки «Углы» по помещениям (i-й потолок спецификации ↔ i-е помещение) —
+     * обычные позиции заказ-наряда (можно назначить мастера);
+     * цена из настроек окончательная — без скидки и наценки заказ-наряда.
+     */
+    const cornersLines = ceilingsCornersByRoom.map((corners) => {
+      const assignedInstallerId =
+        form.finalEstimateInstallerAssignments[corners.key]?.installerId?.trim() ?? '';
+      const assignedInstaller = assignedInstallerId
+        ? (selectedInstallersById.get(assignedInstallerId) ?? null)
+        : null;
+      return {
+        roomName: corners.roomName,
+        line: {
+          key: corners.key,
+          name: 'Углы',
+          unit: 'шт',
+          quantity: corners.quantity,
+          price: corners.price,
+          amount: corners.amount,
+          includedQuantity: corners.quantity,
+          excludedQuantity: 0,
+          sourceAmounts: [] as FinalEstimateSummaryRow['sourceAmounts'],
+          adjustedPrice: corners.price,
+          adjustedAmount: corners.amount,
+          installerId: assignedInstaller?.id ?? '',
+          installerFullName: assignedInstaller?.fullName ?? '',
+          installerGrade: assignedInstaller?.grade ?? '',
+          installerGradeIncreasePercent: 0 as InstallerGradePercent,
+        },
+        assignedInstaller,
+      };
+    });
+    for (const { line, assignedInstaller } of cornersLines) {
+      if (!assignedInstaller) continue;
+      const prev = installerTotalsMap.get(assignedInstaller.id) ?? {
+        installer: assignedInstaller,
+        gradeIncreasePercent: 0 as InstallerGradePercent,
+        lineCount: 0,
+        total: 0,
+      };
+      prev.lineCount += 1;
+      prev.total += line.adjustedAmount;
+      installerTotalsMap.set(assignedInstaller.id, prev);
+    }
+    /** Строка «Углы» — в своё помещение заказ-наряда (без пары — в блок «Доп. работы»). */
+    const cornersByRoomName = new Map(cornersLines.map((x) => [x.roomName, x.line]));
+    const unmatchedCorners = cornersLines
+      .filter((x) => !rooms.some((room) => room.name === x.roomName))
+      .map((x) => x.line);
+    const roomsWithCorners = (() => {
+      const patched = rooms.map((room) => {
+        const cornersLine = cornersByRoomName.get(room.name);
+        if (!cornersLine) return room;
+        return {
+          ...room,
+          lines: [...room.lines, cornersLine],
+          total: room.total + cornersLine.amount,
+          adjustedTotal: room.adjustedTotal + cornersLine.amount,
+        };
+      });
+      if (unmatchedCorners.length === 0) return patched;
+      return [
+        ...patched,
+        {
           name: 'Доп. работы',
-          total: ceilingsCorners.amount,
-          adjustedTotal: ceilingsCorners.amount,
-          lines: [
-            {
-              key: CEILINGS_CORNERS_WORK_ORDER_LINE_KEY,
-              name: 'Углы',
-              unit: 'шт',
-              quantity: ceilingsCorners.quantity,
-              price: ceilingsCorners.price,
-              amount: ceilingsCorners.amount,
-              includedQuantity: ceilingsCorners.quantity,
-              excludedQuantity: 0,
-              sourceAmounts: [] as FinalEstimateSummaryRow['sourceAmounts'],
-              adjustedPrice: ceilingsCorners.price,
-              adjustedAmount: ceilingsCorners.amount,
-              installerId: '',
-              installerFullName: '',
-              installerGrade: '',
-              installerGradeIncreasePercent: 0 as InstallerGradePercent,
-            },
-          ],
-        }
-      : null;
-    const roomsWithCorners = cornersRoom ? [...rooms, cornersRoom] : rooms;
-    const total = roomTotals.reduce((sum, x) => sum + x, 0) + (ceilingsCorners?.amount ?? 0);
+          total: unmatchedCorners.reduce((sum, line) => sum + line.amount, 0),
+          adjustedTotal: unmatchedCorners.reduce((sum, line) => sum + line.adjustedAmount, 0),
+          lines: unmatchedCorners,
+        },
+      ];
+    })();
+    const cornersTotal = cornersLines.reduce((sum, x) => sum + x.line.amount, 0);
+    const total = roomTotals.reduce((sum, x) => sum + x, 0) + cornersTotal;
     const installerTotals = [...installerTotalsMap.values()].sort((a, b) =>
       a.installer.fullName.localeCompare(b.installer.fullName, 'ru')
     );
@@ -354,7 +473,7 @@ export function usePackageFinalEstimateWorkOrders({
     finalEstimateRooms,
     isProductDirectionPackage,
     windowsWorkOrderMarkupPercent,
-    ceilingsCorners,
+    ceilingsCornersByRoom,
     form.workOrder.taxPercent,
     form.workOrder.markupPercent,
     form.workOrder.gradeIncreasePercent,
@@ -461,8 +580,19 @@ export function usePackageFinalEstimateWorkOrders({
           adjustedTotal: number;
         } => Boolean(section)
       );
-    /** Блок «Углы» (потолки): отдельной секцией, чтобы попал в общий итоговый заказ-наряд (без мастеров). */
-    if (!ceilingsCorners) return sectionsFromEstimate;
+    /**
+     * Потолки: строки «Углы» приходят в категории из интерактивного счёт-заказа;
+     * fallback «Доп. работы» — для строк, не нашедших свою комнату в категориях.
+     */
+    const matchedCornerKeys = new Set(
+      sectionsFromEstimate.flatMap((section) =>
+        section.rooms.flatMap((room) => room.lines.map((line) => line.key))
+      )
+    );
+    const unmatchedCorners = ceilingsCornersByRoom.filter(
+      (corners) => !matchedCornerKeys.has(corners.key)
+    );
+    if (unmatchedCorners.length === 0) return sectionsFromEstimate;
     return [
       ...sectionsFromEstimate,
       {
@@ -470,24 +600,27 @@ export function usePackageFinalEstimateWorkOrders({
         rooms: [
           {
             name: 'Доп. работы',
-            lines: [
-              {
-                key: CEILINGS_CORNERS_WORK_ORDER_LINE_KEY,
-                workName: 'Углы',
-                unit: 'шт',
-                quantity: ceilingsCorners.quantity,
-                amount: ceilingsCorners.amount,
-                installerId: '',
-                adjustedAmount: ceilingsCorners.amount,
-              },
-            ],
-            adjustedTotal: ceilingsCorners.amount,
+            lines: unmatchedCorners.map((corners) => ({
+              key: corners.key,
+              workName: 'Углы',
+              unit: 'шт',
+              quantity: corners.quantity,
+              amount: corners.amount,
+              installerId: form.finalEstimateInstallerAssignments[corners.key]?.installerId ?? '',
+              adjustedAmount: corners.amount,
+            })),
+            adjustedTotal: unmatchedCorners.reduce((sum, corners) => sum + corners.amount, 0),
           },
         ],
-        adjustedTotal: ceilingsCorners.amount,
+        adjustedTotal: unmatchedCorners.reduce((sum, corners) => sum + corners.amount, 0),
       },
     ];
-  }, [finalWorkOrderComputed.rooms, interactiveFinalEstimateSections, ceilingsCorners]);
+  }, [
+    finalWorkOrderComputed.rooms,
+    interactiveFinalEstimateSections,
+    ceilingsCornersByRoom,
+    form.finalEstimateInstallerAssignments,
+  ]);
 
   const perInstallerWorkOrders = useMemo(() => {
     return selectedInstallers
