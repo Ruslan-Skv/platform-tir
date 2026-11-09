@@ -783,7 +783,12 @@ export class ContractDocumentPackagesController {
     }
     return this.service.setWorkOrderMarkupSettings(
       dto.kind,
-      { windowsWorkOrderMarkupPercent: dto.windowsWorkOrderMarkupPercent },
+      {
+        windowsWorkOrderMarkupPercent: dto.windowsWorkOrderMarkupPercent,
+        ...(dto.ceilingsWorkOrderCornerPrice !== undefined
+          ? { ceilingsWorkOrderCornerPrice: dto.ceilingsWorkOrderCornerPrice }
+          : {}),
+      },
       req.user?.id,
     );
   }

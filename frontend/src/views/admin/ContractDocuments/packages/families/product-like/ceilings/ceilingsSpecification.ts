@@ -261,6 +261,19 @@ export function sumCeilingsCeilingGross(ceiling: CeilingsCeilingBlock): number {
   return sum;
 }
 
+/** Кол-во углов для заказ-наряда: сумма qty строк «Углы» блока «Доп.» по всем потолкам спецификации. */
+export function sumCeilingsCornersQty(spec: CeilingsSpecification): number {
+  let sum = 0;
+  for (const ceiling of spec.ceilings) {
+    for (const extra of ceiling.extras) {
+      if (extra.name.trim().toLowerCase() !== 'углы') continue;
+      const qty = parseCeilingsQty(extra.qty);
+      if (qty != null && qty > 0) sum += qty;
+    }
+  }
+  return sum;
+}
+
 export function ceilingsSpecificationHasContent(spec: CeilingsSpecification): boolean {
   return spec.ceilings.some((c) => sumCeilingsCeilingGross(c) > 0 || ceilingHasFilledFields(c));
 }

@@ -1221,6 +1221,8 @@ export type WindowsContractSettings = RepairContractSettings & {
 export type WorkPeriodSettingsByKind = RepairContractSettings & {
   kind: ContractDocumentPackageKind;
   windowsWorkOrderMarkupPercent?: number;
+  /** Стоимость одного угла в заказ-наряде потолков, ₽ (только CEILINGS); null — не задана. */
+  ceilingsWorkOrderCornerPrice?: number | null;
 };
 
 export type ApplyWorkPeriodToAllPackagesResult = {
@@ -1356,6 +1358,8 @@ export async function putContractDocumentWindowsSettings(body: {
 export type WindowsWorkOrderMarkupSettings = {
   kind?: ContractDocumentPackageKind;
   windowsWorkOrderMarkupPercent: number;
+  /** Стоимость одного угла в заказ-наряде потолков, ₽ (только CEILINGS); null — не задана. */
+  ceilingsWorkOrderCornerPrice?: number | null;
   updatedAt: string | null;
 };
 
@@ -1373,6 +1377,8 @@ export async function getContractDocumentWorkOrderMarkupSettings(
 export async function putContractDocumentWorkOrderMarkupSettings(body: {
   kind: Extract<ContractDocumentPackageKind, 'WINDOWS' | 'DOORS' | 'BLINDS' | 'CEILINGS'>;
   windowsWorkOrderMarkupPercent: number;
+  /** Только CEILINGS: стоимость одного угла, ₽; null — сбросить (строка «Углы» не добавляется). */
+  ceilingsWorkOrderCornerPrice?: number | null;
 }): Promise<WindowsWorkOrderMarkupSettings> {
   const res = await apiFetch(
     `${getApiBaseUrl()}/admin/contract-document-packages/work-order-markup-settings`,

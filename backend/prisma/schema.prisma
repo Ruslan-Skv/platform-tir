@@ -4401,6 +4401,8 @@ model ContractDocumentRepairSettings {
   repairWorkOrderMarkupPercent  Int?
   /// Налог, вычитаемый из заказ-наряда по ремонту (глобальный), %; null — не задан, берётся из данных пакета.
   repairWorkOrderTaxPercent     Int?
+  /// Стоимость одного угла в заказ-наряде потолков, ₽; null — не задана, строка «Углы» не добавляется.
+  ceilingsWorkOrderCornerPrice  Int?
   updatedById                   String?
   updatedAt                     DateTime                    @updatedAt
 

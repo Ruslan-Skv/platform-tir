@@ -13,6 +13,7 @@ import {
   windowsAddendumSlotHasAccountOrderContent,
   windowsAddendumSlotHasAnyPrintContent,
 } from '../../families/product-like/addendum/addendumSpecification';
+import { sumCeilingsCornersQty } from '../../families/product-like/ceilings/ceilingsSpecification';
 import { productContractCostFieldsForTemplate } from '../../families/product-like/cost/productContractCostBreakdown';
 import { buildWindowsWorkOrderAddendumForTemplate } from '../../families/product-like/print/productWorkOrder';
 import { buildDoorsDeliveryNoteProductsHtml } from '../../families/product-like/specification/doorsSpecification';
@@ -44,6 +45,7 @@ import type {
   PackageWorkOrderBlock,
 } from './types';
 import {
+  appendCeilingsCornersWorkOrderRoom,
   buildWorkOrderRoomsHtmlFromComputed,
   buildWorkOrderRoomsHtmlFromSnapshot,
   formatMoney,
@@ -100,6 +102,8 @@ export function packageFormForTemplate(
     estimateGroups?: ContractEstimateGroup[];
     packageKind?: ContractDocumentPackageKind;
     windowsWorkOrderMarkupPercent?: number;
+    /** Стоимость одного угла в заказ-наряде потолков, ₽; null — не задана, блок «Углы» не добавляется. */
+    ceilingsWorkOrderCornerPrice?: number | null;
   }
 ): PackageFormData & {
   meta: { currentDate: string };
@@ -376,11 +380,22 @@ export function packageFormForTemplate(
           };
         })()
       : undefined;
-  const workOrderComputed = resolveWorkOrderComputedForTemplate(
+  const workOrderComputedBase = resolveWorkOrderComputedForTemplate(
     form.estimate.snapshot,
     form,
     options
   );
+  /** Потолки: строка «Углы» из спецификации по цене из настроек наценок (только основной заказ-наряд, не Д/с). */
+  const ceilingsCornerPrice =
+    options?.packageKind === 'CEILINGS' ? (options.ceilingsWorkOrderCornerPrice ?? null) : null;
+  const workOrderComputed =
+    ceilingsCornerPrice != null && ceilingsCornerPrice > 0
+      ? appendCeilingsCornersWorkOrderRoom(
+          workOrderComputedBase,
+          sumCeilingsCornersQty(form.ceilingsSpecification),
+          ceilingsCornerPrice
+        )
+      : workOrderComputedBase;
   const workOrderSections = buildEstimateSectionsFromPresetIds(
     form.estimate.selectedPresetIds,
     options?.estimatePresets ?? [],

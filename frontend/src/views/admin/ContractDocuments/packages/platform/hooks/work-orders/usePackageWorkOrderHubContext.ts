@@ -33,6 +33,8 @@ export type UsePackageWorkOrderHubContextOptions = {
   packageKind: ContractDocumentPackageKind;
   isProductDirectionPackage: boolean;
   windowsWorkOrderMarkupPercent: number;
+  /** Стоимость одного угла в заказ-наряде потолков, ₽; null — не задана, блок «Углы» не добавляется. */
+  ceilingsWorkOrderCornerPrice?: number | null;
   form: PackageFormData;
   setForm: React.Dispatch<React.SetStateAction<PackageFormData>>;
   touchPackageData: () => void;
@@ -59,6 +61,7 @@ export function usePackageWorkOrderHubContext(options: UsePackageWorkOrderHubCon
     packageKind,
     isProductDirectionPackage,
     windowsWorkOrderMarkupPercent,
+    ceilingsWorkOrderCornerPrice,
     form,
     setForm,
     touchPackageData,
@@ -91,6 +94,7 @@ export function usePackageWorkOrderHubContext(options: UsePackageWorkOrderHubCon
     selectedEstimateSections,
     isProductDirectionPackage,
     windowsWorkOrderMarkupPercent,
+    ceilingsWorkOrderCornerPrice,
     selectedInstallers: installers.selectedInstallers,
     selectedInstallersById: installers.selectedInstallersById,
     activeFinalWorkOrderDocId,
@@ -103,6 +107,7 @@ export function usePackageWorkOrderHubContext(options: UsePackageWorkOrderHubCon
         form,
         packageKind,
         windowsWorkOrderMarkupPercent,
+        ceilingsWorkOrderCornerPrice,
         estimatePresets,
         estimateGroups,
         templateOverrides,
@@ -112,6 +117,7 @@ export function usePackageWorkOrderHubContext(options: UsePackageWorkOrderHubCon
       form,
       packageKind,
       windowsWorkOrderMarkupPercent,
+      ceilingsWorkOrderCornerPrice,
       estimatePresets,
       estimateGroups,
       templateOverrides,
@@ -145,6 +151,7 @@ export function usePackageWorkOrderHubContext(options: UsePackageWorkOrderHubCon
       packageKind,
       isWindowsPackage: isProductDirectionPackage,
       windowsWorkOrderMarkupPercent,
+      ceilingsWorkOrderCornerPrice,
       form,
       updateWorkOrder,
       getTemplatePreviewHtml,
@@ -180,6 +187,7 @@ export function usePackageWorkOrderHubContext(options: UsePackageWorkOrderHubCon
     packageKind,
     isProductDirectionPackage,
     windowsWorkOrderMarkupPercent,
+    ceilingsWorkOrderCornerPrice,
     form,
     updateWorkOrder,
     getTemplatePreviewHtml,

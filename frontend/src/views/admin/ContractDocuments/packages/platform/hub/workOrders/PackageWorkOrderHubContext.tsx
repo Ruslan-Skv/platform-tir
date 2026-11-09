@@ -33,6 +33,8 @@ export type PackageWorkOrderHubContextValue = {
   packageKind: ContractDocumentPackageKind;
   isWindowsPackage: boolean;
   windowsWorkOrderMarkupPercent: number;
+  /** Стоимость одного угла в заказ-наряде потолков, ₽; null — не задана, блок «Углы» не добавляется. */
+  ceilingsWorkOrderCornerPrice?: number | null;
   form: PackageFormData;
   updateWorkOrder: <K extends keyof PackageFormData['workOrder']>(
     key: K,

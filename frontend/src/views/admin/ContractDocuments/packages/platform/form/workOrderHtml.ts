@@ -124,6 +124,42 @@ function buildWorkOrderComputed(
 
 type WorkOrderComputedForHtml = ReturnType<typeof buildWorkOrderComputed>;
 
+/**
+ * Заказ-наряд «Потолки»: добавляет блок «Доп. работы» со строкой «Углы»
+ * (кол-во — из спецификации договора, цена за штуку — из настроек наценок).
+ * Цена из настроек окончательная: скидка по договору и наценка заказ-наряда к ней не применяются.
+ */
+export function appendCeilingsCornersWorkOrderRoom(
+  computed: WorkOrderComputedForHtml,
+  cornerQty: number,
+  cornerPrice: number
+): WorkOrderComputedForHtml {
+  if (!(cornerQty > 0) || !(cornerPrice > 0)) return computed;
+  const amount = cornerQty * cornerPrice;
+  const cornersRoom: WorkOrderRoom = {
+    name: 'Доп. работы',
+    originalTotal: amount,
+    adjustedTotal: amount,
+    lines: [
+      {
+        name: 'Углы',
+        unit: 'шт',
+        quantity: cornerQty,
+        originalPrice: cornerPrice,
+        originalAmount: amount,
+        adjustedPrice: cornerPrice,
+        adjustedAmount: amount,
+      },
+    ],
+  };
+  return {
+    ...computed,
+    rooms: [...computed.rooms, cornersRoom],
+    originalTotal: computed.originalTotal + amount,
+    adjustedTotal: computed.adjustedTotal + amount,
+  };
+}
+
 function buildWindowsWorkOrderComputedForTemplate(
   snapshot: PackageEstimateBlock['snapshot'],
   contractDiscountPercentRaw: string,

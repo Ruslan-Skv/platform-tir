@@ -89,6 +89,8 @@ export type PackageDocumentLoadSetters = {
   >;
   setPackageKind: React.Dispatch<React.SetStateAction<ContractDocumentPackageKind>>;
   setWindowsWorkOrderMarkupPercent: React.Dispatch<React.SetStateAction<number>>;
+  /** Стоимость одного угла в заказ-наряде потолков, ₽; null — не задана. */
+  setCeilingsWorkOrderCornerPrice: React.Dispatch<React.SetStateAction<number | null>>;
   setPaymentInvoiceCount: React.Dispatch<React.SetStateAction<number>>;
   /** Золотая тонировка кнопки «ЭП» в шапке: есть подписанные (SIGNED) сессии ЭП. */
   setHasSignedSigningSessions: React.Dispatch<React.SetStateAction<boolean>>;
@@ -148,6 +150,7 @@ export function usePackageDocumentLoad({
     setPackageVersions,
     setPackageKind,
     setWindowsWorkOrderMarkupPercent,
+    setCeilingsWorkOrderCornerPrice,
     setPaymentInvoiceCount,
     setHasSignedSigningSessions,
     setDraftTitle,
@@ -259,10 +262,19 @@ export function usePackageDocumentLoad({
         if (isProductDirectionPackageKind(currentKind)) {
           const windowsSettings = packageSettingsRes as {
             windowsWorkOrderMarkupPercent?: number;
+            ceilingsWorkOrderCornerPrice?: number | null;
           };
           setWindowsWorkOrderMarkupPercent(
             normalizeWindowsWorkOrderMarkupPercent(windowsSettings.windowsWorkOrderMarkupPercent)
           );
+          setCeilingsWorkOrderCornerPrice(
+            typeof windowsSettings.ceilingsWorkOrderCornerPrice === 'number' &&
+              windowsSettings.ceilingsWorkOrderCornerPrice > 0
+              ? windowsSettings.ceilingsWorkOrderCornerPrice
+              : null
+          );
+        } else {
+          setCeilingsWorkOrderCornerPrice(null);
         }
         setPaymentInvoiceCount(paymentInvoicesRes.length);
         setHasSignedSigningSessions(
@@ -526,6 +538,7 @@ export function usePackageDocumentLoad({
       setTemplateDraftTitle,
       setTemplateOverrides,
       setWindowsWorkOrderMarkupPercent,
+      setCeilingsWorkOrderCornerPrice,
     ]
   );
 

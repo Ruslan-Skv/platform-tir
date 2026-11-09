@@ -20,6 +20,8 @@ export type BuildPackageTemplatePreviewHtmlOptions = {
   form: PackageFormData;
   packageKind: ContractDocumentPackageKind;
   windowsWorkOrderMarkupPercent: number;
+  /** Стоимость одного угла в заказ-наряде потолков, ₽; null — не задана, блок «Углы» не добавляется. */
+  ceilingsWorkOrderCornerPrice?: number | null;
   estimatePresets: ContractEstimatePreset[];
   estimateGroups: ContractEstimateGroup[];
   templateOverrides: Partial<Record<PackageDocumentTemplateTabId, string>>;
@@ -34,6 +36,7 @@ export function buildPackageTemplatePreviewHtml(
     form,
     packageKind,
     windowsWorkOrderMarkupPercent,
+    ceilingsWorkOrderCornerPrice,
     estimatePresets,
     estimateGroups,
     templateOverrides,
@@ -74,6 +77,7 @@ export function buildPackageTemplatePreviewHtml(
     estimateGroups,
     packageKind,
     windowsWorkOrderMarkupPercent,
+    ceilingsWorkOrderCornerPrice,
   });
   const tpl = templateOverrides[templateTab] ?? resolveTemplateHtml(templateTab);
   let html = prepareContractTemplateHtmlForPreview(

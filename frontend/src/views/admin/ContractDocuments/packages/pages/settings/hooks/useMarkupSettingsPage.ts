@@ -10,7 +10,12 @@ import {
   type MarkupKindSettingsSnapshot,
   type MarkupSettingsKind,
 } from '../markupSettingsConstants';
-import { formatMarkupPercentInput, parseMarkupPercentInput } from '../markupSettingsUtils';
+import {
+  formatCornerPriceInput,
+  formatMarkupPercentInput,
+  parseCornerPriceInput,
+  parseMarkupPercentInput,
+} from '../markupSettingsUtils';
 
 export type MarkupSettingsPageMessage = { type: 'success' | 'error'; text: string };
 
@@ -20,11 +25,15 @@ export type MarkupRow = {
   inputId: string;
   /** Поле «Налог, %» (только «Ремонт»). */
   taxInputId: string | null;
+  /** Поле «Углы, ₽» (только «Натяжные потолки»). */
+  cornerPriceInputId: string | null;
   markupInput: string;
   taxInput: string | null;
+  cornerPriceInput: string | null;
   /** Значения, уже сохранённые на сервере (для отбора изменённых строк). */
   savedMarkupPercent: number;
   savedTaxPercent: number;
+  savedCornerPrice: number | null;
   updatedAt: string | null;
 };
 
@@ -36,15 +45,19 @@ function buildRow(
   const config = MARKUP_KIND_CONFIG[kind];
   const markupPercent = snapshot?.markupPercent ?? config.fallbackPercent ?? 0;
   const taxPercent = snapshot?.taxPercent ?? 0;
+  const cornerPrice = config.cornerPriceInputId ? (snapshot?.cornerPrice ?? null) : null;
   return {
     kind,
     title: config.title,
     inputId: config.inputId,
     taxInputId: config.taxInputId ?? null,
+    cornerPriceInputId: config.cornerPriceInputId ?? null,
     markupInput: formatMarkupPercentInput(markupPercent),
     taxInput: config.taxInputId ? formatMarkupPercentInput(taxPercent) : null,
+    cornerPriceInput: config.cornerPriceInputId ? formatCornerPriceInput(cornerPrice) : null,
     savedMarkupPercent: markupPercent,
     savedTaxPercent: taxPercent,
+    savedCornerPrice: cornerPrice,
     updatedAt: snapshot?.updatedAt ?? null,
   };
 }
@@ -52,6 +65,10 @@ function buildRow(
 function describeSavedRow(row: MarkupRow, res: MarkupKindSettingsSnapshot): string {
   if (row.taxInputId !== null) {
     return `${row.title} — наценка ${res.markupPercent ?? 0} %, налог ${res.taxPercent ?? 0} %`;
+  }
+  if (row.cornerPriceInputId !== null) {
+    const corners = res.cornerPrice != null ? `углы ${res.cornerPrice} ₽` : 'углы не добавляются';
+    return `${row.title} — наценка ${res.markupPercent ?? 0} %, ${corners}`;
   }
   return `${row.title} — наценка ${res.markupPercent ?? 0} %`;
 }
@@ -119,6 +136,14 @@ export function useMarkupSettingsPage() {
     );
   }, []);
 
+  const setCornerPriceInput = useCallback((kind: MarkupSettingsKind, raw: string) => {
+    setRows((prev) =>
+      prev.map((row) =>
+        row.kind === kind && row.cornerPriceInput !== null ? { ...row, cornerPriceInput: raw } : row
+      )
+    );
+  }, []);
+
   /** Сохраняет направление без сообщений; null — ошибка запроса или валидации. */
   const persistKind = useCallback(
     async (kind: MarkupSettingsKind): Promise<MarkupKindSettingsSnapshot | null> => {
@@ -129,11 +154,15 @@ export function useMarkupSettingsPage() {
       if (parsed === null) return null;
       const parsedTax = row.taxInput !== null ? parseMarkupPercentInput(row.taxInput) : null;
       if (row.taxInput !== null && parsedTax === null) return null;
+      const parsedCornerPrice =
+        row.cornerPriceInput !== null ? parseCornerPriceInput(row.cornerPriceInput) : null;
+      if (parsedCornerPrice === 'invalid') return null;
       setSavingKind(kind);
       try {
         const res = await MARKUP_KIND_CONFIG[kind].save({
           markupPercent: parsed,
           taxPercent: parsedTax,
+          cornerPrice: parsedCornerPrice,
         });
         setRows((prev) =>
           prev.map((r) =>
@@ -143,8 +172,13 @@ export function useMarkupSettingsPage() {
                   markupInput: formatMarkupPercentInput(res.markupPercent ?? 0),
                   taxInput:
                     r.taxInput !== null ? formatMarkupPercentInput(res.taxPercent ?? 0) : null,
+                  cornerPriceInput:
+                    r.cornerPriceInput !== null
+                      ? formatCornerPriceInput(res.cornerPrice ?? null)
+                      : null,
                   savedMarkupPercent: res.markupPercent ?? 0,
                   savedTaxPercent: res.taxPercent ?? 0,
+                  savedCornerPrice: res.cornerPrice ?? null,
                   updatedAt: res.updatedAt,
                 }
               : r
@@ -166,19 +200,30 @@ export function useMarkupSettingsPage() {
     const invalid = rows.find((row) => {
       const markupInvalid = parseMarkupPercentInput(row.markupInput) === null;
       const taxInvalid = row.taxInput !== null && parseMarkupPercentInput(row.taxInput) === null;
-      return markupInvalid || taxInvalid;
+      const cornerPriceInvalid =
+        row.cornerPriceInput !== null && parseCornerPriceInput(row.cornerPriceInput) === 'invalid';
+      return markupInvalid || taxInvalid || cornerPriceInvalid;
     });
     if (invalid) {
       setMessage({
         type: 'error',
-        text: `Проверьте «${invalid.title}»: наценка и налог — целое число от 0 до 100 %.`,
+        text: `Проверьте «${invalid.title}»: наценка и налог — целое число от 0 до 100 %, углы — целое число рублей (или пусто).`,
       });
       return;
     }
     const dirty = rows.filter((row) => {
       const markup = parseMarkupPercentInput(row.markupInput) ?? 0;
       const tax = row.taxInput !== null ? (parseMarkupPercentInput(row.taxInput) ?? 0) : null;
-      return markup !== row.savedMarkupPercent || (tax !== null && tax !== row.savedTaxPercent);
+      const cornerPrice =
+        row.cornerPriceInput !== null ? parseCornerPriceInput(row.cornerPriceInput) : null;
+      const cornerDirty =
+        row.cornerPriceInput !== null &&
+        (cornerPrice === 'invalid' || cornerPrice !== row.savedCornerPrice);
+      return (
+        markup !== row.savedMarkupPercent ||
+        (tax !== null && tax !== row.savedTaxPercent) ||
+        cornerDirty
+      );
     });
     if (dirty.length === 0) {
       setMessage({ type: 'success', text: 'Нет изменений для сохранения.' });
@@ -217,6 +262,7 @@ export function useMarkupSettingsPage() {
     savingKind,
     setMarkupInput,
     setTaxInput,
+    setCornerPriceInput,
     setMessage,
   };
 }

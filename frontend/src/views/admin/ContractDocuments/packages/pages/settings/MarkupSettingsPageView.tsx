@@ -33,6 +33,7 @@ export function MarkupSettingsPageView(model: MarkupSettingsPageModel) {
     savingKind,
     setMarkupInput,
     setTaxInput,
+    setCornerPriceInput,
     setMessage,
   } = model;
 
@@ -73,6 +74,29 @@ export function MarkupSettingsPageView(model: MarkupSettingsPageModel) {
     );
   };
 
+  /** Поле «Углы, ₽» — только «Натяжные потолки»: цена одного угла в заказ-наряде. */
+  const cornerPriceCell = (row: MarkupRow, idPrefix: string) => {
+    if (row.cornerPriceInput === null || row.cornerPriceInputId === null) {
+      return <span className={styles.muted}>—</span>;
+    }
+    return (
+      <input
+        id={row.cornerPriceInputId}
+        className={styles.input}
+        type="text"
+        inputMode="numeric"
+        placeholder="Не добавлять"
+        value={row.cornerPriceInput}
+        onChange={(e) => setCornerPriceInput(row.kind, e.target.value)}
+        disabled={!isSuperAdmin || busy}
+        readOnly={!isSuperAdmin}
+        autoComplete="off"
+        aria-label={`Цена одного угла в заказ-наряде для «${row.title}», ₽`}
+        data-testid={`${idPrefix}_corner_price_input`}
+      />
+    );
+  };
+
   const columns = [
     {
       key: 'title',
@@ -101,6 +125,11 @@ export function MarkupSettingsPageView(model: MarkupSettingsPageModel) {
       key: 'tax',
       title: 'Налог, %',
       render: (row: MarkupRow) => taxInputCell(row, 'desktop'),
+    },
+    {
+      key: 'cornerPrice',
+      title: 'Углы, ₽',
+      render: (row: MarkupRow) => cornerPriceCell(row, 'desktop'),
     },
     {
       key: 'updatedAt',
@@ -187,7 +216,10 @@ export function MarkupSettingsPageView(model: MarkupSettingsPageModel) {
           {DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT}
           %). Для «Ремонта» дополнительно указывается налог: из суммы заказ-наряда вычитаются налог
           и наценка, затем добавляется % разряда; если в договоре налог/наценка не заданы, берутся
-          значения отсюда. Сохранять может только суперадмин.
+          значения отсюда. Для «Натяжных потолков» поле «Углы, ₽» задаёт цену одного угла в
+          заказ-наряде: если в спецификации договора есть позиция «Углы» (блок «Доп.»), в
+          заказ-наряд добавляется строка с количеством из спецификации и этой ценой; пустое поле —
+          строка не добавляется. Сохранять может только суперадмин.
         </p>
         <div className={styles.relatedLinks}>
           <Link href="/admin/contract-documents/settings">Сроки договоров</Link>
@@ -197,7 +229,7 @@ export function MarkupSettingsPageView(model: MarkupSettingsPageModel) {
 
       <p className={styles.sectionHint}>
         {isSuperAdmin
-          ? 'Укажите целое число от 0 до 100 и сохраните наценку для нужного направления.'
+          ? 'Укажите целое число от 0 до 100 и сохраните наценку для нужного направления. Цена угла — целое число рублей (пусто — не добавлять строку «Углы»).'
           : 'Изменить наценку может только суперадмин. Сейчас доступен только просмотр.'}
       </p>
 
@@ -237,6 +269,12 @@ export function MarkupSettingsPageView(model: MarkupSettingsPageModel) {
                   <div className={styles.mobileCardRow}>
                     <dt>Налог, %</dt>
                     <dd>{taxInputCell(row, 'mobile')}</dd>
+                  </div>
+                ) : null}
+                {row.cornerPriceInput !== null ? (
+                  <div className={styles.mobileCardRow}>
+                    <dt>Углы, ₽</dt>
+                    <dd>{cornerPriceCell(row, 'mobile')}</dd>
                   </div>
                 ) : null}
               </dl>

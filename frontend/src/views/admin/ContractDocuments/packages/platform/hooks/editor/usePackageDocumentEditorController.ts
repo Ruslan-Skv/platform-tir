@@ -107,6 +107,10 @@ export function usePackageDocumentEditorController({
   const [windowsWorkOrderMarkupPercent, setWindowsWorkOrderMarkupPercent] = useState(
     DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT
   );
+  /** Стоимость одного угла в заказ-наряде потолков, ₽; null — не задана, блок «Углы» не добавляется. */
+  const [ceilingsWorkOrderCornerPrice, setCeilingsWorkOrderCornerPrice] = useState<number | null>(
+    null
+  );
   const [activeTab, setActiveTab] = useState<PackageDocumentTabId>('data');
   const {
     packageHubOpen,
@@ -316,6 +320,7 @@ export function usePackageDocumentEditorController({
       setPackageVersions,
       setPackageKind,
       setWindowsWorkOrderMarkupPercent,
+      setCeilingsWorkOrderCornerPrice,
       setPaymentInvoiceCount,
       setHasSignedSigningSessions,
       setDraftTitle,
@@ -479,6 +484,7 @@ export function usePackageDocumentEditorController({
     packageKind,
     isProductDirectionPackage,
     windowsWorkOrderMarkupPercent,
+    ceilingsWorkOrderCornerPrice,
     form,
     setForm,
     touchPackageData,
@@ -550,6 +556,7 @@ export function usePackageDocumentEditorController({
     estimatePresets,
     estimateGroups,
     windowsWorkOrderMarkupPercent,
+    ceilingsWorkOrderCornerPrice,
     templateOverrides,
     resolveTemplateHtml,
   });

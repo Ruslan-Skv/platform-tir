@@ -6,6 +6,7 @@ import {
   newCeilingsManualQtyLine,
   newCeilingsNamedQtyLine,
   normalizeCeilingsSpecification,
+  sumCeilingsCornersQty,
 } from './ceilingsSpecification';
 
 describe('ceilingsSpecification', () => {
@@ -80,5 +81,28 @@ describe('ceilingsSpecification', () => {
     expect(restored.ceilings[0]!.goods[0]!.name).toBe('Блок питания');
 
     expect(newCeilingsNamedQtyLine().manual).toBeUndefined();
+  });
+
+  it('sums corners qty from extras across ceilings, ignoring other names', () => {
+    const spec = defaultCeilingsSpecification();
+    spec.ceilings[0]!.extras = [
+      newCeilingsNamedQtyLine({ name: 'Углы', qty: '12' }),
+      newCeilingsNamedQtyLine({ name: 'Внутренний вырез', qty: '3' }),
+      newCeilingsNamedQtyLine({ name: ' углы ', qty: '4,5' }),
+      newCeilingsNamedQtyLine({ name: 'Углы', qty: '' }),
+    ];
+    spec.ceilings.push({
+      ...spec.ceilings[0]!,
+      id: 'ceiling-2',
+      title: 'Потолок №2',
+      extras: [newCeilingsManualQtyLine({ name: 'УГЛЫ', qty: '6' })],
+    });
+    expect(sumCeilingsCornersQty(spec)).toBe(12 + 4.5 + 6);
+  });
+
+  it('returns zero corners when spec has no «Углы» extras', () => {
+    const spec = defaultCeilingsSpecification();
+    spec.ceilings[0]!.extras = [newCeilingsNamedQtyLine({ name: 'Фотопечать', qty: '2' })];
+    expect(sumCeilingsCornersQty(spec)).toBe(0);
   });
 });

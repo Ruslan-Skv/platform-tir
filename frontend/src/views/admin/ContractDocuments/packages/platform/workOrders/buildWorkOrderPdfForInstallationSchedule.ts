@@ -9,7 +9,7 @@ import {
   getContractDocumentPackage,
   getContractDocumentRepairSettings,
   getContractDocumentTemplatePresets,
-  getContractDocumentWindowsSettings,
+  getContractDocumentWorkPeriodSettings,
 } from '@/shared/api/admin-contract-document-packages';
 import type { InstallationSchedule } from '@/shared/api/crm/admin-installation-schedules';
 
@@ -162,9 +162,11 @@ export async function buildWorkOrderHtmlForInstallationSchedule(
       items: [] as ContractTemplatePreset[],
       updatedAt: null as string | null,
     })),
+    // Настройки заказ-наряда берём своего направления (у потолков — ещё и цена угла).
     isProductDirectionPackageKind(packageKind)
-      ? getContractDocumentWindowsSettings().catch(() => ({
+      ? getContractDocumentWorkPeriodSettings(packageKind).catch(() => ({
           windowsWorkOrderMarkupPercent: DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT,
+          ceilingsWorkOrderCornerPrice: null as number | null,
         }))
       : packageKind === 'REPAIR'
         ? getContractDocumentRepairSettings().catch(() => ({
@@ -210,6 +212,14 @@ export async function buildWorkOrderHtmlForInstallationSchedule(
     (settingsRes as { windowsWorkOrderMarkupPercent?: number }).windowsWorkOrderMarkupPercent
   );
 
+  /** Цена одного угла для заказ-наряда потолков; null — не задана, блок «Углы» не добавляется. */
+  const ceilingsCornerPriceRaw = (settingsRes as { ceilingsWorkOrderCornerPrice?: number | null })
+    .ceilingsWorkOrderCornerPrice;
+  const ceilingsWorkOrderCornerPrice =
+    typeof ceilingsCornerPriceRaw === 'number' && ceilingsCornerPriceRaw > 0
+      ? ceilingsCornerPriceRaw
+      : null;
+
   const resolveTemplateHtml = (tab: PackageDocumentTemplateTabId) =>
     resolveTemplateHtmlStandalone(
       packageKind,
@@ -222,6 +232,7 @@ export async function buildWorkOrderHtmlForInstallationSchedule(
     form,
     packageKind,
     windowsWorkOrderMarkupPercent,
+    ceilingsWorkOrderCornerPrice,
     estimatePresets,
     estimateGroups,
     templateOverrides,

@@ -32,6 +32,8 @@ export type UsePackageRenderedDocumentOptions = {
   estimatePresets: ContractEstimatePreset[];
   estimateGroups: ContractEstimateGroup[];
   windowsWorkOrderMarkupPercent: number;
+  /** Стоимость одного угла в заказ-наряде потолков, ₽; null — не задана, блок «Углы» не добавляется. */
+  ceilingsWorkOrderCornerPrice?: number | null;
   templateOverrides: Partial<Record<PackageDocumentTemplateTabId, string>>;
   resolveTemplateHtml: (tab: PackageDocumentTemplateTabId) => string;
 };
@@ -43,6 +45,7 @@ export function usePackageRenderedDocument({
   estimatePresets,
   estimateGroups,
   windowsWorkOrderMarkupPercent,
+  ceilingsWorkOrderCornerPrice,
   templateOverrides,
   resolveTemplateHtml,
 }: UsePackageRenderedDocumentOptions): string {
@@ -59,8 +62,17 @@ export function usePackageRenderedDocument({
         estimateGroups,
         packageKind,
         windowsWorkOrderMarkupPercent,
+        ceilingsWorkOrderCornerPrice,
       }),
-    [form, activeTab, estimatePresets, estimateGroups, packageKind, windowsWorkOrderMarkupPercent]
+    [
+      form,
+      activeTab,
+      estimatePresets,
+      estimateGroups,
+      packageKind,
+      windowsWorkOrderMarkupPercent,
+      ceilingsWorkOrderCornerPrice,
+    ]
   );
 
   return useMemo(() => {
@@ -115,6 +127,7 @@ export function usePackageFormForTemplate(
     estimatePresets,
     estimateGroups,
     windowsWorkOrderMarkupPercent,
+    ceilingsWorkOrderCornerPrice,
   } = options;
 
   return useMemo(
@@ -130,8 +143,17 @@ export function usePackageFormForTemplate(
         estimateGroups,
         packageKind,
         windowsWorkOrderMarkupPercent,
+        ceilingsWorkOrderCornerPrice,
       }),
-    [form, activeTab, estimatePresets, estimateGroups, packageKind, windowsWorkOrderMarkupPercent]
+    [
+      form,
+      activeTab,
+      estimatePresets,
+      estimateGroups,
+      packageKind,
+      windowsWorkOrderMarkupPercent,
+      ceilingsWorkOrderCornerPrice,
+    ]
   );
 }
 

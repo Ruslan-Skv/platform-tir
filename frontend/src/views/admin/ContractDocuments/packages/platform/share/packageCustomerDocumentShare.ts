@@ -9,7 +9,7 @@ import {
   getContractDocumentEstimatePresets,
   getContractDocumentPackage,
   getContractDocumentTemplatePresets,
-  getContractDocumentWindowsSettings,
+  getContractDocumentWorkPeriodSettings,
 } from '@/shared/api/admin-contract-document-packages';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import type { MessengerShareChannel } from '@/views/admin/CRM/InstallationSchedules/shared/installationScheduleShare';
@@ -174,6 +174,8 @@ export type PackageCustomerShareContext = {
   estimatePresets: ContractEstimatePreset[];
   estimateGroups: ContractEstimateGroup[];
   windowsWorkOrderMarkupPercent: number;
+  /** Стоимость одного угла в заказ-наряде потолков, ₽; null — не задана, блок «Углы» не добавляется. */
+  ceilingsWorkOrderCornerPrice?: number | null;
   templateOverrides: Partial<Record<PackageDocumentTemplateTabId, string>>;
   resolveTemplateHtml: (tab: PackageDocumentTemplateTabId) => string;
   shareableDocuments: PackageCustomerShareableDocument[];
@@ -366,6 +368,7 @@ export function buildPackageCustomerDocumentHtml(
     form: ctx.form,
     packageKind: ctx.packageKind,
     windowsWorkOrderMarkupPercent: ctx.windowsWorkOrderMarkupPercent,
+    ceilingsWorkOrderCornerPrice: ctx.ceilingsWorkOrderCornerPrice,
     estimatePresets: ctx.estimatePresets,
     estimateGroups: ctx.estimateGroups,
     templateOverrides: ctx.templateOverrides,
@@ -470,6 +473,8 @@ function buildContextFromParts(input: {
   estimatePresets: ContractEstimatePreset[];
   estimateGroups: ContractEstimateGroup[];
   windowsWorkOrderMarkupPercent: number;
+  /** Стоимость одного угла в заказ-наряде потолков, ₽; null — не задана, блок «Углы» не добавляется. */
+  ceilingsWorkOrderCornerPrice?: number | null;
   templateOverrides: Partial<Record<PackageDocumentTemplateTabId, string>>;
   resolveTemplateHtml: (tab: PackageDocumentTemplateTabId) => string;
 }): PackageCustomerShareContext {
@@ -485,6 +490,7 @@ function buildContextFromParts(input: {
     estimatePresets: input.estimatePresets,
     estimateGroups: input.estimateGroups,
     windowsWorkOrderMarkupPercent: input.windowsWorkOrderMarkupPercent,
+    ceilingsWorkOrderCornerPrice: input.ceilingsWorkOrderCornerPrice ?? null,
     templateOverrides: input.templateOverrides,
     resolveTemplateHtml: input.resolveTemplateHtml,
     shareableDocuments: listPackageCustomerShareableDocuments(input.packageKind, input.form),
@@ -520,9 +526,11 @@ export async function loadPackageCustomerShareContext(
       items: [] as ContractTemplatePreset[],
       updatedAt: null as string | null,
     })),
+    // Настройки заказ-наряда берём своего направления (у потолков — ещё и цена угла).
     isProductDirectionPackageKind(packageKind)
-      ? getContractDocumentWindowsSettings().catch(() => ({
+      ? getContractDocumentWorkPeriodSettings(packageKind).catch(() => ({
           windowsWorkOrderMarkupPercent: DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT,
+          ceilingsWorkOrderCornerPrice: null as number | null,
         }))
       : Promise.resolve({
           windowsWorkOrderMarkupPercent: DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT,
@@ -557,6 +565,15 @@ export async function loadPackageCustomerShareContext(
     windowsSettings.windowsWorkOrderMarkupPercent
   );
 
+  /** Цена одного угла для заказ-наряда потолков; null — не задана, блок «Углы» не добавляется. */
+  const ceilingsCornerPriceRaw = (
+    windowsSettings as { ceilingsWorkOrderCornerPrice?: number | null }
+  ).ceilingsWorkOrderCornerPrice;
+  const ceilingsWorkOrderCornerPrice =
+    typeof ceilingsCornerPriceRaw === 'number' && ceilingsCornerPriceRaw > 0
+      ? ceilingsCornerPriceRaw
+      : null;
+
   const resolveTemplateHtml = (tab: PackageDocumentTemplateTabId) =>
     resolveTemplateHtmlStandalone(
       packageKind,
@@ -573,6 +590,7 @@ export async function loadPackageCustomerShareContext(
     estimatePresets,
     estimateGroups,
     windowsWorkOrderMarkupPercent,
+    ceilingsWorkOrderCornerPrice,
     templateOverrides,
     resolveTemplateHtml,
   });
@@ -587,6 +605,8 @@ export function buildPackageCustomerShareContextFromEditor(input: {
   estimatePresets: ContractEstimatePreset[];
   estimateGroups: ContractEstimateGroup[];
   windowsWorkOrderMarkupPercent: number;
+  /** Стоимость одного угла в заказ-наряде потолков, ₽; null — не задана. */
+  ceilingsWorkOrderCornerPrice?: number | null;
   templateOverrides: Partial<Record<PackageDocumentTemplateTabId, string>>;
   resolveTemplateHtml: (tab: PackageDocumentTemplateTabId) => string;
 }): PackageCustomerShareContext {

@@ -25,6 +25,8 @@ export const MARKUP_SETTINGS_KINDS: MarkupSettingsKind[] = [
 export type MarkupKindSettingsSnapshot = {
   markupPercent: number | null;
   taxPercent: number | null;
+  /** Стоимость одного угла в заказ-наряде потолков, ₽ (только CEILINGS); null — не задана. */
+  cornerPrice: number | null;
   updatedAt: string | null;
 };
 
@@ -33,28 +35,35 @@ type MarkupKindConfigEntry = {
   inputId: string;
   /** Дополнительное поле «Налог, %» (только «Ремонт»). */
   taxInputId?: string;
+  /** Дополнительное поле «Углы, ₽» (только «Натяжные потолки»). */
+  cornerPriceInputId?: string;
   fallbackPercent: number;
   load: () => Promise<MarkupKindSettingsSnapshot>;
   save: (body: {
     markupPercent: number;
     taxPercent: number | null;
+    cornerPrice: number | null;
   }) => Promise<MarkupKindSettingsSnapshot>;
   saveOk: (res: MarkupKindSettingsSnapshot) => string;
 };
 
 function productKindConfig(
   kind: Exclude<MarkupSettingsKind, 'REPAIR'>,
-  title: string
+  title: string,
+  options?: { cornerPrice?: boolean }
 ): MarkupKindConfigEntry {
+  const withCornerPrice = options?.cornerPrice === true;
   return {
     title,
     inputId: `package_${kind.toLowerCase()}_work_order_markup`,
+    ...(withCornerPrice ? { cornerPriceInputId: 'package_ceilings_work_order_corner_price' } : {}),
     fallbackPercent: DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT,
     load: async () => {
       const res = await getContractDocumentWorkOrderMarkupSettings(kind);
       return {
         markupPercent: res.windowsWorkOrderMarkupPercent,
         taxPercent: null,
+        cornerPrice: withCornerPrice ? (res.ceilingsWorkOrderCornerPrice ?? null) : null,
         updatedAt: res.updatedAt,
       };
     },
@@ -62,14 +71,21 @@ function productKindConfig(
       const res = await putContractDocumentWorkOrderMarkupSettings({
         kind,
         windowsWorkOrderMarkupPercent: body.markupPercent,
+        ...(withCornerPrice ? { ceilingsWorkOrderCornerPrice: body.cornerPrice } : {}),
       });
       return {
         markupPercent: res.windowsWorkOrderMarkupPercent,
         taxPercent: null,
+        cornerPrice: withCornerPrice ? (res.ceilingsWorkOrderCornerPrice ?? null) : null,
         updatedAt: res.updatedAt,
       };
     },
-    saveOk: (res) => `Наценка для «${title}» сохранена (${res.markupPercent} %).`,
+    saveOk: (res) =>
+      withCornerPrice
+        ? `Наценка для «${title}» сохранена (${res.markupPercent} %). Углы: ${
+            res.cornerPrice != null ? `${res.cornerPrice} ₽ за шт.` : 'строка не добавляется.'
+          }`
+        : `Наценка для «${title}» сохранена (${res.markupPercent} %).`,
   };
 }
 
@@ -84,6 +100,7 @@ export const MARKUP_KIND_CONFIG: Record<MarkupSettingsKind, MarkupKindConfigEntr
       return {
         markupPercent: res.markupPercent,
         taxPercent: res.taxPercent,
+        cornerPrice: null,
         updatedAt: res.updatedAt,
       };
     },
@@ -95,6 +112,7 @@ export const MARKUP_KIND_CONFIG: Record<MarkupSettingsKind, MarkupKindConfigEntr
       return {
         markupPercent: res.markupPercent,
         taxPercent: res.taxPercent,
+        cornerPrice: null,
         updatedAt: res.updatedAt,
       };
     },
@@ -104,5 +122,5 @@ export const MARKUP_KIND_CONFIG: Record<MarkupSettingsKind, MarkupKindConfigEntr
   WINDOWS: productKindConfig('WINDOWS', 'Окна'),
   DOORS: productKindConfig('DOORS', 'Двери'),
   BLINDS: productKindConfig('BLINDS', 'Жалюзи'),
-  CEILINGS: productKindConfig('CEILINGS', 'Натяжные потолки'),
+  CEILINGS: productKindConfig('CEILINGS', 'Натяжные потолки', { cornerPrice: true }),
 };

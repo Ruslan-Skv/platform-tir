@@ -4,6 +4,7 @@ import { useEffect, useMemo } from 'react';
 
 import type { InstallerMaster } from '@/shared/api/admin-crm';
 
+import { sumCeilingsCornersQty } from '../../../families/product-like/ceilings/ceilingsSpecification';
 import { normalizeWindowsWorkOrderMarkupPercent } from '../../../families/product-like/print/productWorkOrder';
 import {
   type FinalEstimateSummaryRow,
@@ -24,17 +25,23 @@ export type UsePackageFinalEstimateWorkOrdersOptions = {
   selectedEstimateSections: EstimateEmbedSection[];
   isProductDirectionPackage: boolean;
   windowsWorkOrderMarkupPercent: number;
+  /** Стоимость одного угла в заказ-наряде потолков, ₽; null — не задана, блок «Углы» не добавляется. */
+  ceilingsWorkOrderCornerPrice?: number | null;
   selectedInstallers: InstallerMaster[];
   selectedInstallersById: Map<string, InstallerMaster>;
   activeFinalWorkOrderDocId: string;
   setActiveFinalWorkOrderDocId: (id: string) => void;
 };
 
+/** Ключ строки «Углы» (блок из спецификации потолков) в итоговом заказ-наряде. */
+export const CEILINGS_CORNERS_WORK_ORDER_LINE_KEY = 'ceilings-corners';
+
 export function usePackageFinalEstimateWorkOrders({
   form,
   selectedEstimateSections,
   isProductDirectionPackage,
   windowsWorkOrderMarkupPercent,
+  ceilingsWorkOrderCornerPrice,
   selectedInstallers,
   selectedInstallersById,
   activeFinalWorkOrderDocId,
@@ -226,6 +233,22 @@ export function usePackageFinalEstimateWorkOrders({
     [finalEstimateSummary.rows, form.finalEstimateInstallerAssignments]
   );
 
+  /**
+   * Потолки: строка «Углы» для заказ-наряда — кол-во из спецификации (блок «Доп.»),
+   * цена за штуку из настроек наценок; цена окончательная (без наценки/скидки).
+   */
+  const ceilingsCorners = useMemo(() => {
+    if (!isProductDirectionPackage) return null;
+    if (ceilingsWorkOrderCornerPrice == null || ceilingsWorkOrderCornerPrice <= 0) return null;
+    const quantity = sumCeilingsCornersQty(form.ceilingsSpecification);
+    if (quantity <= 0) return null;
+    return {
+      quantity,
+      price: ceilingsWorkOrderCornerPrice,
+      amount: quantity * ceilingsWorkOrderCornerPrice,
+    };
+  }, [isProductDirectionPackage, ceilingsWorkOrderCornerPrice, form.ceilingsSpecification]);
+
   const finalWorkOrderComputed = useMemo(() => {
     const { factorFor: discountFactorFor } = finalEstimateDiscountFactors;
     const windowsMarkupFactor = isProductDirectionPackage
@@ -294,15 +317,44 @@ export function usePackageFinalEstimateWorkOrders({
       roomTotals.push(adjustedTotal);
       return { ...room, lines, adjustedTotal };
     });
-    const total = roomTotals.reduce((sum, x) => sum + x, 0);
+    /** Блок «Углы» (потолки) — без привязки к мастеру, цена из настроек окончательная. */
+    const cornersRoom = ceilingsCorners
+      ? {
+          name: 'Доп. работы',
+          total: ceilingsCorners.amount,
+          adjustedTotal: ceilingsCorners.amount,
+          lines: [
+            {
+              key: CEILINGS_CORNERS_WORK_ORDER_LINE_KEY,
+              name: 'Углы',
+              unit: 'шт',
+              quantity: ceilingsCorners.quantity,
+              price: ceilingsCorners.price,
+              amount: ceilingsCorners.amount,
+              includedQuantity: ceilingsCorners.quantity,
+              excludedQuantity: 0,
+              sourceAmounts: [] as FinalEstimateSummaryRow['sourceAmounts'],
+              adjustedPrice: ceilingsCorners.price,
+              adjustedAmount: ceilingsCorners.amount,
+              installerId: '',
+              installerFullName: '',
+              installerGrade: '',
+              installerGradeIncreasePercent: 0 as InstallerGradePercent,
+            },
+          ],
+        }
+      : null;
+    const roomsWithCorners = cornersRoom ? [...rooms, cornersRoom] : rooms;
+    const total = roomTotals.reduce((sum, x) => sum + x, 0) + (ceilingsCorners?.amount ?? 0);
     const installerTotals = [...installerTotalsMap.values()].sort((a, b) =>
       a.installer.fullName.localeCompare(b.installer.fullName, 'ru')
     );
-    return { rooms, total, installerTotals };
+    return { rooms: roomsWithCorners, total, installerTotals };
   }, [
     finalEstimateRooms,
     isProductDirectionPackage,
     windowsWorkOrderMarkupPercent,
+    ceilingsCorners,
     form.workOrder.taxPercent,
     form.workOrder.markupPercent,
     form.workOrder.gradeIncreasePercent,
@@ -329,7 +381,7 @@ export function usePackageFinalEstimateWorkOrders({
         });
       }
     }
-    return interactiveFinalEstimateSections
+    const sectionsFromEstimate = interactiveFinalEstimateSections
       .map((section) => {
         const rooms = section.rooms
           .map((room) => {
@@ -409,7 +461,33 @@ export function usePackageFinalEstimateWorkOrders({
           adjustedTotal: number;
         } => Boolean(section)
       );
-  }, [finalWorkOrderComputed.rooms, interactiveFinalEstimateSections]);
+    /** Блок «Углы» (потолки): отдельной секцией, чтобы попал в общий итоговый заказ-наряд (без мастеров). */
+    if (!ceilingsCorners) return sectionsFromEstimate;
+    return [
+      ...sectionsFromEstimate,
+      {
+        categoryName: 'Доп. работы',
+        rooms: [
+          {
+            name: 'Доп. работы',
+            lines: [
+              {
+                key: CEILINGS_CORNERS_WORK_ORDER_LINE_KEY,
+                workName: 'Углы',
+                unit: 'шт',
+                quantity: ceilingsCorners.quantity,
+                amount: ceilingsCorners.amount,
+                installerId: '',
+                adjustedAmount: ceilingsCorners.amount,
+              },
+            ],
+            adjustedTotal: ceilingsCorners.amount,
+          },
+        ],
+        adjustedTotal: ceilingsCorners.amount,
+      },
+    ];
+  }, [finalWorkOrderComputed.rooms, interactiveFinalEstimateSections, ceilingsCorners]);
 
   const perInstallerWorkOrders = useMemo(() => {
     return selectedInstallers

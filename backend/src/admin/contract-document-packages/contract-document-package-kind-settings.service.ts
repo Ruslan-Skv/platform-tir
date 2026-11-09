@@ -68,6 +68,9 @@ export class ContractDocumentPackageKindSettingsService {
       return {
         ...base,
         windowsWorkOrderMarkupPercent: await this.resolveWorkOrderMarkupPercent(kind),
+        ...(kind === ContractDocumentPackageKind.CEILINGS
+          ? { ceilingsWorkOrderCornerPrice: await this.resolveCeilingsWorkOrderCornerPrice() }
+          : {}),
       };
     }
     return base;
@@ -227,6 +230,20 @@ export class ContractDocumentPackageKindSettingsService {
     return this.resolveWorkOrderMarkupPercent(ContractDocumentPackageKind.WINDOWS);
   }
 
+  /** Стоимость одного угла в заказ-наряде потолков, ₽; null — не задана, строка «Углы» не добавляется. */
+  private async resolveCeilingsWorkOrderCornerPrice(): Promise<number | null> {
+    try {
+      const row = await this.prisma.contractDocumentRepairSettings.findUnique({
+        where: { kind: ContractDocumentPackageKind.CEILINGS },
+        select: { ceilingsWorkOrderCornerPrice: true },
+      });
+      const raw = row?.ceilingsWorkOrderCornerPrice ?? null;
+      return raw !== null && Number.isFinite(raw) && raw >= 0 ? Math.trunc(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
   async getWorkOrderMarkupSettings(kind: ContractDocumentPackageKind) {
     if (!this.supportsWorkOrderMarkup(kind)) {
       throw new BadRequestException(
@@ -241,13 +258,21 @@ export class ContractDocumentPackageKindSettingsService {
     return {
       kind,
       windowsWorkOrderMarkupPercent,
+      ceilingsWorkOrderCornerPrice:
+        kind === ContractDocumentPackageKind.CEILINGS
+          ? await this.resolveCeilingsWorkOrderCornerPrice()
+          : null,
       updatedAt: row?.updatedAt?.toISOString() ?? null,
     };
   }
 
   async setWorkOrderMarkupSettings(
     kind: ContractDocumentPackageKind,
-    dto: SetWindowsWorkOrderMarkupDto,
+    dto: {
+      windowsWorkOrderMarkupPercent: number;
+      /** Только CEILINGS: null — сбросить (строка «Углы» не добавляется). */
+      ceilingsWorkOrderCornerPrice?: number | null;
+    },
     updatedById?: string,
   ) {
     if (!this.supportsWorkOrderMarkup(kind)) {
@@ -255,6 +280,15 @@ export class ContractDocumentPackageKindSettingsService {
         `Наценка заказ-наряда не поддерживается для направления ${kind}`,
       );
     }
+    if (
+      kind !== ContractDocumentPackageKind.CEILINGS &&
+      dto.ceilingsWorkOrderCornerPrice !== undefined
+    ) {
+      throw new BadRequestException(
+        'Стоимость угла заказ-наряда поддерживается только для направления CEILINGS',
+      );
+    }
+    const cornerPrice = dto.ceilingsWorkOrderCornerPrice;
     const fallbackDays = this.fallbackWorkPeriodDays(kind);
     const row = await this.prisma.contractDocumentRepairSettings.upsert({
       where: { kind },
@@ -262,17 +296,25 @@ export class ContractDocumentPackageKindSettingsService {
         kind,
         defaultWorkPeriodDays: fallbackDays,
         windowsWorkOrderMarkupPercent: dto.windowsWorkOrderMarkupPercent,
+        ...(cornerPrice !== undefined ? { ceilingsWorkOrderCornerPrice: cornerPrice } : {}),
         updatedById: updatedById ?? null,
       },
       update: {
         windowsWorkOrderMarkupPercent: dto.windowsWorkOrderMarkupPercent,
+        ...(cornerPrice !== undefined ? { ceilingsWorkOrderCornerPrice: cornerPrice } : {}),
         updatedById: updatedById ?? null,
       },
-      select: { windowsWorkOrderMarkupPercent: true, updatedAt: true },
+      select: {
+        windowsWorkOrderMarkupPercent: true,
+        ceilingsWorkOrderCornerPrice: true,
+        updatedAt: true,
+      },
     });
     return {
       kind,
       windowsWorkOrderMarkupPercent: row.windowsWorkOrderMarkupPercent,
+      ceilingsWorkOrderCornerPrice:
+        kind === ContractDocumentPackageKind.CEILINGS ? row.ceilingsWorkOrderCornerPrice : null,
       updatedAt: row.updatedAt.toISOString(),
     };
   }
