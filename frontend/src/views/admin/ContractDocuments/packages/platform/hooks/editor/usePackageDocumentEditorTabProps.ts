@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 
 import type {
+  ContractEstimateGroup,
   ContractEstimatePreset,
   ContractSignatoryProfile,
   ExecutorRequisiteProfile,
@@ -69,13 +70,20 @@ export type UsePackageDocumentEditorTabPropsOptions = {
   attachBlockedByCrmMismatch: boolean;
   attachBlockedByDirectionMismatch: boolean;
   estimatePresets: ContractEstimatePreset[];
+  /** Объекты расчётов — для наценки, наследуемой от объекта, на вкладке «Смета». */
+  estimateGroups: ContractEstimateGroup[];
   estimateUsageById: ReturnType<typeof usePackageEstimateAttachCatalog>['estimateUsageById'];
+  /** Расчёты подписанных договоров/Д/с: наценка только для просмотра. */
+  lockedEstimatePresetIds: ReturnType<
+    typeof usePackageEstimateAttachCatalog
+  >['lockedEstimatePresetIds'];
   draggingEstimatePresetId: string | null;
   setDraggingEstimatePresetId: React.Dispatch<React.SetStateAction<string | null>>;
   selectedEstimateSections: EstimateEmbedSection[];
   contractDiscountPercentParsed: number;
   estimatePrintSheetRef: React.RefObject<HTMLElement | null>;
-  estimateTabHandlers: ReturnType<typeof usePackageEstimateTabHandlers>;
+  estimateTabHandlers: ReturnType<typeof usePackageEstimateTabHandlers> &
+    Pick<PackageEstimateTabProps, 'estimateMarkupSaving' | 'onEstimatePresetMarkupChange'>;
   finalEstimateRooms: PackageFinalEstimateTabProps['rooms'];
   finalEstimateTotalAmount: number;
   finalEstimateTotalAfterDiscount: number;
@@ -127,7 +135,9 @@ export function usePackageDocumentEditorTabProps({
   attachBlockedByCrmMismatch,
   attachBlockedByDirectionMismatch,
   estimatePresets,
+  estimateGroups,
   estimateUsageById,
+  lockedEstimatePresetIds,
   draggingEstimatePresetId,
   setDraggingEstimatePresetId,
   selectedEstimateSections,
@@ -228,7 +238,9 @@ export function usePackageDocumentEditorTabProps({
       attachBlockedByCrmMismatch,
       attachBlockedByDirectionMismatch,
       estimatePresets,
+      estimateGroups,
       estimateUsageById,
+      lockedEstimatePresetIds,
       draggingEstimatePresetId,
       setDraggingEstimatePresetId,
       selectedEstimateSections,
@@ -253,7 +265,9 @@ export function usePackageDocumentEditorTabProps({
       attachBlockedByCrmMismatch,
       attachBlockedByDirectionMismatch,
       estimatePresets,
+      estimateGroups,
       estimateUsageById,
+      lockedEstimatePresetIds,
       draggingEstimatePresetId,
       setDraggingEstimatePresetId,
       selectedEstimateSections,

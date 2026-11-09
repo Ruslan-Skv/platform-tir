@@ -12,6 +12,8 @@ import {
 import { mergePackageFormData } from '../../../platform/form/packageForm';
 import type { EstimatesListSortBy, EstimatesListSortOrder } from './estimatesListSort';
 
+export { parseOptionalPercentInput } from '../../../platform/estimates/applyEstimatePresetIds';
+
 export type EstimatePackageUsage =
   | {
       packageId: string;
@@ -130,14 +132,6 @@ export function estimateBelongsToUser(
   if (preset.createdById?.trim() === userId) return true;
   const ids = managerIdsByPresetId.get(preset.id);
   return Boolean(ids?.has(userId));
-}
-
-export function parseOptionalPercentInput(raw: string): number | undefined {
-  const t = raw.trim().replace(',', '.');
-  if (!t) return undefined;
-  const n = Number(t);
-  if (!Number.isFinite(n)) return undefined;
-  return n;
 }
 
 /** Разряды через неразрывный пробел: 1453377 → «1 453 377». */

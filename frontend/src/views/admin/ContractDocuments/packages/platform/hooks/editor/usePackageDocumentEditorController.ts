@@ -34,6 +34,7 @@ import { usePackageDocumentVersions } from '../document/usePackageDocumentVersio
 import { usePackageRenderedDocument } from '../document/usePackageRenderedDocument';
 import { usePackageEstimateAttachCatalog } from '../estimate/usePackageEstimateAttachCatalog';
 import { usePackageEstimatePresetHandlers } from '../estimate/usePackageEstimatePresetHandlers';
+import { usePackageEstimatePresetMarkupChange } from '../estimate/usePackageEstimatePresetMarkupChange';
 import { usePackageEstimateTabHandlers } from '../estimate/usePackageEstimateTabHandlers';
 import { usePackageProductSpecificationHandlers } from '../product-spec/usePackageProductSpecificationHandlers';
 import { usePackageProfileDirectoryHandlers } from '../profile/usePackageProfileDirectoryHandlers';
@@ -422,6 +423,7 @@ export function usePackageDocumentEditorController({
 
   const {
     estimateUsageById,
+    lockedEstimatePresetIds,
     attachableEstimatePresets,
     contractEstimateObjectKey,
     addendumEstimateObjectKey,
@@ -584,15 +586,35 @@ export function usePackageDocumentEditorController({
     headerContractConcludedDateLabel,
   } = usePackageEditorHeaderState({ form, packageFlowStatus });
 
-  const estimateTabHandlers = usePackageEstimateTabHandlers({
-    setForm,
-    touchPackageData,
-    setEstimatePresetToAttach,
-    addEstimatePresetToForm,
-    moveEstimatePresetInForm,
-    removeEstimatePresetFromForm,
-    updateContract,
-  });
+  const { estimateMarkupSaving, onEstimatePresetMarkupChange } =
+    usePackageEstimatePresetMarkupChange({
+      signedDocsLocked,
+      packageKind,
+      productDirection: isProductDirectionPackage,
+      estimatePresets,
+      estimateGroups,
+      lockedEstimatePresetIds,
+      setEstimatePresets,
+      setForm,
+      formRef,
+      schedulePersistDebounced: schedulePersistPackageDebounced,
+      setDirty,
+      setError,
+    });
+
+  const estimateTabHandlers = {
+    ...usePackageEstimateTabHandlers({
+      setForm,
+      touchPackageData,
+      setEstimatePresetToAttach,
+      addEstimatePresetToForm,
+      moveEstimatePresetInForm,
+      removeEstimatePresetFromForm,
+      updateContract,
+    }),
+    estimateMarkupSaving,
+    onEstimatePresetMarkupChange,
+  };
 
   const productSpecificationHandlers = usePackageProductSpecificationHandlers({
     setForm,
@@ -670,7 +692,9 @@ export function usePackageDocumentEditorController({
         attachBlockedByCrmMismatch,
         attachBlockedByDirectionMismatch,
         estimatePresets,
+        estimateGroups,
         estimateUsageById,
+        lockedEstimatePresetIds,
         draggingEstimatePresetId,
         setDraggingEstimatePresetId,
         selectedEstimateSections,

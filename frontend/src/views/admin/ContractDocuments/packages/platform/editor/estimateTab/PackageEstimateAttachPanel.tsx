@@ -2,6 +2,7 @@
 
 import cdEstimateTab from '../../../../styles/estimate-tab.module.css';
 import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
+import { getEffectiveEstimateAdditionalMarkupPercent } from '../../estimates/applyEstimatePresetIds';
 import attachStyles from './PackageEstimateAttach.module.css';
 import type { PackageEstimateTabProps } from './PackageEstimateTab';
 import { ESTIMATE_HINT, ESTIMATE_TAB_HINT } from './packageEstimateTabStyles';
@@ -23,13 +24,17 @@ export type PackageEstimateAttachPanelProps = Pick<
   | 'attachBlockedByCrmMismatch'
   | 'attachBlockedByDirectionMismatch'
   | 'estimatePresets'
+  | 'estimateGroups'
   | 'estimateUsageById'
+  | 'lockedEstimatePresetIds'
   | 'draggingEstimatePresetId'
   | 'setDraggingEstimatePresetId'
+  | 'estimateMarkupSaving'
   | 'onEstimateObjectChange'
   | 'onAttachPreset'
   | 'onMovePreset'
   | 'onRemovePreset'
+  | 'onEstimatePresetMarkupChange'
 >;
 
 export function PackageEstimateAttachPanel({
@@ -48,13 +53,17 @@ export function PackageEstimateAttachPanel({
   attachBlockedByCrmMismatch,
   attachBlockedByDirectionMismatch,
   estimatePresets,
+  estimateGroups,
   estimateUsageById,
+  lockedEstimatePresetIds,
   draggingEstimatePresetId,
   setDraggingEstimatePresetId,
+  estimateMarkupSaving,
   onEstimateObjectChange,
   onAttachPreset,
   onMovePreset,
   onRemovePreset,
+  onEstimatePresetMarkupChange,
 }: PackageEstimateAttachPanelProps) {
   return (
     <>
@@ -151,7 +160,8 @@ export function PackageEstimateAttachPanel({
               <p className={ESTIMATE_HINT} style={{ marginTop: 0 }}>
                 Сначала объект, затем расчёт → «Прикрепить». Нельзя смешивать расчёты разных
                 объектов. Справа — порядок{' '}
-                {isProductDirectionPackage ? 'в счёте-заказе' : 'в смете'} (перетаскивание).
+                {isProductDirectionPackage ? 'в счёте-заказе' : 'в смете'} (перетаскивание) и
+                наценка каждого расчёта, % — то же поле, что в разделе «Расчёты».
               </p>
             )}
           </div>
@@ -163,6 +173,16 @@ export function PackageEstimateAttachPanel({
               {(form.estimate.selectedPresetIds ?? []).map((presetId) => {
                 const preset = estimatePresets.find((x) => x.id === presetId);
                 const usageCount = estimateUsageById.get(presetId)?.length ?? 0;
+                const markupLocked = lockedEstimatePresetIds.has(presetId);
+                const markupDisabled = signedDocsLocked || estimateMarkupSaving || markupLocked;
+                const effectiveMarkup = preset
+                  ? getEffectiveEstimateAdditionalMarkupPercent(preset, estimateGroups)
+                  : 0;
+                const groupMarkup =
+                  preset?.groupId && typeof preset.additionalMarkupPercent !== 'number'
+                    ? (estimateGroups.find((g) => g.id === preset.groupId)
+                        ?.additionalMarkupPercent ?? 0)
+                    : 0;
                 return (
                   <div
                     key={presetId}
@@ -194,6 +214,50 @@ export function PackageEstimateAttachPanel({
                         · {preset?.categoryName ?? '—'}
                         {usageCount > 0 ? ` · ещё в пакетах: ${usageCount}` : null}
                       </span>
+                      {preset ? (
+                        <span className={attachStyles.estimateAttachedMarkup}>
+                          <label
+                            title={
+                              markupLocked
+                                ? 'Нельзя менять наценку: расчёт закрыт для изменений (прикреплён к пакету со статусом «Договор подписан» или к подписанному Д/с).'
+                                : `Наценка расчёта, % (сейчас ${effectiveMarkup}%). Пусто — для расчёта в объекте действует наценка объекта${
+                                    groupMarkup > 0 ? ` (${groupMarkup}%)` : ''
+                                  }; иначе +% к цене каждой позиции сметы.`
+                            }
+                          >
+                            <span className={attachStyles.estimateAttachedMarkupLabel}>
+                              Наценка, %
+                            </span>
+                            <input
+                              key={`${preset.id}:markup:${preset.additionalMarkupPercent ?? 'none'}`}
+                              type="number"
+                              min={0}
+                              max={999}
+                              step={0.1}
+                              className={attachStyles.estimateAttachedMarkupInput}
+                              defaultValue={
+                                typeof preset.additionalMarkupPercent === 'number'
+                                  ? String(preset.additionalMarkupPercent)
+                                  : '0'
+                              }
+                              disabled={markupDisabled}
+                              onFocus={(e) => {
+                                e.currentTarget.dataset.markupAtFocus = e.currentTarget.value;
+                              }}
+                              onBlur={(e) => {
+                                if (e.currentTarget.dataset.markupAtFocus === e.currentTarget.value)
+                                  return;
+                                onEstimatePresetMarkupChange(preset.id, e.target.value);
+                              }}
+                            />
+                          </label>
+                          {groupMarkup > 0 ? (
+                            <em className={attachStyles.estimateAttachedMarkupInherited}>
+                              объекта {groupMarkup}%
+                            </em>
+                          ) : null}
+                        </span>
+                      ) : null}
                     </div>
                     <button
                       type="button"

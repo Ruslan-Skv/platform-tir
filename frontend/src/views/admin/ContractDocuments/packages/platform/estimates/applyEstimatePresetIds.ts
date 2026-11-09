@@ -103,6 +103,15 @@ export type EstimateSnapshot = {
 
 const ESTIMATE_ADDITIONAL_MARKUP_MAX = 999;
 
+/** Разбор ввода наценки: пусто → undefined (сброс своей наценки), иначе число (NaN → undefined). */
+export function parseOptionalPercentInput(raw: string): number | undefined {
+  const t = raw.trim().replace(',', '.');
+  if (!t) return undefined;
+  const n = Number(t);
+  if (!Number.isFinite(n)) return undefined;
+  return n;
+}
+
 export function clampEstimateAdditionalMarkupPercent(raw: unknown): number {
   if (typeof raw !== 'number' || !Number.isFinite(raw)) return 0;
   if (raw < 0) return 0;
@@ -452,6 +461,56 @@ export function applyEstimatePresetIdsToPackageForm(
       recommendedPrepayment: contractTotals.recommendedPrepayment,
     },
   };
+}
+
+/**
+ * Пересчёт снимков сметы пакета после изменения самих расчётов (например, наценки):
+ * осн. смета — если среди изменённых есть её расчёт, слоты Д/с — если затронуты их расчёты.
+ * Подписанные Д/с не пересчитываются (guard внутри `applyEstimatePresetIdsToAddendumSlot`).
+ */
+export function recomputePackageEstimateSnapshots(
+  form: PackageFormData,
+  changedPresetIds: string[],
+  presets: ContractEstimatePreset[],
+  estimateGroups: ContractEstimateGroup[] = [],
+  productDirection?: boolean
+): PackageFormData {
+  const changed = new Set(changedPresetIds.filter(Boolean));
+  if (changed.size === 0) return form;
+  let next = form;
+  const mainIds = next.estimate.selectedPresetIds ?? [];
+  if (mainIds.some((id) => changed.has(id))) {
+    next = applyEstimatePresetIdsToPackageForm(next, mainIds, presets, estimateGroups, {
+      productDirection,
+    });
+  }
+  for (let i = 0; i < 5; i++) {
+    const slot = next.addendumSlots[i];
+    if (!slot) continue;
+    const additional = [...(slot.selectedPresetIds ?? [])];
+    if (additional.some((id) => changed.has(id))) {
+      next = applyEstimatePresetIdsToAddendumSlot(
+        next,
+        i,
+        additional,
+        presets,
+        estimateGroups,
+        'additional'
+      );
+    }
+    const excluded = [...(slot.excludedSelectedPresetIds ?? [])];
+    if (excluded.some((id) => changed.has(id))) {
+      next = applyEstimatePresetIdsToAddendumSlot(
+        next,
+        i,
+        excluded,
+        presets,
+        estimateGroups,
+        'excluded'
+      );
+    }
+  }
+  return next;
 }
 
 /** Прикрепление расчётов к слоту Д/с №1…5 (без изменения сумм основного договора). */

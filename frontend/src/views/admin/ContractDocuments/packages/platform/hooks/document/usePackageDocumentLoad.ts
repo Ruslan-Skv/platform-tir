@@ -54,10 +54,7 @@ import {
   normalizePackageContractTemplatePreset as normalizeContractTemplatePreset,
   normalizePackageTemplateTabId as normalizeTemplateTabId,
 } from '../../editor/template/packageTemplateTabUtils';
-import {
-  applyEstimatePresetIdsToAddendumSlot,
-  applyEstimatePresetIdsToPackageForm,
-} from '../../estimates/applyEstimatePresetIds';
+import { recomputePackageEstimateSnapshots } from '../../estimates/applyEstimatePresetIds';
 import { estimatePresetsCatalogKind } from '../../estimates/estimatePresetsCatalogKind';
 import {
   DEFAULT_PACKAGE_CONTRACT_WORK_PERIOD_DAYS,
@@ -114,7 +111,12 @@ export type PackageDocumentLoadSetters = {
   setEstimatePresetToAttach: React.Dispatch<React.SetStateAction<string>>;
   setWorkspacePackages: React.Dispatch<
     React.SetStateAction<
-      Array<{ id: string; title: string | null; formData: Record<string, unknown> }>
+      Array<{
+        id: string;
+        title: string | null;
+        status?: 'IN_PROGRESS' | 'CONTRACT_CONCLUDED' | 'REFUSED';
+        formData: Record<string, unknown>;
+      }>
     >
   >;
   setContractTemplatePresets: React.Dispatch<React.SetStateAction<ContractTemplatePreset[]>>;
@@ -361,40 +363,19 @@ export function usePackageDocumentLoad({
             : { form: formPayload, changed: false };
         const persistRepairWorkOrderPercents = repairWorkOrderDefaults.changed;
         let finalForm: PackageFormData = repairWorkOrderDefaults.form;
-        if (normalizedEstimateIds.length > 0) {
-          finalForm = applyEstimatePresetIdsToPackageForm(
-            finalForm,
-            normalizedEstimateIds,
-            presetsList,
-            estGroupsList,
-            { productDirection: isProductDirectionPackageKind(currentKind) }
-          );
-        }
-        for (let i = 0; i < 5; i++) {
-          const slot = finalForm.addendumSlots[i];
-          const add = [...(slot?.selectedPresetIds ?? [])];
-          if (add.length > 0) {
-            finalForm = applyEstimatePresetIdsToAddendumSlot(
-              finalForm,
-              i,
-              add,
-              presetsList,
-              estGroupsList,
-              'additional'
-            );
-          }
-          const exc = [...(slot?.excludedSelectedPresetIds ?? [])];
-          if (exc.length > 0) {
-            finalForm = applyEstimatePresetIdsToAddendumSlot(
-              finalForm,
-              i,
-              exc,
-              presetsList,
-              estGroupsList,
-              'excluded'
-            );
-          }
-        }
+        finalForm = recomputePackageEstimateSnapshots(
+          finalForm,
+          [
+            ...normalizedEstimateIds,
+            ...finalForm.addendumSlots.flatMap((slot) => [
+              ...(slot?.selectedPresetIds ?? []),
+              ...(slot?.excludedSelectedPresetIds ?? []),
+            ]),
+          ],
+          presetsList,
+          estGroupsList,
+          isProductDirectionPackageKind(currentKind)
+        );
         const linkedId = parseLinkedCrmCustomerIdFromFormData(row.formData);
         setLinkedCrmCustomerId(linkedId);
         let formToApply = finalForm;
@@ -435,6 +416,12 @@ export function usePackageDocumentLoad({
           (packagesRes ?? []).map((p) => ({
             id: p.id,
             title: p.title ?? null,
+            status:
+              p.status === 'CONTRACT_CONCLUDED'
+                ? 'CONTRACT_CONCLUDED'
+                : p.status === 'REFUSED'
+                  ? 'REFUSED'
+                  : 'IN_PROGRESS',
             formData: (p.formData ?? {}) as Record<string, unknown>,
           }))
         );

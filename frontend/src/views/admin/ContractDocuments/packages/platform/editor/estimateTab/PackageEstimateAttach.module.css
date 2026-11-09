@@ -75,6 +75,51 @@
   color: var(--admin-text-muted);
 }
 
+/* Наценка прикреплённого расчёта: то же поле, что в разделе «Расчёты». */
+.estimateAttachedMarkup {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.estimateAttachedMarkupLabel {
+  font-size: var(--admin-font-size-2xs);
+  color: var(--admin-text-muted);
+}
+
+.estimateAttachedMarkupInput {
+  box-sizing: border-box;
+  width: 4rem;
+  max-width: 100%;
+  margin: 0;
+  padding: calc(var(--admin-space-sm) * 0.5) var(--admin-space-xs);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-xs);
+  font-size: var(--admin-font-size-2xs);
+  line-height: 1.25;
+  background: var(--admin-surface);
+  color: var(--admin-text-primary);
+}
+
+.estimateAttachedMarkupInput:focus {
+  border-color: var(--admin-accent, #2563eb);
+  box-shadow: var(--admin-shadow-focus-soft);
+  outline: none;
+}
+
+.estimateAttachedMarkupInput:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.estimateAttachedMarkupInherited {
+  font-style: normal;
+  font-size: var(--admin-font-size-2xs);
+  color: var(--admin-text-muted);
+}
+
 .estimateAttachedRemoveBtn {
   padding: var(--admin-space-0) var(--admin-space-sm);
   min-width: 24px;
@@ -217,4 +262,17 @@
 .estimatePickAndAttachedRow.estimateAttachWindowsTypography .estimateAttachedPresetMain strong {
   font-size: var(--admin-font-size-xs) !important;
   line-height: var(--admin-line-height-sm);
+}
+
+.estimatePickAndAttachedRow.estimateAttachWindowsTypography .estimateAttachedMarkupLabel,
+.estimatePickAndAttachedRow.estimateAttachWindowsTypography .estimateAttachedMarkupInput,
+.estimatePickAndAttachedRow.estimateAttachWindowsTypography .estimateAttachedMarkupInherited {
+  font-size: var(--admin-font-size-xs) !important;
+  line-height: var(--admin-line-height-sm);
+}
+
+.estimatePickAndAttachedRow.estimateAttachWindowsTypography .estimateAttachedMarkup input:focus {
+  border-color: var(--admin-focus-ring, #3b82f6);
+  box-shadow: 0 0 0 1px var(--admin-focus-ring, #3b82f6);
+  outline: none;
 }

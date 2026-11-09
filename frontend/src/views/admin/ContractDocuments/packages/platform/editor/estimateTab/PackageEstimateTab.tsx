@@ -33,7 +33,11 @@ export type PackageEstimateTabProps = {
   attachBlockedByCrmMismatch: boolean;
   attachBlockedByDirectionMismatch: boolean;
   estimatePresets: ContractEstimatePreset[];
+  /** Объекты расчётов — для показа наценки, наследуемой от объекта. */
+  estimateGroups: ContractEstimateGroup[];
   estimateUsageById: Map<string, EstimateUsageEntry[]>;
+  /** Расчёты, прикреплённые к подписанным договорам/Д/с: наценка только для просмотра. */
+  lockedEstimatePresetIds: Set<string>;
   draggingEstimatePresetId: string | null;
   setDraggingEstimatePresetId: React.Dispatch<React.SetStateAction<string | null>>;
   selectedEstimateSections: EstimateEmbedSection[];
@@ -43,6 +47,12 @@ export type PackageEstimateTabProps = {
   onAttachPreset: (presetId: string) => void;
   onMovePreset: (sourceId: string, targetId: string) => void;
   onRemovePreset: (presetId: string) => void;
+  /**
+   * Смена наценки расчёта (то же поле, что в разделе «Расчёты»): сохраняет пресет
+   * и пересчитывает смету/суммы этого пакета.
+   */
+  estimateMarkupSaving: boolean;
+  onEstimatePresetMarkupChange: (presetId: string, raw: string) => void;
   /** Скидка на работы (то же поле, что на вкладке «Данные»): тип и значения. */
   onContractDiscountTypeChange: (value: 'PERCENT' | 'AMOUNT') => void;
   onContractDiscountPercentChange: (value: string) => void;

@@ -11,6 +11,14 @@ import type { InstallerMaster } from '@/shared/api/admin-crm';
 
 import type { PackageDocumentTemplateTabId } from '../../form/formDataTemplateStorage';
 
+/** Пакет из общего пула (для занятости расчётов): статус — для блокировки наценки подписанных. */
+export type PackageWorkspacePackageRow = {
+  id: string;
+  title: string | null;
+  status?: 'IN_PROGRESS' | 'CONTRACT_CONCLUDED' | 'REFUSED';
+  formData: Record<string, unknown>;
+};
+
 export function usePackageEditorCatalogState() {
   const [executorProfiles, setExecutorProfiles] = useState<ExecutorRequisiteProfile[]>([]);
   const [signatoryProfiles, setSignatoryProfiles] = useState<ContractSignatoryProfile[]>([]);
@@ -34,13 +42,7 @@ export function usePackageEditorCatalogState() {
   >(null);
   const [draggingAddendumExcludedEstimatePresetId, setDraggingAddendumExcludedEstimatePresetId] =
     useState<string | null>(null);
-  const [workspacePackages, setWorkspacePackages] = useState<
-    Array<{
-      id: string;
-      title: string | null;
-      formData: Record<string, unknown>;
-    }>
-  >([]);
+  const [workspacePackages, setWorkspacePackages] = useState<PackageWorkspacePackageRow[]>([]);
 
   return {
     executorProfiles,

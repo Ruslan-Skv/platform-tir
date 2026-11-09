@@ -24,6 +24,7 @@ import {
 import {
   collectAddendumSlotPresetIds,
   collectEstimatePresetIdsFromPackageFormData,
+  collectLockedEstimatePresetIdsFromPackageFormData,
 } from '../../form/packageEstimatePresetIds';
 import type { PackageFormData } from '../../form/packageForm';
 
@@ -32,6 +33,8 @@ export type PackageEstimateUsageEntry = {
   packageTitle: string;
   contractNumber: string;
   contractDate: string;
+  /** Расчёт в этом пакете закрыт для изменения наценки (подписанный договор или Д/с). */
+  locked: boolean;
 };
 
 export type UsePackageEstimateAttachCatalogOptions = {
@@ -47,6 +50,7 @@ export type UsePackageEstimateAttachCatalogOptions = {
   workspacePackages: Array<{
     id: string;
     title: string | null;
+    status?: 'IN_PROGRESS' | 'CONTRACT_CONCLUDED' | 'REFUSED';
     formData: Record<string, unknown>;
   }>;
   estimateAttachGroupKey: string;
@@ -88,18 +92,39 @@ export function usePackageEstimateAttachCatalog({
       const fd = (pkg.formData ?? {}) as Record<string, unknown>;
       const uniqueIds = collectEstimatePresetIdsFromPackageFormData(fd);
       if (uniqueIds.length === 0 || pkg.id === packageId) continue;
-      const row: PackageEstimateUsageEntry = {
+      const lockedIds = collectLockedEstimatePresetIdsFromPackageFormData(fd, pkg.status);
+      const base: Omit<PackageEstimateUsageEntry, 'locked'> = {
         packageId: pkg.id,
         packageTitle: pkg.title?.trim() || `Пакет ${pkg.id.slice(0, 8)}`,
         contractNumber: getDisplayContractNumber(pkg),
         contractDate: getDisplayContractDate(pkg),
       };
       for (const presetId of uniqueIds) {
-        map.set(presetId, [...(map.get(presetId) ?? []), row]);
+        map.set(presetId, [
+          ...(map.get(presetId) ?? []),
+          { ...base, locked: lockedIds.has(presetId) },
+        ]);
       }
     }
     return map;
   }, [workspacePackages, packageId]);
+
+  /**
+   * Расчёты, у которых нельзя менять наценку с этой страницы (как в разделе «Расчёты»):
+   * прикреплены к подписанному договору или подписанному Д/с — другому пакету или этому
+   * (статус текущего пакета дополнительно учитывается через `signedDocsLocked`).
+   */
+  const lockedEstimatePresetIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const [presetId, usages] of estimateUsageById) {
+      if (usages.some((u) => u.locked)) ids.add(presetId);
+    }
+    for (const slot of form.addendumSlots) {
+      if (!slot || slot.status !== 'SIGNED') continue;
+      for (const id of collectAddendumSlotPresetIds(slot)) ids.add(id);
+    }
+    return ids;
+  }, [estimateUsageById, form.addendumSlots]);
 
   const packageObjectAddress = form.object?.objectAddress ?? '';
 
@@ -404,6 +429,7 @@ export function usePackageEstimateAttachCatalog({
 
   return {
     estimateUsageById,
+    lockedEstimatePresetIds,
     attachableEstimatePresets,
     contractEstimateObjectKey,
     addendumEstimateObjectKey,
