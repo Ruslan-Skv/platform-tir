@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
+import { useAdminResourcePermission } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 
 import {
   formatPackageWorkPeriodDays,
@@ -45,7 +45,11 @@ function emptyRows(): WorkPeriodRow[] {
 }
 
 export function usePackageSettingsPage() {
-  const { canEdit: isSuperAdmin } = useAdminSectionCanEdit();
+  // Ресурсная пермиссия: хук используется и в модалке «Настройки договоров»
+  // (pathname там — страница договора, секционная пермиссия неприменима).
+  const { canEdit: isSuperAdmin } = useAdminResourcePermission(
+    'admin.contract-documents.repair-settings'
+  );
   const [message, setMessage] = useState<PackageSettingsPageMessage | null>(null);
   const [rows, setRows] = useState<WorkPeriodRow[]>(emptyRows);
   const [loading, setLoading] = useState(true);

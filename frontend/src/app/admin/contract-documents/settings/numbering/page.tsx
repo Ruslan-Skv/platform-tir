@@ -1,7 +1,6 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { ContractDocumentsNumberingSettingsPage } from '@/views/admin/ContractDocuments/packages/pages/settings/ContractDocumentsNumberingSettingsPage';
-
+/** Раздел перенесён в модалку «Настройки договоров» (кнопка в шапке договора). */
 export default function AdminContractDocumentsNumberingSettingsPage() {
-  return <ContractDocumentsNumberingSettingsPage />;
+  redirect('/admin/contract-documents/contracts');
 }

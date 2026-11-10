@@ -35,7 +35,6 @@ export function NumberingFormatHelpSection() {
         </li>
       </ol>
       <div className={styles.relatedLinks}>
-        <Link href="/admin/contract-documents/signatories">Менеджеры</Link>
         <Link href="/admin/crm/my-work-day">Мой рабочий день</Link>
         <Link href="/admin/crm/offices">Офисы</Link>
         <Link href="/admin/settings/work-days">Графики / офис</Link>

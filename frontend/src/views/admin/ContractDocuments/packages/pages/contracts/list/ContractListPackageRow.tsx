@@ -33,6 +33,7 @@ import {
   packageWorkOrderDistributionTitleSuffix,
 } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/packageWorkOrderDistribution';
 import { formatPackageWorkOrderHubModalTitle } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/packageWorkOrderHubTabs';
+import { useWorkStartMinPayPct } from '@/views/admin/ContractDocuments/packages/platform/settings/workStartMinPayPctStore';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
 import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.module.css';
@@ -165,6 +166,8 @@ export function ContractListPackageRow({
   const canDeleteDraft = isPackageDraftDeletionAllowed(pkg);
   const { user } = useAuth();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  // Порог оплаты «В работе» по ремонту — глобальная настройка супер-админа.
+  const workStartMinPayPct = useWorkStartMinPayPct();
   const [diagnosticExporting, setDiagnosticExporting] = useState(false);
 
   const handleDiagnosticExport = async () => {
@@ -182,7 +185,7 @@ export function ContractListPackageRow({
     status: pipelineStatus,
     signedPaymentDue,
     signedPaymentDuePaidPct,
-  } = contractsListPipelineStatusInfo(pkg);
+  } = contractsListPipelineStatusInfo(pkg, workStartMinPayPct);
   const actPhotoItems = contractsListAttachedActPhotosFromForm(form, publicUploadUrl);
   const packageHref = adminContractDocumentsContractsPackageHref(pkg.id);
   const workOrderDistribution = getPackageWorkOrderDistributionInfo(fd);

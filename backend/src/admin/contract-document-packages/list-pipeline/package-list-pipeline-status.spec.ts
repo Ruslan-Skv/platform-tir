@@ -72,6 +72,61 @@ describe('computePackageListPipelineStatus', () => {
     ).toBe('WORK_IN_PROGRESS');
   });
 
+  it('applies configured workStartMinPayPct for repair (lowered threshold)', () => {
+    const base = {
+      kind: ContractDocumentPackageKind.REPAIR,
+      status: ContractDocumentPackageStatus.CONTRACT_CONCLUDED,
+      formData: {
+        contract: { totalAmount: '100000' },
+        repairWorkStartActSignedAt: '2026-02-01',
+        repairWorkStartActPhotoUrl: '/uploads/act.jpg',
+      },
+      payments: [{ amount: '50000', paymentType: 'PREPAYMENT', paymentDate: '2026-01-20' }],
+    };
+    // 50% оплаты: при стандартных 70% — ещё SIGNED, при пороге 50 — уже «В работе».
+    expect(computePackageListPipelineStatus(base)).toBe('SIGNED');
+    expect(computePackageListPipelineStatus({ ...base, workStartMinPayPct: 50 })).toBe(
+      'WORK_IN_PROGRESS',
+    );
+  });
+
+  it('ignores configured threshold for product kinds (always 70% prepayment)', () => {
+    const base = {
+      kind: ContractDocumentPackageKind.WINDOWS,
+      status: ContractDocumentPackageStatus.CONTRACT_CONCLUDED,
+      formData: {
+        contract: { totalAmount: '100000' },
+        estimate: { snapshot: { total: 100000 } },
+      },
+      payments: [{ amount: '50000', paymentType: 'PREPAYMENT', paymentDate: '2026-01-20' }],
+    };
+    expect(computePackageListPipelineStatus(base)).toBe('SIGNED');
+    expect(computePackageListPipelineStatus({ ...base, workStartMinPayPct: 50 })).toBe('SIGNED');
+  });
+
+  it('falls back to 70% for invalid workStartMinPayPct values', () => {
+    const base = {
+      kind: ContractDocumentPackageKind.REPAIR,
+      status: ContractDocumentPackageStatus.CONTRACT_CONCLUDED,
+      formData: {
+        contract: { totalAmount: '100000' },
+        repairWorkStartActSignedAt: '2026-02-01',
+        repairWorkStartActPhotoUrl: '/uploads/act.jpg',
+      },
+      payments: [{ amount: '70000', paymentType: 'PREPAYMENT', paymentDate: '2026-01-20' }],
+    };
+    // 70% с актом — «В работе» при любом некорректном пороге (fallback 70).
+    expect(computePackageListPipelineStatus({ ...base, workStartMinPayPct: 0 })).toBe(
+      'WORK_IN_PROGRESS',
+    );
+    expect(computePackageListPipelineStatus({ ...base, workStartMinPayPct: 500 })).toBe(
+      'WORK_IN_PROGRESS',
+    );
+    expect(computePackageListPipelineStatus({ ...base, workStartMinPayPct: Number.NaN })).toBe(
+      'WORK_IN_PROGRESS',
+    );
+  });
+
   it('returns CLOSED when fully paid and close act present', () => {
     expect(
       computePackageListPipelineStatus({

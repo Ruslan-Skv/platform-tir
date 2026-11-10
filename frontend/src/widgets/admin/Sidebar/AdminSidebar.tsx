@@ -722,34 +722,9 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.contract-documents',
         children: [
           {
-            label: 'Исполнители',
-            href: '/admin/contract-documents/requisites',
-            resourceId: 'admin.contract-documents.requisites',
-          },
-          {
-            label: 'Менеджеры',
-            href: '/admin/contract-documents/signatories',
-            resourceId: 'admin.contract-documents.signatories',
-          },
-          {
             label: 'Библиотека шаблонов',
             href: '/admin/contract-documents/templates',
             resourceId: 'admin.contract-documents.templates',
-          },
-          {
-            label: 'Сроки договоров',
-            href: '/admin/contract-documents/settings',
-            resourceId: 'admin.contract-documents.repair-settings',
-          },
-          {
-            label: 'Нумерация договоров',
-            href: '/admin/contract-documents/settings/numbering',
-            resourceId: 'admin.contract-documents.numbering',
-          },
-          {
-            label: 'Наценки договоров',
-            href: '/admin/contract-documents/settings/markups',
-            resourceId: 'admin.contract-documents.markups',
           },
         ],
       },

@@ -1,0 +1,93 @@
+/* Общие элементы панелей настроек внутри модалки «Настройки договоров». */
+
+.panelRoot {
+  display: grid;
+  gap: 12px;
+}
+
+.panelHead {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.panelHeadMain {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.panelCount {
+  color: var(--admin-text-tertiary, #64748b);
+  font-size: 0.8125rem;
+}
+
+.panelHint {
+  color: var(--admin-text-tertiary, #64748b);
+  font-size: 0.8125rem;
+  margin: 0;
+}
+
+.panelFieldGrid {
+  display: grid;
+  gap: 12px;
+  max-width: 26rem;
+}
+
+.panelInput {
+  border: 1px solid var(--admin-border, #cbd5e1);
+  border-radius: var(--admin-radius-md, 8px);
+  font-size: 0.9375rem;
+  padding: 8px 10px;
+  width: 100%;
+}
+
+.panelInput:focus-visible {
+  outline: 2px solid var(--admin-primary, #2563eb);
+  outline-offset: 1px;
+}
+
+.panelActions {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+.panelPrimaryBtn {
+  background: var(--admin-primary, #2563eb);
+  border: none;
+  border-radius: var(--admin-radius-md, 8px);
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 8px 16px;
+}
+
+.panelPrimaryBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.panelSecondaryBtn {
+  background: transparent;
+  border: 1px solid var(--admin-border, #cbd5e1);
+  border-radius: var(--admin-radius-md, 8px);
+  color: var(--admin-text-primary, #0f172a);
+  cursor: pointer;
+  font-size: 0.875rem;
+  padding: 8px 14px;
+}
+
+.panelError {
+  background: rgb(220 38 38 / 10%);
+  border: 1px solid rgb(220 38 38 / 35%);
+  border-radius: var(--admin-radius-md, 8px);
+  color: var(--admin-danger, #dc2626);
+  font-size: 0.875rem;
+  margin: 0;
+  padding: 8px 12px;
+}

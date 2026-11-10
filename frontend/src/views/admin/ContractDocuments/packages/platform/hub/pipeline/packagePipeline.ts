@@ -25,8 +25,15 @@ import { formatPackagePipelineActDate, isWithinMsSinceIso } from '../hubModal/pa
 /** Допуск при сравнении сумм оплат (руб.). */
 export const PACKAGE_PAYMENT_TOLERANCE_RUB = 0.5;
 
-/** Минимальная оплата по договору для этапа «В работе». */
+/** Минимальная оплата по договору для этапа «В работе» (по умолчанию; для «Ремонта» настраивается). */
 export const PACKAGE_WORK_START_MIN_CONTRACT_PAY_PCT = 70;
+
+/** Настраиваемый порог оплаты «В работы» (1–100; не задан/некорректен — 70). */
+function clampWorkStartMinPayPct(raw: number | null | undefined): number {
+  if (raw == null || !Number.isFinite(raw)) return PACKAGE_WORK_START_MIN_CONTRACT_PAY_PCT;
+  const t = Math.trunc(raw);
+  return t >= 1 && t <= 100 ? t : PACKAGE_WORK_START_MIN_CONTRACT_PAY_PCT;
+}
 
 export type PackageListPipelineStatus =
   | 'IN_PROJECT'
@@ -91,6 +98,11 @@ export interface PackageContractPipelineModel {
   grandPaidPct: number | null;
   allPaymentsComplete: boolean;
   workStartPaymentReady: boolean;
+  /**
+   * Эффективный порог оплаты «В работе», %: у «Ремонта» — глобальная настройка
+   * супер-админа, у продуктовых направлений — фиксированные 70%.
+   */
+  workStartMinPayPct: number;
   workStartActComplete: boolean;
   closeActComplete: boolean;
   /**
@@ -357,6 +369,8 @@ function buildSteps(input: {
   workStarted: boolean;
   contractClosed: boolean;
   workStartPaymentReady: boolean;
+  /** Эффективный порог оплаты «В работы» (у «Ремонта» — настраиваемый). */
+  workStartMinPayPct: number;
   workStartActComplete: boolean;
   closeActComplete: boolean;
   windowsWorkStepDetail?: string;
@@ -376,6 +390,7 @@ function buildSteps(input: {
     workStarted,
     contractClosed,
     workStartPaymentReady,
+    workStartMinPayPct,
     workStartActComplete,
     closeActComplete,
     windowsWorkStepDetail,
@@ -410,10 +425,10 @@ function buildSteps(input: {
     : workStarted
       ? 'Работы начаты'
       : workStartActComplete
-        ? `Акт есть, нужна оплата ≥${PACKAGE_WORK_START_MIN_CONTRACT_PAY_PCT}%`
+        ? `Акт есть, нужна оплата ≥${workStartMinPayPct}%`
         : workStartPaymentReady
           ? 'Можно подписать акт начала работ'
-          : `Оплата по договору ${contractPaidPct ?? 0}% (нужно ≥${PACKAGE_WORK_START_MIN_CONTRACT_PAY_PCT}%)`;
+          : `Оплата по договору ${contractPaidPct ?? 0}% (нужно ≥${workStartMinPayPct}%)`;
   const closedDetail = contractClosed
     ? 'Договор закрыт'
     : closeActComplete
@@ -527,6 +542,11 @@ export function computePackageContractPipelineModel(input: {
   payments?: ContractDocumentPackagePayment[];
   /** Если передан без строк журнала — сумма оплат одной цифрой (как в hub). */
   journalPaidRub?: number;
+  /**
+   * Настраиваемый порог оплаты «В работе» — применяется только к «Ремонту»
+   * (глобальная настройка супер-админа); продуктовые направления — всегда 70%.
+   */
+  workStartMinPayPct?: number | null;
   nowMs?: number;
 }): PackageContractPipelineModel {
   const packageKind = input.packageKind ?? 'REPAIR';
@@ -559,11 +579,14 @@ export function computePackageContractPipelineModel(input: {
     coverage.mainFullyCovered &&
     (!hasAddendumsInPackage || addendumCards.every((c) => c.fullyCovered));
 
-  const workStartPaymentReady = isPaidAtLeastPct(
-    journalTotal,
-    grandTotal,
-    PACKAGE_WORK_START_MIN_CONTRACT_PAY_PCT
-  );
+  /*
+   * Порог оплаты «В работе» настраивается только для «Ремонта»; у продуктовых
+   * направлений — фиксированные 70% (предоплата и отсчёт срока по договору).
+   */
+  const workStartMinPayPct = isProductDirection
+    ? PACKAGE_WORK_START_MIN_CONTRACT_PAY_PCT
+    : clampWorkStartMinPayPct(input.workStartMinPayPct);
+  const workStartPaymentReady = isPaidAtLeastPct(journalTotal, grandTotal, workStartMinPayPct);
   const windowsWorkPeriodStartDate = isProductDirection
     ? inferWindowsPrepayment70StartDate(input.payments, grandTotal)
     : null;
@@ -612,6 +635,7 @@ export function computePackageContractPipelineModel(input: {
     workStarted,
     contractClosed,
     workStartPaymentReady,
+    workStartMinPayPct,
     workStartActComplete: workStartActDone,
     closeActComplete: closeActDone,
     windowsWorkStepDetail,
@@ -646,6 +670,7 @@ export function computePackageContractPipelineModel(input: {
     grandPaidPct,
     allPaymentsComplete,
     workStartPaymentReady,
+    workStartMinPayPct,
     workStartActComplete: workStartActDone,
     closeActComplete: closeActDone,
     workStarted,
@@ -690,9 +715,10 @@ export function packageListPipelineStatusFromPackage(
   return packageListPipelineStatusInfoFromPackage(pkg).status;
 }
 
-/** Статус списка + признак «Подписан (оплата N%!)» — оплата ниже порога 70%. */
+/** Статус списка + признак «Подписан (оплата N%!)» — оплата ниже порога «В работе». */
 export function packageListPipelineStatusInfoFromPackage(
-  pkg: Pick<ContractDocumentPackage, 'kind' | 'status' | 'formData' | 'payments'>
+  pkg: Pick<ContractDocumentPackage, 'kind' | 'status' | 'formData' | 'payments'>,
+  workStartMinPayPct?: number | null
 ): {
   status: PackageListPipelineStatus;
   signedPaymentDue: boolean;
@@ -713,6 +739,7 @@ export function packageListPipelineStatusInfoFromPackage(
     packageFlowStatus,
     form,
     payments: pkg.payments as ContractDocumentPackagePayment[] | undefined,
+    workStartMinPayPct,
   });
   return {
     status: model.listPipelineStatus,

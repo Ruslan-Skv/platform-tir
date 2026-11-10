@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
+import { useAdminResourcePermission } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 
 import {
   MARKUP_KIND_CONFIG,
@@ -74,7 +74,9 @@ function describeSavedRow(row: MarkupRow, res: MarkupKindSettingsSnapshot): stri
 }
 
 export function useMarkupSettingsPage() {
-  const { canEdit: isSuperAdmin } = useAdminSectionCanEdit();
+  // Ресурсная пермиссия: хук используется и в модалке «Настройки договоров»
+  // (pathname там — страница договора, секционная пермиссия неприменима).
+  const { canEdit: isSuperAdmin } = useAdminResourcePermission('admin.contract-documents.markups');
   const [message, setMessage] = useState<MarkupSettingsPageMessage | null>(null);
   const [rows, setRows] = useState<MarkupRow[]>(() =>
     MARKUP_SETTINGS_KINDS.map((kind) => buildRow(kind, null))

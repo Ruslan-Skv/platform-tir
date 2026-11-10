@@ -11,11 +11,10 @@ import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
 import { DeleteIcon, EditIcon } from '@/shared/ui/icons';
-import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
+import { ModalPortal } from '@/views/admin/ContractDocuments/packages/platform/settings/ModalPortal';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
-import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.module.css';
-import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
 
+import panelStyles from '../settings/SettingsPanels.module.css';
 import { ExecutorProfilesFormFields } from './ExecutorProfilesFormFields';
 import styles from './ExecutorProfilesPage.module.css';
 import {
@@ -24,7 +23,7 @@ import {
   type ExecutorSortKey,
   executorKindLabel,
 } from './executorProfilesConstants';
-import type { ExecutorProfilesPageModel } from './hooks/useExecutorProfilesPage';
+import { useExecutorProfilesPage } from './hooks/useExecutorProfilesPage';
 
 function chipClass(active: boolean): string {
   return `${cdHub.contractsListChip}${active ? ` ${cdHub.contractsListChipActive}` : ''}`;
@@ -45,7 +44,8 @@ const SORT_OPTIONS: { value: ExecutorSortKey; label: string }[] = [
   { value: 'title_desc', label: 'Я → А' },
 ];
 
-export function ExecutorProfilesPageView(model: ExecutorProfilesPageModel) {
+/** Тело раздела «Исполнители» (реквизиты) для модалки «Настройки договоров». */
+export function ExecutorProfilesPanel() {
   const {
     closeForm,
     confirmDelete,
@@ -71,7 +71,7 @@ export function ExecutorProfilesPageView(model: ExecutorProfilesPageModel) {
     setMessage,
     setSortKey,
     sortKey,
-  } = model;
+  } = useExecutorProfilesPage();
 
   const [successVisible, setSuccessVisible] = useState(false);
   const [successText, setSuccessText] = useState('');
@@ -164,55 +164,30 @@ export function ExecutorProfilesPageView(model: ExecutorProfilesPageModel) {
     },
   ];
 
-  const iconActions = (placement: 'desktop' | 'mobile') => (
-    <div
-      className={
-        placement === 'mobile'
-          ? cdHub.contractsHeaderIconActionsMobile
-          : cdHub.contractsHeaderIconActionsDesktop
-      }
-    >
-      <AdminListRefreshButton
-        disabled={iconsDisabled}
-        busy={loading}
-        title="Обновить список"
-        aria-label={loading ? 'Обновление списка реквизитов' : 'Обновить список реквизитов'}
-        onClick={() => void refresh()}
-      />
-    </div>
-  );
-
   return (
-    <div className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdHub.contractsListPage}`}>
-      <div className={cdHub.editorHeader}>
-        <div className={cdHub.contractsListHeaderLeft}>
-          <div className={cdHub.contractsHeaderTitleRow}>
-            <div className={cdHub.contractsHeaderTitleCluster}>
-              <div className={cdHub.contractsListHeaderTitleGroup}>
-                <h1 className={cdHub.title}>Исполнители</h1>
-              </div>
-              <span className={cdHub.contractsListCount} title={countTitle}>
-                <span className={cdHub.contractsListCountDesktop}>{countTitle}</span>
-                <span className={cdHub.contractsListCountMobile}>{displayedRows.length}</span>
-              </span>
-              <AdminSaveNotice visible={successVisible} className={styles.headerSuccessNotice}>
-                {successText}
-              </AdminSaveNotice>
-            </div>
-            {iconActions('mobile')}
-          </div>
+    <div className={panelStyles.panelRoot}>
+      <div className={panelStyles.panelHead}>
+        <div className={panelStyles.panelHeadMain}>
+          <span className={panelStyles.panelCount}>{countTitle}</span>
+          <AdminSaveNotice visible={successVisible}>{successText}</AdminSaveNotice>
         </div>
-        <div className={`${cdChrome.headerButtonsRow} ${cdHub.contractsListHeaderActions}`}>
+        <div className={panelStyles.panelActions}>
           <button
             data-admin-mutation
             type="button"
-            className={cdChrome.contractsListHeaderAddBtn}
-            disabled={iconsDisabled}
+            className={panelStyles.panelPrimaryBtn}
             onClick={openCreate}
+            disabled={iconsDisabled}
           >
             + Набор
           </button>
-          {iconActions('desktop')}
+          <AdminListRefreshButton
+            disabled={iconsDisabled}
+            busy={loading}
+            title="Обновить список"
+            aria-label={loading ? 'Обновление списка реквизитов' : 'Обновить список реквизитов'}
+            onClick={() => void refresh()}
+          />
         </div>
       </div>
 
@@ -317,49 +292,57 @@ export function ExecutorProfilesPageView(model: ExecutorProfilesPageModel) {
         emptyMessage="Наборы реквизитов пока не добавлены"
       />
 
-      <Modal
-        isOpen={formOpen}
-        onClose={closeForm}
-        title={editingIndex === null ? 'Добавить набор реквизитов' : 'Изменить набор реквизитов'}
-        size="lg"
-      >
-        <form
-          data-modal-form
-          onSubmit={(e) => {
-            e.preventDefault();
-            void handleUpsert();
-          }}
+      {/* Вложенные модалки — через портал: панель Modal с transform ломает fixed-оверлеи. */}
+      <ModalPortal>
+        <Modal
+          isOpen={formOpen}
+          onClose={closeForm}
+          title={editingIndex === null ? 'Добавить набор реквизитов' : 'Изменить набор реквизитов'}
+          size="lg"
         >
-          <ExecutorProfilesFormFields draft={draft} formError={formError} setDraft={setDraft} />
-          <div data-modal-footer-info data-modal-tone="success" role="status">
-            <span data-modal-footer-info-icon aria-hidden="true" />
-            <span data-modal-footer-info-text>
-              Набор выбирается в договоре. Менеджера и офис настраивайте в разделе «Менеджеры».
-            </span>
-          </div>
-          <div data-modal-form-actions>
-            <button type="button" data-modal-btn="secondary" onClick={closeForm} disabled={saving}>
-              Отмена
-            </button>
-            <button data-admin-mutation type="submit" data-modal-btn="primary" disabled={saving}>
-              {saving ? 'Сохранение…' : 'Сохранить'}
-            </button>
-          </div>
-        </form>
-      </Modal>
+          <form
+            data-modal-form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void handleUpsert();
+            }}
+          >
+            <ExecutorProfilesFormFields draft={draft} formError={formError} setDraft={setDraft} />
+            <div data-modal-footer-info data-modal-tone="success" role="status">
+              <span data-modal-footer-info-icon aria-hidden="true" />
+              <span data-modal-footer-info-text>
+                Набор выбирается в договоре. Менеджера и офис настраивайте на вкладке «Менеджеры».
+              </span>
+            </div>
+            <div data-modal-form-actions>
+              <button
+                type="button"
+                data-modal-btn="secondary"
+                onClick={closeForm}
+                disabled={saving}
+              >
+                Отмена
+              </button>
+              <button data-admin-mutation type="submit" data-modal-btn="primary" disabled={saving}>
+                {saving ? 'Сохранение…' : 'Сохранить'}
+              </button>
+            </div>
+          </form>
+        </Modal>
 
-      <ConfirmModal
-        isOpen={deleteIndex !== null}
-        onClose={() => setDeleteIndex(null)}
-        title="Удалить набор"
-        message={`Удалить набор «${deleteItem?.title ?? ''}»?`}
-        confirmText="Удалить"
-        cancelText="Отмена"
-        variant="danger"
-        closeOnConfirm={false}
-        confirmLoading={saving}
-        onConfirm={() => void confirmDelete()}
-      />
+        <ConfirmModal
+          isOpen={deleteIndex !== null}
+          onClose={() => setDeleteIndex(null)}
+          title="Удалить набор"
+          message={`Удалить набор «${deleteItem?.title ?? ''}»?`}
+          confirmText="Удалить"
+          cancelText="Отмена"
+          variant="danger"
+          closeOnConfirm={false}
+          confirmLoading={saving}
+          onConfirm={() => void confirmDelete()}
+        />
+      </ModalPortal>
     </div>
   );
 }

@@ -15,6 +15,30 @@ import {
   isWorkPeriodManualInFormData,
   setWorkPeriodInFormData,
 } from './repair-contract-work-period';
+import { PACKAGE_WORK_START_MIN_CONTRACT_PAY_PCT } from './list-pipeline/package-list-pipeline-status';
+
+/** Нормализация порога оплаты Акта начала работ (1–100; null/некорректное — 70). */
+export function clampRepairWorkStartMinPayPct(raw: number | null | undefined): number {
+  if (raw == null || !Number.isFinite(raw)) return PACKAGE_WORK_START_MIN_CONTRACT_PAY_PCT;
+  const t = Math.trunc(raw);
+  return t >= 1 && t <= 100 ? t : PACKAGE_WORK_START_MIN_CONTRACT_PAY_PCT;
+}
+
+/**
+ * Порог оплаты Акта начала работ по ремонту из глобальных настроек —
+ * для любых сервисов с PrismaService, без DI-зависимости от модуля настроек.
+ */
+export async function resolveRepairWorkStartMinPayPct(prisma: PrismaService): Promise<number> {
+  try {
+    const row = await prisma.contractDocumentRepairSettings.findUnique({
+      where: { kind: ContractDocumentPackageKind.REPAIR },
+      select: { repairWorkStartMinPayPercent: true },
+    });
+    return clampRepairWorkStartMinPayPct(row?.repairWorkStartMinPayPercent);
+  } catch {
+    return PACKAGE_WORK_START_MIN_CONTRACT_PAY_PCT;
+  }
+}
 
 @Injectable()
 export class ContractDocumentPackageKindSettingsService {
@@ -80,12 +104,17 @@ export class ContractDocumentPackageKindSettingsService {
     const base = await this.getWorkPeriodSettings(ContractDocumentPackageKind.REPAIR);
     const row = await this.prisma.contractDocumentRepairSettings.findUnique({
       where: { kind: ContractDocumentPackageKind.REPAIR },
-      select: { repairWorkOrderMarkupPercent: true, repairWorkOrderTaxPercent: true },
+      select: {
+        repairWorkOrderMarkupPercent: true,
+        repairWorkOrderTaxPercent: true,
+        repairWorkStartMinPayPercent: true,
+      },
     });
     return {
       ...base,
       workOrderMarkupPercent: row?.repairWorkOrderMarkupPercent ?? null,
       workOrderTaxPercent: row?.repairWorkOrderTaxPercent ?? null,
+      workStartMinPayPercent: clampRepairWorkStartMinPayPct(row?.repairWorkStartMinPayPercent),
     };
   }
 
@@ -98,22 +127,47 @@ export class ContractDocumentPackageKindSettingsService {
     dto: SetRepairContractSettingsDto,
     updatedById?: string,
   ) {
+    // Частичное обновление: незаданные поля сохраняют текущие значения.
+    const existing = await this.prisma.contractDocumentRepairSettings.findUnique({
+      where: { kind },
+      select: { defaultWorkPeriodDays: true },
+    });
+    const nextDays =
+      dto.defaultWorkPeriodDays ??
+      existing?.defaultWorkPeriodDays ??
+      this.fallbackWorkPeriodDays(kind);
+    // Порог оплаты Акта начала работ — только у направления «Ремонт».
+    const repairPct =
+      kind === ContractDocumentPackageKind.REPAIR && dto.workStartMinPayPercent !== undefined
+        ? { repairWorkStartMinPayPercent: dto.workStartMinPayPercent }
+        : {};
     const row = await this.prisma.contractDocumentRepairSettings.upsert({
       where: { kind },
       create: {
         kind,
-        defaultWorkPeriodDays: dto.defaultWorkPeriodDays,
+        defaultWorkPeriodDays: nextDays,
+        ...repairPct,
         updatedById: updatedById ?? null,
       },
       update: {
-        defaultWorkPeriodDays: dto.defaultWorkPeriodDays,
+        defaultWorkPeriodDays: nextDays,
+        ...repairPct,
         updatedById: updatedById ?? null,
       },
-      select: { defaultWorkPeriodDays: true, updatedAt: true },
+      select: {
+        defaultWorkPeriodDays: true,
+        repairWorkStartMinPayPercent: true,
+        updatedAt: true,
+      },
     });
     return {
       kind,
       defaultWorkPeriodDays: row.defaultWorkPeriodDays,
+      ...(kind === ContractDocumentPackageKind.REPAIR
+        ? {
+            workStartMinPayPercent: clampRepairWorkStartMinPayPct(row.repairWorkStartMinPayPercent),
+          }
+        : {}),
       updatedAt: row.updatedAt.toISOString(),
     };
   }

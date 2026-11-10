@@ -53,6 +53,7 @@ import {
 import { computePackagePayableBreakdown } from '../../payments/packagePaymentTotals';
 import { resolveUniqueCrmCustomerByPhones } from '../../questionnaires/crmCustomerPhoneMatch';
 import { parseLinkedCrmCustomerIdFromFormData } from '../../questionnaires/crmManagerQuestionnaire1';
+import { useWorkStartMinPayPct } from '../../settings/workStartMinPayPctStore';
 import { PACKAGE_CASH_ORDER_TEMPLATE_TAB } from '../../tabs/packageActPrintTabs';
 import {
   PACKAGE_WORK_START_MIN_CONTRACT_PAY_PCT,
@@ -87,6 +88,8 @@ export function usePackageHub({
 }: UsePackageHubOptions) {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  // Порог оплаты «В работе» по ремонту — глобальная настройка супер-админа.
+  const workStartMinPayPct = useWorkStartMinPayPct();
   const [loading, setLoading] = useState(false);
   const [contentReady, setContentReady] = useState(false);
   const hubContentReadyRef = useRef(false);
@@ -500,11 +503,12 @@ export function usePackageHub({
         packageFlowStatus,
         form,
         payments: paymentRows,
+        workStartMinPayPct,
         nowMs: Date.now(),
       }),
     // undoUiTick — чтобы отсчёт 5 секунд на отмену подписания обновлялся каждую секунду.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- значение тика не читается напрямую: оно принуждает пересчитать nowMs.
-    [packageKind, packageFlowStatus, form, paymentRows, undoUiTick]
+    [packageKind, packageFlowStatus, form, paymentRows, workStartMinPayPct, undoUiTick]
   );
 
   const attachedActPhotos = useMemo(() => {
@@ -736,12 +740,13 @@ export function usePackageHub({
       packageFlowStatus: packageFlowStatusRef.current,
       form: formRef.current,
       payments: paymentRows,
+      workStartMinPayPct,
     });
     if (!payCheck.workStartPaymentReady) {
       setWorkStartModalError(
         isProductDirectionPackageKind(packageKind)
           ? `Для этапа «В работе» нужна предоплата не менее ${PACKAGE_WORK_START_MIN_CONTRACT_PAY_PCT}% от суммы договора (сейчас ${payCheck.grandPaidPct ?? payCheck.contractPaidPct ?? 0}%).`
-          : `Для этапа «В работе» нужна оплата по договору не менее ${PACKAGE_WORK_START_MIN_CONTRACT_PAY_PCT}% (сейчас ${payCheck.contractPaidPct ?? 0}%).`
+          : `Для этапа «В работе» нужна оплата по договору не менее ${payCheck.workStartMinPayPct}% (сейчас ${payCheck.contractPaidPct ?? 0}%).`
       );
       return;
     }

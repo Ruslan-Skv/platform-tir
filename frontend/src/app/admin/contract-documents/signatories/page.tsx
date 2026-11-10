@@ -1,7 +1,6 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { ContractDocumentsSignatoriesPage } from '@/views/admin/ContractDocuments/packages/pages/signatories/ContractDocumentsSignatoriesPage';
-
+/** Раздел перенесён в модалку «Настройки договоров» (кнопка в шапке договора). */
 export default function AdminContractDocumentsSignatoriesPage() {
-  return <ContractDocumentsSignatoriesPage />;
+  redirect('/admin/contract-documents/contracts');
 }

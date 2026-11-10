@@ -2,26 +2,24 @@
 
 import { useEffect, useState } from 'react';
 
-import Link from 'next/link';
-
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
-import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
-import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
-import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.module.css';
-import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
+import { ModalPortal } from '@/views/admin/ContractDocuments/packages/platform/settings/ModalPortal';
 
 import styles from './PackageSettingsPage.module.css';
-import type { PackageSettingsPageModel, WorkPeriodRow } from './hooks/usePackageSettingsPage';
+import panelStyles from './SettingsPanels.module.css';
+import type { WorkPeriodRow } from './hooks/usePackageSettingsPage';
+import { usePackageSettingsPage } from './hooks/usePackageSettingsPage';
 
 function formatUpdatedAt(updatedAt: string | null): string {
   if (!updatedAt) return '—';
   return new Date(updatedAt).toLocaleString('ru-RU');
 }
 
-export function PackageSettingsPageView(model: PackageSettingsPageModel) {
+/** Тело раздела «Сроки договоров» для модалки «Настройки договоров». */
+export function PackageWorkPeriodSettingsPanel() {
   const {
     applyingAll,
     busy,
@@ -38,7 +36,7 @@ export function PackageSettingsPageView(model: PackageSettingsPageModel) {
     savingKind,
     setDaysInput,
     setMessage,
-  } = model;
+  } = usePackageSettingsPage();
 
   const [successVisible, setSuccessVisible] = useState(false);
   const [successText, setSuccessText] = useState('');
@@ -53,8 +51,6 @@ export function PackageSettingsPageView(model: PackageSettingsPageModel) {
       return () => window.clearTimeout(timer);
     }
   }, [message, setMessage]);
-
-  const countTitle = `${rows.length} направлений`;
 
   const saveButton = (row: WorkPeriodRow) => {
     if (!isSuperAdmin) return <span className={styles.muted}>—</span>;
@@ -110,51 +106,20 @@ export function PackageSettingsPageView(model: PackageSettingsPageModel) {
     },
   ];
 
-  const iconActions = (placement: 'desktop' | 'mobile') => (
-    <div
-      className={
-        placement === 'mobile'
-          ? cdHub.contractsHeaderIconActionsMobile
-          : cdHub.contractsHeaderIconActionsDesktop
-      }
-    >
-      <AdminListRefreshButton
-        disabled={busy}
-        busy={loading}
-        title="Обновить сроки"
-        aria-label={loading ? 'Обновление сроков договоров' : 'Обновить сроки договоров'}
-        onClick={() => void refresh()}
-      />
-    </div>
-  );
-
   return (
-    <div className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdHub.contractsListPage}`}>
-      <Link className={cdChrome.backLink} href="/admin/contract-documents">
-        ← Оформление договоров
-      </Link>
-
-      <div className={cdHub.editorHeader}>
-        <div className={cdHub.contractsListHeaderLeft}>
-          <div className={cdHub.contractsHeaderTitleRow}>
-            <div className={cdHub.contractsHeaderTitleCluster}>
-              <div className={cdHub.contractsListHeaderTitleGroup}>
-                <h1 className={cdHub.title}>Сроки договоров</h1>
-              </div>
-              <span className={cdHub.contractsListCount} title={countTitle}>
-                <span className={cdHub.contractsListCountDesktop}>{countTitle}</span>
-                <span className={cdHub.contractsListCountMobile}>{rows.length}</span>
-              </span>
-              <AdminSaveNotice visible={successVisible} className={styles.headerSuccessNotice}>
-                {successText}
-              </AdminSaveNotice>
-            </div>
-            {iconActions('mobile')}
-          </div>
+    <div className={panelStyles.panelRoot}>
+      <div className={panelStyles.panelHead}>
+        <div className={panelStyles.panelHeadMain}>
+          <span className={panelStyles.panelCount}>{rows.length} направлений</span>
+          <AdminSaveNotice visible={successVisible}>{successText}</AdminSaveNotice>
         </div>
-        <div className={`${cdChrome.headerButtonsRow} ${cdHub.contractsListHeaderActions}`}>
-          {iconActions('desktop')}
-        </div>
+        <AdminListRefreshButton
+          disabled={busy}
+          busy={loading}
+          title="Обновить сроки"
+          aria-label={loading ? 'Обновление сроков договоров' : 'Обновить сроки договоров'}
+          onClick={() => void refresh()}
+        />
       </div>
 
       {message?.type === 'error' ? (
@@ -166,17 +131,11 @@ export function PackageSettingsPageView(model: PackageSettingsPageModel) {
         </div>
       ) : null}
 
-      <div className={`${cdHub.contractsListFiltersPanel} ${styles.helpPanel}`}>
-        <p className={styles.helpText}>
-          Срок в рабочих днях для каждого направления. Подставляется в «Срок дог.» и в{' '}
-          <code>{'{{contract.workPeriod}}'}</code>. После подписания срок не меняется; договоры с
-          ручным сроком в карточке массовое обновление не затрагивает.
-        </p>
-        <div className={styles.relatedLinks}>
-          <Link href="/admin/contract-documents/settings/numbering">Нумерация договоров</Link>
-          <Link href="/admin/contract-documents/settings/markups">Наценки</Link>
-        </div>
-      </div>
+      <p className={styles.helpText}>
+        Срок в рабочих днях для каждого направления. Подставляется в «Срок дог.» и в{' '}
+        <code>{'{{contract.workPeriod}}'}</code>. После подписания срок не меняется; договоры с
+        ручным сроком в карточке массовое обновление не затрагивает.
+      </p>
 
       <p className={styles.sectionHint}>
         {isSuperAdmin
@@ -231,17 +190,19 @@ export function PackageSettingsPageView(model: PackageSettingsPageModel) {
         emptyMessage="Направления не найдены"
       />
 
-      <ConfirmModal
-        isOpen={confirmState != null}
-        onClose={handleDismissAfterSave}
-        onConfirm={handleConfirmModal}
-        title={confirmState?.title ?? 'Подтверждение'}
-        message={confirmState?.message ?? ''}
-        confirmText="Применить"
-        cancelText="Только сохранить"
-        closeOnConfirm={false}
-        confirmLoading={applyingAll}
-      />
+      <ModalPortal>
+        <ConfirmModal
+          isOpen={confirmState != null}
+          onClose={handleDismissAfterSave}
+          onConfirm={handleConfirmModal}
+          title={confirmState?.title ?? 'Подтверждение'}
+          message={confirmState?.message ?? ''}
+          confirmText="Применить"
+          cancelText="Только сохранить"
+          closeOnConfirm={false}
+          confirmLoading={applyingAll}
+        />
+      </ModalPortal>
     </div>
   );
 }

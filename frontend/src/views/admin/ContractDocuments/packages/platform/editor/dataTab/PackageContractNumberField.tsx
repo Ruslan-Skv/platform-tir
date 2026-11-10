@@ -2,9 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import Link from 'next/link';
-
 import { useWorkDay } from '@/features/admin/work-day';
+import { useAuth } from '@/features/auth';
 import {
   type ContractDocumentPackageKind,
   type ContractNumberPreview,
@@ -14,6 +13,7 @@ import { type CrmUser, type Office, getCrmUsers, getOffices } from '@/shared/api
 
 import cdDataTab from '../../../../styles/data-tab.module.css';
 import type { PackageFormData } from '../../form/packageForm';
+import { openContractDocumentsSettings } from '../../settings/ContractDocumentsSettingsButton';
 import styles from './PackageContractNumberField.module.css';
 import { DATA_AUTO_FILLED, DATA_FIELD } from './packageDataTabStyles';
 
@@ -54,6 +54,8 @@ export function PackageContractNumberField({
   packageId = null,
 }: PackageContractNumberFieldProps) {
   const { status: workDayStatus } = useWorkDay();
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const [offices, setOffices] = useState<Office[]>([]);
   const [crmUsers, setCrmUsers] = useState<CrmUser[]>([]);
   const [preview, setPreview] = useState<ContractNumberPreview | null>(null);
@@ -280,10 +282,14 @@ export function PackageContractNumberField({
           role="status"
         >
           <span className={styles.hintText}>{shortenNumberingHint(hintText)}</span>
-          {isBlockingError ? (
-            <Link className={styles.hintLink} href="/admin/contract-documents/settings/numbering">
+          {isBlockingError && isSuperAdmin ? (
+            <button
+              type="button"
+              className={styles.hintLink}
+              onClick={() => openContractDocumentsSettings('numbering')}
+            >
               Настроить
-            </Link>
+            </button>
           ) : null}
         </div>
       ) : null}

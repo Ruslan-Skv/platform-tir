@@ -13,9 +13,12 @@ export function stepStateClass(state: PackageContractPipelineStepVisualState): s
   }
 }
 
-export function payPctToneClass(pct: number | null): string {
+export function payPctToneClass(
+  pct: number | null,
+  minPct = PACKAGE_WORK_START_MIN_CONTRACT_PAY_PCT
+): string {
   if (pct == null) return hubStyles.pipelinePayBadgeMuted;
   if (pct >= 100) return hubStyles.pipelinePayBadgeGreen;
-  if (pct >= PACKAGE_WORK_START_MIN_CONTRACT_PAY_PCT) return hubStyles.pipelinePayBadgeLime;
+  if (pct >= minPct) return hubStyles.pipelinePayBadgeLime;
   return hubStyles.pipelinePayBadgeYellow;
 }

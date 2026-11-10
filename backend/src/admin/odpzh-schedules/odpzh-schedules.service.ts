@@ -7,6 +7,7 @@ import {
   packagePaidPercentFromExplain,
   type PackageListPaymentRow,
 } from '../contract-document-packages/list-pipeline/package-list-pipeline-status';
+import { resolveRepairWorkStartMinPayPct } from '../contract-document-packages/contract-document-package-kind-settings.service';
 import { type InstallerSalarySummary } from '../installer-settlements/installer-accrual';
 import { InstallerSalarySummariesService } from '../installer-settlements/installer-salary-summaries.service';
 import {
@@ -126,6 +127,7 @@ export type OdpzhPackageRecord = Prisma.ContractDocumentPackageGetPayload<{
 export function buildOdpzhScheduleRow(
   pkg: OdpzhPackageRecord,
   installerNamesById: Map<string, string>,
+  workStartMinPayPct?: number | null,
 ): OdpzhScheduleRow {
   const formData = asFormDataRecord(pkg.formData);
 
@@ -140,6 +142,7 @@ export function buildOdpzhScheduleRow(
     status: pkg.status,
     formData: pkg.formData,
     payments,
+    workStartMinPayPct,
   });
   const pipeline = explain.status;
 
@@ -420,9 +423,11 @@ export class OdpzhSchedulesService {
     }
 
     const rows: OdpzhScheduleRow[] = [];
+    // Порог оплаты «В работе» по ремонту — глобальная настройка супер-админа.
+    const workStartMinPayPct = await resolveRepairWorkStartMinPayPct(this.prisma);
     for (const pkg of packages) {
       if (searchNorm && !packageMatchesListSearch(pkg.formData, searchNorm)) continue;
-      const row = buildOdpzhScheduleRow(pkg, installerNamesById);
+      const row = buildOdpzhScheduleRow(pkg, installerNamesById, workStartMinPayPct);
       if (params.status && params.status !== row.status) continue;
       if (params.direction && params.direction !== row.kind) continue;
       rows.push(row);

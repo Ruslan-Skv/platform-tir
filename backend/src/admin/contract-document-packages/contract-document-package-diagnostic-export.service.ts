@@ -12,6 +12,7 @@ import {
   selectedInstallerIds,
 } from '../installation-schedules/installation-schedule.shared';
 import { explainPackageListPipelineStatus } from './list-pipeline/package-list-pipeline-status';
+import { resolveRepairWorkStartMinPayPct } from './contract-document-package-kind-settings.service';
 
 /** Формат файла диагностической выгрузки пакета (для различения версий при разборе). */
 export const PACKAGE_DIAGNOSTIC_FORMAT = 'tir-contract-package-diagnostic';
@@ -135,11 +136,14 @@ export class ContractDocumentPackageDiagnosticExportService {
       addendumNumber: p.addendumNumber,
       paymentDate: p.paymentDate,
     }));
+    // Порог оплаты «В работе» по ремонту — глобальная настройка супер-админа.
+    const workStartMinPayPct = await resolveRepairWorkStartMinPayPct(this.prisma);
     const listPipeline = explainPackageListPipelineStatus({
       kind: pkg.kind,
       status: pkg.status,
       formData: pkg.formData,
       payments: paymentsForPipeline,
+      workStartMinPayPct,
     });
 
     const appliesToKind = (ODPZH_SCHEDULE_KINDS as readonly string[]).includes(pkg.kind);
@@ -204,6 +208,7 @@ export class ContractDocumentPackageDiagnosticExportService {
               })),
           },
           installerNamesById,
+          workStartMinPayPct,
         ),
       };
     }

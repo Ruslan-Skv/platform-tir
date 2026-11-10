@@ -199,7 +199,10 @@ export function PackagePipelineStepCard({
           <>
             <div className={hubStyles.pipelinePaymentsBadges}>
               <span
-                className={`${hubStyles.pipelinePayBadge} ${payPctToneClass(pipeline.contractPaidPct)}`}
+                className={`${hubStyles.pipelinePayBadge} ${payPctToneClass(
+                  pipeline.contractPaidPct,
+                  pipeline.workStartMinPayPct
+                )}`}
               >
                 Оплата по договору{' '}
                 {pipeline.contractPaidPct != null ? `${pipeline.contractPaidPct}%` : '—'}
@@ -271,8 +274,7 @@ export function PackagePipelineStepCard({
                   </>
                 ) : (
                   <>
-                    Для «В работе» по договору нужно не менее{' '}
-                    {PACKAGE_WORK_START_MIN_CONTRACT_PAY_PCT}% (сейчас{' '}
+                    Для «В работе» по договору нужно не менее {pipeline.workStartMinPayPct}% (сейчас{' '}
                     {pipeline.contractPaidPct ?? 0}%).
                   </>
                 )}
@@ -298,7 +300,7 @@ export function PackagePipelineStepCard({
               disabled={actionsDisabled || !pipeline.workStartPaymentReady}
               title={
                 !pipeline.workStartPaymentReady
-                  ? `Нужна оплата по договору не менее ${PACKAGE_WORK_START_MIN_CONTRACT_PAY_PCT}% (сейчас ${pipeline.contractPaidPct ?? 0}%)`
+                  ? `Нужна оплата по договору не менее ${pipeline.workStartMinPayPct}% (сейчас ${pipeline.contractPaidPct ?? 0}%)`
                   : actionsTitle
               }
               onClick={() => {

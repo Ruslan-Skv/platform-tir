@@ -20,6 +20,7 @@ import {
   type PackageListPipelineStatus,
   packageListPipelineStatusInfoFromPackage,
 } from '../../../platform/hub/pipeline/packagePipeline';
+import { getWorkStartMinPayPctSync } from '../../../platform/settings/workStartMinPayPctStore';
 import type { ContractsListSortBy, ContractsListSortOrder } from './contractsListSort';
 
 export function formatContractsListActDate(raw: string): string {
@@ -430,22 +431,26 @@ export function formatSigningDateOnly(r: ContractDocumentPackage): string {
 
 /** Статус для фильтра и колонки: «Ремонт» и «Окна» — полный конвейер, прочие — упрощённо. */
 export function contractsListPipelineStatus(
-  pkg: ContractDocumentPackage
+  pkg: ContractDocumentPackage,
+  workStartMinPayPct: number = getWorkStartMinPayPctSync()
 ): PackageListPipelineStatus {
-  return contractsListPipelineStatusInfo(pkg).status;
+  return contractsListPipelineStatusInfo(pkg, workStartMinPayPct).status;
 }
 
 /**
- * Статус колонки + признак «Подписан (оплата N%!)» (подписан, но оплата ниже порога 70%).
+ * Статус колонки + признак «Подписан (оплата N%!)» (подписан, но оплата ниже порога «В работе»).
  * Упрощённые направления (мебель) — без признака оплаты.
  */
-export function contractsListPipelineStatusInfo(pkg: ContractDocumentPackage): {
+export function contractsListPipelineStatusInfo(
+  pkg: ContractDocumentPackage,
+  workStartMinPayPct: number = getWorkStartMinPayPctSync()
+): {
   status: PackageListPipelineStatus;
   signedPaymentDue: boolean;
   signedPaymentDuePaidPct: number | null;
 } {
   if (pkg.kind === 'REPAIR' || isProductDirectionPackageKind(pkg.kind)) {
-    return packageListPipelineStatusInfoFromPackage(pkg);
+    return packageListPipelineStatusInfoFromPackage(pkg, workStartMinPayPct);
   }
   if (pkg.status === 'REFUSED') {
     return { status: 'REFUSED', signedPaymentDue: false, signedPaymentDuePaidPct: null };

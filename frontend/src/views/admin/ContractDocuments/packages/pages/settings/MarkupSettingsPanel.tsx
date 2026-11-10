@@ -2,26 +2,23 @@
 
 import { useEffect, useState } from 'react';
 
-import Link from 'next/link';
-
 import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
-import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
-import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
-import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.module.css';
-import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
 
 import { DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT } from '../../families/product-like/print/productWorkOrder';
 import styles from './PackageSettingsPage.module.css';
-import type { MarkupRow, MarkupSettingsPageModel } from './hooks/useMarkupSettingsPage';
+import panelStyles from './SettingsPanels.module.css';
+import type { MarkupRow } from './hooks/useMarkupSettingsPage';
+import { useMarkupSettingsPage } from './hooks/useMarkupSettingsPage';
 
 function formatUpdatedAt(updatedAt: string | null): string {
   if (!updatedAt) return '—';
   return new Date(updatedAt).toLocaleString('ru-RU');
 }
 
-export function MarkupSettingsPageView(model: MarkupSettingsPageModel) {
+/** Тело раздела «Наценки договоров» для модалки «Настройки договоров». */
+export function MarkupSettingsPanel() {
   const {
     busy,
     isSuperAdmin,
@@ -35,7 +32,7 @@ export function MarkupSettingsPageView(model: MarkupSettingsPageModel) {
     setTaxInput,
     setCornerPriceInput,
     setMessage,
-  } = model;
+  } = useMarkupSettingsPage();
 
   const [successVisible, setSuccessVisible] = useState(false);
   const [successText, setSuccessText] = useState('');
@@ -50,8 +47,6 @@ export function MarkupSettingsPageView(model: MarkupSettingsPageModel) {
       return () => window.clearTimeout(timer);
     }
   }, [message, setMessage]);
-
-  const countTitle = `${rows.length} направлений`;
 
   const taxInputCell = (row: MarkupRow, idPrefix: string) => {
     if (row.taxInput === null || row.taxInputId === null) {
@@ -140,63 +135,34 @@ export function MarkupSettingsPageView(model: MarkupSettingsPageModel) {
     },
   ];
 
-  const iconActions = (placement: 'desktop' | 'mobile') => (
-    <div
-      className={
-        placement === 'mobile'
-          ? cdHub.contractsHeaderIconActionsMobile
-          : cdHub.contractsHeaderIconActionsDesktop
-      }
-    >
-      {isSuperAdmin ? (
-        <button
-          type="button"
-          data-admin-mutation
-          className={styles.saveBtn}
-          disabled={busy || rows.length === 0}
-          title="Сохранить наценки и налог для всех направлений"
-          aria-label="Сохранить наценки и налог для всех направлений"
-          onClick={() => void saveAllMarkups()}
-        >
-          {savingKind !== null ? '…' : 'Сохранить'}
-        </button>
-      ) : null}
-      <AdminListRefreshButton
-        disabled={busy}
-        busy={loading}
-        title="Обновить наценки"
-        aria-label={loading ? 'Обновление наценок' : 'Обновить наценки'}
-        onClick={() => void refresh()}
-      />
-    </div>
-  );
-
   return (
-    <div className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdHub.contractsListPage}`}>
-      <Link className={cdChrome.backLink} href="/admin/contract-documents">
-        ← Оформление договоров
-      </Link>
-
-      <div className={cdHub.editorHeader}>
-        <div className={cdHub.contractsListHeaderLeft}>
-          <div className={cdHub.contractsHeaderTitleRow}>
-            <div className={cdHub.contractsHeaderTitleCluster}>
-              <div className={cdHub.contractsListHeaderTitleGroup}>
-                <h1 className={cdHub.title}>Наценки договоров</h1>
-              </div>
-              <span className={cdHub.contractsListCount} title={countTitle}>
-                <span className={cdHub.contractsListCountDesktop}>{countTitle}</span>
-                <span className={cdHub.contractsListCountMobile}>{rows.length}</span>
-              </span>
-              <AdminSaveNotice visible={successVisible} className={styles.headerSuccessNotice}>
-                {successText}
-              </AdminSaveNotice>
-            </div>
-            {iconActions('mobile')}
-          </div>
+    <div className={panelStyles.panelRoot}>
+      <div className={panelStyles.panelHead}>
+        <div className={panelStyles.panelHeadMain}>
+          <span className={panelStyles.panelCount}>{rows.length} направлений</span>
+          <AdminSaveNotice visible={successVisible}>{successText}</AdminSaveNotice>
         </div>
-        <div className={`${cdChrome.headerButtonsRow} ${cdHub.contractsListHeaderActions}`}>
-          {iconActions('desktop')}
+        <div className={panelStyles.panelActions}>
+          {isSuperAdmin ? (
+            <button
+              type="button"
+              data-admin-mutation
+              className={styles.saveBtn}
+              disabled={busy || rows.length === 0}
+              title="Сохранить наценки и налог для всех направлений"
+              aria-label="Сохранить наценки и налог для всех направлений"
+              onClick={() => void saveAllMarkups()}
+            >
+              {savingKind !== null ? '…' : 'Сохранить'}
+            </button>
+          ) : null}
+          <AdminListRefreshButton
+            disabled={busy}
+            busy={loading}
+            title="Обновить наценки"
+            aria-label={loading ? 'Обновление наценок' : 'Обновить наценки'}
+            onClick={() => void refresh()}
+          />
         </div>
       </div>
 
@@ -209,23 +175,17 @@ export function MarkupSettingsPageView(model: MarkupSettingsPageModel) {
         </div>
       ) : null}
 
-      <div className={`${cdHub.contractsListFiltersPanel} ${styles.helpPanel}`}>
-        <p className={styles.helpText}>
-          Наценка при расчёте заказ-наряда по направлениям. Для «Окна», «Двери», «Жалюзи» и
-          «Натяжные потолки»: цена позиции = цена в счёт-заказе минус наценка (по умолчанию{' '}
-          {DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT}
-          %). Для «Ремонта» дополнительно указывается налог: из суммы заказ-наряда вычитаются налог
-          и наценка, затем добавляется % разряда; если в договоре налог/наценка не заданы, берутся
-          значения отсюда. Для «Натяжных потолков» поле «Углы, ₽» задаёт цену одного угла в
-          заказ-наряде: если в спецификации договора есть позиция «Углы» (блок «Доп.»), в
-          заказ-наряд добавляется строка с количеством из спецификации и этой ценой; пустое поле —
-          строка не добавляется. Сохранять может только суперадмин.
-        </p>
-        <div className={styles.relatedLinks}>
-          <Link href="/admin/contract-documents/settings">Сроки договоров</Link>
-          <Link href="/admin/contract-documents/settings/numbering">Нумерация договоров</Link>
-        </div>
-      </div>
+      <p className={styles.helpText}>
+        Наценка при расчёте заказ-наряда по направлениям. Для «Окна», «Двери», «Жалюзи» и «Натяжные
+        потолки»: цена позиции = цена в счёт-заказе минус наценка (по умолчанию{' '}
+        {DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT}
+        %). Для «Ремонта» дополнительно указывается налог: из суммы заказ-наряда вычитаются налог и
+        наценка, затем добавляется % разряда; если в договоре налог/наценка не заданы, берутся
+        значения отсюда. Для «Натяжных потолков» поле «Углы, ₽» задаёт цену одного угла в
+        заказ-наряде: если в спецификации договора есть позиция «Углы» (блок «Доп.»), в заказ-наряд
+        добавляется строка с количеством из спецификации и этой ценой; пустое поле — строка не
+        добавляется. Сохранять может только суперадмин.
+      </p>
 
       <p className={styles.sectionHint}>
         {isSuperAdmin

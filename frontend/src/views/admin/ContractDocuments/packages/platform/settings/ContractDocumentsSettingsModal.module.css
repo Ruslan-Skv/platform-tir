@@ -1,0 +1,19 @@
+.modalContent {
+  display: grid;
+}
+
+.modalBody {
+  display: grid;
+  gap: 12px;
+  min-height: 0;
+}
+
+.tabBar {
+  flex-wrap: wrap;
+}
+
+.tabContent {
+  max-height: min(62vh, 640px);
+  overflow-y: auto;
+  padding-right: 2px;
+}

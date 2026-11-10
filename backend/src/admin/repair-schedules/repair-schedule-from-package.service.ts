@@ -10,6 +10,7 @@ import {
   computePackageListPipelineStatus,
   type PackageListPaymentRow,
 } from '../contract-document-packages/list-pipeline/package-list-pipeline-status';
+import { resolveRepairWorkStartMinPayPct } from '../contract-document-packages/contract-document-package-kind-settings.service';
 import {
   decimalOrNull,
   emptyToNull,
@@ -204,11 +205,14 @@ export class RepairScheduleFromPackageService {
       addendumNumber: p.addendumNumber,
       paymentDate: p.paymentDate,
     }));
+    // Порог оплаты «В работе» по ремонту — глобальная настройка супер-админа.
+    const workStartMinPayPct = await resolveRepairWorkStartMinPayPct(this.prisma);
     const pipeline = computePackageListPipelineStatus({
       kind: pkg.kind,
       status: pkg.status,
       formData: pkg.formData,
       payments,
+      workStartMinPayPct,
     });
     const target = pipelineStatusToProjectStatus(pipeline);
 

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
+import { useAdminResourcePermission } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import {
   type CrmDirection,
   type CrmUser,
@@ -26,7 +26,11 @@ export type NumberingSectionTab = 'offices' | 'employees' | 'directions';
 export type NumberingOfficeStatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE';
 
 export function useNumberingSettingsPage() {
-  const { canEdit: isSuperAdmin } = useAdminSectionCanEdit();
+  // Ресурсная пермиссия: хук используется и в модалке «Настройки договоров»
+  // (pathname там — страница договора, секционная пермиссия неприменима).
+  const { canEdit: isSuperAdmin } = useAdminResourcePermission(
+    'admin.contract-documents.numbering'
+  );
   const [message, setMessage] = useState<NumberingPageMessage | null>(null);
 
   const [offices, setOffices] = useState<Office[]>([]);

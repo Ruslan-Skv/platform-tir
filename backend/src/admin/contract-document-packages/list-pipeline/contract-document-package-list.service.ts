@@ -7,6 +7,7 @@ import {
 
 import { PrismaService } from '../../../database/prisma.service';
 import { contractDocumentPackageInclude } from '../contract-package.include';
+import { resolveRepairWorkStartMinPayPct } from '../contract-document-package-kind-settings.service';
 import {
   type PackageListPipelineStatus,
   computePackageEffectiveManagerUserId,
@@ -143,6 +144,8 @@ export class ContractDocumentPackageListService {
     });
 
     type Row = (typeof rows)[number];
+    // Порог оплаты «В работе» по ремонту — глобальная настройка супер-админа.
+    const workStartMinPayPct = await resolveRepairWorkStartMinPayPct(this.prisma);
     const annotate = (pkg: Row) => {
       const payments = (pkg.payments ?? []).map((p) => ({
         amount:
@@ -158,6 +161,7 @@ export class ContractDocumentPackageListService {
         status: pkg.status,
         formData: pkg.formData,
         payments,
+        workStartMinPayPct,
       });
       const effectiveManagerId = computePackageEffectiveManagerUserId({
         responsibleManagerId: pkg.responsibleManagerId,

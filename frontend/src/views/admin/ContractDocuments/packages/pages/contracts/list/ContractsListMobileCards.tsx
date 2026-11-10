@@ -24,6 +24,7 @@ import {
   packageWorkOrderDistributionTitleSuffix,
 } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/packageWorkOrderDistribution';
 import { formatPackageWorkOrderHubModalTitle } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/packageWorkOrderHubTabs';
+import { useWorkStartMinPayPct } from '@/views/admin/ContractDocuments/packages/platform/settings/workStartMinPayPctStore';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
 
 import {
@@ -129,7 +130,9 @@ function PackageMobileCard({
   );
   const paymentBaseRub = addendumColumnCount > 0 ? totalWithAddendaRub : totalRub;
   const remainingRub = contractsListRemainingToPayRub(paymentBaseRub, paidRub);
-  const pipelineStatus = contractsListPipelineStatus(pkg);
+  // Порог оплаты «В работе» по ремонту — глобальная настройка супер-админа.
+  const workStartMinPayPct = useWorkStartMinPayPct();
+  const pipelineStatus = contractsListPipelineStatus(pkg, workStartMinPayPct);
   const customer = contractsListCustomerName(fd);
   const address = contractsListObjectAddress(fd);
   const manager = contractsListManagerDisplayLabel(form, crmUsers, pkg);

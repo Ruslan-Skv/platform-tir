@@ -1,7 +1,6 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { ContractDocumentsPackageSettingsPage } from '@/views/admin/ContractDocuments/packages/pages/settings/ContractDocumentsPackageSettingsPage';
-
+/** Раздел перенесён в модалку «Настройки договоров» (кнопка в шапке договора). */
 export default function AdminContractDocumentsPackageSettingsPage() {
-  return <ContractDocumentsPackageSettingsPage />;
+  redirect('/admin/contract-documents/contracts');
 }

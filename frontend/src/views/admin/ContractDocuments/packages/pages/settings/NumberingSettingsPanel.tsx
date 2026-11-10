@@ -2,25 +2,21 @@
 
 import { useEffect, useState } from 'react';
 
-import Link from 'next/link';
-
 import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
-import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
-import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.module.css';
-import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
 
 import { NumberingDirectionsSection } from './NumberingDirectionsSection';
 import { NumberingEmployeeCodesSection } from './NumberingEmployeeCodesSection';
 import { NumberingFormatHelpSection } from './NumberingFormatHelpSection';
 import { NumberingOfficePrefixesSection } from './NumberingOfficePrefixesSection';
 import styles from './NumberingSettingsPage.module.css';
+import panelStyles from './SettingsPanels.module.css';
 import type {
   NumberingOfficeStatusFilter,
   NumberingSectionTab,
-  NumberingSettingsPageModel,
 } from './hooks/useNumberingSettingsPage';
+import { useNumberingSettingsPage } from './hooks/useNumberingSettingsPage';
 
 function chipClass(active: boolean): string {
   return `${cdHub.contractsListChip}${active ? ` ${cdHub.contractsListChipActive}` : ''}`;
@@ -38,7 +34,8 @@ const OFFICE_STATUS_OPTIONS: { value: NumberingOfficeStatusFilter; label: string
   { value: 'INACTIVE', label: 'Выкл.' },
 ];
 
-export function NumberingSettingsPageView(model: NumberingSettingsPageModel) {
+/** Тело раздела «Нумерация договоров» для модалки «Настройки договоров». */
+export function NumberingSettingsPanel() {
   const {
     directionDrafts,
     directionSavingId,
@@ -62,7 +59,7 @@ export function NumberingSettingsPageView(model: NumberingSettingsPageModel) {
     userFilter,
     userSavingId,
     users,
-  } = model;
+  } = useNumberingSettingsPage();
 
   const [section, setSection] = useState<NumberingSectionTab>('offices');
   const [successVisible, setSuccessVisible] = useState(false);
@@ -90,60 +87,22 @@ export function NumberingSettingsPageView(model: NumberingSettingsPageModel) {
           : `${users.length} сотрудников`
         : `${directions.length} направлений`;
 
-  const countMobile =
-    section === 'offices'
-      ? filteredOffices.length
-      : section === 'employees'
-        ? filteredUsers.length
-        : directions.length;
-
   const iconsDisabled = loading || Boolean(userSavingId || directionSavingId);
 
-  const iconActions = (placement: 'desktop' | 'mobile') => (
-    <div
-      className={
-        placement === 'mobile'
-          ? cdHub.contractsHeaderIconActionsMobile
-          : cdHub.contractsHeaderIconActionsDesktop
-      }
-    >
-      <AdminListRefreshButton
-        disabled={iconsDisabled}
-        busy={loading}
-        title="Обновить справочники"
-        aria-label={loading ? 'Обновление справочников' : 'Обновить справочники'}
-        onClick={() => void refresh()}
-      />
-    </div>
-  );
-
   return (
-    <div className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdHub.contractsListPage}`}>
-      <Link className={cdChrome.backLink} href="/admin/contract-documents">
-        ← Оформление договоров
-      </Link>
-
-      <div className={cdHub.editorHeader}>
-        <div className={cdHub.contractsListHeaderLeft}>
-          <div className={cdHub.contractsHeaderTitleRow}>
-            <div className={cdHub.contractsHeaderTitleCluster}>
-              <div className={cdHub.contractsListHeaderTitleGroup}>
-                <h1 className={cdHub.title}>Нумерация договоров</h1>
-              </div>
-              <span className={cdHub.contractsListCount} title={countTitle}>
-                <span className={cdHub.contractsListCountDesktop}>{countTitle}</span>
-                <span className={cdHub.contractsListCountMobile}>{countMobile}</span>
-              </span>
-              <AdminSaveNotice visible={successVisible} className={styles.headerSuccessNotice}>
-                {successText}
-              </AdminSaveNotice>
-            </div>
-            {iconActions('mobile')}
-          </div>
+    <div className={panelStyles.panelRoot}>
+      <div className={panelStyles.panelHead}>
+        <div className={panelStyles.panelHeadMain}>
+          <span className={panelStyles.panelCount}>{countTitle}</span>
+          <AdminSaveNotice visible={successVisible}>{successText}</AdminSaveNotice>
         </div>
-        <div className={`${cdChrome.headerButtonsRow} ${cdHub.contractsListHeaderActions}`}>
-          {iconActions('desktop')}
-        </div>
+        <AdminListRefreshButton
+          disabled={iconsDisabled}
+          busy={loading}
+          title="Обновить справочники"
+          aria-label={loading ? 'Обновление справочников' : 'Обновить справочники'}
+          onClick={() => void refresh()}
+        />
       </div>
 
       {message?.type === 'error' ? (

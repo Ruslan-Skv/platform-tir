@@ -1212,6 +1212,8 @@ export type RepairContractSettings = {
   workOrderMarkupPercent?: number | null;
   /** Глобальный налог заказ-наряда по ремонту (null — не задан, берётся из данных пакета). */
   workOrderTaxPercent?: number | null;
+  /** Минимальная оплата для Акта начала работ по ремонту, % (1–100). */
+  workStartMinPayPercent?: number | null;
 };
 
 export type WindowsContractSettings = RepairContractSettings & {
@@ -1292,7 +1294,9 @@ export async function getContractDocumentRepairSettings(): Promise<RepairContrac
 }
 
 export async function putContractDocumentRepairSettings(body: {
-  defaultWorkPeriodDays: number;
+  defaultWorkPeriodDays?: number;
+  /** Минимальная оплата для Акта начала работ по ремонту, % (1–100). */
+  workStartMinPayPercent?: number;
 }): Promise<RepairContractSettings> {
   const res = await apiFetch(
     `${getApiBaseUrl()}/admin/contract-document-packages/repair-settings`,

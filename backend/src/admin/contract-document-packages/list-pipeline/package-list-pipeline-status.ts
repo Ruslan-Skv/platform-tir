@@ -73,6 +73,8 @@ export type PackageListPipelineExplain = {
     allAddendumsFullyPaid: boolean;
     hasPositiveGrand: boolean;
     allPaymentsComplete: boolean;
+    /** Эффективный порог оплаты «В работе», % (у продуктовых — всегда 70). */
+    workStartMinPayPct: number;
     workStartPaymentReady: boolean;
     workStartActDone: boolean;
     workStarted: boolean;
@@ -449,6 +451,13 @@ function isPaidAtLeastPct(paidRub: number, totalRub: number | null, minPct: numb
   return paidRub >= totalRub * (minPct / 100) - PACKAGE_PAYMENT_TOLERANCE_RUB;
 }
 
+/** Настраиваемый порог «В работе» (1–100; не задан/некорректен — 70). */
+function clampWorkStartMinPayPct(raw: number | null | undefined): number {
+  if (raw == null || !Number.isFinite(raw)) return PACKAGE_WORK_START_MIN_CONTRACT_PAY_PCT;
+  const t = Math.trunc(raw);
+  return t >= 1 && t <= 100 ? t : PACKAGE_WORK_START_MIN_CONTRACT_PAY_PCT;
+}
+
 function isFullyPaidRub(paidRub: number, totalRub: number | null): boolean {
   if (totalRub == null || !Number.isFinite(totalRub) || totalRub <= 0) return false;
   return paidRub >= totalRub - PACKAGE_PAYMENT_TOLERANCE_RUB;
@@ -527,6 +536,11 @@ export function explainPackageListPipelineStatus(input: {
   status: ContractDocumentPackageStatus | string | null | undefined;
   formData: unknown;
   payments?: PackageListPaymentRow[] | null;
+  /**
+   * Настраиваемый порог оплаты «В работе» — применяется только к «Ремонту»;
+   * продуктовые направления всегда считают от фиксированных 70%.
+   */
+  workStartMinPayPct?: number | null;
 }): PackageListPipelineExplain {
   const formData = asObj(input.formData) ?? {};
   const dbStatus = String(input.status ?? ContractDocumentPackageStatus.IN_PROGRESS);
@@ -623,10 +637,18 @@ export function explainPackageListPipelineStatus(input: {
   const allPaymentsComplete =
     hasPositiveGrand && mainFullyCovered && (!hasAddendumsInPackage || allAddendumsFullyPaid);
 
+  /*
+   * Порог оплаты «В работе» настраивается только для «Ремонта» (глобальная
+   * настройка супер-админа); продуктовые направления — фиксированные 70%
+   * (отсчёт срока по договору от предоплаты).
+   */
+  const workStartMinPayPct = product
+    ? PACKAGE_WORK_START_MIN_CONTRACT_PAY_PCT
+    : clampWorkStartMinPayPct(input.workStartMinPayPct);
   const workStartPaymentReady = isPaidAtLeastPct(
     allocationsRaw.journalTotal,
     payable.grandTotalRub,
-    PACKAGE_WORK_START_MIN_CONTRACT_PAY_PCT,
+    workStartMinPayPct,
   );
 
   const windowsStart = product
@@ -687,6 +709,7 @@ export function explainPackageListPipelineStatus(input: {
       allAddendumsFullyPaid,
       hasPositiveGrand,
       allPaymentsComplete,
+      workStartMinPayPct,
       workStartPaymentReady,
       workStartActDone,
       workStarted,
@@ -705,6 +728,8 @@ export function computePackageListPipelineStatus(input: {
   status: ContractDocumentPackageStatus | string | null | undefined;
   formData: unknown;
   payments?: PackageListPaymentRow[] | null;
+  /** Настраиваемый порог оплаты «В работе» (только «Ремонт»). */
+  workStartMinPayPct?: number | null;
 }): PackageListPipelineStatus {
   return explainPackageListPipelineStatus(input).status;
 }
