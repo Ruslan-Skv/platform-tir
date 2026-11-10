@@ -19,6 +19,7 @@
   --blog-tag-text: #374151;
   --blog-blockquote-border: #93c5fd;
   --blog-blockquote-text: #374151;
+  --blog-table-zebra: rgb(0 0 0 / 2%);
 
   max-width: 800px;
   margin: 0 auto;
@@ -47,6 +48,7 @@
   --blog-tag-text: rgb(255 255 255 / 80%);
   --blog-blockquote-border: rgb(255 255 255 / 30%);
   --blog-blockquote-text: rgb(255 255 255 / 80%);
+  --blog-table-zebra: rgb(255 255 255 / 4%);
 }
 
 .loading,
@@ -347,6 +349,54 @@
   text-align: start;
 }
 
+/* Таблицы (кнопка ⊞ в редакторе статьи). TipTap оборачивает таблицу в .tableWrapper */
+.content :global(.tableWrapper) {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.content :global(table) {
+  width: 100%;
+  margin: 1.5rem 0;
+  border-collapse: collapse;
+  font-size: 0.9375em;
+  line-height: 1.5;
+}
+
+.content :global(caption) {
+  margin-bottom: 0.5rem;
+  font-size: 0.875em;
+  color: var(--blog-text-muted);
+  text-align: start;
+}
+
+.content :global(th),
+.content :global(td) {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--blog-border-strong);
+  vertical-align: top;
+  /* Выравнивание статьи (по ширине/центру) не должно растягивать текст в ячейках */
+  text-align: start;
+  overflow-wrap: break-word;
+}
+
+.content :global(th) {
+  background: var(--blog-surface);
+  color: var(--blog-text);
+  font-weight: 600;
+}
+
+.content :global(tbody tr:nth-child(even) td) {
+  background: var(--blog-table-zebra);
+}
+
+/* Внутри ячеек списки и абзацы без отступов, как в обычном тексте */
+.content :global(table :is(p, ul, ol, h2, h3, h4, h5, h6, blockquote)) {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
 .callbackCta {
   margin: 1.75rem 0 0;
   padding: 1.25rem 1.5rem;
@@ -507,6 +557,20 @@
 
   .blocks {
     gap: 1.5rem;
+  }
+
+  /* Таблицы без обёртки .tableWrapper: горизонтальная прокрутка на узких экранах.
+     !important нейтрализует инлайновые width/min-width от ресайза колонок в редакторе */
+  .content :global(table) {
+    display: block;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .content :global(.tableWrapper) :global(table) {
+    display: table; /* обёртка уже прокручивается сама */
   }
 
   .callbackCtaTitle {

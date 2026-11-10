@@ -179,6 +179,8 @@ export function BlogPostBlocksEditor({ blocks, onChange, onError }: BlogPostBloc
                 value={block.bodyHtml}
                 onChange={(html) => updateBody(block.clientId, html)}
                 placeholder="Текст раздела…"
+                enableTables
+                tableWrapper
               />
             </label>
 

@@ -145,11 +145,18 @@ export function BlogPostFormPageView({ model }: BlogPostFormPageViewProps) {
           <div className={styles.row}>
             <label className={styles.label}>
               Контент *
-              <BlogPostEditor key={postId ?? 'new'} value={content} onChange={setContent} />
+              <BlogPostEditor
+                key={postId ?? 'new'}
+                value={content}
+                onChange={setContent}
+                enableTables
+                tableWrapper
+              />
               <span className={styles.fieldHint}>
                 Панель инструментов: абзацы (Enter), подзаголовки H2–H6 и обычный текст (¶), красная
                 строка (⇥) для отступа первой строки абзаца, маркированный и нумерованный списки,
-                цитата, ссылка. Текст сохраняется как HTML.
+                цитата, таблицы (⊞ — вставить, +стр/+стб — добавить строку или столбец), ссылка.
+                Текст сохраняется как HTML.
               </span>
             </label>
           </div>

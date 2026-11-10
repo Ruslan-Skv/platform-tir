@@ -26,6 +26,8 @@ interface BlogPostEditorProps {
   onChange: (html: string) => void;
   placeholder?: string;
   enableTables?: boolean;
+  /** Оборачивать таблицу в div.tableWrapper в сохраняемом HTML (скролл широких таблиц на сайте) */
+  tableWrapper?: boolean;
   enableImages?: boolean;
   onUploadImage?: (file: File) => Promise<string>;
   onImageUploadError?: (message: string) => void;
@@ -40,6 +42,7 @@ export function BlogPostEditor({
   onChange,
   placeholder = 'Текст статьи: абзацы, списки, ссылки…',
   enableTables = false,
+  tableWrapper = false,
   enableImages = false,
   onUploadImage,
   onImageUploadError,
@@ -91,11 +94,17 @@ export function BlogPostEditor({
     }
 
     if (enableTables) {
-      return [...base, Table.configure({ resizable: true }), TableRow, TableHeader, TableCell];
+      return [
+        ...base,
+        Table.configure({ resizable: true, renderWrapper: tableWrapper }),
+        TableRow,
+        TableHeader,
+        TableCell,
+      ];
     }
 
     return base;
-  }, [enableImages, enableTables, enableTextAlign, placeholder]);
+  }, [enableImages, enableTables, enableTextAlign, placeholder, tableWrapper]);
 
   const editor = useEditor(
     {
@@ -340,8 +349,25 @@ export function BlogPostEditor({
                 editor.chain().focus().insertTable({ rows: 3, cols: 2, withHeaderRow: true }).run(),
               'Вставить таблицу'
             )}
-            {btn('⊕', false, () => editor.chain().focus().addRowAfter().run(), 'Добавить строку')}
-            {btn('⊖', false, () => editor.chain().focus().deleteRow().run(), 'Удалить строку')}
+            {btn(
+              '+стр',
+              false,
+              () => editor.chain().focus().addRowAfter().run(),
+              'Добавить строку'
+            )}
+            {btn('−стр', false, () => editor.chain().focus().deleteRow().run(), 'Удалить строку')}
+            {btn(
+              '+стб',
+              false,
+              () => editor.chain().focus().addColumnAfter().run(),
+              'Добавить столбец'
+            )}
+            {btn(
+              '−стб',
+              false,
+              () => editor.chain().focus().deleteColumn().run(),
+              'Удалить столбец'
+            )}
             {btn('✕', false, () => editor.chain().focus().deleteTable().run(), 'Удалить таблицу')}
           </>
         ) : null}

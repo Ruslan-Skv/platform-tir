@@ -19,6 +19,19 @@ describe('sanitizeHtml', () => {
     expect(sanitized).toContain('<td>1</td>');
   });
 
+  it('preserves TipTap v3 table wrapper, colgroup and width attrs', () => {
+    const html =
+      '<div class="tableWrapper"><table style="min-width: 175px"><colgroup><col colwidth="87"><col colwidth="88"></colgroup><tbody><tr><th>Параметр</th><th>Значение</th></tr><tr><td colspan="2">Итого</td></tr></tbody></table></div>';
+
+    const sanitized = sanitizeHtml(html);
+
+    expect(sanitized).toContain('tableWrapper');
+    expect(sanitized).toContain('<colgroup>');
+    expect(sanitized).toContain('colwidth="87"');
+    expect(sanitized).toContain('colspan="2"');
+    expect(sanitized).toContain('min-width: 175px');
+  });
+
   it('still removes script tags', () => {
     const html = '<p>ok</p><script>alert(1)</script><table><tr><td>x</td></tr></table>';
 
