@@ -281,9 +281,15 @@ export function PackagePipelineStepCard({
           </>
         ) : null}
 
+        {/*
+         * «Зафиксировать „В работе“» доступно и до завершения этапа «Оплаты» (100%):
+         * по регламенту «В работе» — от 70% оплаты и акта начала работ, порог
+         * проверяется в самой кнопке (disabled + подсказка). Договор подписан.
+         */}
         {step.id === 'work' &&
         hub.packageKind === 'REPAIR' &&
-        step.state === 'current' &&
+        (step.state === 'current' || step.state === 'upcoming') &&
+        pipeline.packageFlowStatus === 'CONTRACT_CONCLUDED' &&
         !pipeline.workStarted ? (
           <div className={hubStyles.pipelineStepActions}>
             <button
