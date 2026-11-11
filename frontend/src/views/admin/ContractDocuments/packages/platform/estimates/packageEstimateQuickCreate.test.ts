@@ -29,8 +29,7 @@ function category(
 describe('validateQuickEstimateInput', () => {
   const base = {
     title: 'ЖК Парк, кв. 54',
-    crmCustomerId: 'crm_1',
-    customerName: 'Иванов Иван',
+    customerBlockFilled: true,
     objectAddress: 'Москва, ул. Ленина, 1',
   };
 
@@ -40,9 +39,9 @@ describe('validateQuickEstimateInput', () => {
     );
   });
 
-  it('требует карточку заказчика в CRM', () => {
+  it('требует заполненный блок «Заказчик» на вкладке «Данные»', () => {
     expect(
-      validateQuickEstimateInput({ ...base, crmCustomerId: null, categories: [] })?.field
+      validateQuickEstimateInput({ ...base, customerBlockFilled: false, categories: [] })?.field
     ).toBe('customer');
   });
 
@@ -406,8 +405,7 @@ describe('buildQuickEstimatePreset — правка существующего',
 describe('validateQuickEstimateInput — правка', () => {
   const base = {
     title: 'Расчёт',
-    crmCustomerId: 'crm_1',
-    customerName: 'Иванов Иван',
+    customerBlockFilled: true,
     objectAddress: 'Москва',
   };
 

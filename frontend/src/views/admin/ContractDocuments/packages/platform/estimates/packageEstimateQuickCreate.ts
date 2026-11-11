@@ -70,11 +70,15 @@ export function quickEstimateCategoryHasLines(category: QuickEstimateCategoryInp
   );
 }
 
-/** Проверка полей как при сохранении воркспейса расчёта (estimateWorkspaceSave). */
+/**
+ * Проверка полей быстрого расчёта из договора. Заказчик — по блоку «Заказчик» на вкладке
+ * «Данные» (карточка CRM в «Поиске заказчика в базе» не обязательна: блок может быть
+ * заполнен и без неё, например договором из анкеты). Остальное — как в воркспейсе расчёта.
+ */
 export function validateQuickEstimateInput(params: {
   title: string;
-  crmCustomerId: string | null;
-  customerName: string;
+  /** Заполнен ли блок «Заказчик» на вкладке «Данные» договора. */
+  customerBlockFilled: boolean;
   objectAddress: string;
   categories: QuickEstimateCategoryInput[];
   /** Правка существующего: позиции можно очистить (как в воркспейсе). */
@@ -83,11 +87,11 @@ export function validateQuickEstimateInput(params: {
   if (!params.title.trim()) {
     return { field: 'title', message: 'Укажите название расчёта — без него сохранить нельзя.' };
   }
-  if (!params.crmCustomerId?.trim()) {
-    return { field: 'customer', message: 'Выберите заказчика в базе через поиск.' };
-  }
-  if (!params.customerName.trim()) {
-    return { field: 'customer', message: 'В карточке заказчика не указано имя.' };
+  if (!params.customerBlockFilled) {
+    return {
+      field: 'customer',
+      message: 'Сначала укажите заказчика в блоке «Заказчик» на вкладке «Данные».',
+    };
   }
   if (!params.objectAddress.trim()) {
     return {

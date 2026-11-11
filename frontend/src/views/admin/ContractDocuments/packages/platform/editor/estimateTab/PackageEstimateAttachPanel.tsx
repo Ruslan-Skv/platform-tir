@@ -162,6 +162,15 @@ export function PackageEstimateAttachPanel({
                 type="button"
                 className={`${cdWorkspace.primaryBtn} ${attachStyles.estimateAttachPrimaryBtn}`}
                 disabled={signedDocsLocked || !estimatePresetToAttach}
+                title={
+                  signedDocsLocked
+                    ? 'Договор подписан: вкладка только для просмотра.'
+                    : !estimatePresetToAttach
+                      ? 'Сначала выберите объект и свободный расчёт в списках слева — затем нажмите «Прикрепить».'
+                      : `Прикрепить выбранный расчёт к ${
+                          isProductDirectionPackage ? 'счёту-заказу' : 'смете'
+                        } этого договора: его позиции попадут в таблицу ниже, а объект зафиксируется. Открепить можно крестиком — сам расчёт останется в разделе «Расчёты».`
+                }
                 onClick={() => {
                   onAttachPreset(estimatePresetToAttach);
                   setEstimatePresetToAttach('');
@@ -173,7 +182,10 @@ export function PackageEstimateAttachPanel({
                 type="button"
                 className={cdWorkspace.secondaryBtn}
                 disabled={Boolean(estimateCreate.createBlockedReason)}
-                title={estimateCreate.createBlockedReason ?? undefined}
+                title={
+                  estimateCreate.createBlockedReason ??
+                  'Создать новый расчёт, не уходя из договора: откроется окно, готовый расчёт сразу прикрепится к этому договору. Создание и правка любых расчётов — в разделе «Расчёты».'
+                }
                 onClick={estimateCreate.open}
               >
                 + Создать расчёт

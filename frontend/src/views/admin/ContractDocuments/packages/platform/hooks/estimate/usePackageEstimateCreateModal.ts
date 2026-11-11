@@ -38,6 +38,7 @@ import {
 } from '../../estimates/packageEstimateQuickCreate';
 import { buildPackageCustomerTemplateFields } from '../../form/customerTemplateFields';
 import type { PackageFormData } from '../../form/packageForm';
+import { packageCustomerBlockHasContent } from '../../questionnaires/applyCrmContractToForm';
 
 /** Черновик строки «Дополнительные виды работ» по категории (поля ввода). */
 export type QuickEstimateCustomDraft = { name: string; unit: string; price: string };
@@ -465,8 +466,7 @@ export function usePackageEstimateCreateModal({
     }));
     const validation = validateQuickEstimateInput({
       title: titleDraft,
-      crmCustomerId: linkedCrmCustomerId,
-      customerName,
+      customerBlockFilled: packageCustomerBlockHasContent(form.customer),
       objectAddress,
       categories: categoryInputs,
       isEditingExisting: Boolean(existing),
@@ -546,6 +546,7 @@ export function usePackageEstimateCreateModal({
     customNoMarkupBySlug,
     titleDraft,
     linkedCrmCustomerId,
+    form.customer,
     customerName,
     objectAddress,
     form.estimate.selectedPresetIds,
@@ -561,11 +562,15 @@ export function usePackageEstimateCreateModal({
     resetForm,
   ]);
 
-  /** Кнопка «+ Создать расчёт»: после подписания и без карточки заказчика в CRM — нельзя. */
+  /**
+   * Кнопка «+ Создать расчёт»: после подписания или с пустым блоком «Заказчик» на вкладке
+   * «Данные» — нельзя. Карточка CRM в «Поиске заказчика в базе» не обязательна: заказчик
+   * может быть заполнен и без неё (например, договор из анкеты).
+   */
   const createBlockedReason = signedDocsLocked
     ? 'Договор подписан: вкладка только для просмотра.'
-    : !linkedCrmCustomerId?.trim()
-      ? 'Сначала выберите заказчика в базе на вкладке «Данные».'
+    : !packageCustomerBlockHasContent(form.customer)
+      ? 'Сначала укажите заказчика в блоке «Заказчик» на вкладке «Данные».'
       : null;
 
   return {
