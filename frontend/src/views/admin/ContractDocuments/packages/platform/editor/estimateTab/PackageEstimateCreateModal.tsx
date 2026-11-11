@@ -51,6 +51,9 @@ export function PackageEstimateCreateModal({
     markupRaw,
     setMarkupRaw,
     previewTotal,
+    previewTotalWithMarkup,
+    previewMarkupPercent,
+    previewMarkupFromObject,
     error,
     saving,
     save,
@@ -376,6 +379,18 @@ export function PackageEstimateCreateModal({
             Стоимость расчёта: <strong className={styles.footerTotalValue}>{totalLabel}</strong>
             {previewTotal !== null && selectedSlugs.length > 0 ? (
               <span className={styles.footerTotalNote}>без наценки и скидки договора</span>
+            ) : null}
+            {previewTotal !== null &&
+            previewTotalWithMarkup !== null &&
+            previewMarkupPercent > 0 ? (
+              <span className={styles.footerTotalWithMarkup}>
+                с наценкой{previewMarkupFromObject ? ' объекта' : ''}{' '}
+                {previewMarkupPercent.toLocaleString('ru-RU')}%:{' '}
+                <strong className={styles.footerTotalWithMarkupValue}>
+                  {formatRub(previewTotalWithMarkup)}
+                </strong>
+                <span className={styles.footerTotalNote}>без скидки договора</span>
+              </span>
             ) : null}
           </span>
           <span className={styles.footerButtons}>

@@ -357,6 +357,21 @@
   font-weight: 400;
 }
 
+/* Итог «с наценкой» — вторая строка стоимости в подвале модалки. */
+.footerTotalWithMarkup {
+  align-items: baseline;
+  color: var(--admin-text-muted, #6b7280);
+  display: inline-flex;
+  column-gap: var(--admin-space-sm, 6px);
+  font-size: 0.8125rem;
+}
+
+.footerTotalWithMarkupValue {
+  color: var(--modal-text-strong, #111827);
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
 .footerButtons {
   display: inline-flex;
   flex-wrap: wrap;

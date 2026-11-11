@@ -19,6 +19,7 @@ import { persistEstimateWorkspacePresets } from '@/views/admin/ContractDocuments
 
 import {
   clampEstimateAdditionalMarkupPercent,
+  getGroupEstimateAdditionalMarkupPercent,
   parseOptionalPercentInput,
 } from '../../estimates/applyEstimatePresetIds';
 import {
@@ -406,13 +407,19 @@ export function usePackageEstimateCreateModal({
     customNoMarkupBySlug,
   ]);
 
-  /** Предварительный итог по ценам каталога и кастомным позициям (снимок на сохранении — с сервера). */
-  const previewTotal = useMemo(() => {
+  /**
+   * Предварительный итог по ценам каталога и кастомным позициям (снимок на сохранении —
+   * с сервера): `total` — без наценки; `markupBase` — часть, к которой применяется наценка
+   * (доп. работы категорий с галочкой «наценка не применяется» наценкой не облагаются).
+   */
+  const previewTotals = useMemo(() => {
     let total = 0;
+    let markupBase = 0;
     let unknownPrice = false;
     for (const slug of selectedSlugs) {
       const qtyMap = qtyBySlug[slug] ?? {};
       const customDefs = customItemsBySlug[slug] ?? {};
+      const customNoMarkup = Boolean(customNoMarkupBySlug[slug]);
       const priceById = new Map(
         (detailBySlug[slug]?.items ?? []).map((it) => [it.id, it.price] as const)
       );
@@ -421,7 +428,9 @@ export function usePackageEstimateCreateModal({
         if (qty <= 0) continue;
         const custom = customDefs[itemId];
         if (custom) {
-          total += custom.price * qty;
+          const amount = custom.price * qty;
+          total += amount;
+          if (!customNoMarkup) markupBase += amount;
           continue;
         }
         const price = priceById.get(itemId);
@@ -430,10 +439,13 @@ export function usePackageEstimateCreateModal({
           continue;
         }
         total += price * qty;
+        markupBase += price * qty;
       }
     }
-    return unknownPrice ? null : total;
-  }, [selectedSlugs, qtyBySlug, customItemsBySlug, detailBySlug]);
+    return unknownPrice ? null : { total, markupBase };
+  }, [selectedSlugs, qtyBySlug, customItemsBySlug, customNoMarkupBySlug, detailBySlug]);
+
+  const previewTotal = previewTotals?.total ?? null;
 
   const objectAddress = useMemo(
     () =>
@@ -444,6 +456,34 @@ export function usePackageEstimateCreateModal({
       }),
     [contractEstimateObjectKey, estimateGroups, form.object?.objectAddress]
   );
+
+  /**
+   * Наценка расчёта, %, для итога «с наценкой» в модалке: поле «Наценка, %», иначе —
+   * наценка объекта (при правке группа расчёта, при создании — группа по адресу объекта).
+   */
+  const previewMarkup = useMemo(() => {
+    const own = parseOptionalPercentInput(markupRaw);
+    if (own !== undefined) {
+      return { percent: clampEstimateAdditionalMarkupPercent(own), fromObject: false };
+    }
+    const groupId = editingPresetId
+      ? estimatePresets.find((p) => p.id === editingPresetId)?.groupId
+      : quickEstimateResultingGroupKey({ objectAddress, estimateGroups });
+    const percent =
+      !groupId || groupId === '__new_group__' || groupId === '__ungrouped__'
+        ? 0
+        : getGroupEstimateAdditionalMarkupPercent(groupId, estimateGroups);
+    return { percent, fromObject: true };
+  }, [markupRaw, editingPresetId, estimatePresets, estimateGroups, objectAddress]);
+
+  /** Итог «с наценкой» — как в смете: наценка не касается позиций «без наценки». */
+  const previewTotalWithMarkup = useMemo(() => {
+    if (previewTotals === null) return null;
+    const factor = 1 + previewMarkup.percent / 100;
+    if (factor <= 1) return previewTotals.total;
+    const noMarkupTotal = previewTotals.total - previewTotals.markupBase;
+    return Math.round((previewTotals.markupBase * factor + noMarkupTotal) * 100) / 100;
+  }, [previewTotals, previewMarkup]);
 
   const customerName = useMemo(
     () => buildPackageCustomerTemplateFields(form.customer).displayName,
@@ -611,6 +651,10 @@ export function usePackageEstimateCreateModal({
     objectAddress,
     customerName,
     previewTotal,
+    /** Итог «с наценкой» и активная наценка, % (`fromObject` — наценка объекта, не поля). */
+    previewTotalWithMarkup,
+    previewMarkupPercent: previewMarkup.percent,
+    previewMarkupFromObject: previewMarkup.fromObject,
     error,
     saving,
     save,
