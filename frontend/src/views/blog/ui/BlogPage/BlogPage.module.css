@@ -444,7 +444,9 @@
 }
 
 .cardLink {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
   text-decoration: none;
   color: inherit;
 }
@@ -471,6 +473,9 @@
 }
 
 .cardContent {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
   padding: 1rem;
 }
 
@@ -491,6 +496,8 @@
   margin: 0 0 0.5rem;
   line-height: 1.3;
   color: var(--blog-text);
+  /* Резервируем высоту трёх строк, чтобы заголовки разной длины не сдвигали поля карточек */
+  min-height: calc(1.3em * 3);
 }
 
 .cardBadge {
@@ -526,6 +533,9 @@
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
+  /* Прижимаем мета-строку к низу карточки — на одном уровне с соседними карточками */
+  margin-top: auto;
+  padding-top: 0.5rem;
 }
 
 .cardTags {
