@@ -7,6 +7,7 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 
 import type { PhotoProject } from '@/shared/api/photo';
+import { renderProductDescriptionHtml } from '@/shared/lib/sanitize';
 
 import styles from './PhotoPage.module.css';
 import { PhotoProjectSlider } from './PhotoProjectSlider';
@@ -237,9 +238,13 @@ export function PhotoPageView({ model }: PhotoPageViewProps) {
                       ) : null}
                       {renderProjectPhotos(project, offset)}
                       {project.description && (
-                        <p className={styles.projectDescription} lang="ru">
-                          {project.description}
-                        </p>
+                        <div
+                          className={styles.projectDescription}
+                          lang="ru"
+                          dangerouslySetInnerHTML={{
+                            __html: renderProductDescriptionHtml(project.description),
+                          }}
+                        />
                       )}
                     </article>
                   );

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
+import { stripHtmlToText } from '@/shared/lib/sanitize';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 
 import styles from './PhotoSectionPage.module.css';
@@ -148,51 +149,59 @@ export function PhotoSectionPageView({ model }: PhotoSectionPageViewProps) {
         ) : (
           <>
             <div className={styles.projectsGrid}>
-              {projects.map((project) => (
-                <div key={project.id} className={styles.projectCard}>
-                  <div className={styles.projectImage}>
-                    {project.photos[0] ? (
-                      <img src={publicUploadUrl(project.photos[0].imageUrl)} alt={project.title} />
-                    ) : (
-                      <div className={styles.projectImagePlaceholder}>Нет фото</div>
-                    )}
+              {projects.map((project) => {
+                const descriptionText = project.description
+                  ? stripHtmlToText(project.description)
+                  : '';
+                return (
+                  <div key={project.id} className={styles.projectCard}>
+                    <div className={styles.projectImage}>
+                      {project.photos[0] ? (
+                        <img
+                          src={publicUploadUrl(project.photos[0].imageUrl)}
+                          alt={project.title}
+                        />
+                      ) : (
+                        <div className={styles.projectImagePlaceholder}>Нет фото</div>
+                      )}
+                    </div>
+                    <div className={styles.projectInfo}>
+                      <h3 className={styles.projectTitle}>{project.title}</h3>
+                      {project.category && (
+                        <span className={styles.projectCategory}>{project.category.name}</span>
+                      )}
+                      <span className={styles.projectDisplayMode}>
+                        {projectDisplayModesSummary(project)}
+                      </span>
+                      <span className={styles.projectPhotoCount}>{project.photos.length} фото</span>
+                      {descriptionText && (
+                        <p className={styles.projectDescription}>
+                          {descriptionText.slice(0, 100)}
+                          {descriptionText.length > 100 ? '…' : ''}
+                        </p>
+                      )}
+                    </div>
+                    <div className={styles.projectActions}>
+                      <Link
+                        href={`/admin/content/photo/projects/${project.id}/edit`}
+                        className={styles.editLink}
+                      >
+                        Редактировать
+                      </Link>
+                      <button
+                        data-admin-mutation
+                        type="button"
+                        className={styles.deleteButton}
+                        onClick={() =>
+                          setDeleteTarget({ type: 'project', id: project.id, name: project.title })
+                        }
+                      >
+                        Удалить
+                      </button>
+                    </div>
                   </div>
-                  <div className={styles.projectInfo}>
-                    <h3 className={styles.projectTitle}>{project.title}</h3>
-                    {project.category && (
-                      <span className={styles.projectCategory}>{project.category.name}</span>
-                    )}
-                    <span className={styles.projectDisplayMode}>
-                      {projectDisplayModesSummary(project)}
-                    </span>
-                    <span className={styles.projectPhotoCount}>{project.photos.length} фото</span>
-                    {project.description && (
-                      <p className={styles.projectDescription}>
-                        {project.description.slice(0, 100)}
-                        {project.description.length > 100 ? '…' : ''}
-                      </p>
-                    )}
-                  </div>
-                  <div className={styles.projectActions}>
-                    <Link
-                      href={`/admin/content/photo/projects/${project.id}/edit`}
-                      className={styles.editLink}
-                    >
-                      Редактировать
-                    </Link>
-                    <button
-                      data-admin-mutation
-                      type="button"
-                      className={styles.deleteButton}
-                      onClick={() =>
-                        setDeleteTarget({ type: 'project', id: project.id, name: project.title })
-                      }
-                    >
-                      Удалить
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {totalPages > 1 && (

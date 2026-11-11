@@ -267,7 +267,6 @@
   font-size: 0.9375rem;
   line-height: 1.65;
   color: rgb(255 255 255 / 75%);
-  white-space: pre-wrap;
   text-align: justify;
   text-align-last: start;
   hyphens: auto;
@@ -277,6 +276,35 @@
   font-family:
     system-ui, 'Segoe UI', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
     'Noto Color Emoji', sans-serif;
+}
+
+/* Rich text из редактора (абзацы, списки); plain text приходит с <br /> */
+.projectDescription :is(p, ul, ol) {
+  margin: 0 0 0.75em;
+  text-align: inherit;
+}
+
+.projectDescription :is(p, ul, ol):last-child {
+  margin-bottom: 0;
+}
+
+.projectDescription :is(ul, ol) {
+  padding-left: 1.25em;
+}
+
+/* Ссылки в описании работ (например, на группу ВК) */
+.projectDescription a {
+  color: #60a5fa;
+  font-weight: 500;
+  text-decoration: underline;
+}
+
+.projectDescription a:hover {
+  color: #93c5fd;
+}
+
+.projectDescription a:visited {
+  color: #818cf8;
 }
 
 /* Grid display mode */
@@ -977,6 +1005,18 @@
 
 :where(html[data-theme='light']) .projectDescription {
   color: #374151;
+}
+
+:where(html[data-theme='light']) .projectDescription a {
+  color: #2563eb;
+}
+
+:where(html[data-theme='light']) .projectDescription a:hover {
+  color: #1d4ed8;
+}
+
+:where(html[data-theme='light']) .projectDescription a:visited {
+  color: #6d28d9;
 }
 
 :where(html[data-theme='light']) .paginationButton {

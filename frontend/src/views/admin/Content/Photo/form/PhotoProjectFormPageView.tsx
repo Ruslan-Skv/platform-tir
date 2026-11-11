@@ -4,6 +4,8 @@ import Link from 'next/link';
 
 import type { PhotoDisplayMode } from '@/shared/api/admin-photo';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
+import { isRichTextEmpty, toRichTextEditorHtml } from '@/shared/lib/sanitize';
+import { BlogPostEditor } from '@/views/admin/Content/Blog/shared/BlogPostEditor';
 
 import styles from './PhotoProjectFormPage.module.css';
 import type { PhotoProjectFormPageModel } from './hooks/usePhotoProjectFormPage';
@@ -112,12 +114,17 @@ export function PhotoProjectFormPageView({ model }: PhotoProjectFormPageViewProp
 
         <div className={styles.formGroup}>
           <label className={styles.label}>Описание выполненных работ</label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
+          <p className={styles.fieldHint}>
+            Чтобы вставить ссылку (например, на группу ВК), выделите текст и нажмите кнопку 🔗 в
+            панели редактора.
+          </p>
+          <BlogPostEditor
+            key={projectId || 'new-photo-project'}
+            value={toRichTextEditorHtml(description)}
+            onChange={(html) => setDescription(isRichTextEmpty(html) ? '' : html)}
+            compact
+            enableTextAlign={false}
             placeholder="Опишите выполненные работы..."
-            className={styles.textarea}
-            rows={14}
           />
         </div>
 
