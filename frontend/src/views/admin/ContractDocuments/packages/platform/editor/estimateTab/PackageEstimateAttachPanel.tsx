@@ -184,7 +184,7 @@ export function PackageEstimateAttachPanel({
                 disabled={Boolean(estimateCreate.createBlockedReason)}
                 title={
                   estimateCreate.createBlockedReason ??
-                  'Создать новый расчёт, не уходя из договора: откроется окно, готовый расчёт сразу прикрепится к этому договору. Создание и правка любых расчётов — в разделе «Расчёты».'
+                  'Создать новый расчёт, не уходя из договора: откроется окно, готовый расчёт сразу прикрепится к этому договору.'
                 }
                 onClick={estimateCreate.open}
               >
