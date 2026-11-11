@@ -16,6 +16,7 @@ import type { ProductSpecificationTabProps } from '../../editor/tabs/ProductSpec
 import type { EstimateEmbedSection } from '../../estimates/packageEstimateDocPrintEmbedHtml';
 import type { PackageFormData } from '../../form/packageForm';
 import type { usePackageEstimateAttachCatalog } from '../estimate/usePackageEstimateAttachCatalog';
+import type { usePackageEstimateCreateModal } from '../estimate/usePackageEstimateCreateModal';
 import type { usePackageEstimateTabHandlers } from '../estimate/usePackageEstimateTabHandlers';
 import type { usePackageProductSpecificationHandlers } from '../product-spec/usePackageProductSpecificationHandlers';
 
@@ -82,6 +83,8 @@ export type UsePackageDocumentEditorTabPropsOptions = {
   selectedEstimateSections: EstimateEmbedSection[];
   contractDiscountPercentParsed: number;
   estimatePrintSheetRef: React.RefObject<HTMLElement | null>;
+  /** Модалка создания небольшого расчёта прямо из вкладки «Счёт-заказ»/«Смета». */
+  estimateCreate: ReturnType<typeof usePackageEstimateCreateModal>;
   estimateTabHandlers: ReturnType<typeof usePackageEstimateTabHandlers> &
     Pick<PackageEstimateTabProps, 'estimateMarkupSaving' | 'onEstimatePresetMarkupChange'>;
   finalEstimateRooms: PackageFinalEstimateTabProps['rooms'];
@@ -143,6 +146,7 @@ export function usePackageDocumentEditorTabProps({
   selectedEstimateSections,
   contractDiscountPercentParsed,
   estimatePrintSheetRef,
+  estimateCreate,
   estimateTabHandlers,
   finalEstimateRooms,
   finalEstimateTotalAmount,
@@ -246,6 +250,7 @@ export function usePackageDocumentEditorTabProps({
       selectedEstimateSections,
       contractDiscountPercentParsed,
       estimatePrintSheetRef,
+      estimateCreate,
       ...estimateTabHandlers,
     }),
     [
@@ -273,6 +278,7 @@ export function usePackageDocumentEditorTabProps({
       selectedEstimateSections,
       contractDiscountPercentParsed,
       estimatePrintSheetRef,
+      estimateCreate,
       estimateTabHandlers,
     ]
   );

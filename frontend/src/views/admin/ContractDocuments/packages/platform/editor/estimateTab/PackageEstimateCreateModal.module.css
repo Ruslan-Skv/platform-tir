@@ -1,0 +1,330 @@
+/* Блок «Категории работ» — сворачиваемая панель, как «Настройки списка» договоров. */
+.categoriesPanel {
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--modal-border, #e5e7eb);
+  border-radius: var(--admin-radius-md, 8px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm, 6px);
+  padding: var(--admin-space-sm, 6px) var(--admin-space-md, 8px);
+}
+
+.categoriesPanelHeader {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm, 6px);
+  justify-content: space-between;
+}
+
+.categoriesPanelToggle {
+  align-items: center;
+  background: transparent;
+  border: none;
+  color: var(--admin-text-secondary, #4b5563);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: var(--admin-font-size-sm, 0.8125rem);
+  font-weight: 600;
+  gap: var(--admin-space-sm, 6px);
+  line-height: 1.3;
+  margin: 0;
+  padding: 0;
+}
+
+.categoriesPanelToggle:hover {
+  color: var(--admin-text-primary, #111827);
+}
+
+.categoriesPanelChevron {
+  color: var(--admin-text-muted, #9ca3af);
+  display: inline-flex;
+  justify-content: center;
+  width: 0.85rem;
+}
+
+.categoriesPanelTitle {
+  letter-spacing: 0.01em;
+}
+
+.categoriesPanelExpandLink {
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-sm, 4px);
+  color: var(--admin-accent, rgb(var(--color-accent-rgb, 217 6 52)));
+  cursor: pointer;
+  font-size: var(--admin-font-size-sm, 0.8125rem);
+  line-height: 1.3;
+  margin: 0;
+  padding: 2px var(--admin-space-sm, 6px);
+}
+
+.categoriesPanelExpandLink:hover {
+  background: var(--admin-surface-muted, #f8fafc);
+  border-color: var(--admin-info-border-soft, #93c5fd);
+}
+
+/* Свёрнуто: чипы-сводка выбранных категорий (клик — развернуть). */
+.categoriesSummary {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--admin-space-xs, 4px) var(--admin-space-sm, 6px);
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.categoriesSummary:hover .categoriesSummaryChip {
+  border-color: var(--admin-info-border-soft, #93c5fd);
+}
+
+.categoriesSummaryChip {
+  background: var(--admin-surface-muted, #f8fafc);
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-sm, 4px);
+  color: var(--admin-text-secondary, #4b5563);
+  display: inline-block;
+  font-size: var(--admin-font-size-xs, 0.75rem);
+  line-height: 1.35;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 2px 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Чипы категорий — те же, что в рабочей области расчёта (estimates-workspace.module.css). */
+.categoriesCard {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm, 6px);
+}
+
+.categoryChip {
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--admin-border-strong, #d1d5db);
+  border-radius: 999px;
+  color: var(--modal-text, #374151);
+  cursor: pointer;
+  font-size: 0.8125rem;
+  line-height: 1.2;
+  padding: 6px 12px;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.categoryChip:hover {
+  border-color: var(--admin-accent, rgb(var(--color-accent-rgb, 217 6 52)));
+}
+
+.categoryChipActive,
+.categoryChipActive:hover {
+  background: var(--admin-accent, rgb(var(--color-accent-rgb, 217 6 52)));
+  border-color: var(--admin-accent, rgb(var(--color-accent-rgb, 217 6 52)));
+  color: #ffffff;
+}
+
+/* Список работ категории. */
+.categorySection {
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--modal-border, #e5e7eb);
+  border-radius: var(--admin-radius-md, 8px);
+  padding: var(--admin-space-md, 8px) var(--admin-space-lg, 10px) var(--admin-space-lg, 10px);
+}
+
+.categorySectionTitle {
+  align-items: baseline;
+  color: var(--modal-text-strong, #111827);
+  display: flex;
+  font-size: 0.875rem;
+  font-weight: 600;
+  gap: var(--admin-space-md, 8px);
+  margin: 0 0 var(--admin-space-sm, 6px);
+}
+
+.categorySectionCount {
+  color: var(--admin-text-muted, #6b7280);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.worksList {
+  border: 1px solid var(--modal-border, #e5e7eb);
+  border-radius: var(--admin-radius-sm, 6px);
+  display: flex;
+  flex-direction: column;
+  max-height: 18rem;
+  overflow-y: auto;
+}
+
+.workRow {
+  align-items: center;
+  border-bottom: 1px solid var(--modal-border, #eef2f7);
+  display: grid;
+  gap: var(--admin-space-sm, 6px);
+  grid-template-columns: minmax(0, 1fr) 64px 110px 92px;
+  padding: 6px 8px;
+}
+
+.workRow:last-child {
+  border-bottom: none;
+}
+
+.workRowActive {
+  background: var(--admin-info-bg-soft, #eff6ff);
+}
+
+.workName {
+  color: var(--modal-text, #374151);
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.workMeta {
+  color: var(--admin-text-muted, #6b7280);
+  font-size: 0.75rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.workQtyInput {
+  border: 1px solid var(--admin-border-strong, #d1d5db);
+  border-radius: var(--admin-radius-sm, 6px);
+  box-sizing: border-box;
+  color: var(--admin-text-primary, #111827);
+  color-scheme: light;
+  font-size: 0.8125rem;
+  min-height: 32px;
+  padding: 4px 8px;
+  text-align: right;
+  width: 100%;
+}
+
+.workQtyInput:focus {
+  border-color: var(--admin-accent, rgb(var(--color-accent-rgb, 217 6 52)));
+  outline: none;
+}
+
+.workRowRemove {
+  background: transparent;
+  border: none;
+  color: var(--admin-text-muted, #9ca3af);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 2px 6px;
+}
+
+.workRowRemove:hover {
+  color: var(--admin-error-text, #b91c1c);
+}
+
+/* Блок «Дополнительные виды работ». */
+.customBlock {
+  border: 1px dashed var(--admin-border-strong, #d1d5db);
+  border-radius: var(--admin-radius-sm, 6px);
+  margin-top: var(--admin-space-md, 8px);
+  padding: var(--admin-space-md, 8px);
+}
+
+.customBlockTitle {
+  color: var(--modal-text-strong, #111827);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  margin: 0 0 var(--admin-space-sm, 6px);
+}
+
+.customAddRow {
+  display: grid;
+  gap: var(--admin-space-sm, 6px);
+  grid-template-columns: minmax(0, 1fr) 92px 110px auto;
+}
+
+.customAddBtn {
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--admin-border-strong, #d1d5db);
+  border-radius: var(--admin-radius-sm, 6px);
+  color: var(--modal-text, #374151);
+  cursor: pointer;
+  font-size: 0.8125rem;
+  min-height: 32px;
+  padding: 4px 12px;
+  white-space: nowrap;
+}
+
+.customAddBtn:hover {
+  border-color: var(--admin-accent, rgb(var(--color-accent-rgb, 217 6 52)));
+}
+
+.customNoMarkupLabel {
+  align-items: center;
+  color: var(--admin-text-muted, #6b7280);
+  display: flex;
+  font-size: 0.75rem;
+  gap: 6px;
+  margin-top: var(--admin-space-sm, 6px);
+}
+
+.customError {
+  color: var(--admin-error-text, #b91c1c);
+  font-size: 0.75rem;
+  margin: var(--admin-space-xs, 4px) 0 0;
+}
+
+/*
+ * Закреплённый футер: итог + кнопки всегда видны при прокрутке списков работ.
+ * Отдельный блок под формой, прилипает к низу прокручиваемой области модалки.
+ */
+.stickyFooter {
+  background: var(--admin-surface, #ffffff);
+  border-top: 1px solid var(--modal-border, #e5e7eb);
+  bottom: 0;
+  box-shadow: 0 -8px 14px -12px rgb(15 23 42 / 0.35);
+  margin-top: var(--admin-space-sm, 6px);
+  padding: var(--admin-space-sm, 6px) var(--admin-space-lg, 10px) var(--admin-space-md, 8px);
+  position: sticky;
+  z-index: 5;
+}
+
+/* Внутри футера строка действий тянется на всю ширину (без своей рамки — рамка у футера). */
+[data-modal-form-actions].footerActions {
+  border-top: none;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  margin-top: 0;
+  padding: 0;
+  row-gap: var(--admin-space-xs, 4px);
+}
+
+.footerTotal {
+  align-items: baseline;
+  color: var(--modal-text-strong, #111827);
+  display: inline-flex;
+  flex-wrap: wrap;
+  column-gap: var(--admin-space-sm, 6px);
+  font-size: 0.8125rem;
+}
+
+.footerTotalValue {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.footerTotalNote {
+  color: var(--admin-text-muted, #6b7280);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.footerButtons {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-lg, 10px);
+}

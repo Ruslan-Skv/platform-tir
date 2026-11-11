@@ -34,18 +34,26 @@ export function usePackageEstimatePresetHandlers({
   schedulePersistDebounced,
   productDirection,
 }: UsePackageEstimatePresetHandlersOptions) {
+  /**
+   * `override` — свежие списки пресетов/объектов для прикрепления только что созданного
+   * расчёта: state контроллера обновлён в том же тике, замыкание ещё его не видит.
+   */
   const applyEstimatePresetIdsToForm = useCallback(
-    (presetIds: string[]) => {
+    (
+      presetIds: string[],
+      override?: {
+        presets: ContractEstimatePreset[];
+        groups: ContractEstimateGroup[];
+      }
+    ) => {
       if (signedDocsLocked) return;
+      const presets = override?.presets ?? estimatePresets;
+      const groups = override?.groups ?? estimateGroups;
       setForm((p) => {
         const uniqueIds = [...new Set(presetIds.filter(Boolean))];
-        const nextForm = applyEstimatePresetIdsToPackageForm(
-          p,
-          uniqueIds,
-          estimatePresets,
-          estimateGroups,
-          { productDirection }
-        );
+        const nextForm = applyEstimatePresetIdsToPackageForm(p, uniqueIds, presets, groups, {
+          productDirection,
+        });
         formRef.current = nextForm;
         schedulePersistDebounced();
         return nextForm;

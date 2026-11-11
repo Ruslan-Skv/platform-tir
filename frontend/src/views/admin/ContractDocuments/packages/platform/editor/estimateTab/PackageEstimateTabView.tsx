@@ -10,6 +10,7 @@ import { PackageDiscountControls, PackageDiscountHint } from '../shared/PackageD
 import { PackageLockNotice, packageLockNoticeMessage } from '../shared/packageLockNoticeUi';
 import attachStyles from './PackageEstimateAttach.module.css';
 import { PackageEstimateAttachPanel } from './PackageEstimateAttachPanel';
+import { PackageEstimateCreateModal } from './PackageEstimateCreateModal';
 import { PackageEstimateMergedSheet } from './PackageEstimateMergedSheet';
 import type { PackageEstimateTabProps } from './PackageEstimateTab';
 import {
@@ -86,7 +87,8 @@ export function PackageEstimateTabView(props: PackageEstimateTabProps) {
             <p
               className={`${ESTIMATE_HINT} ${cdEstimateTab.fieldSpanAll} ${attachStyles.estimateTabHintFullWidth}`}
             >
-              Создание и редактирование расчётов выполняется в разделе{' '}
+              Небольшой расчёт можно создать прямо здесь — кнопка «+ Создать расчёт» (он сразу
+              прикрепится к этому договору). Создание и редактирование любых расчётов — в разделе{' '}
               <Link className={cdHub.link} href="/admin/contract-documents/estimates">
                 «Расчёты»
               </Link>
@@ -97,6 +99,10 @@ export function PackageEstimateTabView(props: PackageEstimateTabProps) {
           </div>
         </div>
       </div>
+      <PackageEstimateCreateModal
+        model={props.estimateCreate}
+        isProductDirectionPackage={isProductDirectionPackage}
+      />
     </div>
   );
 }

@@ -9,6 +9,7 @@ import type {
 
 import type { EstimateEmbedSection } from '../../estimates/packageEstimateDocPrintEmbedHtml';
 import type { PackageFormData } from '../../form/packageForm';
+import type { PackageEstimateCreateModalModel } from '../../hooks/estimate/usePackageEstimateCreateModal';
 import { PackageEstimateTabView } from './PackageEstimateTabView';
 
 export type EstimateUsageEntry = { contractNumber: string; contractDate: string };
@@ -18,6 +19,8 @@ export type PackageEstimateTabProps = {
   signedDocsLocked: boolean;
   isProductDirectionPackage: boolean;
   linkedCrmCustomerId: string | null;
+  /** Модалка создания/правки небольшого расчёта с автоприкреплением к этому пакету. */
+  estimateCreate: PackageEstimateCreateModalModel;
   estimateAppendixContractRef: { num: string; date: string };
   contractEstimateObjectKey: string;
   estimateAttachGroupKey: string;

@@ -6,12 +6,15 @@ import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPe
 import {
   type ContractDocumentPackageKind,
   type ContractDocumentPackageStatus,
+  type ContractEstimateGroup,
+  type ContractEstimatePreset,
   type ContractTemplatePreset,
 } from '@/shared/api/admin-contract-document-packages';
 
 import { isProductDirectionPackageKind } from '../../../config/productDirectionPackageKind';
 import { DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT } from '../../../families/product-like/print/productWorkOrder';
 import { type PackageContractObjectBlockFieldId, executePackageDocumentPrint } from '../../editor';
+import { recomputePackageEstimateSnapshots } from '../../estimates/applyEstimatePresetIds';
 import {
   type PackageDocumentTemplateTabId,
   buildPersistedFormData,
@@ -33,6 +36,7 @@ import { usePackageDocumentPersist } from '../document/usePackageDocumentPersist
 import { usePackageDocumentVersions } from '../document/usePackageDocumentVersions';
 import { usePackageRenderedDocument } from '../document/usePackageRenderedDocument';
 import { usePackageEstimateAttachCatalog } from '../estimate/usePackageEstimateAttachCatalog';
+import { usePackageEstimateCreateModal } from '../estimate/usePackageEstimateCreateModal';
 import { usePackageEstimatePresetHandlers } from '../estimate/usePackageEstimatePresetHandlers';
 import { usePackageEstimatePresetMarkupChange } from '../estimate/usePackageEstimatePresetMarkupChange';
 import { usePackageEstimateTabHandlers } from '../estimate/usePackageEstimateTabHandlers';
@@ -504,18 +508,72 @@ export function usePackageDocumentEditorController({
     updateWorkOrder,
   });
 
-  const { addEstimatePresetToForm, moveEstimatePresetInForm, removeEstimatePresetFromForm } =
-    usePackageEstimatePresetHandlers({
-      signedDocsLocked,
-      form,
-      setForm,
-      setDirty,
-      formRef,
-      estimatePresets,
-      estimateGroups,
-      schedulePersistDebounced: schedulePersistPackageDebounced,
-      productDirection: isProductDirectionPackage,
-    });
+  const {
+    applyEstimatePresetIdsToForm,
+    addEstimatePresetToForm,
+    moveEstimatePresetInForm,
+    removeEstimatePresetFromForm,
+  } = usePackageEstimatePresetHandlers({
+    signedDocsLocked,
+    form,
+    setForm,
+    setDirty,
+    formRef,
+    estimatePresets,
+    estimateGroups,
+    schedulePersistDebounced: schedulePersistPackageDebounced,
+    productDirection: isProductDirectionPackage,
+  });
+
+  /** Прикрепление расчёта, созданного модалкой вкладки «Счёт-заказ»/«Смета». */
+  const attachCreatedEstimatePreset = useCallback(
+    (presetId: string, presets: ContractEstimatePreset[], groups: ContractEstimateGroup[]) => {
+      applyEstimatePresetIdsToForm([...(form.estimate.selectedPresetIds ?? []), presetId], {
+        presets,
+        groups,
+      });
+    },
+    [applyEstimatePresetIdsToForm, form.estimate.selectedPresetIds]
+  );
+
+  /**
+   * Сохранение расчёта, отредактированного модалкой вкладки: пересчёт снимков сметы
+   * пакета (осн. смета и неподписанные Д/с) и сумм договора + отложенное сохранение
+   * (как при смене наценки расчёта).
+   */
+  const estimatePresetEdited = useCallback(
+    (presetId: string, presets: ContractEstimatePreset[], groups: ContractEstimateGroup[]) => {
+      setForm((prev) => {
+        const next = recomputePackageEstimateSnapshots(
+          prev,
+          [presetId],
+          presets,
+          groups,
+          isProductDirectionPackage
+        );
+        formRef.current = next;
+        schedulePersistPackageDebounced();
+        return next;
+      });
+      setDirty(true);
+    },
+    [setForm, formRef, schedulePersistPackageDebounced, setDirty, isProductDirectionPackage]
+  );
+
+  const estimateCreate = usePackageEstimateCreateModal({
+    packageKind,
+    signedDocsLocked,
+    form,
+    linkedCrmCustomerId,
+    estimatePresets,
+    estimateGroups,
+    contractEstimateObjectKey,
+    lockedEstimatePresetIds,
+    setEstimatePresets,
+    setEstimateGroups,
+    attachCreatedPreset: attachCreatedEstimatePreset,
+    presetUpdated: estimatePresetEdited,
+  });
 
   const { patchAddendumDocumentDate } = usePackageAddendumSlotActions({
     activeAddendumSlot,
@@ -700,6 +758,7 @@ export function usePackageDocumentEditorController({
         selectedEstimateSections,
         contractDiscountPercentParsed,
         estimatePrintSheetRef,
+        estimateCreate,
         estimateTabHandlers,
         finalEstimateRooms,
         finalEstimateTotalAmount: finalEstimateSummary.totalAmount,
