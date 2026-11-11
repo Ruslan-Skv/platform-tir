@@ -4,6 +4,7 @@ import {
   type QuickEstimateCategoryInput,
   buildQuickEstimateDraft,
   buildQuickEstimatePreset,
+  moveQuickEstimateCategory,
   parseQuickEstimateDraft,
   quickEstimateCategoryHasLines,
   quickEstimateEditBlockReason,
@@ -160,6 +161,29 @@ describe('quickEstimateCategoryHasLines', () => {
   });
 });
 
+describe('moveQuickEstimateCategory', () => {
+  it('сдвигает категорию вверх и вниз, остальные — на её место', () => {
+    const slugs = ['santehnika', 'elektrika', 'prochie'];
+    expect(moveQuickEstimateCategory(slugs, 'elektrika', -1)).toEqual([
+      'elektrika',
+      'santehnika',
+      'prochie',
+    ]);
+    expect(moveQuickEstimateCategory(slugs, 'elektrika', 1)).toEqual([
+      'santehnika',
+      'prochie',
+      'elektrika',
+    ]);
+  });
+
+  it('на границах списка и без категории — порядок не меняется', () => {
+    const slugs = ['santehnika', 'elektrika'];
+    expect(moveQuickEstimateCategory(slugs, 'santehnika', -1)).toBe(slugs);
+    expect(moveQuickEstimateCategory(slugs, 'elektrika', 1)).toBe(slugs);
+    expect(moveQuickEstimateCategory(slugs, 'okna', 1)).toBe(slugs);
+  });
+});
+
 describe('buildQuickEstimatePreset', () => {
   it('собирает пресет с направлением, заказчиком и снимком по кастомным позициям', async () => {
     const preset = await buildQuickEstimatePreset({
@@ -223,6 +247,9 @@ describe('buildQuickEstimatePreset', () => {
     expect(preset.categoryName).toBe('Комплексный расчёт: Сантехника, Электрика');
     expect(preset.multiCategorySlugs).toEqual(['santehnika', 'elektrika']);
     expect(preset.snapshot?.total).toBe(4000);
+    // Комнаты снимка — в порядке категорий панели: порядок панели = порядок в смете/счёт-заказе.
+    expect(preset.snapshot?.rooms[0]?.lines[0]?.name).toBe('Замена смесителя');
+    expect(preset.snapshot?.rooms[1]?.lines[0]?.name).toBe('Розетка');
     const draft = JSON.parse(preset.calculatorDraft) as { __adminMultiCategory?: unknown };
     expect(draft.__adminMultiCategory).toBeDefined();
   });

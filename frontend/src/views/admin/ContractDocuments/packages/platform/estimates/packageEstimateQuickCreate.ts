@@ -71,6 +71,24 @@ export function quickEstimateCategoryHasLines(category: QuickEstimateCategoryInp
 }
 
 /**
+ * Сдвиг категории в списке выбранных (стрелки в модалке): порядок категорий панели
+ * создания = порядок категорий в смете/счёт-заказе. Границы списка — без изменений.
+ */
+export function moveQuickEstimateCategory(
+  slugs: string[],
+  slug: string,
+  direction: -1 | 1
+): string[] {
+  const from = slugs.indexOf(slug);
+  const to = from + direction;
+  if (from < 0 || to < 0 || to >= slugs.length) return slugs;
+  const next = [...slugs];
+  const [moved] = next.splice(from, 1);
+  next.splice(to, 0, moved!);
+  return next;
+}
+
+/**
  * Проверка полей быстрого расчёта из договора. Заказчик — по блоку «Заказчик» на вкладке
  * «Данные» (карточка CRM в «Поиске заказчика в базе» не обязательна: блок может быть
  * заполнен и без неё, например договором из анкеты). Остальное — как в воркспейсе расчёта.

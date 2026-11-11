@@ -154,6 +154,40 @@
   font-weight: 400;
 }
 
+/* Номер категории: порядок секций = порядок категорий в смете/счёт-заказе. */
+.categorySectionOrder {
+  color: var(--admin-text-muted, #6b7280);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Стрелки «выше/ниже» в заголовке секции (сдвиг категории). */
+.categorySectionMove {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.categoryMoveBtn {
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--admin-border-strong, #d1d5db);
+  border-radius: var(--admin-radius-sm, 6px);
+  color: var(--modal-text, #374151);
+  cursor: pointer;
+  font-size: 0.75rem;
+  line-height: 1;
+  padding: 4px 8px;
+}
+
+.categoryMoveBtn:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.categoryMoveBtn:not(:disabled):hover {
+  border-color: var(--admin-accent, rgb(var(--color-accent-rgb, 217 6 52)));
+  color: var(--admin-accent, rgb(var(--color-accent-rgb, 217 6 52)));
+}
+
 .worksList {
   border: 1px solid var(--modal-border, #e5e7eb);
   border-radius: var(--admin-radius-sm, 6px);

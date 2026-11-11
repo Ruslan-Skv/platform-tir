@@ -36,6 +36,7 @@ export function PackageEstimateCreateModal({
     categoriesLoading,
     selectedSlugs,
     toggleCategory,
+    moveCategory,
     detailBySlug,
     qtyBySlug,
     setQuantity,
@@ -161,13 +162,13 @@ export function PackageEstimateCreateModal({
                   Не выбраны — нажмите, чтобы выбрать
                 </span>
               ) : (
-                selectedSlugs.map((slug) => (
+                selectedSlugs.map((slug, chipIndex) => (
                   <span
                     key={slug}
                     className={styles.categoriesSummaryChip}
                     title={categories.find((c) => c.slug === slug)?.name ?? slug}
                   >
-                    {categories.find((c) => c.slug === slug)?.name ?? slug}
+                    {chipIndex + 1}. {categories.find((c) => c.slug === slug)?.name ?? slug}
                   </span>
                 ))
               )}
@@ -206,19 +207,42 @@ export function PackageEstimateCreateModal({
           <p data-modal-form-hint>Выберите хотя бы одну категорию работ.</p>
         ) : null}
 
-        {selectedSlugs.map((slug) => {
+        {selectedSlugs.map((slug, categoryIndex) => {
           const detail = detailBySlug[slug];
           const categoryName = categories.find((c) => c.slug === slug)?.name ?? slug;
           const qtyMap = qtyBySlug[slug] ?? {};
           const customDefs = customItemsBySlug[slug] ?? {};
-          const customDraft = customDraftBySlug[slug] ?? { name: '', unit: 'шт', price: '' };
+          const customDraft = customDraftBySlug[slug] ?? { name: '', unit: '', price: '' };
           const customIds = Object.keys(customDefs);
           return (
             <section key={slug} className={styles.categorySection}>
               <h5 className={styles.categorySectionTitle}>
+                <span className={styles.categorySectionOrder}>{categoryIndex + 1}.</span>
                 {categoryName}
                 <span className={styles.categorySectionCount}>
                   укажите количество у нужных работ
+                </span>
+                <span className={styles.categorySectionMove}>
+                  <button
+                    type="button"
+                    className={styles.categoryMoveBtn}
+                    disabled={categoryIndex === 0}
+                    aria-label={`Переместить категорию «${categoryName}» выше`}
+                    title="Переместить выше — порядок категорий здесь задаёт порядок работ в смете (счёт-заказе)"
+                    onClick={() => moveCategory(slug, -1)}
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.categoryMoveBtn}
+                    disabled={categoryIndex === selectedSlugs.length - 1}
+                    aria-label={`Переместить категорию «${categoryName}» ниже`}
+                    title="Переместить ниже — порядок категорий здесь задаёт порядок работ в смете (счёт-заказе)"
+                    onClick={() => moveCategory(slug, 1)}
+                  >
+                    ↓
+                  </button>
                 </span>
               </h5>
               {detail?.loading ? (

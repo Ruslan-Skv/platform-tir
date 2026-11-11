@@ -29,6 +29,7 @@ import {
 import {
   type QuickEstimateCategoryInput,
   buildQuickEstimatePreset,
+  moveQuickEstimateCategory,
   parseQuickEstimateDraft,
   quickEstimateDraftsByCategory,
   quickEstimateEditBlockReason,
@@ -302,6 +303,11 @@ export function usePackageEstimateCreateModal({
     setSelectedSlugs((prev) =>
       prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]
     );
+  }, []);
+
+  /** Сдвиг категории вверх/вниз: порядок панели = порядок категорий в смете/счёт-заказе. */
+  const moveCategory = useCallback((slug: string, direction: -1 | 1) => {
+    setSelectedSlugs((prev) => moveQuickEstimateCategory(prev, slug, direction));
   }, []);
 
   const setQuantity = useCallback((slug: string, itemId: string, raw: string) => {
@@ -588,6 +594,7 @@ export function usePackageEstimateCreateModal({
     categoriesLoading: catalog.isLoading,
     selectedSlugs,
     toggleCategory,
+    moveCategory,
     detailBySlug,
     qtyBySlug,
     setQuantity,
