@@ -120,14 +120,16 @@
 }
 
 .categoryChip:hover {
-  border-color: var(--admin-accent, rgb(var(--color-accent-rgb, 217 6 52)));
+  border-color: var(--admin-info-border-soft, #93c5fd);
 }
 
+/* Активный чип — голубой, как чипы блока настроек списка договоров. */
 .categoryChipActive,
 .categoryChipActive:hover {
-  background: var(--admin-accent, rgb(var(--color-accent-rgb, 217 6 52)));
-  border-color: var(--admin-accent, rgb(var(--color-accent-rgb, 217 6 52)));
-  color: #ffffff;
+  border-color: var(--admin-info, #2563eb);
+  background: var(--admin-info-bg-soft, #eff6ff);
+  box-shadow: 0 0 0 1px var(--admin-info-border-soft, #bfdbfe);
+  color: var(--admin-text-primary, #111827);
 }
 
 /* Список работ категории. */
@@ -152,6 +154,77 @@
   color: var(--admin-text-muted, #6b7280);
   font-size: 0.75rem;
   font-weight: 400;
+}
+
+/*
+ * Заголовок секции категории — кнопка-тоггл: сворачивает список работ,
+ * итог по категории всегда виден в самой строке заголовка.
+ */
+.categoryToggle {
+  align-items: baseline;
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  flex: 1 1 auto;
+  font: inherit;
+  gap: var(--admin-space-md, 8px);
+  margin: 0;
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.categorySectionName {
+  color: var(--modal-text-strong, #111827);
+  overflow-wrap: anywhere;
+}
+
+.categorySectionChevron {
+  color: var(--admin-text-muted, #9ca3af);
+  display: inline-flex;
+  justify-content: center;
+  width: 0.85rem;
+}
+
+/* Итог категории в заголовке: прижат вправо (перед стрелками «выше/ниже»). */
+.categorySectionSummary {
+  align-items: baseline;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm, 6px);
+  margin-left: auto;
+  padding-right: var(--admin-space-sm, 6px);
+  white-space: nowrap;
+}
+
+.categorySummaryCount {
+  color: var(--admin-text-muted, #6b7280);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.categorySummaryTotal {
+  color: var(--modal-text-strong, #111827);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.categorySummaryMuted {
+  color: var(--admin-text-muted, #6b7280);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+/* Свёрнутая секция: компактнее по вертикали — остаётся строка заголовка. */
+.categorySectionCollapsed {
+  padding-bottom: var(--admin-space-sm, 6px);
+}
+
+.categorySectionCollapsed .categorySectionTitle {
+  margin-bottom: 0;
 }
 
 /* Номер категории: порядок секций = порядок категорий в смете/счёт-заказе. */
@@ -327,10 +400,14 @@
   z-index: 5;
 }
 
-/* Внутри футера строка действий тянется на всю ширину (без своей рамки — рамка у футера). */
+/*
+ * Внутри футера строка действий тянется на всю ширину (без своей рамки — рамка у футера).
+ * Кнопки всегда справа в одной строке с итогом: при нехватке места переносится
+ * только текст итога (вторая строка — «с наценкой …»), а не кнопки.
+ */
 [data-modal-form-actions].footerActions {
   border-top: none;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: space-between;
   margin-top: 0;
   padding: 0;
@@ -340,8 +417,10 @@
 .footerTotal {
   align-items: baseline;
   color: var(--modal-text-strong, #111827);
-  display: inline-flex;
+  display: flex;
+  flex: 1 1 auto;
   flex-wrap: wrap;
+  min-width: 0;
   column-gap: var(--admin-space-sm, 6px);
   font-size: 0.8125rem;
 }
@@ -362,6 +441,8 @@
   align-items: baseline;
   color: var(--admin-text-muted, #6b7280);
   display: inline-flex;
+  flex-wrap: wrap;
+  min-width: 0;
   column-gap: var(--admin-space-sm, 6px);
   font-size: 0.8125rem;
 }
@@ -374,6 +455,34 @@
 
 .footerButtons {
   display: inline-flex;
+  flex: 0 0 auto;
   flex-wrap: wrap;
   gap: var(--admin-space-lg, 10px);
+}
+
+/*
+ * «Создать и прикрепить» (в правке — «Сохранить») — синяя, проектный --admin-info:
+ * выделяет основное действие модалки среди красных акцентов страницы.
+ */
+.footerButtons [data-modal-btn='primary'] {
+  background: var(--admin-info, #2563eb);
+}
+
+.footerButtons [data-modal-btn='primary']:hover {
+  background: var(--admin-info-strong, #1d4ed8);
+  filter: none;
+}
+
+/*
+ * Узкие экраны: итог и кнопки вместе в одну строку не помещаются — кнопки
+ * переносятся ниже, но остаются прижатыми вправо (а не уезжают влево).
+ */
+@media (max-width: 560px) {
+  [data-modal-form-actions].footerActions {
+    flex-wrap: wrap;
+  }
+
+  .footerButtons {
+    margin-left: auto;
+  }
 }

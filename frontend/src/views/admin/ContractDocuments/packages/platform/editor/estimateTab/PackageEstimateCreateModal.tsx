@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 import { Modal } from '@/shared/ui/Modal';
 
@@ -10,6 +10,15 @@ import styles from './PackageEstimateCreateModal.module.css';
 
 function formatRub(value: number): string {
   return `${value.toLocaleString('ru-RU')} ₽`;
+}
+
+/** «1 работа / 2 работы / 5 работ» — для счётчика позиций в заголовке категории. */
+function pluralWorks(count: number): string {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  if (mod10 === 1 && mod100 !== 11) return 'работа';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'работы';
+  return 'работ';
 }
 
 /**
@@ -51,6 +60,7 @@ export function PackageEstimateCreateModal({
     markupRaw,
     setMarkupRaw,
     previewTotal,
+    previewTotalsBySlug,
     previewTotalWithMarkup,
     previewMarkupPercent,
     previewMarkupFromObject,
@@ -68,6 +78,37 @@ export function PackageEstimateCreateModal({
   useEffect(() => {
     if (isOpen) setCategoriesCollapsed(isEditing);
   }, [isOpen, isEditing]);
+
+  /**
+   * Свёрнутые секции категорий: список работ скрыт, итог — в заголовке.
+   * По умолчанию все секции свёрнуты; категория, только что добавленная чипом,
+   * раскрывается сразу — чтобы не искать, где указывать количества.
+   */
+  const [collapsedCategories, setCollapsedCategories] = useState<ReadonlySet<string>>(new Set());
+  const selectedSlugsRef = useRef(selectedSlugs);
+  selectedSlugsRef.current = selectedSlugs;
+  useEffect(() => {
+    if (isOpen) setCollapsedCategories(new Set(selectedSlugsRef.current));
+  }, [isOpen]);
+  const toggleCategoryCollapsed = (slug: string) =>
+    setCollapsedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(slug)) next.delete(slug);
+      else next.add(slug);
+      return next;
+    });
+  /** Чип категории: добавление раскрывает секцию новой категории. */
+  const handleToggleCategory = (slug: string) => {
+    const isAdding = !selectedSlugs.includes(slug);
+    toggleCategory(slug);
+    if (!isAdding) return;
+    setCollapsedCategories((prev) => {
+      if (!prev.has(slug)) return prev;
+      const next = new Set(prev);
+      next.delete(slug);
+      return next;
+    });
+  };
 
   const totalLabel =
     selectedSlugs.length === 0
@@ -196,7 +237,7 @@ export function PackageEstimateCreateModal({
                         ? `${styles.categoryChip} ${styles.categoryChipActive}`
                         : styles.categoryChip
                     }
-                    onClick={() => toggleCategory(c.slug)}
+                    onClick={() => handleToggleCategory(c.slug)}
                   >
                     {c.name}
                   </button>
@@ -217,14 +258,60 @@ export function PackageEstimateCreateModal({
           const customDefs = customItemsBySlug[slug] ?? {};
           const customDraft = customDraftBySlug[slug] ?? { name: '', unit: '', price: '' };
           const customIds = Object.keys(customDefs);
+          const categoryCollapsed = collapsedCategories.has(slug);
+          const categoryBodyId = `${categoriesBodyId}-works-${slug}`;
+          const categoryPreview = previewTotalsBySlug[slug];
           return (
-            <section key={slug} className={styles.categorySection}>
+            <section
+              key={slug}
+              className={
+                categoryCollapsed
+                  ? `${styles.categorySection} ${styles.categorySectionCollapsed}`
+                  : styles.categorySection
+              }
+            >
               <h5 className={styles.categorySectionTitle}>
-                <span className={styles.categorySectionOrder}>{categoryIndex + 1}.</span>
-                {categoryName}
-                <span className={styles.categorySectionCount}>
-                  укажите количество у нужных работ
-                </span>
+                <button
+                  type="button"
+                  className={styles.categoryToggle}
+                  onClick={() => toggleCategoryCollapsed(slug)}
+                  aria-expanded={!categoryCollapsed}
+                  aria-controls={categoryBodyId}
+                  title={
+                    categoryCollapsed
+                      ? 'Развернуть список работ категории'
+                      : 'Свернуть список работ категории — итог останется в заголовке'
+                  }
+                >
+                  <span className={styles.categorySectionChevron} aria-hidden>
+                    {categoryCollapsed ? '▸' : '▾'}
+                  </span>
+                  <span className={styles.categorySectionOrder}>{categoryIndex + 1}.</span>
+                  <span className={styles.categorySectionName}>{categoryName}</span>
+                  {categoryPreview && categoryPreview.lineCount > 0 ? (
+                    <span className={styles.categorySectionSummary}>
+                      <span className={styles.categorySummaryCount}>
+                        {categoryPreview.lineCount} {pluralWorks(categoryPreview.lineCount)}
+                      </span>
+                      {categoryPreview.hasUnknownPrice ? (
+                        <span className={styles.categorySummaryMuted}>цены части работ скрыты</span>
+                      ) : (
+                        <span
+                          className={styles.categorySummaryTotal}
+                          title="Сумма выбранных работ категории — без наценки и скидки договора"
+                        >
+                          {formatRub(categoryPreview.total)}
+                        </span>
+                      )}
+                    </span>
+                  ) : categoryCollapsed ? (
+                    <span className={styles.categorySummaryMuted}>работ не выбрано</span>
+                  ) : (
+                    <span className={styles.categorySectionCount}>
+                      укажите количество у нужных работ
+                    </span>
+                  )}
+                </button>
                 <span className={styles.categorySectionMove}>
                   <button
                     type="button"
@@ -248,120 +335,122 @@ export function PackageEstimateCreateModal({
                   </button>
                 </span>
               </h5>
-              {detail?.loading ? (
-                <p data-modal-form-hint>Загрузка работ категории…</p>
-              ) : (
-                <div className={styles.worksList}>
-                  {(detail?.items ?? []).map((item) => {
-                    const qty = qtyMap[item.id] ?? '';
-                    return (
-                      <div
-                        key={item.id}
-                        className={
-                          qty ? `${styles.workRow} ${styles.workRowActive}` : styles.workRow
-                        }
-                      >
-                        <span className={styles.workName}>{item.name}</span>
-                        <span className={styles.workMeta}>{item.unit}</span>
-                        <span className={styles.workMeta}>
-                          {typeof item.price === 'number' ? formatRub(item.price) : '—'}
-                        </span>
-                        <input
-                          type="number"
-                          min={0}
-                          step={0.1}
-                          className={styles.workQtyInput}
-                          value={qty}
-                          placeholder="0"
-                          title="Количество; 0 или пусто — работу не включать"
-                          onChange={(e) => setQuantity(slug, item.id, e.target.value)}
-                        />
-                      </div>
-                    );
-                  })}
-                  {customIds.map((itemId) => {
-                    const def = customDefs[itemId];
-                    if (!def) return null;
-                    const qty = qtyMap[itemId] ?? '';
-                    return (
-                      <div key={itemId} className={`${styles.workRow} ${styles.workRowActive}`}>
-                        <span className={styles.workName}>
-                          {def.name} <em style={{ opacity: 0.6 }}>(доп. работа)</em>
-                        </span>
-                        <span className={styles.workMeta}>{def.unit}</span>
-                        <span className={styles.workMeta}>{formatRub(def.price)}</span>
-                        <span style={{ display: 'flex', gap: 4 }}>
+              <div id={categoryBodyId} hidden={categoryCollapsed}>
+                {detail?.loading ? (
+                  <p data-modal-form-hint>Загрузка работ категории…</p>
+                ) : (
+                  <div className={styles.worksList}>
+                    {(detail?.items ?? []).map((item) => {
+                      const qty = qtyMap[item.id] ?? '';
+                      return (
+                        <div
+                          key={item.id}
+                          className={
+                            qty ? `${styles.workRow} ${styles.workRowActive}` : styles.workRow
+                          }
+                        >
+                          <span className={styles.workName}>{item.name}</span>
+                          <span className={styles.workMeta}>{item.unit}</span>
+                          <span className={styles.workMeta}>
+                            {typeof item.price === 'number' ? formatRub(item.price) : '—'}
+                          </span>
                           <input
                             type="number"
                             min={0}
                             step={0.1}
                             className={styles.workQtyInput}
                             value={qty}
-                            onChange={(e) => setQuantity(slug, itemId, e.target.value)}
+                            placeholder="0"
+                            title="Количество; 0 или пусто — работу не включать"
+                            onChange={(e) => setQuantity(slug, item.id, e.target.value)}
                           />
-                          <button
-                            type="button"
-                            className={styles.workRowRemove}
-                            aria-label={`Убрать «${def.name}»`}
-                            title="Убрать доп. работу"
-                            onClick={() => removeCustomItem(slug, itemId)}
-                          >
-                            ×
-                          </button>
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                        </div>
+                      );
+                    })}
+                    {customIds.map((itemId) => {
+                      const def = customDefs[itemId];
+                      if (!def) return null;
+                      const qty = qtyMap[itemId] ?? '';
+                      return (
+                        <div key={itemId} className={`${styles.workRow} ${styles.workRowActive}`}>
+                          <span className={styles.workName}>
+                            {def.name} <em style={{ opacity: 0.6 }}>(доп. работа)</em>
+                          </span>
+                          <span className={styles.workMeta}>{def.unit}</span>
+                          <span className={styles.workMeta}>{formatRub(def.price)}</span>
+                          <span style={{ display: 'flex', gap: 4 }}>
+                            <input
+                              type="number"
+                              min={0}
+                              step={0.1}
+                              className={styles.workQtyInput}
+                              value={qty}
+                              onChange={(e) => setQuantity(slug, itemId, e.target.value)}
+                            />
+                            <button
+                              type="button"
+                              className={styles.workRowRemove}
+                              aria-label={`Убрать «${def.name}»`}
+                              title="Убрать доп. работу"
+                              onClick={() => removeCustomItem(slug, itemId)}
+                            >
+                              ×
+                            </button>
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
 
-              <div className={styles.customBlock}>
-                <p className={styles.customBlockTitle}>Дополнительные виды работ</p>
-                <div className={styles.customAddRow}>
-                  <input
-                    type="text"
-                    value={customDraft.name}
-                    placeholder="Название работы"
-                    onChange={(e) => setCustomDraftField(slug, 'name', e.target.value)}
-                  />
-                  <select
-                    value={customDraft.unit}
-                    onChange={(e) => setCustomDraftField(slug, 'unit', e.target.value)}
-                    aria-label="Единица измерения доп. работы"
-                  >
-                    {ESTIMATE_CUSTOM_WORK_UNITS.map((u) => (
-                      <option key={u} value={u}>
-                        {u}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={customDraft.price}
-                    placeholder="Цена, ₽"
-                    onChange={(e) => setCustomDraftField(slug, 'price', e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    className={styles.customAddBtn}
-                    onClick={() => addCustomItem(slug)}
-                  >
-                    + Добавить
-                  </button>
+                <div className={styles.customBlock}>
+                  <p className={styles.customBlockTitle}>Дополнительные виды работ</p>
+                  <div className={styles.customAddRow}>
+                    <input
+                      type="text"
+                      value={customDraft.name}
+                      placeholder="Название работы"
+                      onChange={(e) => setCustomDraftField(slug, 'name', e.target.value)}
+                    />
+                    <select
+                      value={customDraft.unit}
+                      onChange={(e) => setCustomDraftField(slug, 'unit', e.target.value)}
+                      aria-label="Единица измерения доп. работы"
+                    >
+                      {ESTIMATE_CUSTOM_WORK_UNITS.map((u) => (
+                        <option key={u} value={u}>
+                          {u}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      value={customDraft.price}
+                      placeholder="Цена, ₽"
+                      onChange={(e) => setCustomDraftField(slug, 'price', e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className={styles.customAddBtn}
+                      onClick={() => addCustomItem(slug)}
+                    >
+                      + Добавить
+                    </button>
+                  </div>
+                  <label className={styles.customNoMarkupLabel}>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(customNoMarkupBySlug[slug])}
+                      onChange={() => toggleCustomNoMarkup(slug)}
+                    />
+                    Наценка расчёта не применяется к доп. работам
+                  </label>
+                  {customErrorBySlug[slug] ? (
+                    <p className={styles.customError}>{customErrorBySlug[slug]}</p>
+                  ) : null}
                 </div>
-                <label className={styles.customNoMarkupLabel}>
-                  <input
-                    type="checkbox"
-                    checked={Boolean(customNoMarkupBySlug[slug])}
-                    onChange={() => toggleCustomNoMarkup(slug)}
-                  />
-                  Наценка расчёта не применяется к доп. работам
-                </label>
-                {customErrorBySlug[slug] ? (
-                  <p className={styles.customError}>{customErrorBySlug[slug]}</p>
-                ) : null}
               </div>
             </section>
           );

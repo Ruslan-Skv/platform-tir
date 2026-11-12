@@ -51,6 +51,50 @@ function parsePositiveQuantity(raw: string): number {
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
+/** Итог по категории: количества × цены каталога/доп. работ (для заголовка секции). */
+export type QuickEstimateCategoryPreview = {
+  /** Позиции с количеством > 0 (каталог + доп. работы). */
+  lineCount: number;
+  /** Сумма без наценки; при hasUnknownPrice — только по позициям с известной ценой. */
+  total: number;
+  markupBase: number;
+  /** У части выбранных позиций нет цены в каталоге — точный итог недоступен. */
+  hasUnknownPrice: boolean;
+};
+
+function computeQuickEstimateCategoryPreview(params: {
+  qtyMap: Record<string, string>;
+  customDefs: EstimateCalculatorDraftCustomItems;
+  customNoMarkup: boolean;
+  items: Array<{ id: string; price?: number }>;
+}): QuickEstimateCategoryPreview {
+  const priceById = new Map(params.items.map((it) => [it.id, it.price] as const));
+  let total = 0;
+  let markupBase = 0;
+  let lineCount = 0;
+  let hasUnknownPrice = false;
+  for (const [itemId, raw] of Object.entries(params.qtyMap)) {
+    const qty = parsePositiveQuantity(raw);
+    if (qty <= 0) continue;
+    lineCount += 1;
+    const custom = params.customDefs[itemId];
+    if (custom) {
+      const amount = custom.price * qty;
+      total += amount;
+      if (!params.customNoMarkup) markupBase += amount;
+      continue;
+    }
+    const price = priceById.get(itemId);
+    if (typeof price !== 'number') {
+      hasUnknownPrice = true;
+      continue;
+    }
+    total += price * qty;
+    markupBase += price * qty;
+  }
+  return { lineCount, total, markupBase, hasUnknownPrice };
+}
+
 function emptyCustomDraft(): QuickEstimateCustomDraft {
   return { name: '', unit: 'шт', price: '' };
 }
@@ -408,6 +452,20 @@ export function usePackageEstimateCreateModal({
     customNoMarkupBySlug,
   ]);
 
+  /** Итоги по каждой выбранной категории — для заголовков секций (в т.ч. свёрнутых). */
+  const previewTotalsBySlug = useMemo(() => {
+    const map: Record<string, QuickEstimateCategoryPreview> = {};
+    for (const slug of selectedSlugs) {
+      map[slug] = computeQuickEstimateCategoryPreview({
+        qtyMap: qtyBySlug[slug] ?? {},
+        customDefs: customItemsBySlug[slug] ?? {},
+        customNoMarkup: Boolean(customNoMarkupBySlug[slug]),
+        items: detailBySlug[slug]?.items ?? [],
+      });
+    }
+    return map;
+  }, [selectedSlugs, qtyBySlug, customItemsBySlug, customNoMarkupBySlug, detailBySlug]);
+
   /**
    * Предварительный итог по ценам каталога и кастомным позициям (снимок на сохранении —
    * с сервера): `total` — без наценки; `markupBase` — часть, к которой применяется наценка
@@ -418,33 +476,14 @@ export function usePackageEstimateCreateModal({
     let markupBase = 0;
     let unknownPrice = false;
     for (const slug of selectedSlugs) {
-      const qtyMap = qtyBySlug[slug] ?? {};
-      const customDefs = customItemsBySlug[slug] ?? {};
-      const customNoMarkup = Boolean(customNoMarkupBySlug[slug]);
-      const priceById = new Map(
-        (detailBySlug[slug]?.items ?? []).map((it) => [it.id, it.price] as const)
-      );
-      for (const [itemId, raw] of Object.entries(qtyMap)) {
-        const qty = parsePositiveQuantity(raw);
-        if (qty <= 0) continue;
-        const custom = customDefs[itemId];
-        if (custom) {
-          const amount = custom.price * qty;
-          total += amount;
-          if (!customNoMarkup) markupBase += amount;
-          continue;
-        }
-        const price = priceById.get(itemId);
-        if (typeof price !== 'number') {
-          unknownPrice = true;
-          continue;
-        }
-        total += price * qty;
-        markupBase += price * qty;
-      }
+      const preview = previewTotalsBySlug[slug];
+      if (!preview) continue;
+      total += preview.total;
+      markupBase += preview.markupBase;
+      if (preview.hasUnknownPrice) unknownPrice = true;
     }
     return unknownPrice ? null : { total, markupBase };
-  }, [selectedSlugs, qtyBySlug, customItemsBySlug, customNoMarkupBySlug, detailBySlug]);
+  }, [selectedSlugs, previewTotalsBySlug]);
 
   const previewTotal = previewTotals?.total ?? null;
 
@@ -655,6 +694,8 @@ export function usePackageEstimateCreateModal({
     objectAddress,
     customerName,
     previewTotal,
+    /** Итоги по категориям: количество позиций и сумма (для заголовков секций). */
+    previewTotalsBySlug,
     /** Итог «с наценкой» и активная наценка, % (`fromObject` — наценка объекта, не поля). */
     previewTotalWithMarkup,
     previewMarkupPercent: previewMarkup.percent,
