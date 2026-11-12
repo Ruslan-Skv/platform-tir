@@ -133,6 +133,8 @@ model User {
   installerAdvanceSheetItemsPaid          InstallerAdvanceSheetItem[]               @relation("InstallerAdvanceSheetItemPaidBy")
   installerAdvanceSheetComments           InstallerAdvanceSheetItemComment[]        @relation("InstallerAdvanceSheetItemCommentAuthor")
   moneyMovementsConducted                 MoneyMovement[]                           @relation("MoneyMovementManager")
+  moneyMovementsAccepted                  MoneyMovement[]                           @relation("MoneyMovementAcceptedBy")
+  moneyMovementsCashHeld                  MoneyMovement[]                           @relation("MoneyMovementCashHolder")
   moneyMovementsCreated                   MoneyMovement[]                           @relation("MoneyMovementCreatedBy")
   moneyMovementsDeleted                   MoneyMovement[]                           @relation("MoneyMovementDeletedBy")
   managerIncassations                     ManagerIncassation[]                      @relation("ManagerIncassationsManager")
@@ -144,6 +146,9 @@ model User {
   salaryPayoutsReceived                   SalaryPayout[]                            @relation("SalaryPayoutRecipient")
   salaryPayoutsConducted                  SalaryPayout[]                            @relation("SalaryPayoutManager")
   salaryPayoutsCreated                    SalaryPayout[]                            @relation("SalaryPayoutCreatedBy")
+  managerSubstitutionsAbsent              ManagerSubstitution[]                     @relation("ManagerSubstitutionAbsent")
+  managerSubstitutionsSubstitute          ManagerSubstitution[]                     @relation("ManagerSubstitutionSubstitute")
+  managerSubstitutionsCreated             ManagerSubstitution[]                     @relation("ManagerSubstitutionCreatedBy")
   moneyMovementsSalaryPaid                MoneyMovement[]                           @relation("MoneyMovementSalaryRecipient")
   bankReconciliationLinksCreated          BankReconciliationLink[]                  @relation("BankReconciliationLinkCreatedBy")
   contractDocumentPaymentInvoicesIssued   ContractDocumentPaymentInvoice[]          @relation("ContractDocumentPaymentInvoiceIssuedBy")
@@ -3873,6 +3878,14 @@ model MoneyMovement {
   basis                 String?     @db.Text
   notes                 String?     @db.Text
   managerId             String?
+  /// Сотрудник, фактически принявший оплату от заказчика (для авто-записей —
+  /// записавший оплату из «Оплаты и Управление договором»). Отличается от
+  /// managerId, когда оплату по чужому договору провёл другой менеджер
+  /// (клиент пришёл в другой офис / подмена на время отпуска или больничного).
+  acceptedById          String?
+  /// Чья касса пополняется движением: принятый оплату (acceptedById), иначе
+  /// менеджер движения. Единая точка для остатков наличных под инкассацию.
+  cashHolderId          String?
   contractNumber        String?
   customerName          String?
   /// Направление на момент оплаты («Ремонт», «Окна», «Двери», …).
@@ -3906,6 +3919,8 @@ model MoneyMovement {
   updatedAt             DateTime    @updatedAt
 
   manager                 User?                    @relation("MoneyMovementManager", fields: [managerId], references: [id], onDelete: SetNull)
+  acceptedBy              User?                    @relation("MoneyMovementAcceptedBy", fields: [acceptedById], references: [id], onDelete: SetNull)
+  cashHolder              User?                    @relation("MoneyMovementCashHolder", fields: [cashHolderId], references: [id], onDelete: SetNull)
   salaryRecipient         User?                    @relation("MoneyMovementSalaryRecipient", fields: [salaryRecipientUserId], references: [id], onDelete: SetNull)
   createdBy               User?                    @relation("MoneyMovementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   deletedBy               User?                    @relation("MoneyMovementDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
@@ -3914,6 +3929,8 @@ model MoneyMovement {
   @@index([paymentDate])
   @@index([performedAt])
   @@index([managerId])
+  @@index([acceptedById])
+  @@index([cashHolderId])
   @@index([direction])
   @@index([packageId])
   @@index([deletedAt])
@@ -4713,6 +4730,34 @@ enum SalaryRole {
 enum SalarySettlementStatus {
   DRAFT
   CONFIRMED
+}
+
+/// Подмена менеджера на период отпуска или длительного больничного:
+/// создаётся супер-админом вручную. В период подмены з/п по договорам
+/// отсутствующего менеджера и его личные продажи по платежам ДП
+/// начисляются подменяющему (менеджер договора при этом не меняется).
+model ManagerSubstitution {
+  id                  String   @id @default(cuid())
+  /// Менеджер, которого подменяют (в отпуске / на больничном).
+  absentManagerId     String
+  /// Менеджер, который подменяет и получает за него з/п и продажи.
+  substituteManagerId String
+  dateFrom            DateTime @db.Date
+  dateTo              DateTime @db.Date
+  comment             String?  @db.Text
+  createdById         String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  absentManager     User  @relation("ManagerSubstitutionAbsent", fields: [absentManagerId], references: [id], onDelete: Cascade)
+  substituteManager User  @relation("ManagerSubstitutionSubstitute", fields: [substituteManagerId], references: [id], onDelete: Cascade)
+  createdBy         User? @relation("ManagerSubstitutionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([absentManagerId])
+  @@index([substituteManagerId])
+  @@index([dateFrom])
+  @@index([dateTo])
+  @@map("manager_substitutions")
 }
 
 /// Глобальные параметры расчёта з/п (одна строка; редактирует суперадмин)

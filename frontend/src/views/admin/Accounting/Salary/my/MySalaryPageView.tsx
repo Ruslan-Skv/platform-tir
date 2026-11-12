@@ -368,9 +368,22 @@ function MySalaryBody({ result }: { result: MySalaryResult }) {
                 key: 'roles',
                 title: 'Моя роль',
                 sortable: true,
-                render: (c) => (
-                  <span className={styles.mutedCell}>{c.roles.join(' + ') || '—'}</span>
-                ),
+                render: (c) => {
+                  // Подмена: часть «менеджер» начислена за отсутствующего менеджера.
+                  const substitutedFor =
+                    c.parts.find((part) => part.substitutedFor)?.substitutedFor ?? null;
+                  return (
+                    <span className={styles.mutedCell}>
+                      {c.roles.join(' + ') || '—'}
+                      {substitutedFor ? (
+                        <span className={styles.substitutionInlineTag}>
+                          {' '}
+                          подмена за {substitutedFor}
+                        </span>
+                      ) : null}
+                    </span>
+                  );
+                },
               },
               {
                 key: 'payout',
@@ -380,7 +393,11 @@ function MySalaryBody({ result }: { result: MySalaryResult }) {
                   <span
                     className={`${dpStyles.amountCell} ${styles.totalCell}`}
                     title={c.parts
-                      .map((part) => `${part.role}: ${formatMoney(part.amount)}`)
+                      .map((part) =>
+                        part.substitutedFor
+                          ? `${part.role} (подмена за ${part.substitutedFor}): ${formatMoney(part.amount)}`
+                          : `${part.role}: ${formatMoney(part.amount)}`
+                      )
                       .join('\n')}
                   >
                     {formatMoney(c.payout)}

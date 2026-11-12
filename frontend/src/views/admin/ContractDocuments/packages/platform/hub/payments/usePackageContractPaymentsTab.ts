@@ -1,6 +1,11 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+
+import {
+  type ManagerSubstitution,
+  getActiveManagerSubstitutions,
+} from '@/shared/api/accounting/admin-salary';
 
 import { computePackagePayableBreakdown } from '../../payments/packagePaymentTotals';
 import type { PackageContractPaymentsTabProps } from './PackageContractPaymentsTab';
@@ -30,6 +35,30 @@ export function usePackageContractPaymentsTab({
   const payableBreakdown = useMemo(
     () => computePackagePayableBreakdown(form, packageKind),
     [form, packageKind]
+  );
+
+  // Подмены менеджера договора (отпуск/больничный): баннер над блоком оплат —
+  // оплаты и з/п по договору в период подмены учитываются за подменяющего.
+  const contractManagerId = form.executor?.signatoryCrmUserId?.trim() || '';
+  const [managerSubstitutions, setManagerSubstitutions] = useState<ManagerSubstitution[]>([]);
+  useEffect(() => {
+    if (!contractManagerId) {
+      setManagerSubstitutions([]);
+      return;
+    }
+    let cancelled = false;
+    getActiveManagerSubstitutions(contractManagerId)
+      .then((rows) => {
+        if (!cancelled) setManagerSubstitutions(rows);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [contractManagerId]);
+  const activeManagerSubstitutions = useMemo(
+    () => managerSubstitutions.filter((s) => s.status !== 'past'),
+    [managerSubstitutions]
   );
 
   const journal = usePackagePaymentsJournal({
@@ -69,6 +98,8 @@ export function usePackageContractPaymentsTab({
     layout,
     onUpdateContract,
     onPrintCashOrder,
+    /** Активные/предстоящие подмены менеджера договора (баннер над оплатами). */
+    activeManagerSubstitutions,
     rows: journal.rows,
     loading: journal.loading,
     cancelingPaymentId: journal.cancelingPaymentId,
@@ -89,6 +120,9 @@ export function usePackageContractPaymentsTab({
     hubBasisKey: conduct.hubBasisKey,
     conductAmount: conduct.conductAmount,
     setConductAmount: conduct.setConductAmount,
+    acceptedByUserId: conduct.acceptedByUserId,
+    setAcceptedByUserId: conduct.setAcceptedByUserId,
+    acceptorChoices: conduct.acceptorChoices,
     hubPaymentConductedNotice: conduct.hubPaymentConductedNotice,
     addendumPaymentSummaries: summary.addendumPaymentSummaries,
     paymentsContractDiscountPct: summary.paymentsContractDiscountPct,

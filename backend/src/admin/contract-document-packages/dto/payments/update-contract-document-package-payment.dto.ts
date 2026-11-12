@@ -53,4 +53,11 @@ export class UpdateContractDocumentPackagePaymentDto {
   @IsOptional()
   @IsString()
   notes?: string | null;
+
+  @ApiPropertyOptional({
+    description: 'Сотрудник, фактически принявший оплату от заказчика (правит супер-админ)',
+  })
+  @IsOptional()
+  @IsString()
+  acceptedByUserId?: string | null;
 }

@@ -362,6 +362,23 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
       ),
     },
     {
+      key: 'acceptedBy',
+      title: 'Принял оплату',
+      render: (item: MoneyMovement) => (
+        <div
+          className={styles.customerCell}
+          title="Сотрудник, фактически принявший оплату от заказчика — он сдаёт эти наличные в инкассацию. «—» — принимал сам менеджер договора."
+        >
+          {item.acceptedByOther ? item.acceptedBy?.name || '—' : '—'}
+          {item.substitution ? (
+            <span className={styles.customerSubline}>
+              подмена: {item.substitution.substituteManagerName}
+            </span>
+          ) : null}
+        </div>
+      ),
+    },
+    {
       key: 'office',
       title: 'Офис',
       render: (item: MoneyMovement) => item.office || '—',

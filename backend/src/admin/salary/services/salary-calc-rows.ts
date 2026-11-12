@@ -16,6 +16,18 @@ export type SalaryCalcContract = Prisma.SalaryContractGetPayload<{
 
 type SalaryRole = 'MANAGER' | 'SURVEYOR' | 'LEAD_SPECIALIST' | 'BRIGADIER';
 
+/** Кому начислена доля з/п менеджера по договору. Совпадает с менеджером договора,
+ *  кроме периода подмены (отпуск/больничный) — тогда часть/вся сумма уходит
+ *  подменяющему с пометкой, за кого она начислена. */
+export type SalaryCreditManager = {
+  userId: string | null;
+  userName: string | null;
+  amount: number;
+  /** Заполнено, когда сумма начислена подменяющему за отсутствующего менеджера. */
+  substitutedForManagerId: string | null;
+  substitutedForManagerName: string | null;
+};
+
 /**
  * Строки расчёта по договорам периода: выбор ставки по приоритету
  * «переопределение договора → правило офиса → правило всех офисов → направление»,
@@ -150,6 +162,10 @@ export function buildSalaryCalcRows(input: {
       customerName: contract.customerName,
       managerId: contract.managerId,
       managerName,
+      /** Кому фактически начислена доля менеджера (заполняет расчёт после подмен). */
+      creditedManagers: [] as SalaryCreditManager[],
+      /** Часть суммы ушла подменяющему за этого менеджера (бейдж «подмена»). */
+      substitutionApplied: false,
       surveyorId: contract.surveyorId,
       surveyorName,
       managerHandled: contract.managerHandled,

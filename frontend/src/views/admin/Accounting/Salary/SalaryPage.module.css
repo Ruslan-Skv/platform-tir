@@ -889,3 +889,119 @@ span.tilePartsColumn {
   box-shadow: var(--admin-shadow-focus-soft, 0 0 0 3px rgb(217 6 50 / 0.12));
   outline: none;
 }
+
+/* ===== Подмены менеджеров (вкладка «Настройки») ===== */
+
+.substitutionToolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+.substitutionAddBtn {
+  padding: 8px 14px;
+  border: 1px solid var(--admin-accent, #d90632);
+  border-radius: 8px;
+  background: var(--admin-accent, #d90632);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.substitutionAddBtn:hover {
+  opacity: 0.9;
+}
+
+.substitutionActions {
+  display: flex;
+  gap: 6px;
+}
+
+.substitutionActionBtn,
+.substitutionActionBtnDanger,
+.substitutionCancelBtn {
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--admin-border, #d9d9d9);
+  background: #fff;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.substitutionActionBtn:hover,
+.substitutionCancelBtn:hover {
+  border-color: var(--admin-accent, #d90632);
+  color: var(--admin-accent, #d90632);
+}
+
+.substitutionActionBtnDanger:hover {
+  border-color: #d90632;
+  color: #d90632;
+}
+
+.substitutionModalForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.substitutionModalForm .settingsField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--admin-text-muted, #666);
+}
+
+.substitutionDatesRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.substitutionModalActions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.substitutionSaveBtn {
+  padding: 9px 16px;
+  border: 1px solid var(--admin-accent, #d90632);
+  border-radius: 8px;
+  background: var(--admin-accent, #d90632);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.substitutionSaveBtn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.errorText {
+  color: #d90632;
+  font-size: 13px;
+  margin: 0;
+}
+
+.noticeText {
+  color: #1a7f37;
+  font-size: 13px;
+  margin: 0;
+}
+
+.substitutionBadge {
+  margin-left: 6px;
+  border-color: #b58100;
+  background: #fff7e0;
+  color: #8a6100;
+}
+
+.substitutionInlineTag {
+  color: #8a6100;
+}

@@ -49,6 +49,18 @@ export type MoneyMovement = {
    */
   originalValues: Record<string, string | null> | null;
   manager: { id: string; name: string } | null;
+  /** Сотрудник, фактически принявший оплату (записал оплату в хабе договора);
+   *  null — принял сам менеджер движения или ручная проводка. */
+  acceptedBy: { id: string; name: string } | null;
+  /** Оплату по чужому договору принял другой сотрудник (не менеджер движения). */
+  acceptedByOther: boolean;
+  /** Активная подмена менеджера движения на дату платежа (бейдж «подмена»). */
+  substitution: {
+    absentManagerId: string | null;
+    absentManagerName: string;
+    substituteManagerId: string;
+    substituteManagerName: string;
+  } | null;
   /** Автор ручной записи (id пользователя) — «свои» записи для права удаления. */
   createdById: string | null;
   createdAt: string;

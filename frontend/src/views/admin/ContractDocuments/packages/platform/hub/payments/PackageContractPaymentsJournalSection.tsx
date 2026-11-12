@@ -31,6 +31,7 @@ export type PackageContractPaymentsJournalSectionProps = Pick<
   | 'cancelPayment'
   | 'updatingPaymentId'
   | 'updatePayment'
+  | 'acceptorChoices'
 >;
 
 export function PackageContractPaymentsJournalSection({
@@ -43,6 +44,7 @@ export function PackageContractPaymentsJournalSection({
   cancelPayment,
   updatingPaymentId,
   updatePayment,
+  acceptorChoices,
 }: PackageContractPaymentsJournalSectionProps) {
   const { user } = useAuth();
   // Редактировать и отменять проведённые оплаты может только супер-админ
@@ -178,6 +180,7 @@ export function PackageContractPaymentsJournalSection({
         <PackageContractPaymentsEditModal
           payment={editingRow}
           saving={updatingPaymentId != null}
+          acceptorChoices={acceptorChoices}
           onClose={() => {
             if (updatingPaymentId == null) setEditingPaymentId(null);
           }}

@@ -14,6 +14,7 @@ export function PackageContractPaymentsTabView({
   layout,
   onUpdateContract,
   onPrintCashOrder,
+  activeManagerSubstitutions,
   rows,
   loading,
   cancelingPaymentId,
@@ -34,6 +35,9 @@ export function PackageContractPaymentsTabView({
   hubBasisKey,
   conductAmount,
   setConductAmount,
+  acceptedByUserId,
+  setAcceptedByUserId,
+  acceptorChoices,
   hubPaymentConductedNotice,
   addendumPaymentSummaries,
   paymentsContractDiscountPct,
@@ -65,6 +69,18 @@ export function PackageContractPaymentsTabView({
         layout === 'hub' ? cdBase.paymentsTabHub : ''
       } ${isHubPartLayout ? cdBase.paymentsTabHubPart : ''}`}
     >
+      {activeManagerSubstitutions.length > 0 ? (
+        <p className={cdProduct.hint} style={{ marginBottom: 10 }}>
+          {activeManagerSubstitutions
+            .map((s) =>
+              s.status === 'active'
+                ? `Подмена: за ${s.absentManager.name} до ${s.dateTo.split('-').reverse().join('.')} отвечает ${s.substituteManager.name}`
+                : `С ${s.dateFrom.split('-').reverse().join('.')} договор подменяет ${s.substituteManager.name} (за ${s.absentManager.name})`
+            )
+            .join(' · ')}
+          {' — оплаты и з/п по договору в этот период учитываются за подменяющего.'}
+        </p>
+      ) : null}
       {showHubSummary ? (
         <PackageContractPaymentsHubSummarySection
           packageKind={packageKind}
@@ -95,6 +111,9 @@ export function PackageContractPaymentsTabView({
           hubBasisKey={hubBasisKey}
           conductAmount={conductAmount}
           setConductAmount={setConductAmount}
+          acceptedByUserId={acceptedByUserId}
+          setAcceptedByUserId={setAcceptedByUserId}
+          acceptorChoices={acceptorChoices}
           hubConductDateReady={hubConductDateReady}
           hubConductAllBasesDone={hubConductAllBasesDone}
           hubConductFormComplete={hubConductFormComplete}
@@ -125,6 +144,7 @@ export function PackageContractPaymentsTabView({
           cancelPayment={cancelPayment}
           updatingPaymentId={updatingPaymentId}
           updatePayment={updatePayment}
+          acceptorChoices={acceptorChoices}
         />
       ) : null}
     </div>

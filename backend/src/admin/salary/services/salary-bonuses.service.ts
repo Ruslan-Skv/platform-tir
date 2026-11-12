@@ -2,6 +2,10 @@ import { Injectable } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
 import { DP_MANUAL_DIRECTION_OTHER } from '../../../common/config/package-direction-registry.config';
+import {
+  ManagerSubstitutionPeriod,
+  substituteManagerIdAt,
+} from '../../../common/utils/manager-substitutions.helper';
 import { DEFAULT_CASH_QR_BONUS_PERCENT, round2, toNum } from '../salary.constants';
 
 /** Премия за место по итогам продаж за завершённый месяц (журнал ДП). */
@@ -79,6 +83,9 @@ export class SalaryBonusesService {
     /** Строки расчёта по договорам за период (база премии за план). */
     rows: ContractRowForPlan[];
     employeeId?: string;
+    /** Подмены менеджеров периода: продажи и доли з/п отсутствующего за
+     *  дату события/платежа засчитываются подменяющему. */
+    substitutions?: ManagerSubstitutionPeriod[];
   }): Promise<{
     salesBonuses: SalesPlaceBonus[];
     salesBonusesTotal: number;
@@ -89,6 +96,7 @@ export class SalaryBonusesService {
   }> {
     const { from, to, todayUtc, rows, employeeId } = input;
     const settings = input.settings ?? {};
+    const substitutions = input.substitutions ?? [];
 
     // --- Премии за места по итогам продаж (журнал ДП). ---
 
@@ -101,7 +109,7 @@ export class SalaryBonusesService {
     const salesBonuses: SalesPlaceBonus[] = [];
     if (bonusByPlace.some((b) => b > 0)) {
       for (const { monthStart } of this.completedMonths(from, to, todayUtc)) {
-        const ranked = (await this.monthSalesByManager(monthStart))
+        const ranked = (await this.monthSalesByManager(monthStart, substitutions))
           .filter((row) => row.salesAmount > 0 && row.salesAmount >= bonusMinSales)
           .sort((a, b) => b.salesAmount - a.salesAmount);
         const winners = ranked.slice(0, 3);
@@ -141,7 +149,8 @@ export class SalaryBonusesService {
     const salesPlanBonuses: SalesPlanBonus[] = [];
     if (planTiersByUser.size > 0) {
       // З/п менеджеров по договорам в разрезе месяцев: доли при заключении/закрытии
-      // и доп. соглашения относятся к месяцам своих дат.
+      // и доп. соглашения относятся к месяцам своих дат. На дату события действует
+      // подмена — тогда доля уходит подменяющему.
       const monthOf = (iso: string | null) => (iso ? iso.slice(0, 7) : null);
       const managerPartsByMonth = new Map<string, number>();
       for (const row of rows) {
@@ -149,7 +158,9 @@ export class SalaryBonusesService {
         const add = (iso: string | null, value: number) => {
           const key = monthOf(iso);
           if (!key || value === 0) return;
-          const mapKey = `${row.managerId}|${key}`;
+          const date = new Date(iso as string);
+          const userId = substituteManagerIdAt(substitutions, row.managerId, date) ?? row.managerId;
+          const mapKey = `${userId}|${key}`;
           managerPartsByMonth.set(mapKey, round2((managerPartsByMonth.get(mapKey) ?? 0) + value));
         };
         add(row.signedAt, row.parts.sign);
@@ -161,7 +172,7 @@ export class SalaryBonusesService {
 
       for (const { monthStart } of this.completedMonths(from, to, todayUtc)) {
         const monthKeyStr = this.monthKey(monthStart);
-        const monthManagers = await this.monthSalesByManager(monthStart);
+        const monthManagers = await this.monthSalesByManager(monthStart, substitutions);
         const nameById = await this.userNames(monthManagers.map((c) => c.userId));
         for (const candidate of monthManagers) {
           const planTiers = planTiersByUser.get(candidate.userId);
@@ -195,8 +206,9 @@ export class SalaryBonusesService {
     const cashQrBonuses: CashQrBonus[] = [];
     if (settings.cashQrBonusEnforced !== false && cashQrPercent > 0) {
       for (const { monthStart } of this.completedMonths(from, to, todayUtc)) {
-        const formSums = await this.prisma.moneyMovement.groupBy({
-          by: ['managerId', 'paymentForm'],
+        // Группировка по менеджеру и способу с учётом подмен: на дату платежа
+        // продажи отсутствующего менеджера засчитываются подменяющему.
+        const formRows = await this.prisma.moneyMovement.findMany({
           where: {
             deletedAt: null,
             managerId: { not: null },
@@ -206,13 +218,14 @@ export class SalaryBonusesService {
             },
             direction: { not: DP_MANUAL_DIRECTION_OTHER },
           },
-          _sum: { amount: true },
+          select: { managerId: true, paymentForm: true, amount: true, paymentDate: true },
         });
         const totals = new Map<string, { total: number; terminal: number }>();
-        for (const row of formSums) {
-          const userId = row.managerId as string;
+        for (const row of formRows) {
+          const userId = (substituteManagerIdAt(substitutions, row.managerId, row.paymentDate) ??
+            row.managerId) as string;
           const agg = totals.get(userId) ?? { total: 0, terminal: 0 };
-          const amount = toNum(row._sum.amount ?? 0);
+          const amount = toNum(row.amount);
           agg.total += amount;
           if (row.paymentForm === 'TERMINAL') agg.terminal += amount;
           totals.set(userId, agg);
@@ -264,23 +277,32 @@ export class SalaryBonusesService {
     }
   }
 
-  /** Продажи менеджеров за месяц по журналу ДП (без «Прочего» и удалённых). */
-  private async monthSalesByManager(monthStart: Date, monthEnd?: Date) {
-    const end =
-      monthEnd ?? new Date(Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth() + 1, 0));
-    const monthSums = await this.prisma.moneyMovement.groupBy({
-      by: ['managerId'],
+  /** Продажи менеджеров за месяц по журналу ДП (без «Прочего» и удалённых).
+   *  На дату платежа действует подмена: договоры отсутствующего менеджера
+   *  засчитываются подменяющему, поэтому агрегируем в коде, а не groupBy. */
+  private async monthSalesByManager(
+    monthStart: Date,
+    substitutions: ManagerSubstitutionPeriod[] = [],
+  ) {
+    const end = new Date(Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth() + 1, 0));
+    const rows = await this.prisma.moneyMovement.findMany({
       where: {
         deletedAt: null,
         managerId: { not: null },
         paymentDate: { gte: monthStart, lte: end },
         direction: { not: DP_MANUAL_DIRECTION_OTHER },
       },
-      _sum: { amount: true },
+      select: { managerId: true, amount: true, paymentDate: true },
     });
-    return monthSums.map((row) => ({
-      userId: row.managerId as string,
-      salesAmount: toNum(row._sum.amount ?? 0),
+    const sums = new Map<string, number>();
+    for (const row of rows) {
+      const userId = (substituteManagerIdAt(substitutions, row.managerId, row.paymentDate) ??
+        row.managerId) as string;
+      sums.set(userId, (sums.get(userId) ?? 0) + toNum(row.amount));
+    }
+    return [...sums.entries()].map(([userId, salesAmount]) => ({
+      userId,
+      salesAmount: round2(salesAmount),
     }));
   }
 

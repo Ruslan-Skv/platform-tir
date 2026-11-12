@@ -28,6 +28,7 @@ const USER_SELECT = { id: true, email: true, firstName: true, lastName: true } a
 
 const TRASH_INCLUDE = {
   manager: { select: USER_SELECT },
+  acceptedBy: { select: USER_SELECT },
   createdBy: { select: USER_SELECT },
   deletedBy: { select: USER_SELECT },
 } satisfies Prisma.MoneyMovementInclude;
@@ -88,6 +89,8 @@ export class ManualEntriesService {
         basis: salaryRecipient ? SALARY_PAYOUT_BASIS : dto.basis.trim(),
         notes: dto.notes?.trim() || null,
         managerId,
+        // Ручная проводка лежит в кассе выбранного менеджера (принявшего оплату нет).
+        cashHolderId: managerId,
         direction,
         office: null,
         contractNumber: withContract ? dto.contractNumber?.trim() || null : null,
@@ -97,7 +100,10 @@ export class ManualEntriesService {
         salaryRecipientName: salaryRecipient?.name ?? null,
         createdById: currentUserId,
       },
-      include: { manager: { select: { id: true, email: true, firstName: true, lastName: true } } },
+      include: {
+        manager: { select: { id: true, email: true, firstName: true, lastName: true } },
+        acceptedBy: { select: { id: true, email: true, firstName: true, lastName: true } },
+      },
     });
     this.salesTotalsNotify.onSalesChanged();
     return serializeMoneyMovement(row);
@@ -181,6 +187,8 @@ export class ManualEntriesService {
         basis,
         notes,
         managerId,
+        // Касса ручной записи следует за выбранным менеджером (акцептора нет).
+        cashHolderId: managerId,
         direction,
         contractNumber,
         customerName,
@@ -189,7 +197,10 @@ export class ManualEntriesService {
         salaryRecipientName,
         ...(originalValues ? { originalValues } : { originalValues: Prisma.DbNull }),
       },
-      include: { manager: { select: { id: true, email: true, firstName: true, lastName: true } } },
+      include: {
+        manager: { select: { id: true, email: true, firstName: true, lastName: true } },
+        acceptedBy: { select: { id: true, email: true, firstName: true, lastName: true } },
+      },
     });
     this.salesTotalsNotify.onSalesChanged();
     return serializeMoneyMovement(row);

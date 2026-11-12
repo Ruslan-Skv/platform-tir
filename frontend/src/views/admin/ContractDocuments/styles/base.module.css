@@ -1365,6 +1365,40 @@
     auto;
 }
 
+/* Модалка «Оплаты и Управление договором»: поля в 5 колонок — дата |
+   основание | способ | принял оплату | сумма. Кнопки — строкой ниже,
+   прижаты к правому краю модалки. */
+.paymentsFormHubRowCompact.paymentsFormHubRowPayment {
+  grid-template-columns:
+    minmax(7.25rem, 8.25rem)
+    minmax(0, 1fr)
+    minmax(6.75rem, 8rem)
+    minmax(8.5rem, 10rem)
+    minmax(5.25rem, 6.5rem);
+  row-gap: var(--admin-space-sm, 6px);
+}
+
+.paymentsFormHubRowCompact.paymentsFormHubRowPayment .paymentsFormHubSubmitField {
+  grid-column: 1 / -1;
+}
+
+.paymentsFormHubRowPayment .paymentsHubConductActions {
+  justify-content: flex-end;
+}
+
+/* Кнопки на своей строке — распорка-лейбл над ними не нужна. */
+.paymentsFormHubRowPayment .paymentsFormHubSubmitSpacer {
+  display: none;
+}
+
+/* На узких экранах — те же две колонки полей, что у остальных компактных строк
+   (селектор с модификатором специфичнее базового мобильного правила). */
+@media (max-width: 720px) {
+  .paymentsFormHubRowCompact.paymentsFormHubRowPayment {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 .paymentsFormHubRowCompact > .field {
   flex: unset;
   min-width: 0;

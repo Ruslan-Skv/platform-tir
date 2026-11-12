@@ -203,6 +203,18 @@ export interface SalaryCalcRow {
   percents: { manager: number; surveyor: number; vs: number; brigadier: number };
   split: { sign: number; close: number };
   parts: { sign: number; close: number; extra: number };
+  /** Кому фактически начислена доля менеджера: совпадает с менеджером договора,
+   *  кроме периода подмены (отпуск/больничный) — тогда часть уходит подменяющему. */
+  creditedManagers?: Array<{
+    userId: string | null;
+    userName: string | null;
+    amount: number;
+    /** За кого начислено подменяющему (иначе null). */
+    substitutedForManagerId: string | null;
+    substitutedForManagerName: string | null;
+  }>;
+  /** Часть суммы строки ушла подменяющему за менеджера договора (бейдж «подмена»). */
+  substitutionApplied?: boolean;
   managerAmount: number;
   surveyorAmount: number;
   vsAmount: number;
@@ -579,6 +591,8 @@ export function calculateSalary(params: {
 export interface MySalaryContractPart {
   role: string;
   amount: number;
+  /** Для роли «менеджер»: за кого начислено, когда строка — подмена (отпуск/больничный). */
+  substitutedFor?: string | null;
 }
 
 export interface MySalaryContract {
@@ -675,5 +689,80 @@ export function deleteSalarySettlement(id: string): Promise<{ ok: boolean }> {
     `${API_URL}/admin/salary/settlements/${id}`,
     { method: 'DELETE' },
     'Не удалось удалить расчёт'
+  );
+}
+
+// ===== Подмены менеджеров (отпуск / длительный больничный) =====
+
+export interface ManagerSubstitution {
+  id: string;
+  absentManagerId: string;
+  substituteManagerId: string;
+  dateFrom: string;
+  dateTo: string;
+  comment: string | null;
+  createdAt: string;
+  updatedAt: string;
+  absentManager: { id: string; name: string };
+  substituteManager: { id: string; name: string };
+  /** 'active' — идёт сейчас, 'upcoming' — предстоит, 'past' — закончилась. */
+  status: 'active' | 'upcoming' | 'past';
+}
+
+export interface ManagerSubstitutionPayload {
+  absentManagerId: string;
+  substituteManagerId: string;
+  dateFrom: string;
+  dateTo: string;
+  comment?: string | null;
+}
+
+/** Все подмены (вкладка «Настройки» раздела «ЗП»). */
+export function getManagerSubstitutions(): Promise<ManagerSubstitution[]> {
+  return request(
+    `${API_URL}/admin/salary/manager-substitutions`,
+    {},
+    'Не удалось загрузить подмены менеджеров'
+  );
+}
+
+/** Активные и предстоящие подмены менеджера (баннер в хабе договора). */
+export function getActiveManagerSubstitutions(managerId: string): Promise<ManagerSubstitution[]> {
+  return request(
+    `${API_URL}/admin/salary/manager-substitutions/active?managerId=${encodeURIComponent(managerId)}`,
+    {},
+    'Не удалось загрузить подмены менеджера'
+  );
+}
+
+/** Создать подмену — только супер-админ. */
+export function createManagerSubstitution(
+  dto: ManagerSubstitutionPayload
+): Promise<ManagerSubstitution> {
+  return request(
+    `${API_URL}/admin/salary/manager-substitutions`,
+    { method: 'POST', body: JSON.stringify(dto) },
+    'Не удалось создать подмену'
+  );
+}
+
+/** Изменить подмену — только супер-админ. */
+export function updateManagerSubstitution(
+  id: string,
+  dto: Partial<ManagerSubstitutionPayload>
+): Promise<ManagerSubstitution> {
+  return request(
+    `${API_URL}/admin/salary/manager-substitutions/${id}`,
+    { method: 'PATCH', body: JSON.stringify(dto) },
+    'Не удалось изменить подмену'
+  );
+}
+
+/** Удалить подмену — только супер-админ. */
+export function deleteManagerSubstitution(id: string): Promise<{ ok: boolean }> {
+  return request(
+    `${API_URL}/admin/salary/manager-substitutions/${id}`,
+    { method: 'DELETE' },
+    'Не удалось удалить подмену'
   );
 }

@@ -10,11 +10,16 @@ import {
   useState,
 } from 'react';
 
+import { useAuth } from '@/features/auth/context/AuthContext';
 import {
   type ContractDocumentPackagePayment,
   type ContractDocumentPackagePaymentInput,
   createContractDocumentPackagePayment,
 } from '@/shared/api/admin-contract-document-packages';
+import {
+  type MoneyMovementManagerOption,
+  getMoneyMovements,
+} from '@/shared/api/crm/admin-money-movements';
 
 import { amountToRussianWords } from '../../../../core/amountToRussianWords';
 import { encodeFurniturePaymentLegNotes } from '../../../directions/furniture/furniturePaymentLeg';
@@ -89,6 +94,35 @@ export function usePackagePaymentsConduct({
   const [conductAmount, setConductAmount] = useState('');
   const [hubPaymentConductedNotice, setHubPaymentConductedNotice] = useState(false);
   const hubConductPrefillBasisRef = useRef<PackagePaymentBasisOptionKey | ''>('');
+
+  // Кого показывать в «Принял оплату»: сотрудники из справочника карточек
+  // менеджеров (тот же список, что в ДП и инкассации) плюс текущий пользователь.
+  const { user } = useAuth();
+  const [acceptorOptions, setAcceptorOptions] = useState<MoneyMovementManagerOption[]>([]);
+  const [acceptedByUserId, setAcceptedByUserId] = useState('');
+  useEffect(() => {
+    let cancelled = false;
+    getMoneyMovements({ page: 1, limit: 1 })
+      .then((res) => {
+        if (!cancelled) setAcceptorOptions(res.managers);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const currentUserName =
+    [user?.lastName, user?.firstName].filter(Boolean).join(' ').trim() || user?.email || '';
+  const acceptorChoices = useMemo(() => {
+    const base = [...acceptorOptions];
+    if (user && !base.some((o) => o.id === user.id)) {
+      base.unshift({ id: user.id, name: currentUserName || 'Текущий пользователь' });
+    }
+    return base.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+  }, [acceptorOptions, user, currentUserName]);
+  useEffect(() => {
+    if (user && !acceptedByUserId) setAcceptedByUserId(user.id);
+  }, [user, acceptedByUserId]);
 
   /** Поля только для режима «Изменить запись» в журнале (не трогаем contract.*). */
   const [draft, setDraft] = useState<{
@@ -231,12 +265,13 @@ export function usePackagePaymentsConduct({
     setConductAmount('');
     setHubBasisKey('');
     hubConductPrefillBasisRef.current = '';
+    setAcceptedByUserId(user?.id ?? '');
     setDraft((d) => ({
       ...d,
       paymentDate: new Date().toISOString().slice(0, 10),
       paymentForm: 'INVOICE',
     }));
-  }, []);
+  }, [user?.id]);
 
   const handleHubBasisChange = (key: PackagePaymentBasisOptionKey | '') => {
     setHubPaymentConductedNotice(false);
@@ -292,6 +327,9 @@ export function usePackagePaymentsConduct({
       paymentType: option.paymentType,
       basis: option.label,
     };
+    if (acceptedByUserId) {
+      body.acceptedByUserId = acceptedByUserId;
+    }
     if (option.addendumNumber != null) {
       body.addendumNumber = option.addendumNumber;
     }
@@ -341,6 +379,9 @@ export function usePackagePaymentsConduct({
       paymentType: apiFields.paymentType,
       basis: apiFields.basis || undefined,
     };
+    if (acceptedByUserId) {
+      body.acceptedByUserId = acceptedByUserId;
+    }
     if (apiFields.addendumNumber != null) {
       body.addendumNumber = apiFields.addendumNumber;
     }
@@ -368,6 +409,10 @@ export function usePackagePaymentsConduct({
     hubBasisKey,
     conductAmount,
     setConductAmount,
+    /** Сотрудник, фактически принявший оплату (по умолчанию — текущий пользователь). */
+    acceptedByUserId,
+    setAcceptedByUserId,
+    acceptorChoices,
     hubPaymentConductedNotice,
     hubConductDateReady,
     hubConductAllBasesDone,

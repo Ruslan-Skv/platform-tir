@@ -50,4 +50,12 @@ export class CreateContractDocumentPackagePaymentDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Сотрудник, фактически принявший оплату от заказчика (по умолчанию — текущий пользователь)',
+  })
+  @IsOptional()
+  @IsString()
+  acceptedByUserId?: string;
 }

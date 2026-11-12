@@ -35,6 +35,7 @@ export class SalaryMyService {
     const myRows = full.rows.filter(
       (r) =>
         r.managerId === userId ||
+        r.creditedManagers.some((c) => c.userId === userId) ||
         r.surveyorId === userId ||
         ledCategoryIds.has(r.categoryId) ||
         (isBrigadier && r.brigadierAmount > 0),
@@ -45,12 +46,23 @@ export class SalaryMyService {
     const vsNet = round2(ledCategories.reduce((s, v) => s + v.net, 0));
     const brigadierNet = isBrigadier ? (full.brigadier?.totalNet ?? 0) : 0;
 
-    // Расшифровка по договорам: роль и итоговая сумма по ней.
+    // Расшифровка по договорам: роль и итоговая сумма по ней. Доля менеджера —
+    // из creditedManagers: в период подмены чужие договоры начисляются подменяющему.
     const contracts = myRows
       .map((r) => {
-        const parts: Array<{ role: string; amount: number }> = [];
-        if (r.managerId === userId && r.managerAmount !== 0) {
-          parts.push({ role: 'менеджер', amount: r.managerAmount });
+        const parts: Array<{ role: string; amount: number; substitutedFor?: string | null }> = [];
+        const managerCredit = r.creditedManagers
+          .filter((c) => c.userId === userId)
+          .reduce((s, c) => s + c.amount, 0);
+        if (managerCredit !== 0) {
+          const substitutedFor = r.creditedManagers.find(
+            (c) => c.userId === userId && c.substitutedForManagerName,
+          )?.substitutedForManagerName;
+          parts.push({
+            role: 'менеджер',
+            amount: managerCredit,
+            substitutedFor: substitutedFor ?? null,
+          });
         }
         if (r.surveyorId === userId && r.surveyorAmount !== 0) {
           parts.push({ role: 'замерщик', amount: roundNet(r.surveyorAmount) });

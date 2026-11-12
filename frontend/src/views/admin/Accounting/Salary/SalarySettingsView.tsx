@@ -11,6 +11,8 @@ import dpStyles from '@/views/admin/CRM/MoneyMovements/MoneyMovements.module.css
 import { SalaryCategoryModal } from './SalaryCategoryModal';
 import styles from './SalaryPage.module.css';
 import { SalaryRateRuleModal } from './SalaryRateRuleModal';
+import { SalarySubstitutionsSection } from './SalarySubstitutionsSection';
+import { useManagerSubstitutions } from './hooks/useManagerSubstitutions';
 import type { SalarySettingsModel } from './hooks/useSalarySettings';
 import { SALARY_ROLE_OPTIONS, formatPercent } from './salary-page.constants';
 
@@ -39,6 +41,7 @@ export function SalarySettingsView({
     () => users.slice().sort((a, b) => userName(a).localeCompare(userName(b))),
     [users]
   );
+  const substitutionsModel = useManagerSubstitutions();
 
   const columns = useMemo(
     () => [
@@ -639,6 +642,9 @@ export function SalarySettingsView({
           emptyMessage="Направлений нет — добавьте первой кнопкой «+ Направление» в шапке раздела"
         />
       </div>
+
+      {/* Подмены менеджеров (отпуск/больничный) */}
+      <SalarySubstitutionsSection model={substitutionsModel} users={sortedUsers} />
 
       {/* Правила по офисам */}
       <div className={styles.tableBlock}>

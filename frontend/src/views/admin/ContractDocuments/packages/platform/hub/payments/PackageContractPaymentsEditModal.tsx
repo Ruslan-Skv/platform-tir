@@ -7,6 +7,7 @@ import {
   type ContractDocumentPackagePaymentForm,
   type ContractDocumentPackagePaymentPatch,
 } from '@/shared/api/admin-contract-document-packages';
+import type { MoneyMovementManagerOption } from '@/shared/api/crm/admin-money-movements';
 import { Modal } from '@/shared/ui/Modal';
 
 import cdBase from '../../../../styles/base.module.css';
@@ -19,6 +20,8 @@ export type PackageContractPaymentsEditModalProps = {
   payment: ContractDocumentPackagePayment | null;
   /** Пока PATCH летит на сервер — блокируем форму и кнопку «Сохранить». */
   saving: boolean;
+  /** Сотрудники для выбора «Принял оплату» (справочник карточек менеджеров). */
+  acceptorChoices: MoneyMovementManagerOption[];
   onClose: () => void;
   onSave: (patch: ContractDocumentPackagePaymentPatch) => void;
 };
@@ -28,6 +31,7 @@ type EditDraft = {
   amount: string;
   paymentForm: ContractDocumentPackagePaymentForm;
   basis: string;
+  acceptedByUserId: string;
 };
 
 function draftFromPayment(payment: ContractDocumentPackagePayment): EditDraft {
@@ -37,6 +41,7 @@ function draftFromPayment(payment: ContractDocumentPackagePayment): EditDraft {
     amount: Number.isFinite(amountNum) ? String(amountNum) : '',
     paymentForm: payment.paymentForm,
     basis: payment.basis ?? '',
+    acceptedByUserId: payment.recordedById ?? '',
   };
 }
 
@@ -45,11 +50,13 @@ const EMPTY_DRAFT: EditDraft = {
   amount: '',
   paymentForm: 'CASH',
   basis: '',
+  acceptedByUserId: '',
 };
 
 export function PackageContractPaymentsEditModal({
   payment,
   saving,
+  acceptorChoices,
   onClose,
   onSave,
 }: PackageContractPaymentsEditModalProps) {
@@ -81,6 +88,14 @@ export function PackageContractPaymentsEditModal({
       payment.recordedBy.email
     : null;
 
+  // Текущий акцептор может быть не в справочнике карточек (уволился) — показываем его.
+  const acceptorOptions =
+    payment.recordedById &&
+    !acceptorChoices.some((o) => o.id === payment.recordedById) &&
+    recordedByName
+      ? [{ id: payment.recordedById, name: recordedByName }, ...acceptorChoices]
+      : acceptorChoices;
+
   const handleSave = () => {
     if (!formComplete || saving) return;
     onSave({
@@ -88,6 +103,7 @@ export function PackageContractPaymentsEditModal({
       amount: Math.round(parsedAmount * 100) / 100,
       paymentForm: draft.paymentForm,
       basis: draft.basis.trim() ? draft.basis.trim() : null,
+      acceptedByUserId: draft.acceptedByUserId || null,
     });
   };
 
@@ -153,6 +169,24 @@ export function PackageContractPaymentsEditModal({
               {Object.entries(PACKAGE_PAYMENT_FORM_LABELS).map(([k, label]) => (
                 <option key={k} value={k}>
                   {label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div
+            className={cdBase.field}
+            title="Кто фактически принял деньги от заказчика — по нему считается касса в ДП"
+          >
+            <label htmlFor="pay_edit_accepted_by">Принял оплату</label>
+            <select
+              id="pay_edit_accepted_by"
+              value={draft.acceptedByUserId}
+              disabled={saving}
+              onChange={(e) => setDraft((d) => ({ ...d, acceptedByUserId: e.target.value }))}
+            >
+              {acceptorOptions.map((opt) => (
+                <option key={opt.id} value={opt.id}>
+                  {opt.name}
                 </option>
               ))}
             </select>

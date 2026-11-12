@@ -1,4 +1,9 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  ManagerSubstitutionPeriod,
+  substituteManagerIdAt,
+  substitutionsOverlapping,
+} from '../../../common/utils/manager-substitutions.helper';
 import { PrismaService } from '../../../database/prisma.service';
 import { SalaryBonusesService } from './salary-bonuses.service';
 import { buildSalaryCalcRows, CONTRACT_CALC_INCLUDE } from './salary-calc-rows';
@@ -51,8 +56,36 @@ export class SalaryCalculationService {
       throw new BadRequestException('Начало периода не может быть позже конца');
     }
 
+    // Подмены менеджеров периода (отпуск/больничный): з/п по договорам
+    // отсутствующего менеджера начисляется подменяющему.
+    const allSubstitutions = await this.prisma.managerSubstitution.findMany({
+      include: {
+        absentManager: { select: { id: true, email: true, firstName: true, lastName: true } },
+        substituteManager: { select: { id: true, email: true, firstName: true, lastName: true } },
+      },
+    });
+    const subPeriods = substitutionsOverlapping(
+      allSubstitutions.map((s) => ({
+        absentManagerId: s.absentManagerId,
+        substituteManagerId: s.substituteManagerId,
+        dateFrom: s.dateFrom,
+        dateTo: s.dateTo,
+      })),
+      from,
+      to,
+    );
     // Фильтр по сотруднику — договоры, где он менеджер, замерщик или ведущий
-    // специалист направления (как «Менеджер» в ДП).
+    // специалист направления (как «Менеджер» в ДП). Подменяющий видит и договоры
+    // отсутствующего менеджера: их з/п в период подмены — ему.
+    const absentIdsForEmployee = input.employeeId
+      ? [
+          ...new Set(
+            subPeriods
+              .filter((s) => s.substituteManagerId === input.employeeId)
+              .map((s) => s.absentManagerId),
+          ),
+        ]
+      : [];
     const employeeFilter = input.employeeId
       ? [
           {
@@ -60,6 +93,9 @@ export class SalaryCalculationService {
               { managerId: input.employeeId },
               { surveyorId: input.employeeId },
               { category: { leadSpecialistUserId: input.employeeId } },
+              ...(absentIdsForEmployee.length > 0
+                ? [{ managerId: { in: absentIdsForEmployee } }]
+                : []),
             ],
           },
         ]
@@ -170,6 +206,73 @@ export class SalaryCalculationService {
       paidByPackage,
     });
 
+    // --- Подмены менеджеров (отпуск/больничный): в период подмены з/п по договорам
+    // отсутствующего менеджера начисляется подменяющему. Атрибуция — по датам
+    // событий (заключение/закрытие/Д/с): часть события в периоде подмены уходит
+    // подменяющему, вне периода — остаётся менеджеру договора. ---
+
+    const substitutionNameById = new Map<string, string>();
+    for (const s of allSubstitutions) {
+      substitutionNameById.set(
+        s.absentManagerId,
+        [s.absentManager.lastName, s.absentManager.firstName].filter(Boolean).join(' ').trim() ||
+          s.absentManager.email,
+      );
+      substitutionNameById.set(
+        s.substituteManagerId,
+        [s.substituteManager.lastName, s.substituteManager.firstName]
+          .filter(Boolean)
+          .join(' ')
+          .trim() || s.substituteManager.email,
+      );
+    }
+    /** Кому уходит сумма события (доля з/п менеджера) на указанную дату. */
+    const creditTargetAt = (
+      managerId: string | null,
+      dateIso: string | null,
+    ): { userId: string | null; substitutedForId: string | null } => {
+      const date = dateIso ? new Date(dateIso) : null;
+      const subId = date ? substituteManagerIdAt(subPeriods, managerId, date) : null;
+      return subId
+        ? { userId: subId, substitutedForId: managerId }
+        : { userId: managerId, substitutedForId: null };
+    };
+    for (const row of rows) {
+      const credits = new Map<
+        string,
+        { userId: string | null; substitutedForId: string | null; amount: number }
+      >();
+      const addCredit = (dateIso: string | null, amount: number) => {
+        if (amount === 0) return;
+        const target = creditTargetAt(row.managerId, dateIso);
+        const key = `${target.userId ?? 'null'}|${target.substitutedForId ?? ''}`;
+        const agg = credits.get(key) ?? { ...target, amount: 0 };
+        agg.amount = round2(agg.amount + amount);
+        credits.set(key, agg);
+      };
+      addCredit(row.signDate, row.parts.sign);
+      addCredit(row.closedAt, row.parts.close);
+      for (const bill of row.extraBills) {
+        addCredit(bill.date, round2(bill.amount * (row.percents.manager / 100)));
+      }
+      row.creditedManagers = [...credits.values()].map((c) => ({
+        userId: c.userId,
+        userName:
+          c.substitutedForId || (c.userId !== row.managerId && c.userId != null)
+            ? (substitutionNameById.get(c.userId ?? '') ?? row.managerName)
+            : row.managerName,
+        amount: c.amount,
+        /** Договор подменного менеджера: за кого начислена сумма. */
+        substitutedForManagerId: c.substitutedForId,
+        substitutedForManagerName: c.substitutedForId
+          ? (substitutionNameById.get(c.substitutedForId) ?? null)
+          : null,
+      }));
+      row.substitutionApplied = row.creditedManagers.some((c) => c.substitutedForManagerId);
+    }
+    /** Периоды подмен для переатрибуции продаж в премиях (без имён). */
+    const bonusSubstitutions: ManagerSubstitutionPeriod[] = subPeriods;
+
     // --- Оклады (1/N за день, удержания за режим, автозакрытия и прогулы) и премии
     // (места по продажам, план продаж, «QR + Н») — выделенные сервисы. ---
 
@@ -198,6 +301,7 @@ export class SalaryCalculationService {
         settings: globalSetting,
         rows,
         employeeId: input.employeeId,
+        substitutions: bonusSubstitutions,
       }),
     ]);
     const {
@@ -245,16 +349,22 @@ export class SalaryCalculationService {
     >();
 
     for (const row of rows) {
-      // Личная з/п менеджера — по договорам с известным менеджером.
-      if (row.managerName) {
-        const key = row.managerId ?? `name:${row.managerName}`;
+      // Личная з/п менеджера — по договорам с известным менеджером. В период
+      // подмены доли отсутствующего начисляются подменяющему (creditedManagers).
+      const creditParts =
+        row.creditedManagers.length > 0
+          ? row.creditedManagers
+          : [{ userId: row.managerId, userName: row.managerName, amount: row.managerAmount }];
+      for (const credit of creditParts) {
+        if (!credit.userName) continue;
+        const key = credit.userId ?? `name:${credit.userName}`;
         const agg = byManager.get(key) ?? {
-          managerId: row.managerId,
-          managerName: row.managerName,
+          managerId: credit.userId,
+          managerName: credit.userName,
           amount: 0,
           contractsCount: 0,
         };
-        agg.amount = round2(agg.amount + row.managerAmount);
+        agg.amount = round2(agg.amount + credit.amount);
         agg.contractsCount += 1;
         byManager.set(key, agg);
       }

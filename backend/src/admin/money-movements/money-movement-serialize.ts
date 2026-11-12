@@ -6,12 +6,16 @@ export const DP_TRASH_RETENTION_MS = DP_TRASH_RETENTION_DAYS * 24 * 60 * 60 * 10
 
 /** Строка журнала ДП с менеджером — как её отдают списки и ручные записи. */
 export type MoneyMovementRowWithManager = Prisma.MoneyMovementGetPayload<{
-  include: { manager: { select: { id: true; email: true; firstName: true; lastName: true } } };
+  include: {
+    manager: { select: { id: true; email: true; firstName: true; lastName: true } };
+    acceptedBy: { select: { id: true; email: true; firstName: true; lastName: true } };
+  };
 }>;
 
 export type MoneyMovementRowWithUsers = Prisma.MoneyMovementGetPayload<{
   include: {
     manager: { select: { id: true; email: true; firstName: true; lastName: true } };
+    acceptedBy: { select: { id: true; email: true; firstName: true; lastName: true } };
     createdBy: { select: { id: true; email: true; firstName: true; lastName: true } };
     deletedBy: { select: { id: true; email: true; firstName: true; lastName: true } };
   };
@@ -67,6 +71,11 @@ export function serializeMoneyMovement(row: MoneyMovementRowWithManager) {
             row.manager.email,
         }
       : null,
+    /** Сотрудник, фактически принявший оплату (для авто-записей — записавший оплату);
+     *  null — совпадает с менеджером движения или ручная проводка. */
+    acceptedBy: serializeMovementUser(row.acceptedBy),
+    /** Оплату по чужому договору принял другой сотрудник (не менеджер движения). */
+    acceptedByOther: !!row.acceptedById && !!row.managerId && row.acceptedById !== row.managerId,
     /** Автор ручной записи — по нему сотрудник определяет «свои» записи для удаления. */
     createdById: row.createdById,
     createdAt: row.createdAt.toISOString(),

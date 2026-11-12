@@ -22,6 +22,9 @@ export type PackageContractPaymentsConductFormSectionProps = Pick<
   | 'hubBasisKey'
   | 'conductAmount'
   | 'setConductAmount'
+  | 'acceptedByUserId'
+  | 'setAcceptedByUserId'
+  | 'acceptorChoices'
   | 'hubConductDateReady'
   | 'hubConductAllBasesDone'
   | 'hubConductFormComplete'
@@ -49,6 +52,9 @@ export function PackageContractPaymentsConductFormSection({
   hubBasisKey,
   conductAmount,
   setConductAmount,
+  acceptedByUserId,
+  setAcceptedByUserId,
+  acceptorChoices,
   hubConductDateReady,
   hubConductAllBasesDone,
   hubConductFormComplete,
@@ -93,7 +99,9 @@ export function PackageContractPaymentsConductFormSection({
         {!isHubConductLayout ? <h3 className={cdBase.sectionTitle}>Добавить оплату</h3> : null}
         {isHubConductLayout ? (
           <div className={`${measurementBlankStyles.blankSheet} ${cdBase.paymentsHubConductBlank}`}>
-            <div className={`${cdBase.paymentsFormHubRow} ${cdBase.paymentsFormHubRowCompact}`}>
+            <div
+              className={`${cdBase.paymentsFormHubRow} ${cdBase.paymentsFormHubRowCompact} ${cdBase.paymentsFormHubRowPayment}`}
+            >
               <div
                 className={`${cdBase.paymentsHubConductField} ${cdBase.paymentsFormHubDateField}`}
               >
@@ -162,6 +170,29 @@ export function PackageContractPaymentsConductFormSection({
                   {Object.entries(PACKAGE_PAYMENT_FORM_LABELS).map(([k, label]) => (
                     <option key={k} value={k}>
                       {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div
+                className={`${cdBase.paymentsHubConductField} ${cdBase.paymentsFormHubFormField}`}
+                title="Кто фактически принял деньги от заказчика — по нему считается касса в ДП и колонка «Принял оплату». По умолчанию — вы."
+              >
+                <label
+                  className={`${measurementBlankStyles.label} ${cdBase.paymentsHubConductLabel}`}
+                  htmlFor="pay_tab_accepted_by"
+                >
+                  Принял оплату
+                </label>
+                <select
+                  id="pay_tab_accepted_by"
+                  className={`${measurementBlankStyles.select} ${cdBase.paymentsHubConductControl}`}
+                  value={acceptedByUserId}
+                  onChange={(e) => setAcceptedByUserId(e.target.value)}
+                >
+                  {(acceptorChoices ?? []).map((opt) => (
+                    <option key={opt.id} value={opt.id}>
+                      {opt.name}
                     </option>
                   ))}
                 </select>
@@ -271,6 +302,23 @@ export function PackageContractPaymentsConductFormSection({
                   {Object.entries(PACKAGE_PAYMENT_FORM_LABELS).map(([k, label]) => (
                     <option key={k} value={k}>
                       {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div
+                className={cdBase.field}
+                title="Кто фактически принял деньги от заказчика — по нему считается касса в ДП. По умолчанию — вы."
+              >
+                <label htmlFor="pay_tab_accepted_by">Принял оплату</label>
+                <select
+                  id="pay_tab_accepted_by"
+                  value={acceptedByUserId}
+                  onChange={(e) => setAcceptedByUserId(e.target.value)}
+                >
+                  {(acceptorChoices ?? []).map((opt) => (
+                    <option key={opt.id} value={opt.id}>
+                      {opt.name}
                     </option>
                   ))}
                 </select>

@@ -48,6 +48,8 @@ export class ManagerIncassationsService {
    * внесения записей не важен: оплаты задним числом и правки лишь меняют
    * текущий остаток, а инкассация уменьшает его ровно на сданную сумму —
    * недосдача не «списывается», а остаётся в остатке.
+   * Наличные, принятые сотрудником по чужому договору, лежат в его кассе
+   * (cashHolderId), а не в кассе менеджера договора.
    */
   async getIncassationCashBalance(managerId: string) {
     const [last, manager, ledger] = await Promise.all([
@@ -91,12 +93,14 @@ export class ManagerIncassationsService {
     );
     if (managerIds.length === 0) return balances;
 
-    // Удалённые в корзину записи кассу менеджера не пополняют.
+    // Удалённые в корзину записи кассу менеджера не пополняют. Наличные
+    // группируем по держателю кассы: принятые другим сотрудником по чужому
+    // договору — в кассе принявшего (cashHolderId), а не менеджера договора.
     const [paymentRows, refundRows, incassationRows] = await Promise.all([
       this.prisma.moneyMovement.groupBy({
-        by: ['managerId'],
+        by: ['cashHolderId'],
         where: {
-          managerId: { in: managerIds },
+          cashHolderId: { in: managerIds },
           paymentForm: PaymentForm.CASH,
           deletedAt: null,
           paymentType: { not: PaymentType.REFUND },
@@ -104,9 +108,9 @@ export class ManagerIncassationsService {
         _sum: { amount: true },
       }),
       this.prisma.moneyMovement.groupBy({
-        by: ['managerId'],
+        by: ['cashHolderId'],
         where: {
-          managerId: { in: managerIds },
+          cashHolderId: { in: managerIds },
           paymentForm: PaymentForm.CASH,
           deletedAt: null,
           paymentType: PaymentType.REFUND,
@@ -121,12 +125,17 @@ export class ManagerIncassationsService {
     ]);
 
     // Возвраты хранятся положительной суммой, инкассации — тоже: вычитаем их из кассы.
+    // У движений касса — по держателю (cashHolderId), у инкассаций — по менеджеру.
     const apply = (
-      rows: { managerId: string | null; _sum: { amount: Prisma.Decimal | null } }[],
+      rows: Array<{
+        cashHolderId?: string | null;
+        managerId?: string | null;
+        _sum: { amount: Prisma.Decimal | null };
+      }>,
       sign: 1 | -1,
     ) => {
       for (const row of rows) {
-        const id = row.managerId;
+        const id = row.cashHolderId ?? row.managerId;
         if (!id) continue;
         const current = balances.get(id);
         if (current === undefined) continue;
@@ -142,13 +151,14 @@ export class ManagerIncassationsService {
   /**
    * Слагаемые кассы менеджера: оплаты и ручные проводки (изъятия — отрицательной
    * суммой), возвраты (положительной) и все инкассации. Остаток = оплаты −
-   * возвраты − инкассации.
+   * возвраты − инкассации. Движения — по держателю кассы (cashHolderId):
+   * принятые сотрудником наличные по чужому договору лежат у него.
    */
   private async cashLedger(managerId: string) {
     const [paymentAgg, refundAgg, incassationAgg] = await Promise.all([
       this.prisma.moneyMovement.aggregate({
         where: {
-          managerId,
+          cashHolderId: managerId,
           paymentForm: PaymentForm.CASH,
           deletedAt: null,
           paymentType: { not: PaymentType.REFUND },
@@ -157,7 +167,7 @@ export class ManagerIncassationsService {
       }),
       this.prisma.moneyMovement.aggregate({
         where: {
-          managerId,
+          cashHolderId: managerId,
           paymentForm: PaymentForm.CASH,
           deletedAt: null,
           paymentType: PaymentType.REFUND,

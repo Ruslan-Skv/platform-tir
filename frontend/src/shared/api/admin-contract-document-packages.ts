@@ -149,6 +149,9 @@ export interface ContractDocumentPackagePaymentInput {
   addendumNumber?: number;
   basis?: string;
   notes?: string;
+  /** Сотрудник, фактически принявший оплату (по умолчанию — текущий пользователь):
+   *  касса ДП и колонка «Принял оплату» следуют за ним. */
+  acceptedByUserId?: string;
 }
 
 /** PATCH оплаты: допускаются null для сброса текстов и номера Д/с. */
@@ -160,6 +163,7 @@ export type ContractDocumentPackagePaymentPatch = Partial<{
   addendumNumber: number | null;
   basis: string | null;
   notes: string | null;
+  acceptedByUserId: string | null;
 }>;
 
 /** Запись журнала авансов мастеров по договору (вкладка «Авансы» в заказ-нарядах). */

@@ -78,6 +78,24 @@ export class ContractDocumentPackagePaymentsService {
     }
   }
 
+  /** Принявший оплату — обычно текущий пользователь; явно указывается, когда
+   *  запись вносит один сотрудник, а оплату от заказчика принял другой. */
+  private async resolveAcceptorId(
+    acceptedByUserId: string | null | undefined,
+    currentUserId?: string | null,
+  ) {
+    const explicit = acceptedByUserId?.trim() || null;
+    if (!explicit) return currentUserId ?? null;
+    const user = await this.prisma.user.findUnique({
+      where: { id: explicit },
+      select: { id: true },
+    });
+    if (!user) {
+      throw new BadRequestException('Указанный сотрудник, принявший оплату, не найден');
+    }
+    return explicit;
+  }
+
   async list(packageId: string) {
     await this.assertPackageExists(packageId);
     const rows = await this.prisma.contractDocumentPackagePayment.findMany({
@@ -111,6 +129,7 @@ export class ContractDocumentPackagePaymentsService {
     } else {
       addendumNumber = null;
     }
+    const acceptorId = await this.resolveAcceptorId(dto.acceptedByUserId, recordedById);
     const created = await this.prisma.contractDocumentPackagePayment.create({
       data: {
         packageId,
@@ -121,7 +140,7 @@ export class ContractDocumentPackagePaymentsService {
         addendumNumber,
         basis: dto.basis?.trim() ? dto.basis.trim() : null,
         notes: dto.notes?.trim() ? dto.notes.trim() : null,
-        recordedById: recordedById ?? null,
+        recordedById: acceptorId,
       },
       include: {
         recordedBy: {
@@ -158,6 +177,11 @@ export class ContractDocumentPackagePaymentsService {
     data.addendumNumber = nextAddendum;
     if (dto.basis !== undefined) data.basis = dto.basis?.trim() ? dto.basis.trim() : null;
     if (dto.notes !== undefined) data.notes = dto.notes?.trim() ? dto.notes.trim() : null;
+    if (dto.acceptedByUserId !== undefined) {
+      // Смену принявшего оплату правит супер-админ: касса в ДП следует за акцептором.
+      const acceptorId = await this.resolveAcceptorId(dto.acceptedByUserId, existing.recordedById);
+      data.recordedBy = acceptorId ? { connect: { id: acceptorId } } : { disconnect: true };
+    }
 
     const updated = await this.prisma.contractDocumentPackagePayment.update({
       where: { id: paymentId },

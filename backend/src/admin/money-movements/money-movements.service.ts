@@ -5,6 +5,10 @@ import {
   DP_MANUAL_DIRECTION_OTHER,
   PACKAGE_DIRECTION_REGISTRY,
 } from '../../common/config/package-direction-registry.config';
+import {
+  ManagerSubstitutionPeriod,
+  substituteManagerIdAt,
+} from '../../common/utils/manager-substitutions.helper';
 import { PrismaService } from '../../database/prisma.service';
 import { computePackageEffectiveManagerUserId } from '../contract-document-packages/list-pipeline/package-list-pipeline-status';
 import { ManagerIncassationsService } from './manager-incassations.service';
@@ -69,6 +73,13 @@ type PackagePaymentRow = {
   notes: string | null;
   recordedById: string | null;
   createdAt: Date;
+};
+
+/** Итоги личных продаж по менеджерам для детальной статистики ДП. */
+type ManagerSalesAgg = {
+  manager: Array<{ managerId: string | null; sum: number }>;
+  directionManager: Array<{ direction: string | null; managerId: string | null; sum: number }>;
+  managerIds: Set<string | null>;
 };
 
 @Injectable()
@@ -170,45 +181,55 @@ export class MoneyMovementsService {
       ? where
       : { ...where, direction: { not: DP_MANUAL_DIRECTION_OTHER } };
 
-    const [
-      rawData,
-      total,
-      sum,
-      directionSums,
-      managerSumsRaw,
-      directionManagerSumsRaw,
-      signatoryUserIds,
-    ] = await Promise.all([
-      this.prisma.moneyMovement.findMany({
-        where,
-        include: {
-          manager: { select: { id: true, email: true, firstName: true, lastName: true } },
-          bankReconciliationLinks: { select: { amount: true, mismatchAmount: true } },
-        },
-        orderBy: [{ paymentDate: 'desc' }, { performedAt: 'desc' }],
-        skip,
-        take,
-      }),
-      this.prisma.moneyMovement.count({ where }),
-      this.prisma.moneyMovement.aggregate({ where: salesWhere, _sum: { amount: true } }),
-      // Итоги по направлениям за тот же период/фильтры — для блока итогов над фильтрами.
-      // Без фильтра направления включаем и «Прочее»: плитка показывает эти движения,
-      // но процент к продажам для неё на фронте не считается.
-      this.prisma.moneyMovement.groupBy({ by: ['direction'], where, _sum: { amount: true } }),
-      // Итоги по менеджерам — для графиков детальной статистики.
-      this.prisma.moneyMovement.groupBy({
-        by: ['managerId'],
-        where: salesWhere,
-        _sum: { amount: true },
-      }),
-      // Итоги «направление × менеджер» — кто из менеджеров лидер в каждом направлении.
-      this.prisma.moneyMovement.groupBy({
-        by: ['direction', 'managerId'],
-        where: salesWhere,
-        _sum: { amount: true },
-      }),
-      this.getSignatoryProfileUserIds(),
-    ]);
+    // Подмены менеджеров (отпуск/больничный): пометки «подмена» у записей и
+    // переатрибуция личных продаж подменяющему в период подмены.
+    const substitutions = await this.prisma.managerSubstitution.findMany({
+      include: {
+        absentManager: { select: { id: true, email: true, firstName: true, lastName: true } },
+        substituteManager: { select: { id: true, email: true, firstName: true, lastName: true } },
+      },
+      orderBy: { dateFrom: 'asc' },
+    });
+    const subPeriods = substitutions.map((s) => ({
+      absentManagerId: s.absentManagerId,
+      substituteManagerId: s.substituteManagerId,
+      dateFrom: s.dateFrom,
+      dateTo: s.dateTo,
+    }));
+
+    const [rawData, total, sum, directionSums, managerSalesAgg, signatoryUserIds, cashHolderRows] =
+      await Promise.all([
+        this.prisma.moneyMovement.findMany({
+          where,
+          include: {
+            manager: { select: { id: true, email: true, firstName: true, lastName: true } },
+            acceptedBy: { select: { id: true, email: true, firstName: true, lastName: true } },
+            bankReconciliationLinks: { select: { amount: true, mismatchAmount: true } },
+          },
+          orderBy: [{ paymentDate: 'desc' }, { performedAt: 'desc' }],
+          skip,
+          take,
+        }),
+        this.prisma.moneyMovement.count({ where }),
+        this.prisma.moneyMovement.aggregate({ where: salesWhere, _sum: { amount: true } }),
+        // Итоги по направлениям за тот же период/фильтры — для блока итогов над фильтрами.
+        // Без фильтра направления включаем и «Прочее»: плитка показывает эти движения,
+        // но процент к продажам для неё на фронте не считается.
+        this.prisma.moneyMovement.groupBy({ by: ['direction'], where, _sum: { amount: true } }),
+        // Итоги по менеджерам: без подмен — обычные groupBy; с подменами атрибуция
+        // зависит от даты платежа (договоры отсутствующего — подменяющему), агрегируем в коде.
+        substitutions.length > 0
+          ? this.managerSalesSumsWithSubstitutions(salesWhere, subPeriods)
+          : this.managerSalesSums(salesWhere),
+        this.getSignatoryProfileUserIds(),
+        // Держатели кассы: наличные, принятые другим сотрудником по чужому договору,
+        // лежат в его кассе — плитки остатков должны их показывать.
+        this.prisma.moneyMovement.groupBy({
+          by: ['cashHolderId'],
+          where: { paymentForm: PaymentForm.CASH, deletedAt: null, cashHolderId: { not: null } },
+          _count: { _all: true },
+        }),
+      ]);
 
     const managerRows = signatoryUserIds.length
       ? await this.prisma.user.findMany({
@@ -225,11 +246,9 @@ export class MoneyMovementsService {
       .sort((a, b) => a.name.localeCompare(b.name, 'ru'));
 
     // Менеджер движения может быть не из справочника карточек — берём имена из users.
-    const statsManagerIds = [
-      ...new Set(
-        managerSumsRaw.map((row) => row.managerId).filter((id): id is string => Boolean(id)),
-      ),
-    ];
+    const statsManagerIds = [...managerSalesAgg.managerIds].filter((id): id is string =>
+      Boolean(id),
+    );
     const statsManagerUsers = statsManagerIds.length
       ? await this.prisma.user.findMany({
           where: { id: { in: statsManagerIds } },
@@ -242,39 +261,75 @@ export class MoneyMovementsService {
         [u.lastName, u.firstName].filter(Boolean).join(' ').trim() || u.email,
       ]),
     );
-    const managerSums = managerSumsRaw
+    // Имена участников подмен (бейджи «подмена» и суммы подменяющего).
+    const substitutionNameById = new Map<string, string>();
+    for (const s of substitutions) {
+      substitutionNameById.set(
+        s.absentManagerId,
+        [s.absentManager.lastName, s.absentManager.firstName].filter(Boolean).join(' ').trim() ||
+          s.absentManager.email,
+      );
+      substitutionNameById.set(
+        s.substituteManagerId,
+        [s.substituteManager.lastName, s.substituteManager.firstName]
+          .filter(Boolean)
+          .join(' ')
+          .trim() || s.substituteManager.email,
+      );
+    }
+    const managerNameById = (id: string | null) =>
+      id
+        ? (substitutionNameById.get(id) ?? statsManagerNameById.get(id) ?? 'Неизвестный менеджер')
+        : 'Без менеджера';
+
+    const managerSums = managerSalesAgg.manager
       .map((row) => ({
         managerId: row.managerId,
-        name: row.managerId
-          ? (statsManagerNameById.get(row.managerId) ?? 'Неизвестный менеджер')
-          : 'Без менеджера',
-        sum: Number(row._sum.amount ?? 0),
+        name: managerNameById(row.managerId),
+        sum: row.sum,
       }))
       .sort((a, b) => b.sum - a.sum);
 
-    const directionManagerSums = directionManagerSumsRaw
+    const directionManagerSums = managerSalesAgg.directionManager
       .map((row) => ({
         direction: row.direction,
         managerId: row.managerId,
-        name: row.managerId
-          ? (statsManagerNameById.get(row.managerId) ?? 'Неизвестный менеджер')
-          : 'Без менеджера',
-        sum: Number(row._sum.amount ?? 0),
+        name: managerNameById(row.managerId),
+        sum: row.sum,
       }))
       .sort((a, b) => b.sum - a.sum);
 
     // Наличные каждого менеджера к инкассации на текущий момент — снапшот кассы,
     // от фильтров периода не зависит (плитки менеджеров в блоке итогов).
-    const balanceManagerIds = [...new Set([...signatoryUserIds, ...statsManagerIds])];
+    const cashHolderIds = cashHolderRows
+      .map((row) => row.cashHolderId)
+      .filter((id): id is string => Boolean(id));
+    const balanceManagerIds = [
+      ...new Set([...signatoryUserIds, ...statsManagerIds, ...cashHolderIds]),
+    ];
     const cashBalances = await this.incassations.getCashBalances(balanceManagerIds);
 
     return {
-      data: rawData.map((row) => ({
-        ...serializeMoneyMovement(row),
-        /** Оплата полностью сверена с поступлением банка (наличные и переводы
-         *  на ЛК не сверяются — у них ручная сверка супер-админом). */
-        reconciled: this.isMovementReconciled(row),
-      })),
+      data: rawData.map((row) => {
+        // Активная подмена менеджера движения на дату платежа — бейдж «подмена».
+        const substituteId = substituteManagerIdAt(subPeriods, row.managerId, row.paymentDate);
+        return {
+          ...serializeMoneyMovement(row),
+          /** Оплата полностью сверена с поступлением банка (наличные и переводы
+           *  на ЛК не сверяются — у них ручная сверка супер-админом). */
+          reconciled: this.isMovementReconciled(row),
+          substitution: substituteId
+            ? {
+                absentManagerId: row.managerId,
+                absentManagerName:
+                  substitutionNameById.get(row.managerId ?? '') ?? 'Неизвестный менеджер',
+                substituteManagerId: substituteId,
+                substituteManagerName:
+                  substitutionNameById.get(substituteId) ?? 'Неизвестный менеджер',
+              }
+            : null,
+        };
+      }),
       total,
       page,
       limit: take,
@@ -291,6 +346,78 @@ export class MoneyMovementsService {
         balance: balance.toString(),
       })),
       managers,
+    };
+  }
+
+  /** Итоги личных продаж по менеджерам (без подмен) — группировка в БД. */
+  private async managerSalesSums(
+    salesWhere: Prisma.MoneyMovementWhereInput,
+  ): Promise<ManagerSalesAgg> {
+    const [managerRows, directionManagerRows] = await Promise.all([
+      this.prisma.moneyMovement.groupBy({
+        by: ['managerId'],
+        where: salesWhere,
+        _sum: { amount: true },
+      }),
+      this.prisma.moneyMovement.groupBy({
+        by: ['direction', 'managerId'],
+        where: salesWhere,
+        _sum: { amount: true },
+      }),
+    ]);
+    return {
+      manager: managerRows.map((row) => ({
+        managerId: row.managerId,
+        sum: Number(row._sum.amount ?? 0),
+      })),
+      directionManager: directionManagerRows.map((row) => ({
+        direction: row.direction,
+        managerId: row.managerId,
+        sum: Number(row._sum.amount ?? 0),
+      })),
+      managerIds: new Set(managerRows.map((row) => row.managerId)),
+    };
+  }
+
+  /** Итоги личных продаж по менеджерам с подменами: на дату платежа договоры
+   *  отсутствующего менеджера засчитываются подменяющему. Копейки агрегируем
+   *  целыми, чтобы не накапливать погрешность float. */
+  private async managerSalesSumsWithSubstitutions(
+    salesWhere: Prisma.MoneyMovementWhereInput,
+    subPeriods: ManagerSubstitutionPeriod[],
+  ): Promise<ManagerSalesAgg> {
+    const rows = await this.prisma.moneyMovement.findMany({
+      where: salesWhere,
+      select: { managerId: true, direction: true, amount: true, paymentDate: true },
+    });
+    const managerKopecks = new Map<string | null, number>();
+    const directionKopecks = new Map<string, Map<string | null, number>>();
+    for (const row of rows) {
+      const effectiveId =
+        substituteManagerIdAt(subPeriods, row.managerId, row.paymentDate) ?? row.managerId;
+      const kopecks = Math.round(Number(row.amount) * 100);
+      managerKopecks.set(effectiveId, (managerKopecks.get(effectiveId) ?? 0) + kopecks);
+      const directionKey = row.direction ?? '';
+      let byManager = directionKopecks.get(directionKey);
+      if (!byManager) {
+        byManager = new Map();
+        directionKopecks.set(directionKey, byManager);
+      }
+      byManager.set(effectiveId, (byManager.get(effectiveId) ?? 0) + kopecks);
+    }
+    return {
+      manager: [...managerKopecks.entries()].map(([managerId, kopecks]) => ({
+        managerId,
+        sum: kopecks / 100,
+      })),
+      directionManager: [...directionKopecks.entries()].flatMap(([direction, byManager]) =>
+        [...byManager.entries()].map(([managerId, kopecks]) => ({
+          direction: direction || null,
+          managerId,
+          sum: kopecks / 100,
+        })),
+      ),
+      managerIds: new Set(managerKopecks.keys()),
     };
   }
 
@@ -455,6 +582,11 @@ export class MoneyMovementsService {
         ? await this.prisma.office.findUnique({ where: { id: officeId }, select: { name: true } })
         : null;
 
+      const managerId = this.resolveMovementManagerId(pkg, payment);
+      // Принявший оплату — записавший её сотрудник: наличные лежат в его кассе,
+      // даже когда договор ведёт другой менеджер (другой офис / подмена).
+      const acceptedById = payment.recordedById ?? null;
+
       await this.prisma.moneyMovement.create({
         data: {
           sourceId: payment.id,
@@ -467,7 +599,9 @@ export class MoneyMovementsService {
           addendumNumber: payment.addendumNumber,
           basis: payment.basis,
           notes: payment.notes,
-          managerId: this.resolveMovementManagerId(pkg, payment),
+          managerId,
+          acceptedById,
+          cashHolderId: acceptedById ?? (managerId || null),
           office: office?.name ?? null,
           contractNumber: contractNumberFromFormData(pkg?.formData) ?? null,
           customerName:
@@ -517,6 +651,7 @@ export class MoneyMovementsService {
         select: { responsibleManagerId: true, createdById: true, formData: true },
       });
       const managerId = this.resolveMovementManagerId(pkg, payment);
+      const acceptedById = payment.recordedById ?? null;
       const existing = await this.prisma.moneyMovement.findUnique({
         where: { sourceId: payment.id },
         select: { id: true },
@@ -537,6 +672,9 @@ export class MoneyMovementsService {
           notes: payment.notes,
           // Менеджер — производное данных договора: правка оплаты поддерживает его актуальным.
           ...(managerId ? { managerId } : {}),
+          // Принявший оплату (и чья касса) следует за акцептором из записи оплаты.
+          acceptedById,
+          cashHolderId: acceptedById ?? (managerId || null),
         },
       });
       this.salesTotalsNotify.onSalesChanged();

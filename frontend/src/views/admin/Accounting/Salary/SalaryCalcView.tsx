@@ -1274,9 +1274,36 @@ function ContractsTable({ result }: { result: SalaryCalcResult }) {
             key: 'managerAmount',
             title: 'Менеджеру',
             sortable: true,
-            render: (r) => (
-              <span className={dpStyles.amountCell}>{formatMoney(r.managerAmount)}</span>
-            ),
+            render: (r) => {
+              // Подмена (отпуск/больничный): часть/вся сумма начислена подменяющему.
+              const credits = r.creditedManagers ?? [];
+              const creditTitle =
+                credits.length > 0
+                  ? credits
+                      .map((c) =>
+                        c.substitutedForManagerName
+                          ? `${c.userName ?? '—'}: ${formatMoney(c.amount)} (за ${c.substitutedForManagerName} — подмена)`
+                          : `${c.userName ?? '—'}: ${formatMoney(c.amount)}`
+                      )
+                      .join(', ')
+                  : undefined;
+              return (
+                <span className={dpStyles.amountCell}>
+                  {formatMoney(r.managerAmount)}
+                  {r.substitutionApplied ? (
+                    <span
+                      className={`${styles.statusBadge} ${styles.substitutionBadge}`}
+                      title={
+                        creditTitle ??
+                        'Часть суммы уходит подменяющему менеджеру (отпуск/больничный)'
+                      }
+                    >
+                      подмена
+                    </span>
+                  ) : null}
+                </span>
+              );
+            },
           },
           {
             key: 'surveyorAmount',
