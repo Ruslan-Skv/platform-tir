@@ -78,6 +78,14 @@ export class WorkDayNotifyService {
   }
 
   /**
+   * Запрос согласован автоматически по настройкам автоудовлетворения:
+   * суперадмин всё равно получает уведомление, но с пометкой об автосогласовании.
+   */
+  onRequestAutoApproved(requestId: string): void {
+    void this.notifyRequest(requestId, { autoApproved: true }).catch(() => undefined);
+  }
+
+  /**
    * Ответ руководителя на запрос сотрудника: push-уведомление получает только автор запроса.
    */
   onRequestReviewed(request: {
@@ -127,14 +135,22 @@ export class WorkDayNotifyService {
       .catch(() => undefined);
   }
 
-  private async notifyRequest(requestId: string): Promise<void> {
+  private async notifyRequest(
+    requestId: string,
+    options: { autoApproved?: boolean } = {},
+  ): Promise<void> {
     const request = await this.prisma.workDayRequest.findUnique({
       where: { id: requestId },
       include: {
         user: { select: { firstName: true, lastName: true, email: true, role: true } },
       },
     });
-    if (!request || request.status !== 'PENDING') return;
+    if (!request) return;
+    // Обычное уведомление уходит по ожидающему запросу, «авто» — по уже согласованному настройками.
+    const expectedStatus = options.autoApproved
+      ? WorkDayRequestStatus.APPROVED
+      : WorkDayRequestStatus.PENDING;
+    if (request.status !== expectedStatus) return;
 
     const kind: WorkDayNotifyKind =
       request.type === 'DAY_OFF'
@@ -150,7 +166,9 @@ export class WorkDayNotifyService {
       [request.user.firstName, request.user.lastName].filter(Boolean).join(' ').trim() ||
       request.user.email;
     const workDateLabel = request.requestDate.toLocaleDateString('ru-RU');
-    const kindLabel = KIND_LABELS[kind];
+    const kindLabel = options.autoApproved
+      ? `${KIND_LABELS[kind]} (автоудовлетворён)`
+      : KIND_LABELS[kind];
     // Для больничного/отпуска на несколько дней показываем период «дата — дата».
     const rangeSuffix =
       request.requestDateTo && request.requestDateTo > request.requestDate
@@ -174,6 +192,7 @@ export class WorkDayNotifyService {
       'Учёт рабочего времени',
       '',
       `Событие: ${kindLabel}`,
+      options.autoApproved ? 'Статус: удовлетворён автоматически по настройкам' : null,
       `Дата: ${workDateLabel}${rangeSuffix}`,
       `Сотрудник: ${employeeName}`,
       `Email: ${request.user.email}`,

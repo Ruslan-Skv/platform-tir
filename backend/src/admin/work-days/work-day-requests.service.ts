@@ -185,6 +185,8 @@ export class WorkDayRequestsService {
             include: REQUEST_INCLUDE,
           });
       this.workDayNotify.onRequestReviewed(updated);
+      // Суперадмин узнаёт и о запросах, согласованных без его участия.
+      this.workDayNotify.onRequestAutoApproved(updated.id);
       return updated;
     } catch {
       this.workDayNotify.onRequestCreated(row.id);
