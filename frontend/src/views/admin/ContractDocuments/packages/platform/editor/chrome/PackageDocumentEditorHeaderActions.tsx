@@ -17,7 +17,7 @@ import {
   packageWorkOrderDistributionTitleSuffix,
 } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/packageWorkOrderDistribution';
 import { defaultPackageWorkOrderHubTab } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/packageWorkOrderHubTabs';
-import { ContractDocumentsSettingsButton } from '@/views/admin/ContractDocuments/packages/platform/settings/ContractDocumentsSettingsButton';
+import { ContractDocumentsSettingsModalHost } from '@/views/admin/ContractDocuments/packages/platform/settings/ContractDocumentsSettingsButton';
 import type { PackageDocumentTabId } from '@/views/admin/ContractDocuments/packages/platform/tabs/packageDocumentTabs';
 
 import cdHub from '../../../../styles/contracts-list-hub.module.css';
@@ -222,7 +222,7 @@ export function PackageDocumentEditorHeaderActions({
             <span style={{ fontSize: 12, fontWeight: 700 }}>ЭП</span>
           </button>
         ) : null}
-        {!loading ? <ContractDocumentsSettingsButton /> : null}
+        {!loading ? <ContractDocumentsSettingsModalHost /> : null}
         {!loading ? (
           <button
             type="button"

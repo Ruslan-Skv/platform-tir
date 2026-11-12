@@ -7,6 +7,7 @@ import {
 
 import cdHub from '../../../../styles/contracts-list-hub.module.css';
 import cdChrome from '../../../../styles/editor-chrome.module.css';
+import { ContractDocumentsSettingsButton } from '../../../platform/settings/ContractDocumentsSettingsButton';
 import { ContractsListColumnsSelector } from './ContractsListColumnsSelector';
 import { ContractsListRulesInfoTip } from './ContractsListRulesInfoTip';
 import type { ContractsListColumnKey } from './contractsListColumns';
@@ -65,6 +66,8 @@ export function ContractsListPageHeader({
         title="Корзина договоров"
         aria-label="Корзина договоров"
       />
+      {/* Общие настройки всех договоров — на списке, а не в каждом договоре. */}
+      <ContractDocumentsSettingsButton />
     </div>
   );
 
