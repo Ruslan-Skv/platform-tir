@@ -10,6 +10,7 @@ import {
   type ContractEstimatePreset,
   type ContractTemplatePreset,
 } from '@/shared/api/admin-contract-document-packages';
+import { trashContractEstimatePreset } from '@/shared/api/contract-documents/admin-contract-document-estimate-presets-trash';
 
 import { isProductDirectionPackageKind } from '../../../config/productDirectionPackageKind';
 import { DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT } from '../../../families/product-like/print/productWorkOrder';
@@ -560,6 +561,29 @@ export function usePackageDocumentEditorController({
     [setForm, formRef, schedulePersistPackageDebounced, setDirty, isProductDirectionPackage]
   );
 
+  /**
+   * Удаление расчёта «только в договоре» (создан из модалки вкладки): убирается из
+   * сметы/счёт-заказа пакета и уходит в корзину каталога расчётов. Открепление для
+   * таких расчётов не имеет смысла — вне договора они нигде не отображаются.
+   */
+  const deleteEmbeddedEstimatePreset = useCallback(
+    (presetId: string) => {
+      if (signedDocsLocked) return;
+      const preset = estimatePresets.find((it) => it.id === presetId);
+      if (!preset?.embeddedInPackage) return;
+      removeEstimatePresetFromForm(presetId);
+      setEstimatePresets((prev) => prev.filter((it) => it.id !== presetId));
+      void trashContractEstimatePreset(presetId).catch((e) => {
+        setError(
+          e instanceof Error
+            ? `${e.message} Расчёт откреплён от договора — удалите его ещё раз из списка прикрепления.`
+            : 'Не удалось удалить расчёт. Попробуйте ещё раз.'
+        );
+      });
+    },
+    [signedDocsLocked, estimatePresets, removeEstimatePresetFromForm, setEstimatePresets, setError]
+  );
+
   const estimateCreate = usePackageEstimateCreateModal({
     packageKind,
     signedDocsLocked,
@@ -670,6 +694,7 @@ export function usePackageDocumentEditorController({
       removeEstimatePresetFromForm,
       updateContract,
     }),
+    onDeleteEmbeddedPreset: deleteEmbeddedEstimatePreset,
     estimateMarkupSaving,
     onEstimatePresetMarkupChange,
   };

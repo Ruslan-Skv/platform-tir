@@ -74,6 +74,14 @@ export function useEstimatesListDerivedData({
     [workspacePackages]
   );
 
+  /**
+   * Расчёты «только в договоре» (созданы из модалки договора, `embeddedInPackage`)
+   * в разделе не показываются: ни в списке, ни в счётчиках вкладок/направлений/областей.
+   * Полный `items` остаётся выше по цепочке — мутации раздела сохраняют весь каталог,
+   * включая скрытые расчёты, чтобы не затереть их для договоров.
+   */
+  const catalogItems = useMemo(() => items.filter((it) => !it.embeddedInPackage), [items]);
+
   const packageManagerById = useMemo(
     () => buildPackageManagerById(workspacePackages),
     [workspacePackages]
@@ -85,14 +93,14 @@ export function useEstimatesListDerivedData({
   );
 
   const groupIdsWithLockedEstimate = useMemo(
-    () => buildGroupIdsWithLockedEstimate(items, usageByEstimateId),
-    [items, usageByEstimateId]
+    () => buildGroupIdsWithLockedEstimate(catalogItems, usageByEstimateId),
+    [catalogItems, usageByEstimateId]
   );
 
   const visibleItems = useMemo(
     () =>
       filterVisibleEstimatesListItems({
-        items,
+        items: catalogItems,
         groups,
         pipelineTab,
         searchNorm,
@@ -106,7 +114,7 @@ export function useEstimatesListDerivedData({
         usageByEstimateId,
       }),
     [
-      items,
+      catalogItems,
       groups,
       pipelineTab,
       searchNorm,
@@ -124,7 +132,7 @@ export function useEstimatesListDerivedData({
   const directionCounts = useMemo(
     () =>
       countEstimatesDirections(
-        items,
+        catalogItems,
         groups,
         pipelineTab,
         searchNorm,
@@ -132,13 +140,13 @@ export function useEstimatesListDerivedData({
         dateTo,
         usageByEstimateId
       ),
-    [items, groups, pipelineTab, searchNorm, dateFrom, dateTo, usageByEstimateId]
+    [catalogItems, groups, pipelineTab, searchNorm, dateFrom, dateTo, usageByEstimateId]
   );
 
   const scopeCounts = useMemo(
     () =>
       countEstimatesListScopes(
-        items,
+        catalogItems,
         groups,
         pipelineTab,
         searchNorm,
@@ -149,7 +157,7 @@ export function useEstimatesListDerivedData({
         usageByEstimateId
       ),
     [
-      items,
+      catalogItems,
       groups,
       pipelineTab,
       searchNorm,
@@ -164,14 +172,14 @@ export function useEstimatesListDerivedData({
   const pipelineTabCounts = useMemo(
     () =>
       countEstimatesPipelineTabs(
-        items,
+        catalogItems,
         groups,
         listScope,
         currentUserId,
         managerIdsByPresetId,
         usageByEstimateId
       ),
-    [items, groups, listScope, currentUserId, managerIdsByPresetId, usageByEstimateId]
+    [catalogItems, groups, listScope, currentUserId, managerIdsByPresetId, usageByEstimateId]
   );
 
   const addressGroupCount = useMemo(

@@ -1,6 +1,7 @@
 'use client';
 
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
+import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
 import { EditIcon } from '@/shared/ui/icons/EditIcon';
 
 import cdEstimateTab from '../../../../styles/estimate-tab.module.css';
@@ -59,6 +60,7 @@ export type PackageEstimateAttachPanelProps = Pick<
   | 'onAttachPreset'
   | 'onMovePreset'
   | 'onRemovePreset'
+  | 'onDeleteEmbeddedPreset'
   | 'onEstimatePresetMarkupChange'
 >;
 
@@ -89,6 +91,7 @@ export function PackageEstimateAttachPanel({
   onAttachPreset,
   onMovePreset,
   onRemovePreset,
+  onDeleteEmbeddedPreset,
   onEstimatePresetMarkupChange,
 }: PackageEstimateAttachPanelProps) {
   return (
@@ -169,7 +172,7 @@ export function PackageEstimateAttachPanel({
                       ? 'Сначала выберите объект и свободный расчёт в списках слева — затем нажмите «Прикрепить».'
                       : `Прикрепить выбранный расчёт к ${
                           isProductDirectionPackage ? 'счёту-заказу' : 'смете'
-                        } этого договора: его позиции попадут в таблицу ниже, а объект зафиксируется. Открепить можно крестиком — сам расчёт останется в разделе «Расчёты».`
+                        } этого договора: его позиции попадут в таблицу ниже, а объект зафиксируется. Открепить можно крестиком — сам расчёт сохранится.`
                 }
                 onClick={() => {
                   onAttachPreset(estimatePresetToAttach);
@@ -321,15 +324,29 @@ export function PackageEstimateAttachPanel({
                     >
                       <EditIcon />
                     </AdminTableIconButton>
-                    <AdminTableIconButton
-                      className={attachStyles.estimateAttachedRemoveBtn}
-                      aria-label="Открепить расчёт"
-                      title="Открепить расчёт (сам расчёт останется в разделе «Расчёты»)"
-                      disabled={signedDocsLocked}
-                      onClick={() => onRemovePreset(presetId)}
-                    >
-                      <DetachEstimateIcon />
-                    </AdminTableIconButton>
+                    {preset?.embeddedInPackage ? (
+                      /* Расчёт «только в договоре»: открепление оставило бы его «нигде» —
+                         удаляем целиком (из пакета и в корзину каталога расчётов). */
+                      <AdminTableIconButton
+                        className={attachStyles.estimateAttachedRemoveBtn}
+                        aria-label={`Удалить расчёт «${preset.title}»`}
+                        title="Удалить расчёт: он создан для этого договора и хранится только в нём — уйдёт в корзину раздела «Расчёты» (восстановить можно оттуда в течение 30 дней)"
+                        disabled={signedDocsLocked}
+                        onClick={() => onDeleteEmbeddedPreset(presetId)}
+                      >
+                        <DeleteIcon />
+                      </AdminTableIconButton>
+                    ) : (
+                      <AdminTableIconButton
+                        className={attachStyles.estimateAttachedRemoveBtn}
+                        aria-label="Открепить расчёт"
+                        title="Открепить расчёт (сам расчёт останется в разделе «Расчёты»)"
+                        disabled={signedDocsLocked}
+                        onClick={() => onRemovePreset(presetId)}
+                      >
+                        <DetachEstimateIcon />
+                      </AdminTableIconButton>
+                    )}
                   </div>
                 );
               })}

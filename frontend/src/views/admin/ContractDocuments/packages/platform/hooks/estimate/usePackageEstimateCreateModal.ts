@@ -15,6 +15,7 @@ import {
   serviceCatalogCategoryQueryKey,
   useServiceCatalog,
 } from '@/shared/lib/hooks/useServiceCatalog';
+import { packageKindCreatesEmbeddedEstimates } from '@/views/admin/ContractDocuments/packages/config/packageDirectionRegistry';
 import { persistEstimateWorkspacePresets } from '@/views/admin/ContractDocuments/packages/pages/estimates/workspace/estimateWorkspacePersist';
 
 import {
@@ -549,6 +550,9 @@ export function usePackageEstimateCreateModal({
         customerName,
         objectAddress,
         direction: packageKind,
+        // Малые направления (Окна/Двери/Потолки/Жалюзи/Мебель): расчёт живёт только
+        // в этом договоре и не попадает в раздел «Расчёты».
+        embeddedInPackage: packageKindCreatesEmbeddedEstimates(packageKind),
         actorUserId: user?.id ?? null,
         ...(parsedMarkup !== undefined
           ? { additionalMarkupPercent: clampEstimateAdditionalMarkupPercent(parsedMarkup) }

@@ -47,6 +47,8 @@ export type BuildQuickEstimatePresetParams = {
   actorUserId?: string | null;
   /** Наценка расчёта, %; undefined — наценка объекта (поле не сохраняется). */
   additionalMarkupPercent?: number;
+  /** Новый расчёт живёт только в договоре (скрыт из раздела «Расчёты»); при правке берётся из existing. */
+  embeddedInPackage?: boolean;
   categories: QuickEstimateCategoryInput[];
   /** Правка существующего расчёта: сохраняет id/даты/группу/заказчика/адрес и прочие служебные поля. */
   existing?: ContractEstimatePreset;
@@ -347,5 +349,7 @@ export async function buildQuickEstimatePreset(
       ? { additionalMarkupPercent: params.additionalMarkupPercent }
       : {}),
     direction: existing?.direction ?? params.direction,
+    // «Только в договоре»: флаг сохраняется при правке, при создании — берётся из параметра.
+    ...(existing?.embeddedInPackage || params.embeddedInPackage ? { embeddedInPackage: true } : {}),
   };
 }

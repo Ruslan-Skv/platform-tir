@@ -190,6 +190,25 @@ export function isFurnitureLikePackageKind(
   return getPackageDirectionConfig(kind).family === 'FURNITURE_LIKE';
 }
 
+/**
+ * Направления, где расчёт, созданный из модалки «Новый расчёт» в договоре, не попадает
+ * в раздел «Расчёты» (признак `embeddedInPackage`): небольшие расчёты после прикрепления
+ * к договору больше нигде не нужны. У «Ремонта» наоборот — его расчёты многократно
+ * дорабатываются и переиспользуются, поэтому остаются в разделе.
+ */
+const PACKAGE_KINDS_WITH_EMBEDDED_ESTIMATES: readonly ContractDocumentPackageKind[] = [
+  'WINDOWS',
+  'DOORS',
+  'CEILINGS',
+  'BLINDS',
+  'FURNITURE',
+];
+
+/** Создавать ли расчёт из модалки договора «только в договоре» (скрытым из «Расчётов»). */
+export function packageKindCreatesEmbeddedEstimates(kind: ContractDocumentPackageKind): boolean {
+  return PACKAGE_KINDS_WITH_EMBEDDED_ESTIMATES.includes(kind);
+}
+
 /** Спецификация строками + накладная из этих строк (Двери, Жалюзи, …). */
 export function packageUsesLineSpecification(
   kind: ContractDocumentPackageKind | undefined | null

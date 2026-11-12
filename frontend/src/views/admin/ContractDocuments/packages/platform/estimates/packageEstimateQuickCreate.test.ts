@@ -266,6 +266,43 @@ describe('buildQuickEstimatePreset', () => {
       })
     ).rejects.toThrow('quick estimate: no categories with selected lines');
   });
+
+  it('признак «только в договоре»: ставится при создании, сохраняется при правке', async () => {
+    const categories = [
+      category('okna', {
+        name: 'Окна',
+        lines: [{ itemId: 'est-custom:1', quantity: 2 }],
+        customItems: { 'est-custom:1': { name: 'Монтаж', unit: 'шт', price: 900 } },
+      }),
+    ];
+    const base = {
+      title: 'Окна, кухня',
+      crmCustomerId: 'crm_1',
+      customerName: 'Иванов Иван',
+      objectAddress: 'Москва, ул. Ленина, 1',
+      direction: 'WINDOWS' as const,
+      categories,
+    };
+
+    const created = await buildQuickEstimatePreset({ ...base, embeddedInPackage: true });
+    expect(created.embeddedInPackage).toBe(true);
+
+    // Обычный расчёт — поле не пишется вовсе.
+    const plain = await buildQuickEstimatePreset(base);
+    expect('embeddedInPackage' in plain).toBe(false);
+
+    // Правка embedded-расчёта сохраняет флаг и без параметра.
+    const edited = await buildQuickEstimatePreset({
+      ...base,
+      title: 'Окна, кухня (правка)',
+      existing: created,
+    });
+    expect(edited.embeddedInPackage).toBe(true);
+
+    // Правка обычного расчёта флаг не добавляет.
+    const editedPlain = await buildQuickEstimatePreset({ ...base, existing: plain });
+    expect('embeddedInPackage' in editedPlain).toBe(false);
+  });
 });
 
 describe('parseQuickEstimateDraft', () => {

@@ -127,6 +127,12 @@ export class ContractEstimatePresetDto {
   @IsEnum(ContractDocumentPackageKind)
   direction?: ContractDocumentPackageKind;
 
+  /** Расчёт из модалки договора: живёт только в договоре (скрыт из раздела «Расчёты»). */
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  embeddedInPackage?: boolean;
+
   /** Порядок в ленте для расчёта вне объекта. */
   @IsOptional()
   @Type(() => Number)

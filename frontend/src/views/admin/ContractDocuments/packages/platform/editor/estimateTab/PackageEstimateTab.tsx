@@ -51,6 +51,11 @@ export type PackageEstimateTabProps = {
   onMovePreset: (sourceId: string, targetId: string) => void;
   onRemovePreset: (presetId: string) => void;
   /**
+   * Удаление расчёта «только в договоре» (создан из модалки вкладки): убирается
+   * из сметы/счёт-заказа пакета и уходит в корзину каталога расчётов.
+   */
+  onDeleteEmbeddedPreset: (presetId: string) => void;
+  /**
    * Смена наценки расчёта (то же поле, что в разделе «Расчёты»): сохраняет пресет
    * и пересчитывает смету/суммы этого пакета.
    */

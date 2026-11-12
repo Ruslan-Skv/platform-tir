@@ -209,6 +209,8 @@ export async function buildEstimateWorkspaceSaveBatch({
         ? { groupId: copyFromSource.groupId }
         : {}),
     ...(existing?.archived ? { archived: true } : {}),
+    // Расчёт «только в договоре» остаётся скрытым из раздела «Расчёты» и после правки.
+    ...(existing?.embeddedInPackage ? { embeddedInPackage: true } : {}),
     ...(existing?.sourceMeasurementId
       ? { sourceMeasurementId: existing.sourceMeasurementId }
       : fromMeasurementId

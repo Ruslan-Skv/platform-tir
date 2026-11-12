@@ -86,7 +86,10 @@ export type UsePackageDocumentEditorTabPropsOptions = {
   /** Модалка создания небольшого расчёта прямо из вкладки «Счёт-заказ»/«Смета». */
   estimateCreate: ReturnType<typeof usePackageEstimateCreateModal>;
   estimateTabHandlers: ReturnType<typeof usePackageEstimateTabHandlers> &
-    Pick<PackageEstimateTabProps, 'estimateMarkupSaving' | 'onEstimatePresetMarkupChange'>;
+    Pick<
+      PackageEstimateTabProps,
+      'estimateMarkupSaving' | 'onEstimatePresetMarkupChange' | 'onDeleteEmbeddedPreset'
+    >;
   finalEstimateRooms: PackageFinalEstimateTabProps['rooms'];
   finalEstimateTotalAmount: number;
   finalEstimateTotalAfterDiscount: number;
