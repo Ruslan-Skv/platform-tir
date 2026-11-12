@@ -5,6 +5,7 @@ import { DatabaseModule } from '../../database/database.module';
 import { IncassationNotifyService } from './incassation-notify.service';
 import { ManualEntriesService } from './manual-entries.service';
 import { ManagerIncassationsService } from './manager-incassations.service';
+import { ManagerSalesStatsService } from './manager-sales-stats.service';
 import { MoneyMovementsController } from './money-movements.controller';
 import { MoneyMovementsService } from './money-movements.service';
 import { SalesTotalsNotifyService } from './sales-totals-notify.service';
@@ -17,6 +18,7 @@ import { SalesTotalsNotifyService } from './sales-totals-notify.service';
     ManualEntriesService,
     IncassationNotifyService,
     ManagerIncassationsService,
+    ManagerSalesStatsService,
     SalesTotalsNotifyService,
   ],
   exports: [MoneyMovementsService],

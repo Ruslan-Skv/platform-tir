@@ -5,13 +5,11 @@ import {
   DP_MANUAL_DIRECTION_OTHER,
   PACKAGE_DIRECTION_REGISTRY,
 } from '../../common/config/package-direction-registry.config';
-import {
-  ManagerSubstitutionPeriod,
-  substituteManagerIdAt,
-} from '../../common/utils/manager-substitutions.helper';
+import { substituteManagerIdAt } from '../../common/utils/manager-substitutions.helper';
 import { PrismaService } from '../../database/prisma.service';
 import { computePackageEffectiveManagerUserId } from '../contract-document-packages/list-pipeline/package-list-pipeline-status';
 import { ManagerIncassationsService } from './manager-incassations.service';
+import { ManagerSalesStatsService } from './manager-sales-stats.service';
 import { serializeMoneyMovement } from './money-movement-serialize';
 import { SalesTotalsNotifyService } from './sales-totals-notify.service';
 
@@ -75,13 +73,6 @@ type PackagePaymentRow = {
   createdAt: Date;
 };
 
-/** Итоги личных продаж по менеджерам для детальной статистики ДП. */
-type ManagerSalesAgg = {
-  manager: Array<{ managerId: string | null; sum: number }>;
-  directionManager: Array<{ direction: string | null; managerId: string | null; sum: number }>;
-  managerIds: Set<string | null>;
-};
-
 @Injectable()
 export class MoneyMovementsService {
   private readonly logger = new Logger(MoneyMovementsService.name);
@@ -89,6 +80,7 @@ export class MoneyMovementsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly incassations: ManagerIncassationsService,
+    private readonly salesStats: ManagerSalesStatsService,
     private readonly salesTotalsNotify: SalesTotalsNotifyService,
   ) {}
 
@@ -183,19 +175,8 @@ export class MoneyMovementsService {
 
     // Подмены менеджеров (отпуск/больничный): пометки «подмена» у записей и
     // переатрибуция личных продаж подменяющему в период подмены.
-    const substitutions = await this.prisma.managerSubstitution.findMany({
-      include: {
-        absentManager: { select: { id: true, email: true, firstName: true, lastName: true } },
-        substituteManager: { select: { id: true, email: true, firstName: true, lastName: true } },
-      },
-      orderBy: { dateFrom: 'asc' },
-    });
-    const subPeriods = substitutions.map((s) => ({
-      absentManagerId: s.absentManagerId,
-      substituteManagerId: s.substituteManagerId,
-      dateFrom: s.dateFrom,
-      dateTo: s.dateTo,
-    }));
+    const substitutions = await this.salesStats.loadSubstitutions();
+    const subPeriods = ManagerSalesStatsService.periodsOf(substitutions);
 
     const [rawData, total, sum, directionSums, managerSalesAgg, signatoryUserIds, cashHolderRows] =
       await Promise.all([
@@ -218,9 +199,7 @@ export class MoneyMovementsService {
         this.prisma.moneyMovement.groupBy({ by: ['direction'], where, _sum: { amount: true } }),
         // Итоги по менеджерам: без подмен — обычные groupBy; с подменами атрибуция
         // зависит от даты платежа (договоры отсутствующего — подменяющему), агрегируем в коде.
-        substitutions.length > 0
-          ? this.managerSalesSumsWithSubstitutions(salesWhere, subPeriods)
-          : this.managerSalesSums(salesWhere),
+        this.salesStats.managerSalesSums(salesWhere, subPeriods),
         this.getSignatoryProfileUserIds(),
         // Держатели кассы: наличные, принятые другим сотрудником по чужому договору,
         // лежат в его кассе — плитки остатков должны их показывать.
@@ -262,21 +241,7 @@ export class MoneyMovementsService {
       ]),
     );
     // Имена участников подмен (бейджи «подмена» и суммы подменяющего).
-    const substitutionNameById = new Map<string, string>();
-    for (const s of substitutions) {
-      substitutionNameById.set(
-        s.absentManagerId,
-        [s.absentManager.lastName, s.absentManager.firstName].filter(Boolean).join(' ').trim() ||
-          s.absentManager.email,
-      );
-      substitutionNameById.set(
-        s.substituteManagerId,
-        [s.substituteManager.lastName, s.substituteManager.firstName]
-          .filter(Boolean)
-          .join(' ')
-          .trim() || s.substituteManager.email,
-      );
-    }
+    const substitutionNameById = ManagerSalesStatsService.nameById(substitutions);
     const managerNameById = (id: string | null) =>
       id
         ? (substitutionNameById.get(id) ?? statsManagerNameById.get(id) ?? 'Неизвестный менеджер')
@@ -346,78 +311,6 @@ export class MoneyMovementsService {
         balance: balance.toString(),
       })),
       managers,
-    };
-  }
-
-  /** Итоги личных продаж по менеджерам (без подмен) — группировка в БД. */
-  private async managerSalesSums(
-    salesWhere: Prisma.MoneyMovementWhereInput,
-  ): Promise<ManagerSalesAgg> {
-    const [managerRows, directionManagerRows] = await Promise.all([
-      this.prisma.moneyMovement.groupBy({
-        by: ['managerId'],
-        where: salesWhere,
-        _sum: { amount: true },
-      }),
-      this.prisma.moneyMovement.groupBy({
-        by: ['direction', 'managerId'],
-        where: salesWhere,
-        _sum: { amount: true },
-      }),
-    ]);
-    return {
-      manager: managerRows.map((row) => ({
-        managerId: row.managerId,
-        sum: Number(row._sum.amount ?? 0),
-      })),
-      directionManager: directionManagerRows.map((row) => ({
-        direction: row.direction,
-        managerId: row.managerId,
-        sum: Number(row._sum.amount ?? 0),
-      })),
-      managerIds: new Set(managerRows.map((row) => row.managerId)),
-    };
-  }
-
-  /** Итоги личных продаж по менеджерам с подменами: на дату платежа договоры
-   *  отсутствующего менеджера засчитываются подменяющему. Копейки агрегируем
-   *  целыми, чтобы не накапливать погрешность float. */
-  private async managerSalesSumsWithSubstitutions(
-    salesWhere: Prisma.MoneyMovementWhereInput,
-    subPeriods: ManagerSubstitutionPeriod[],
-  ): Promise<ManagerSalesAgg> {
-    const rows = await this.prisma.moneyMovement.findMany({
-      where: salesWhere,
-      select: { managerId: true, direction: true, amount: true, paymentDate: true },
-    });
-    const managerKopecks = new Map<string | null, number>();
-    const directionKopecks = new Map<string, Map<string | null, number>>();
-    for (const row of rows) {
-      const effectiveId =
-        substituteManagerIdAt(subPeriods, row.managerId, row.paymentDate) ?? row.managerId;
-      const kopecks = Math.round(Number(row.amount) * 100);
-      managerKopecks.set(effectiveId, (managerKopecks.get(effectiveId) ?? 0) + kopecks);
-      const directionKey = row.direction ?? '';
-      let byManager = directionKopecks.get(directionKey);
-      if (!byManager) {
-        byManager = new Map();
-        directionKopecks.set(directionKey, byManager);
-      }
-      byManager.set(effectiveId, (byManager.get(effectiveId) ?? 0) + kopecks);
-    }
-    return {
-      manager: [...managerKopecks.entries()].map(([managerId, kopecks]) => ({
-        managerId,
-        sum: kopecks / 100,
-      })),
-      directionManager: [...directionKopecks.entries()].flatMap(([direction, byManager]) =>
-        [...byManager.entries()].map(([managerId, kopecks]) => ({
-          direction: direction || null,
-          managerId,
-          sum: kopecks / 100,
-        })),
-      ),
-      managerIds: new Set(managerKopecks.keys()),
     };
   }
 
