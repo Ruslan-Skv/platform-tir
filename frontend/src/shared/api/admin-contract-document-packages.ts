@@ -1194,6 +1194,22 @@ export async function getContractDocumentNumberHolds(
   return res.json();
 }
 
+/** Супер-админ: снять бронь — освобождает резервы и номера пакета в реестре. */
+export async function releaseContractDocumentNumberHolds(
+  packageId: string
+): Promise<{ holds: ContractNumberHold[] }> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/contract-number/hold/release`,
+    {
+      method: 'POST',
+      headers: getAdminAuthHeaders(),
+      body: JSON.stringify({ packageId }),
+    }
+  );
+  if (!res.ok) throw new Error(await readAdminContractPackagesError(res));
+  return res.json();
+}
+
 export async function allocateContractDocumentNumber(body: {
   managerUserId: string;
   surveyorUserId: string;

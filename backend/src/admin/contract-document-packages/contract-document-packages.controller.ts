@@ -35,6 +35,7 @@ import { ContractDocumentNumberingService } from '../../contract-document-number
 import { CreateContractDocumentPaymentInvoiceDto } from './dto/invoices/create-contract-document-payment-invoice.dto';
 import { CreateFreePaymentInvoiceDto } from './dto/invoices/create-free-payment-invoice.dto';
 import { PreviewContractNumberDto } from './dto/preview-contract-number.dto';
+import { ReleaseContractNumbersDto } from './dto/release-contract-numbers.dto';
 import { ReserveContractNumbersDto } from './dto/reserve-contract-numbers.dto';
 import { CreateContractDocumentPackageDto } from './dto/create-contract-document-package.dto';
 import { RevertAddendumSigningDto } from './dto/revert-addendum-signing.dto';
@@ -1379,6 +1380,14 @@ export class ContractDocumentPackagesController {
   @Post('contract-number/hold')
   async reserveContractNumbers(@Body() dto: ReserveContractNumbersDto) {
     const holds = await this.contractNumbering.manualReserveNumbers(dto);
+    return { holds };
+  }
+
+  /** Супер-админ: «Снять бронь» — освобождает резервы и номера пакета в реестре. */
+  @Post('contract-number/hold/release')
+  @Roles('SUPER_ADMIN')
+  async releaseContractNumbers(@Body() dto: ReleaseContractNumbersDto) {
+    const holds = await this.contractNumbering.releaseContractNumberHolds(dto.packageId);
     return { holds };
   }
 

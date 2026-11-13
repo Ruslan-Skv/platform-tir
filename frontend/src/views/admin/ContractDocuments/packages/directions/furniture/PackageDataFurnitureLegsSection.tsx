@@ -2,11 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { useAuth } from '@/features/auth';
 import {
   type ContractDocumentPackageKind,
   type ContractNumberPreview,
   getContractDocumentNumberHolds,
   previewContractDocumentNumber,
+  releaseContractDocumentNumberHolds,
   reserveContractDocumentNumbers,
 } from '@/shared/api/admin-contract-document-packages';
 
@@ -213,9 +215,12 @@ export function PackageDataFurnitureLegsSection({
   packageId = null,
 }: Props) {
   const locked = signedDocsLocked;
+  const { user } = useAuth();
   const [holdInfo, setHoldInfo] = useState<{ numbers: string[]; expiresAt: string } | null>(null);
   const [reserveBusy, setReserveBusy] = useState(false);
+  const [releaseBusy, setReleaseBusy] = useState(false);
   const [reserveError, setReserveError] = useState<string | null>(null);
+  const isSuperAdminRole = user?.role === 'SUPER_ADMIN';
 
   const managerUserId = form.executor.signatoryCrmUserId?.trim() || '';
   const officeId = form.contract.officeId?.trim() || '';
@@ -306,6 +311,27 @@ export function PackageDataFurnitureLegsSection({
     },
     [setForm, touchPackageData]
   );
+
+  // Супер-админ: снять брони и освободить номера пакета (резервы + реестр + форма).
+  const releaseNumberHolds = async () => {
+    const id = packageId?.trim();
+    if (!id) return;
+    setReleaseBusy(true);
+    setReserveError(null);
+    try {
+      const res = await releaseContractDocumentNumberHolds(id);
+      setHoldInfo(summarizeHolds(res.holds));
+      for (const legId of ['manufacture', ...OPTIONAL_LEGS] as const) {
+        const leg = form.furniture[legId];
+        if (!leg.contract.number.trim()) continue;
+        patchLeg(legId, { contract: { ...leg.contract, number: '' } });
+      }
+    } catch (e) {
+      setReserveError(e instanceof Error ? e.message : 'Не удалось снять брони');
+    } finally {
+      setReleaseBusy(false);
+    }
+  };
 
   const setLegEnabled = useCallback(
     (legId: 'montage' | 'appliances', enabled: boolean) => {
@@ -461,6 +487,17 @@ export function PackageDataFurnitureLegsSection({
                 ? `Бронь до ${formatHoldDate(holdInfo.expiresAt)}`
                 : 'Забронировать номера'}
           </button>
+          {isSuperAdminRole && holdInfo ? (
+            <button
+              type="button"
+              className={styles.releaseBtn}
+              disabled={releaseBusy || reserveBusy}
+              onClick={() => void releaseNumberHolds()}
+              title="Супер-админ: снять брони и освободить номера этого пакета — номера в форме очистятся, и их можно будет забронировать другими договорами"
+            >
+              {releaseBusy ? 'Снимаем…' : 'Снять брони'}
+            </button>
+          ) : null}
           {reserveError ? (
             <span className={styles.hintError} title={reserveError}>
               {reserveError}

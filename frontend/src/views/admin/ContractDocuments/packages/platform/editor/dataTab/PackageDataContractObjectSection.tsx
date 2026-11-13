@@ -2,8 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+import { useAuth } from '@/features/auth';
 import {
   getContractDocumentNumberHolds,
+  releaseContractDocumentNumberHolds,
   reserveContractDocumentNumbers,
 } from '@/shared/api/admin-contract-document-packages';
 import { type CrmUser, getCrmUsers } from '@/shared/api/admin-crm';
@@ -76,10 +78,13 @@ export function PackageDataContractObjectSection({
   contractDateFieldHelp,
   workPeriodFieldHelp,
 }: PackageDataContractObjectSectionProps) {
+  const { user } = useAuth();
   const [crmUsers, setCrmUsers] = useState<CrmUser[]>([]);
   const [holdInfo, setHoldInfo] = useState<{ numbers: string[]; expiresAt: string } | null>(null);
   const [reserveBusy, setReserveBusy] = useState(false);
+  const [releaseBusy, setReleaseBusy] = useState(false);
   const [reserveError, setReserveError] = useState<string | null>(null);
+  const isSuperAdminRole = user?.role === 'SUPER_ADMIN';
 
   const isFurniture = isFurnitureLikePackageKind(packageKind);
   const managerUserId = form.executor.signatoryCrmUserId?.trim() || '';
@@ -145,6 +150,23 @@ export function PackageDataContractObjectSection({
     }
   };
 
+  // Супер-админ: снять бронь и освободить номер (резерв + реестр + номер в форме).
+  const releaseNumberHold = async () => {
+    const id = typeof packageId === 'string' ? packageId.trim() : '';
+    if (!id) return;
+    setReleaseBusy(true);
+    setReserveError(null);
+    try {
+      const res = await releaseContractDocumentNumberHolds(id);
+      setHoldInfo(summarizeHolds(res.holds));
+      updateContract('number', '');
+    } catch (e) {
+      setReserveError(e instanceof Error ? e.message : 'Не удалось снять бронь');
+    } finally {
+      setReleaseBusy(false);
+    }
+  };
+
   const employeeCodeByUserId = useMemo(() => {
     const map = new Map<string, string>();
     for (const user of crmUsers) {
@@ -178,6 +200,17 @@ export function PackageDataContractObjectSection({
                     ? `Бронь до ${formatHoldDate(holdInfo.expiresAt)}`
                     : 'Забронировать номер'}
               </button>
+              {isSuperAdminRole && holdInfo ? (
+                <button
+                  type="button"
+                  className={styles.releaseNumberBtn}
+                  disabled={releaseBusy || reserveBusy}
+                  onClick={() => void releaseNumberHold()}
+                  title="Супер-админ: снять бронь и освободить номер этого договора — номер в форме очистится, и его можно будет забронировать другим договором"
+                >
+                  {releaseBusy ? 'Снимаем…' : 'Снять бронь'}
+                </button>
+              ) : null}
               {reserveError ? (
                 <span className={styles.reserveNumberError} title={reserveError}>
                   {reserveError}

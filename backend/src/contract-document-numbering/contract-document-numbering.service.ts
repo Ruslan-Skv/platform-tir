@@ -5,7 +5,11 @@ import {
   NotFoundException,
   forwardRef,
 } from '@nestjs/common';
-import { ContractDocumentPackageKind, type Prisma } from '@prisma/client';
+import {
+  ContractDocumentPackageKind,
+  ContractDocumentPackageStatus,
+  type Prisma,
+} from '@prisma/client';
 
 import { PrismaService } from '../database/prisma.service';
 import { ContractDocumentNumberAssignmentsService } from './contract-document-number-assignments.service';
@@ -155,6 +159,81 @@ export class ContractDocumentNumberingService {
     packageId: string,
   ): Promise<Array<{ number: string; expiresAt: Date; source: 'manual' | 'signing' }>> {
     return this.holds.listActiveHoldsForPackage(packageId);
+  }
+
+  /**
+   * Супер-админ («Снять бронь»): освобождает номера пакета — снимает активные
+   * резервы (ручная бронь и бронь сессий ЭП), убирает номера из глобального
+   * реестра занятости и очищает номера в formData. У подписанного договора
+   * номера закреплены — снимаются только резервы.
+   */
+  async releaseContractNumberHolds(
+    packageId: string,
+  ): Promise<Array<{ number: string; expiresAt: Date; source: 'manual' | 'signing' }>> {
+    const pkg = await this.prisma.contractDocumentPackage.findFirst({
+      where: { id: packageId, deletedAt: null },
+      select: { kind: true, status: true, formData: true },
+    });
+    if (!pkg) throw new BadRequestException('Пакет документов не найден');
+
+    await this.holds.releaseActiveHoldsForPackage(packageId);
+    if (pkg.status === ContractDocumentPackageStatus.CONTRACT_CONCLUDED) {
+      return this.holds.listActiveHoldsForPackage(packageId);
+    }
+
+    await this.assignments.releaseNumberAssignmentsForPackage(packageId);
+    const cleared = this.clearFormDataContractNumbers(pkg.kind, pkg.formData);
+    if (cleared !== null) {
+      await this.prisma.contractDocumentPackage.update({
+        where: { id: packageId },
+        data: { formData: cleared as Prisma.InputJsonValue },
+      });
+    }
+    return this.holds.listActiveHoldsForPackage(packageId);
+  }
+
+  /** Вычищает номера договоров из formData (основной + ноги «Мебель»); null — чистить нечего. */
+  private clearFormDataContractNumbers(
+    kind: ContractDocumentPackageKind,
+    formData: unknown,
+  ): Record<string, unknown> | null {
+    if (!formData || typeof formData !== 'object' || Array.isArray(formData)) return null;
+    const root = { ...(formData as Record<string, unknown>) };
+
+    const contract =
+      root.contract && typeof root.contract === 'object' && !Array.isArray(root.contract)
+        ? { ...(root.contract as Record<string, unknown>) }
+        : null;
+    if (contract) {
+      contract.number = '';
+      root.contract = contract;
+    }
+
+    if (kind === ContractDocumentPackageKind.FURNITURE && root.furniture) {
+      const furniture =
+        root.furniture && typeof root.furniture === 'object' && !Array.isArray(root.furniture)
+          ? { ...(root.furniture as Record<string, unknown>) }
+          : null;
+      if (furniture) {
+        for (const key of ['manufacture', 'montage', 'appliances'] as const) {
+          const legRaw = furniture[key];
+          if (!legRaw || typeof legRaw !== 'object' || Array.isArray(legRaw)) continue;
+          const leg = { ...(legRaw as Record<string, unknown>) };
+          const legContract =
+            leg.contract && typeof leg.contract === 'object' && !Array.isArray(leg.contract)
+              ? { ...(leg.contract as Record<string, unknown>) }
+              : null;
+          if (legContract) {
+            legContract.number = '';
+            leg.contract = legContract;
+            furniture[key] = leg;
+          }
+        }
+        root.furniture = furniture;
+      }
+    }
+
+    return root;
   }
 
   releaseHoldsForSession(sessionId: string): Promise<void> {
