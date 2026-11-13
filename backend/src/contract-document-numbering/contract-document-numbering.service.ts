@@ -26,6 +26,7 @@ import {
   type ContractNumberResolveError,
 } from './contract-document-number-format';
 import { ContractDocumentNumberHoldsService } from './contract-document-number-holds.service';
+import { clearContractNumbersInFormData } from './contract-document-number-unique';
 
 export type {
   ContractNumberParts,
@@ -182,7 +183,7 @@ export class ContractDocumentNumberingService {
     }
 
     await this.assignments.releaseNumberAssignmentsForPackage(packageId);
-    const cleared = this.clearFormDataContractNumbers(pkg.kind, pkg.formData);
+    const cleared = clearContractNumbersInFormData(pkg.kind, pkg.formData);
     if (cleared !== null) {
       await this.prisma.contractDocumentPackage.update({
         where: { id: packageId },
@@ -190,50 +191,6 @@ export class ContractDocumentNumberingService {
       });
     }
     return this.holds.listActiveHoldsForPackage(packageId);
-  }
-
-  /** Вычищает номера договоров из formData (основной + ноги «Мебель»); null — чистить нечего. */
-  private clearFormDataContractNumbers(
-    kind: ContractDocumentPackageKind,
-    formData: unknown,
-  ): Record<string, unknown> | null {
-    if (!formData || typeof formData !== 'object' || Array.isArray(formData)) return null;
-    const root = { ...(formData as Record<string, unknown>) };
-
-    const contract =
-      root.contract && typeof root.contract === 'object' && !Array.isArray(root.contract)
-        ? { ...(root.contract as Record<string, unknown>) }
-        : null;
-    if (contract) {
-      contract.number = '';
-      root.contract = contract;
-    }
-
-    if (kind === ContractDocumentPackageKind.FURNITURE && root.furniture) {
-      const furniture =
-        root.furniture && typeof root.furniture === 'object' && !Array.isArray(root.furniture)
-          ? { ...(root.furniture as Record<string, unknown>) }
-          : null;
-      if (furniture) {
-        for (const key of ['manufacture', 'montage', 'appliances'] as const) {
-          const legRaw = furniture[key];
-          if (!legRaw || typeof legRaw !== 'object' || Array.isArray(legRaw)) continue;
-          const leg = { ...(legRaw as Record<string, unknown>) };
-          const legContract =
-            leg.contract && typeof leg.contract === 'object' && !Array.isArray(leg.contract)
-              ? { ...(leg.contract as Record<string, unknown>) }
-              : null;
-          if (legContract) {
-            legContract.number = '';
-            leg.contract = legContract;
-            furniture[key] = leg;
-          }
-        }
-        root.furniture = furniture;
-      }
-    }
-
-    return root;
   }
 
   releaseHoldsForSession(sessionId: string): Promise<void> {

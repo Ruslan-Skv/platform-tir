@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { ContractDocumentPackageKind } from '@prisma/client';
 
 /** Нормализация номера для сравнения уникальности. */
 export function normalizeContractNumberKey(value: string): string {
@@ -55,4 +56,51 @@ export function assertNoDuplicateNumbersInForm(numbers: string[]): void {
     }
     seen.add(key);
   }
+}
+
+/**
+ * Копия formData пакета с очищенными номерами договоров (основной + ноги
+ * «Мебель», для пакетов мебели); null — чистить нечего (formData не объект).
+ */
+export function clearContractNumbersInFormData(
+  kind: ContractDocumentPackageKind,
+  formData: unknown,
+): Record<string, unknown> | null {
+  if (!formData || typeof formData !== 'object' || Array.isArray(formData)) return null;
+  const root = { ...(formData as Record<string, unknown>) };
+
+  const contract =
+    root.contract && typeof root.contract === 'object' && !Array.isArray(root.contract)
+      ? { ...(root.contract as Record<string, unknown>) }
+      : null;
+  if (contract) {
+    contract.number = '';
+    root.contract = contract;
+  }
+
+  if (kind === ContractDocumentPackageKind.FURNITURE && root.furniture) {
+    const furniture =
+      root.furniture && typeof root.furniture === 'object' && !Array.isArray(root.furniture)
+        ? { ...(root.furniture as Record<string, unknown>) }
+        : null;
+    if (furniture) {
+      for (const key of ['manufacture', 'montage', 'appliances'] as const) {
+        const legRaw = furniture[key];
+        if (!legRaw || typeof legRaw !== 'object' || Array.isArray(legRaw)) continue;
+        const leg = { ...(legRaw as Record<string, unknown>) };
+        const legContract =
+          leg.contract && typeof leg.contract === 'object' && !Array.isArray(leg.contract)
+            ? { ...(leg.contract as Record<string, unknown>) }
+            : null;
+        if (legContract) {
+          legContract.number = '';
+          leg.contract = legContract;
+          furniture[key] = leg;
+        }
+      }
+      root.furniture = furniture;
+    }
+  }
+
+  return root;
 }
