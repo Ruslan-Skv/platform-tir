@@ -2799,6 +2799,7 @@ model CatalogBlock {
 model SitePublicConfig {
   id                 String   @id @default("main")
   rolesShowAdminLink Json?
+  headerVariant      String   @default("classic") // Вариант шапки публичного сайта: classic | sticky
   updatedAt          DateTime @updatedAt
 
   @@map("site_public_config")

@@ -16,6 +16,8 @@ export interface AdminSitePublicSettings {
   id: string;
   /** Массив или объект { desktop?, mobile? } — см. parseRolesShowAdminLinkFromApi */
   rolesShowAdminLink: unknown;
+  /** Вариант шапки публичного сайта: classic | sticky */
+  headerVariant?: string | null;
   updatedAt: string;
 }
 
@@ -35,6 +37,7 @@ export async function getAdminSitePublicSettings(): Promise<AdminSitePublicSetti
 export async function updateAdminSitePublicSettings(data: {
   rolesShowAdminLink?: string[] | null;
   rolesShowAdminLinkByDevice?: RolesShowAdminLinkByDevicePayload | null;
+  headerVariant?: 'classic' | 'sticky';
 }): Promise<AdminSitePublicSettings> {
   const res = await apiFetch(`${API_URL}/admin/site-public/settings`, {
     method: 'PATCH',

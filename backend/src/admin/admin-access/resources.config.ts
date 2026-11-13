@@ -400,6 +400,11 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     path: '/admin/settings/admin-link',
   },
   {
+    id: 'admin.settings.public-header',
+    label: 'Шапка публичного сайта',
+    path: '/admin/settings/public-header',
+  },
+  {
     id: 'admin.settings.quote-form',
     label: 'Рассчитать стоимость (виды работ)',
     path: '/admin/settings/quote-form',

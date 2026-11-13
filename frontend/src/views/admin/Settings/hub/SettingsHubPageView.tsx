@@ -22,6 +22,7 @@ const SETTINGS_LINKS = [
   { href: '/admin/settings/checkout', label: 'Оформление заказов' },
   { href: '/admin/settings/delivery', label: 'Доставка' },
   { href: '/admin/settings/admin-link', label: 'Кнопка «Админка» на сайте' },
+  { href: '/admin/settings/public-header', label: 'Шапка публичного сайта' },
   { href: '/admin/settings/quote-form', label: 'Рассчитать стоимость (виды работ)' },
   { href: '/admin/settings/measurement-form', label: 'Запись на замер (товары)' },
   { href: '/admin/settings/pwa', label: 'PWA и обновления' },

@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsArray, IsOptional, IsString, ValidateIf, ValidateNested } from 'class-validator';
+import { IsArray, IsIn, IsOptional, IsString, ValidateIf, ValidateNested } from 'class-validator';
 
 export class RolesShowAdminLinkByDeviceDto {
   @ApiPropertyOptional({
@@ -47,4 +47,13 @@ export class UpdateSitePublicDto {
   @ValidateNested()
   @Type(() => RolesShowAdminLinkByDeviceDto)
   rolesShowAdminLinkByDevice?: RolesShowAdminLinkByDeviceDto | null;
+
+  @ApiPropertyOptional({
+    description:
+      'Вариант шапки публичного сайта: classic (текущая) или sticky (липкая с трансформацией при прокрутке).',
+    enum: ['classic', 'sticky'],
+  })
+  @IsOptional()
+  @IsIn(['classic', 'sticky'])
+  headerVariant?: 'classic' | 'sticky';
 }

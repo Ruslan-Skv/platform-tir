@@ -14,9 +14,14 @@ import styles from './DesktopNavigation.module.css';
 
 export interface DesktopNavigationProps {
   onNavigationClick?: (sectionName: string) => void;
+  /** Растворять «пилюлю» навигации — для липкой шапки в состоянии прокрутки. */
+  glassNav?: boolean;
 }
 
-export const DesktopNavigation: React.FC<DesktopNavigationProps> = ({ onNavigationClick }) => {
+export const DesktopNavigation: React.FC<DesktopNavigationProps> = ({
+  onNavigationClick,
+  glassNav,
+}) => {
   const {
     activeDropdown,
     openDropdown,
@@ -32,7 +37,11 @@ export const DesktopNavigation: React.FC<DesktopNavigationProps> = ({ onNavigati
   const { serviceCategories } = useDynamicServiceCategories();
 
   return (
-    <div className={styles.desktopNavigation} ref={dropdownRef}>
+    <div
+      className={styles.desktopNavigation}
+      ref={dropdownRef}
+      data-glass-nav={glassNav ? 'true' : undefined}
+    >
       <div className={styles.container}>
         <div className={styles.navContainer}>
           {navigationItems.map((item, index) => (

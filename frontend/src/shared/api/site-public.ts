@@ -7,6 +7,8 @@ export interface SitePublicConfig {
   rolesShowAdminLinkMobile: string[];
   /** Совпадает с rolesShowAdminLinkDesktop (обратная совместимость). */
   rolesShowAdminLink?: string[];
+  /** Вариант шапки публичного сайта: classic | sticky. */
+  headerVariant?: 'classic' | 'sticky';
 }
 
 /** Публичная конфигурация сайта (без авторизации). */

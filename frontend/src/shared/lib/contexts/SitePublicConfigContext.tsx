@@ -4,9 +4,12 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 
 import { getSitePublicConfig } from '@/shared/api/site-public';
 
+export type PublicHeaderVariant = 'classic' | 'sticky';
+
 export interface SitePublicConfigState {
   rolesShowAdminLinkDesktop: string[];
   rolesShowAdminLinkMobile: string[];
+  headerVariant: PublicHeaderVariant;
   isLoading: boolean;
   error: Error | null;
 }
@@ -14,6 +17,7 @@ export interface SitePublicConfigState {
 const defaultValue: SitePublicConfigState = {
   rolesShowAdminLinkDesktop: [],
   rolesShowAdminLinkMobile: [],
+  headerVariant: 'classic',
   isLoading: true,
   error: null,
 };
@@ -34,6 +38,7 @@ export function SitePublicConfigProvider({ children }: { children: React.ReactNo
           setState({
             rolesShowAdminLinkDesktop: desktop,
             rolesShowAdminLinkMobile: mobile,
+            headerVariant: data.headerVariant === 'sticky' ? 'sticky' : 'classic',
             isLoading: false,
             error: null,
           });
@@ -44,6 +49,7 @@ export function SitePublicConfigProvider({ children }: { children: React.ReactNo
           setState({
             rolesShowAdminLinkDesktop: [],
             rolesShowAdminLinkMobile: [],
+            headerVariant: 'classic',
             isLoading: false,
             error: err instanceof Error ? err : new Error(String(err)),
           });

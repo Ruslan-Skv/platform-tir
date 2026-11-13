@@ -116,6 +116,7 @@ export const ADMIN_RESOURCE_PARENT: Readonly<Record<string, string>> = {
   'admin.settings.public-offer': 'admin.settings',
   'admin.settings.delivery': 'admin.settings',
   'admin.settings.admin-link': 'admin.settings',
+  'admin.settings.public-header': 'admin.settings',
   'admin.settings.quote-form': 'admin.settings',
   'admin.settings.pwa': 'admin.settings',
   'admin.settings.work-days': 'admin.settings',

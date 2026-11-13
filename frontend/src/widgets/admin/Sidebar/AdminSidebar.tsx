@@ -702,6 +702,11 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.settings.admin-link',
       },
       {
+        label: 'Шапка публичного сайта',
+        href: '/admin/settings/public-header',
+        resourceId: 'admin.settings.public-header',
+      },
+      {
         label: 'Рассчитать стоимость (виды работ)',
         href: '/admin/settings/quote-form',
         resourceId: 'admin.settings.quote-form',

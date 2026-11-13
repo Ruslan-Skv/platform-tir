@@ -10,16 +10,25 @@ import { SitePlatformFeedbackButton } from '@/features/site-feedback';
 import { useTheme } from '@/features/theme';
 import { ApprovedOrderGuardProvider } from '@/shared/lib/contexts/ApprovedOrderGuardContext';
 import { CompareProvider } from '@/shared/lib/contexts/CompareContext';
-import { SitePublicConfigProvider } from '@/shared/lib/contexts/SitePublicConfigContext';
+import {
+  SitePublicConfigProvider,
+  useSitePublicConfig,
+} from '@/shared/lib/contexts/SitePublicConfigContext';
 import { Background } from '@/widgets/background';
 import { ChatSupportOpenProvider, ChatSupportWidget } from '@/widgets/chat-support';
 import { Footer } from '@/widgets/footer';
-import { Header } from '@/widgets/header';
+import { Header, StickyHeader } from '@/widgets/header';
 
 import { MobileBottomNav } from '../MobileBottomNav/MobileBottomNav';
 
 interface SiteLayoutProps {
   children: React.ReactNode;
+}
+
+/** Выбор варианта шапки по публичной конфигурации (настройка супер-админа). */
+function PublicSiteHeader() {
+  const { headerVariant } = useSitePublicConfig();
+  return headerVariant === 'sticky' ? <StickyHeader /> : <Header />;
 }
 
 export const SiteLayout: React.FC<SiteLayoutProps> = ({ children }) => {
@@ -39,7 +48,7 @@ export const SiteLayout: React.FC<SiteLayoutProps> = ({ children }) => {
                   suppressHydrationWarning
                 >
                   <Background />
-                  <Header />
+                  <PublicSiteHeader />
 
                   <div className="mainContent">{children}</div>
 

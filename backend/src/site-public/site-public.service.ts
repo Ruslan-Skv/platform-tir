@@ -19,6 +19,7 @@ export class SitePublicService {
       rolesShowAdminLinkMobile: mobile,
       /** @deprecated Используйте rolesShowAdminLinkDesktop — то же значение для обратной совместимости. */
       rolesShowAdminLink: desktop,
+      headerVariant: block?.headerVariant === 'sticky' ? 'sticky' : 'classic',
     };
   }
 
@@ -66,10 +67,12 @@ export class SitePublicService {
       where: { id: 'main' },
       update: {
         ...(jsonValue !== undefined && { rolesShowAdminLink: jsonValue }),
+        ...(dto.headerVariant !== undefined && { headerVariant: dto.headerVariant }),
       },
       create: {
         id: 'main',
         rolesShowAdminLink: jsonValue ?? Prisma.JsonNull,
+        ...(dto.headerVariant !== undefined && { headerVariant: dto.headerVariant }),
       },
     });
   }

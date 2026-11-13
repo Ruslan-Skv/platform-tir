@@ -12,6 +12,14 @@
   overflow: visible;
   padding: 0 1rem;
   position: relative;
+  transition:
+    background-color 0.35s ease,
+    box-shadow 0.35s ease;
+}
+
+/* Липкая шапка в состоянии прокрутки: «пилюля» навигации растворяется в стеклянном контейнере */
+[data-glass-nav='true'] .container {
+  background: transparent;
 }
 
 /* Темная тема */
