@@ -48,6 +48,8 @@ export async function generateBlogPostMetadata({ params }: BlogPostPageProps): P
   const description =
     post.seoDescription || post.excerpt || post.content?.replace(/<[^>]*>/g, '').slice(0, 160);
 
+  const ogImage = post.featuredImage || '/images/og-default.jpg';
+
   return {
     title,
     description,
@@ -56,15 +58,13 @@ export async function generateBlogPostMetadata({ params }: BlogPostPageProps): P
       description,
       type: 'article',
       publishedTime: post.publishedAt,
-      images: post.featuredImage
-        ? [{ url: post.featuredImage, alt: post.featuredImageAlt?.trim() || post.title }]
-        : undefined,
+      images: [{ url: ogImage, alt: post.featuredImageAlt?.trim() || post.title }],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: post.featuredImage ? [post.featuredImage] : undefined,
+      images: [ogImage],
     },
   };
 }

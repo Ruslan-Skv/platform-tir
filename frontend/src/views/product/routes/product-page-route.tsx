@@ -65,7 +65,7 @@ export async function generateProductMetadata({ params }: ProductPageProps): Pro
     }
   }
 
-  const ogImage = product.images?.[0] || undefined;
+  const ogImage = product.images?.[0] || '/images/og-default.jpg';
 
   return {
     title,
@@ -74,13 +74,13 @@ export async function generateProductMetadata({ params }: ProductPageProps): Pro
       title,
       description,
       type: 'website',
-      images: ogImage ? [{ url: ogImage, alt: product.name }] : undefined,
+      images: [{ url: ogImage, alt: product.name }],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: ogImage ? [ogImage] : undefined,
+      images: [ogImage],
     },
   };
 }

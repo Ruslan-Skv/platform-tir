@@ -26,6 +26,25 @@ export const metadata: Metadata = {
   metadataBase: getMetadataBase(),
   title: 'Территория интерьерных решений',
   description: 'Платформа для дизайна интерьеров и покупки товаров',
+  openGraph: {
+    title: 'Территория интерьерных решений',
+    description: 'Двери · Окна · Потолки · Жалюзи · Мебель · Ремонт — продажа и монтаж под ключ',
+    url: '/',
+    siteName: 'Территория интерьерных решений',
+    locale: 'ru_RU',
+    type: 'website',
+    images: [
+      {
+        url: '/images/og-default.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Территория интерьерных решений — 601270.ru',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+  },
   icons: {
     // Робот Яндекса не понимает SVG-фавиконки: без ICO/PNG в поиске и рекламе Директа
     // показывается серая заглушка, поэтому основной ссылкой должен быть /favicon.ico.
