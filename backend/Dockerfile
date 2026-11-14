@@ -98,6 +98,9 @@ COPY --from=builder /app/dist ./dist
 # Fonts for PDF stamps (remote signing ПЭП): Roboto TTF under assets/fonts
 COPY assets ./assets
 
+# Служебные утилиты (max-group-chat-id.mjs и др.) — запуск вручную в контейнере
+COPY scripts ./scripts
+
 # Create uploads directory (backend stores files here)
 RUN mkdir -p uploads
 
