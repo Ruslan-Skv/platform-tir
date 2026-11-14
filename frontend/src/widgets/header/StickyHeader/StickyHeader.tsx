@@ -10,7 +10,7 @@ import {
   UserIcon,
 } from '@heroicons/react/24/outline';
 
-import React, { Suspense, useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -21,6 +21,7 @@ import { getAvatarUrl, getInitials } from '@/shared/lib/avatar';
 import { Logo } from '@/shared/ui/Logo';
 
 import { ActionButtons } from '../ActionButtons';
+import { CatalogSearchField } from '../CatalogSearchField';
 import headerStyles from '../Header/Header.module.css';
 import { Navigation } from '../Navigation';
 import { TopBar } from '../TopBar';
@@ -32,16 +33,34 @@ const PHONE_LINK = 'tel:+78152601270';
 /** Порог прокрутки (px), после которого шапка трансформируется в компактную. */
 const SCROLL_THRESHOLD = 100;
 
-/** Состояние «страница прокручена» — пассивный слушатель скролла. */
-function useHeaderScrolled(threshold: number) {
+/**
+ * Зона нечувствительности (px) вокруг порога прокрутки. Переключение режима
+ * само меняет высоту шапки (TopBar сворачивается, паддинги ужимаются), из-за
+ * чего scrollY сдвигается сам по себе (scroll anchoring / подрезка прокрутки на
+ * коротких страницах) и у жёсткого порога шапка «мигала», самопроизвольно
+ * переключаясь туда-сюда. Поэтому компактный режим включается выше порога,
+ * а выключается только заметно ниже него — шире, чем сдвиг раскладки.
+ */
+const SCROLL_HYSTERESIS = 60;
+
+/** Состояние «страница прокручена» — пассивный слушатель скролла с гистерезисом. */
+function useHeaderScrolled(threshold: number, hysteresis: number) {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const update = () => setScrolled(window.scrollY > threshold);
+    // Вход в компактный режим — выше порога; выход — ниже порога на ширину
+    // гистерезиса, чтобы смена высоты шапки не переключала режим сама по себе.
+    const enterAt = threshold;
+    const exitAt = threshold - hysteresis;
+    const update = () => setScrolled((prev) => window.scrollY > (prev ? exitAt : enterAt));
     update();
     window.addEventListener('scroll', update, { passive: true });
-    return () => window.removeEventListener('scroll', update);
-  }, [threshold]);
+    window.addEventListener('resize', update, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, [threshold, hysteresis]);
 
   return scrolled;
 }
@@ -171,13 +190,50 @@ export interface StickyHeaderProps {
   onNavigationClick?: (sectionName: string) => void;
 }
 
+/**
+ * Поиск в пилюле: компактное поле (как в TopBar), прижатое к правому краю ряда —
+ * вплотную к телефону. По клику (фокусу) разворачивается до нормальной ширины
+ * и сворачивается при потере фокуса или по Escape (первый Escape при открытых
+ * подсказках закрывает их — это делает сам поиск).
+ */
+function PillSearch({ catalogSearch }: { catalogSearch: CatalogHeaderSearchState | null }) {
+  const [expanded, setExpanded] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  // Сворачиваем, когда фокус ушёл за пределы поиска (клик по подсказке не считается)
+  const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+      setExpanded(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Escape' && expanded && !catalogSearch?.listOpen) {
+      setExpanded(false);
+      (rootRef.current?.querySelector('input') as HTMLInputElement | null)?.blur();
+    }
+  };
+
+  return (
+    <div
+      ref={rootRef}
+      className={expanded ? `${styles.pillSearch} ${styles.pillSearchExpanded}` : styles.pillSearch}
+      onBlur={handleBlur}
+      onFocus={() => setExpanded(true)}
+      onKeyDown={handleKeyDown}
+    >
+      <CatalogSearchField catalogSearch={catalogSearch} />
+    </div>
+  );
+}
+
 function StickyHeaderChrome({
   onNavigationClick,
   catalogSearch,
 }: StickyHeaderProps & { catalogSearch: CatalogHeaderSearchState | null }) {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  const scrolled = useHeaderScrolled(SCROLL_THRESHOLD);
+  const scrolled = useHeaderScrolled(SCROLL_THRESHOLD, SCROLL_HYSTERESIS);
   const router = useRouter();
   const { isAuthenticated, user } = useUserAuth();
   const { isDarkTheme, toggleTheme } = useTheme();
@@ -198,13 +254,17 @@ function StickyHeaderChrome({
     >
       <div className={styles.toolbar}>
         <div className={styles.topBarWrap} aria-hidden={scrolled}>
-          <TopBar catalogSearch={catalogSearch} />
+          {/* Поиск живёт наверху в TopBar, а при прокрутке переезжает в ряд пилюли */}
+          <TopBar catalogSearch={catalogSearch} showSearch={!scrolled} />
         </div>
 
         <div className={styles.mainHeader}>
           <div className={styles.container}>
             <div className={styles.logoSection}>
               <Logo />
+              {/* В компактном режиме (пилюля) поиск переезжает из TopBar сюда:
+               * компактное поле у телефона, по клику разворачивается */}
+              {scrolled && <PillSearch catalogSearch={catalogSearch} />}
               <ActionButtons onMobileMenuOpen={() => setMobileMenuOpen(!mobileMenuOpen)} />
             </div>
 

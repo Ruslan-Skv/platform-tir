@@ -3,7 +3,6 @@
 import {
   Cog6ToothIcon,
   HeartIcon,
-  MagnifyingGlassIcon,
   MoonIcon,
   ShoppingCartIcon,
   SunIcon,
@@ -22,115 +21,18 @@ import { getAvatarUrl, getInitials } from '@/shared/lib/avatar';
 import { useSitePublicConfig } from '@/shared/lib/contexts/SitePublicConfigContext';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
 
+import { CatalogSearchField } from '../CatalogSearchField';
 import type { CatalogHeaderSearchState } from '../useCatalogHeaderSearch';
 import styles from './TopBar.module.css';
 
 export interface TopBarProps {
   /** Одно состояние поиска на весь header (десктоп + мобилка); null — плейсхолдер до Suspense */
   catalogSearch: CatalogHeaderSearchState | null;
+  /** false — без поля поиска (в липкой шапке при прокрутке поиск переезжает в пилюлю) */
+  showSearch?: boolean;
 }
 
-function TopBarCatalogSearch({ catalogSearch }: { catalogSearch: CatalogHeaderSearchState }) {
-  const {
-    searchQuery,
-    suggestions,
-    loadingSug,
-    highlight,
-    listId,
-    setHighlight,
-    cancelBlurClose,
-    pickSuggestion,
-    handleSearchSubmit,
-    handleInputBlur,
-    handleInputFocus,
-    handleInputChange,
-    handleInputKeyDown,
-    showDropdown,
-    showEmpty,
-  } = catalogSearch;
-
-  return (
-    <div className={styles.searchShell}>
-      <form className={styles.searchForm} onSubmit={handleSearchSubmit} role="search">
-        <input
-          type="search"
-          className={styles.searchInput}
-          placeholder="Поиск..."
-          aria-label="Поиск"
-          aria-expanded={showDropdown || showEmpty}
-          aria-controls={listId}
-          aria-autocomplete="list"
-          autoComplete="off"
-          value={searchQuery}
-          onChange={handleInputChange}
-          onBlur={handleInputBlur}
-          onFocus={handleInputFocus}
-          onKeyDown={handleInputKeyDown}
-        />
-        <button type="submit" className={styles.searchSubmit} aria-label="Искать">
-          <MagnifyingGlassIcon className={styles.searchIcon} />
-        </button>
-      </form>
-
-      {(showDropdown || showEmpty) && (
-        <ul
-          id={listId}
-          className={styles.suggestionsList}
-          role="listbox"
-          aria-label="Подсказки товаров"
-          onMouseDown={cancelBlurClose}
-        >
-          {loadingSug && (
-            <li className={styles.suggestionsLoading} role="presentation">
-              Поиск…
-            </li>
-          )}
-          {!loadingSug &&
-            suggestions.map((s, index) => (
-              <li key={s.id} role="presentation">
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={highlight === index}
-                  className={styles.suggestionItem}
-                  data-active={highlight === index ? 'true' : 'false'}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    cancelBlurClose();
-                  }}
-                  onClick={() => pickSuggestion(s)}
-                  onMouseEnter={() => setHighlight(index)}
-                >
-                  {s.imageUrl ? (
-                    <img
-                      className={styles.suggestionThumb}
-                      src={s.imageUrl}
-                      alt=""
-                      width={40}
-                      height={40}
-                    />
-                  ) : (
-                    <span className={styles.suggestionThumb} aria-hidden />
-                  )}
-                  <span className={styles.suggestionText}>
-                    <span className={styles.suggestionName}>{s.name}</span>
-                    {s.sku ? <span className={styles.suggestionMeta}>Арт. {s.sku}</span> : null}
-                  </span>
-                </button>
-              </li>
-            ))}
-          {!loadingSug && suggestions.length === 0 && (
-            <li className={styles.suggestionsLoading} role="presentation">
-              Ничего не найдено
-            </li>
-          )}
-        </ul>
-      )}
-    </div>
-  );
-}
-
-export const TopBar: React.FC<TopBarProps> = ({ catalogSearch }) => {
+export const TopBar: React.FC<TopBarProps> = ({ catalogSearch, showSearch = true }) => {
   const { isDarkTheme, toggleTheme } = useTheme();
   const router = useRouter();
   const [avatarLoadError, setAvatarLoadError] = useState(false);
@@ -166,24 +68,9 @@ export const TopBar: React.FC<TopBarProps> = ({ catalogSearch }) => {
       <div className={styles.container}>
         {/* Утилиты */}
         <div className={styles.utilities}>
-          {/* Поиск — слева от иконки «Сравнить» */}
-          {catalogSearch ? (
-            <TopBarCatalogSearch catalogSearch={catalogSearch} />
-          ) : (
-            <div className={styles.searchShell} aria-hidden>
-              <div className={styles.searchForm}>
-                <input
-                  type="search"
-                  className={styles.searchInput}
-                  placeholder="Поиск..."
-                  disabled
-                  readOnly
-                />
-                <span className={styles.searchSubmit}>
-                  <MagnifyingGlassIcon className={styles.searchIcon} />
-                </span>
-              </div>
-            </div>
+          {/* Поиск — слева от иконки «Сравнить» (в липкой шапке перенесён в пилюлю) */}
+          {showSearch && (
+            <CatalogSearchField className={styles.searchShell} catalogSearch={catalogSearch} />
           )}
           {/* Сравнение товаров (иконка как в карточках товаров) */}
           <button

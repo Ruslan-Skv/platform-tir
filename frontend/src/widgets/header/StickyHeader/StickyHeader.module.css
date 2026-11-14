@@ -101,16 +101,47 @@
   overflow: visible;
 }
 
-/* Обёртка TopBar для плавного сворачивания при прокрутке */
+/* Поиск в пилюле — компактное поле (как в TopBar, 11.75rem), прижатое к правому
+ * краю ряда вплотную к телефону. По клику (фокусу) плавно разворачивается до
+ * нормальной ширины: растёт flex-grow, поэтому занимает только свободное место
+ * и никогда не выталкивает соседей за край. Подсказки — от корневого элемента. */
+.pillSearch {
+  flex: 0 0 11.75rem;
+  margin-left: auto;
+  transition: flex-grow 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pillSearchExpanded {
+  flex-grow: 1;
+  max-width: 24rem;
+}
+
+/* На узких десктопах ряду не хватает места даже для компактного поля */
+@media (width <= 1024px) {
+  .pillSearch {
+    display: none;
+  }
+}
+
+/* Обёртка TopBar для плавного сворачивания при прокрутке.
+ * overflow: hidden нужен только в сложенном состоянии и во время анимации —
+ * в развёрнутом он обрезал бы всплывающие подсказки иконок TopBar и список
+ * подсказок поиска, выходящие вниз за 40px полосу. Поэтому в покое overflow
+ * открываем (с задержкой, равной анимации разворота), а при сворачивании
+ * закрываем мгновенно. z-index — выше соседних блоков шапки, чтобы подсказки
+ * не накрывались ими. */
 .topBarWrap {
   max-height: 2.5rem;
   opacity: 1;
-  overflow: hidden;
+  overflow: visible;
+  position: relative;
   transition:
     max-height 0.35s cubic-bezier(0.23, 1, 0.32, 1),
     opacity 0.3s ease,
-    visibility 0.35s;
+    visibility 0.35s,
+    overflow 0s 0.35s allow-discrete;
   visibility: visible;
+  z-index: 5;
 }
 
 /* Состояние после прокрутки: компактная шапка-«пилюля» */
@@ -131,6 +162,12 @@
 .scrolled .topBarWrap {
   max-height: 0;
   opacity: 0;
+  overflow: hidden;
+  transition:
+    max-height 0.35s cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 0.3s ease,
+    visibility 0.35s,
+    overflow 0s 0s allow-discrete;
   visibility: hidden;
 }
 
@@ -191,7 +228,8 @@
   .toolbar,
   .toolbar::before,
   .topBarWrap,
-  .logoSection {
+  .logoSection,
+  .pillSearch {
     transition: none;
   }
 }
