@@ -34,7 +34,11 @@ import { AdminFormMessage } from '@/shared/ui/admin/AdminFormMessage';
 import { useAdminSaveFeedback } from '@/shared/ui/admin/useAdminSaveFeedback';
 
 import formStyles from '../forms/FormsSettingsSection.module.css';
-import { NotifyChannelsFields, type NotifyChannelsValue } from '../forms/NotifyChannelsFields';
+import {
+  LinesTextarea,
+  NotifyChannelsFields,
+  type NotifyChannelsValue,
+} from '../forms/NotifyChannelsFields';
 import styles from '../shared/SettingsPage.module.css';
 import { SettingsSubPageView } from '../shared/SettingsSubPageView';
 import sectionStyles from './LeadNotificationChannelsSection.module.css';
@@ -588,28 +592,18 @@ export function LeadNotificationChannelsSection() {
               onChange={(value) => setChannel(currentEvent.key, value)}
             />
             {currentEvent.quizPhones ? (
-              <div className={formStyles.formGroup}>
-                <label htmlFor={`${currentEvent.key}-phones`} className={formStyles.formLabel}>
-                  Телефоны менеджеров (в тексте уведомления)
-                </label>
-                <textarea
-                  id={`${currentEvent.key}-phones`}
-                  value={(
-                    channels[currentEvent.key as 'quizMebel' | 'quizRemont'] as QuizChannelsState
-                  ).notifyPhones.join('\n')}
-                  onChange={(e) =>
-                    setQuizPhones(
-                      currentEvent.key as 'quizMebel' | 'quizRemont',
-                      e.target.value
-                        .split('\n')
-                        .map((s) => s.trim())
-                        .filter(Boolean)
-                    )
-                  }
-                  rows={2}
-                  className={formStyles.formTextarea}
-                />
-              </div>
+              <LinesTextarea
+                id={`${currentEvent.key}-phones`}
+                label="Телефоны менеджеров (в тексте уведомления)"
+                rows={2}
+                values={
+                  (channels[currentEvent.key as 'quizMebel' | 'quizRemont'] as QuizChannelsState)
+                    .notifyPhones
+                }
+                onChange={(notifyPhones) =>
+                  setQuizPhones(currentEvent.key as 'quizMebel' | 'quizRemont', notifyPhones)
+                }
+              />
             ) : null}
           </>
         )}

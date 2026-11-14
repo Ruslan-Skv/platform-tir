@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import formStyles from './FormsSettingsSection.module.css';
 
@@ -10,17 +10,74 @@ export interface NotifyChannelsValue {
   notifyMaxIds: string[];
 }
 
+interface LinesTextareaProps {
+  id: string;
+  label: string;
+  placeholder?: string;
+  hint?: string;
+  rows?: number;
+  values: string[];
+  onChange: (values: string[]) => void;
+}
+
+// Список «одно значение на строку». Держим сырой текст локально: контролируемое
+// значение из нормализованного массива мгновенно удаляло бы Enter в конце строки,
+// и перейти на новую строку в поле было бы невозможно.
+export function LinesTextarea({
+  id,
+  label,
+  placeholder,
+  hint,
+  rows = 3,
+  values,
+  onChange,
+}: LinesTextareaProps) {
+  const [text, setText] = useState(values.join('\n'));
+  // Последний массив, отданный наверх: если родитель сохранил его как есть,
+  // синхронизацию не запускаем — иначе сбрасывался бы ввод. Внешние обновления
+  // (например, загрузка настроек с сервера) приходят с новой ссылкой — подтянем их.
+  const emitted = useRef(values);
+
+  useEffect(() => {
+    if (emitted.current !== values) {
+      emitted.current = values;
+      setText(values.join('\n'));
+    }
+  }, [values]);
+
+  const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const raw = event.target.value;
+    setText(raw);
+    const parsed = raw
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+    emitted.current = parsed;
+    onChange(parsed);
+  };
+
+  return (
+    <div className={formStyles.formGroup}>
+      <label htmlFor={id} className={formStyles.formLabel}>
+        {label}
+      </label>
+      <textarea
+        id={id}
+        value={text}
+        onChange={handleChange}
+        placeholder={placeholder}
+        rows={rows}
+        className={formStyles.formTextarea}
+      />
+      {hint ? <p className={formStyles.fieldHint}>{hint}</p> : null}
+    </div>
+  );
+}
+
 interface NotifyChannelsFieldsProps {
   value: NotifyChannelsValue;
   onChange: (value: NotifyChannelsValue) => void;
   idPrefix?: string;
-}
-
-function parseLines(text: string): string[] {
-  return text
-    .split('\n')
-    .map((s) => s.trim())
-    .filter(Boolean);
 }
 
 export function NotifyChannelsFields({
@@ -30,47 +87,29 @@ export function NotifyChannelsFields({
 }: NotifyChannelsFieldsProps) {
   return (
     <>
-      <div className={formStyles.formGroup}>
-        <label htmlFor={`${idPrefix}-emails`} className={formStyles.formLabel}>
-          Email (каждый с новой строки)
-        </label>
-        <textarea
-          id={`${idPrefix}-emails`}
-          value={value.notifyEmails.join('\n')}
-          onChange={(e) => onChange({ ...value, notifyEmails: parseLines(e.target.value) })}
-          placeholder={'manager@company.ru\ndirector@company.ru'}
-          rows={3}
-          className={formStyles.formTextarea}
-        />
-      </div>
-      <div className={formStyles.formGroup}>
-        <label htmlFor={`${idPrefix}-telegram`} className={formStyles.formLabel}>
-          Telegram chat ID (каждый с новой строки)
-        </label>
-        <textarea
-          id={`${idPrefix}-telegram`}
-          value={value.notifyTelegramIds.join('\n')}
-          onChange={(e) => onChange({ ...value, notifyTelegramIds: parseLines(e.target.value) })}
-          placeholder={'-1001234567890\n123456789'}
-          rows={3}
-          className={formStyles.formTextarea}
-        />
-        <p className={formStyles.fieldHint}>Нужен TELEGRAM_BOT_TOKEN в .env сервера.</p>
-      </div>
-      <div className={formStyles.formGroup}>
-        <label htmlFor={`${idPrefix}-max`} className={formStyles.formLabel}>
-          MAX chat ID (каждый с новой строки)
-        </label>
-        <textarea
-          id={`${idPrefix}-max`}
-          value={value.notifyMaxIds.join('\n')}
-          onChange={(e) => onChange({ ...value, notifyMaxIds: parseLines(e.target.value) })}
-          placeholder="-1234567890"
-          rows={3}
-          className={formStyles.formTextarea}
-        />
-        <p className={formStyles.fieldHint}>Нужен MAX_BOT_TOKEN в .env сервера.</p>
-      </div>
+      <LinesTextarea
+        id={`${idPrefix}-emails`}
+        label="Email (каждый с новой строки)"
+        placeholder={'manager@company.ru\ndirector@company.ru'}
+        values={value.notifyEmails}
+        onChange={(notifyEmails) => onChange({ ...value, notifyEmails })}
+      />
+      <LinesTextarea
+        id={`${idPrefix}-telegram`}
+        label="Telegram chat ID (каждый с новой строки)"
+        placeholder={'-1001234567890\n123456789'}
+        hint="Нужен TELEGRAM_BOT_TOKEN в .env сервера."
+        values={value.notifyTelegramIds}
+        onChange={(notifyTelegramIds) => onChange({ ...value, notifyTelegramIds })}
+      />
+      <LinesTextarea
+        id={`${idPrefix}-max`}
+        label="MAX chat ID (каждый с новой строки)"
+        placeholder={'-7000000000012345\n355092160'}
+        hint="Нужен MAX_BOT_TOKEN в .env сервера."
+        values={value.notifyMaxIds}
+        onChange={(notifyMaxIds) => onChange({ ...value, notifyMaxIds })}
+      />
     </>
   );
 }
