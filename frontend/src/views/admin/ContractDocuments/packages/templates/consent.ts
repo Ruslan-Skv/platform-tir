@@ -1,6 +1,6 @@
 /**
  * Шаблон «Согласие на обработку персональных данных».
- * Основан на Политике конфиденциальности: https://territory-interior.ru/auth/privacy-policy
+ * Основан на Политике конфиденциальности: https://601270.ru/auth/privacy-policy
  */
 export const packageTemplateConsent = `
 <div class="docPrint docPrintContractCompact">
@@ -15,7 +15,7 @@ export const packageTemplateConsent = `
     <strong>{{executor.companyName}}</strong> (ИНН {{executor.inn}}, {{executor.innKppRegLine}}, адрес:
     {{executor.legalAddress}}, далее — «Оператор») на обработку моих персональных данных на условиях,
     изложенных ниже и в соответствии с Политикой конфиденциальности персональных данных, размещённой по адресу
-    <strong>https://territory-interior.ru/auth/privacy-policy</strong> (далее — «Политика»).
+    <strong>https://601270.ru/auth/privacy-policy</strong> (далее — «Политика»).
   </p>
 
   <h2 style="text-align: center; font-weight: bold; margin: 10pt 0 6pt;">1. Перечень персональных данных</h2>
@@ -67,7 +67,7 @@ export const packageTemplateConsent = `
 
   <p style="text-align: justify; text-indent: 1.25cm; margin: 0 0 10pt;">
     Подтверждаю, что ознакомлен(а) с Политикой конфиденциальности персональных данных Оператора,
-    размещённой по адресу https://territory-interior.ru/auth/privacy-policy, и принимаю её условия.
+    размещённой по адресу https://601270.ru/auth/privacy-policy, и принимаю её условия.
   </p>
 
   <p style="margin: 12pt 0 4pt;">«{{contract.date}}» &nbsp;&nbsp;&nbsp;&nbsp; _________________________ / {{customer.signatureName|plain}}</p>

@@ -27,7 +27,7 @@ type QuizWizardProps = {
   config: QuizPublicConfig;
 };
 
-const MAIN_SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://territory-interior.ru';
+const MAIN_SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://601270.ru';
 
 function LocationIcon() {
   return (

@@ -173,7 +173,7 @@ export async function downloadStroykomImagesToUploads(
       const res = await fetch(remote, {
         headers: {
           'User-Agent':
-            'Mozilla/5.0 (compatible; TerritoryInteriorImporter/1.0; +https://territory-interior.ru)',
+            'Mozilla/5.0 (compatible; TerritoryInteriorImporter/1.0; +https://601270.ru)',
           Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
           Referer: `${STROYKOM_BASE}/`,
         },
@@ -258,8 +258,7 @@ export function normalizeSlug(slug: string): string {
 export async function fetchHtml(url: string): Promise<string> {
   const res = await fetch(url, {
     headers: {
-      'User-Agent':
-        'Mozilla/5.0 (compatible; TerritoryInteriorImporter/1.0; +https://territory-interior.ru)',
+      'User-Agent': 'Mozilla/5.0 (compatible; TerritoryInteriorImporter/1.0; +https://601270.ru)',
       Accept: 'text/html,application/xhtml+xml',
     },
     redirect: 'follow',

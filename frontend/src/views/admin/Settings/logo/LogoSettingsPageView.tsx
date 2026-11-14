@@ -30,7 +30,7 @@ const LOGO_VARIANTS: {
   {
     value: 'mission',
     label: '«Миссия» — Great Vibes',
-    hint: 'Рукописный шрифт текста миссии компании (territory-interior.ru/mission).',
+    hint: 'Рукописный шрифт текста миссии компании (601270.ru/mission).',
     previewTitleClassName: styles.previewTitleMission,
     previewRowClassName: styles.previewRowMission,
   },

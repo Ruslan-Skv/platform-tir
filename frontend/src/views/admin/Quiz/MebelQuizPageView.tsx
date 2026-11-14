@@ -274,8 +274,8 @@ export function QuizAdminPageView({ model }: { model: Model }) {
         >
           <p className={styles.hint}>
             Настройте цвета, шрифты и фон. По умолчанию — фон как на{' '}
-            <a href="https://territory-interior.ru/" target="_blank" rel="noopener noreferrer">
-              territory-interior.ru
+            <a href="https://601270.ru/" target="_blank" rel="noopener noreferrer">
+              601270.ru
             </a>{' '}
             (<code>/images/light-fon.png</code>).
           </p>

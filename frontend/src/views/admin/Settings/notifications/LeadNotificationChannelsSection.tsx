@@ -106,7 +106,7 @@ const INITIAL: ChannelsState = {
 };
 
 const TABS: { id: TabId; label: string; hint: string }[] = [
-  { id: 'forms', label: 'Формы сайта', hint: 'territory-interior.ru' },
+  { id: 'forms', label: 'Формы сайта', hint: '601270.ru' },
   { id: 'quizzes', label: 'Квизы', hint: 'mebel-na-zakaz-51.ru · remont-kvartir-51.ru' },
   {
     id: 'other',

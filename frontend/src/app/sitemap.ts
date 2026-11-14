@@ -3,7 +3,7 @@ import type { MetadataRoute } from 'next';
 import { apiFetch } from '@/shared/lib/api-fetch';
 import { getServerApiBaseUrl } from '@/shared/lib/server-api-base-url';
 
-const SITE_ORIGIN = process.env.NEXT_PUBLIC_SITE_URL || 'https://territory-interior.ru';
+const SITE_ORIGIN = process.env.NEXT_PUBLIC_SITE_URL || 'https://601270.ru';
 const API_URL = getServerApiBaseUrl();
 
 interface SitemapCategoryRow {

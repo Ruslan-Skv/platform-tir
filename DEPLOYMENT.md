@@ -85,7 +85,7 @@ Email по умолчанию: `admin@platform.local`; пароль — из `SU
 Убедитесь, что в `.env` указаны и переданы в backend:
 
 ```
-SITE_URL=https://territory-interior.ru
+SITE_URL=https://601270.ru
 YANDEX_CLIENT_ID=<Client ID из панели>
 YANDEX_CLIENT_SECRET=<Client secret>
 ```
@@ -99,7 +99,7 @@ YANDEX_CLIENT_SECRET=<Client secret>
 3. **Платформа:** выберите **Web services**.
 4. **Redirect URI** — укажите **точно** (без слэша в конце):
    ```
-   https://territory-interior.ru/auth/yandex/callback
+   https://601270.ru/auth/yandex/callback
    ```
    Для кириллического домена добавьте второй URI:
    ```
@@ -131,25 +131,31 @@ Access-токен хранится в `localStorage`, refresh — в httpOnly co
 
 | Что проверить | Значение |
 |---------------|----------|
-| `CORS_ORIGIN` | `https://territory-interior.ru` (+ зеркала при необходимости) |
+| `CORS_ORIGIN` | `https://601270.ru` (+ зеркала при необходимости) |
 | `REFRESH_COOKIE_SECURE` | `true` при HTTPS |
-| `REFRESH_COOKIE_DOMAIN` | пусто или `.territory-interior.ru` (не ставить, если сомневаетесь) |
+| `REFRESH_COOKIE_DOMAIN` | пусто или `.601270.ru` (не ставить, если сомневаетесь) |
 | `NEXT_PUBLIC_API_URL` при сборке frontend | `/api/v1` (относительный, см. GitHub Actions) |
 | Миграции | `docker compose … exec backend npx prisma migrate deploy` |
 
-После входа в DevTools → Application → Cookies → `territory-interior.ru` должна появиться cookie `rt` с path `/api/v1/auth`.
+После входа в DevTools → Application → Cookies → `601270.ru` должна появиться cookie `rt` с path `/api/v1/auth`.
 
 ---
 
 ## Несколько доменов и зеркалирование
 
-**Основной домен:** territory-interior.ru  
-**Зеркала (301 → основной):** территория-интерьерных-решений.рф, 601270.ru, psk-pobeda.ru
+**Основной домен:** 601270.ru  
+**Зеркала (301 → основной):** территория-интерьерных-решений.рф, territory-interior.ru, psk-pobeda.ru
+
+> Смена основного домена (был territory-interior.ru, стал 601270.ru):
+> 1. В `.env` на сервере обновите `SITE_URL`, `NEXT_PUBLIC_SITE_URL`, `API_BASE_URL`, `CORS_ORIGIN` (см. `.env.production.example`).
+> 2. `NEXT_PUBLIC_SITE_URL` вшивается в образ frontend при сборке — обновите переменную репозитория GitHub (Settings → Secrets and variables → Actions → Variables) и запустите workflow, затем на сервере `docker compose … pull && docker compose … up -d`.
+> 3. Redirect URI в приложении Яндекс OAuth поменяйте на `https://601270.ru/auth/yandex/callback`.
+> 4. SSL-сертификат уже покрывает 601270.ru — пересдача не нужна. Каталог certbot `/etc/letsencrypt/live/territory-interior.ru` — это имя lineage от первого выпуска, оно остаётся (скрипты `renew-ssl.sh` / `expand-ssl-domains.sh` учитывают это).
 
 1. **NEXT_PUBLIC_API_URL** — относительный путь `/api/v1`.
 2. **CORS_ORIGIN** — все домены (на случай запросов до редиректа):
    ```
-   CORS_ORIGIN=https://territory-interior.ru,https://xn-----mlcbabasabfm9bcdf6aacfbc3aeg7f4dwdza7f.xn--p1ai,https://601270.ru,https://psk-pobeda.ru
+   CORS_ORIGIN=https://601270.ru,https://territory-interior.ru,https://xn-----mlcbabasabfm9bcdf6aacfbc3aeg7f4dwdza7f.xn--p1ai,https://psk-pobeda.ru
    ```
 3. **SSL:** все домены должны быть в сертификате Let's Encrypt. При первом запуске `setup-ssl.sh` включает основной домен и зеркала. Для добавления нового домена (например, psk-pobeda.ru) к уже существующему сертификату:
    ```bash
@@ -166,7 +172,7 @@ Access-токен хранится в `localStorage`, refresh — в httpOnly co
 1. **DNS:** A-запись `mebel-na-zakaz-51.ru` → IP сервера.
 2. **CORS_ORIGIN** — добавьте домен квиза:
    ```
-   CORS_ORIGIN=https://territory-interior.ru,...,https://mebel-na-zakaz-51.ru
+   CORS_ORIGIN=https://601270.ru,...,https://mebel-na-zakaz-51.ru
    ```
 3. **QUIZ_DOMAINS** и **NEXT_PUBLIC_QUIZ_DOMAINS** — `mebel-na-zakaz-51.ru` (см. `.env.example`).
 4. **SSL:** включите домен в сертификат (`scripts/expand-ssl-domains.sh` или certbot `-d mebel-na-zakaz-51.ru`).
@@ -210,13 +216,13 @@ chmod +x scripts/setup-ssl.sh
 2. Получить сертификаты:
    ```bash
    sudo apt-get install -y certbot
-   sudo certbot certonly --standalone -d territory-interior.ru -d xn-----mlcbabasabfm9bcdf6aacfbc3aeg7f4dwdza7f.xn--p1ai --non-interactive --agree-tos --email admin@territory-interior.ru
+   sudo certbot certonly --standalone -d 601270.ru -d territory-interior.ru -d xn-----mlcbabasabfm9bcdf6aacfbc3aeg7f4dwdza7f.xn--p1ai -d mebel-na-zakaz-51.ru -d remont-kvartir-51.ru -d psk-pobeda.ru -d www.psk-pobeda.ru --non-interactive --agree-tos --email admin@territory-interior.ru
    ```
-3. Скопировать в проект:
+3. Скопировать в проект (каталог lineage — имя первого домена при выпуске сертификата):
    ```bash
    mkdir -p nginx/ssl
-   sudo cp /etc/letsencrypt/live/territory-interior.ru/fullchain.pem nginx/ssl/
-   sudo cp /etc/letsencrypt/live/territory-interior.ru/privkey.pem nginx/ssl/
+   sudo cp /etc/letsencrypt/live/601270.ru/fullchain.pem nginx/ssl/
+   sudo cp /etc/letsencrypt/live/601270.ru/privkey.pem nginx/ssl/
    sudo chown $(whoami) nginx/ssl/*.pem
    ```
 4. Запустить с SSL:

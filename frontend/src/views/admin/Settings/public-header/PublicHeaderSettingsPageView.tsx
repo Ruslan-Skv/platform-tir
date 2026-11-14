@@ -93,8 +93,8 @@ export function PublicHeaderSettingsPageView() {
       <header className={styles.header}>
         <h1 className={styles.title}>Шапка публичного сайта</h1>
         <p className={styles.subtitle}>
-          Выберите вариант шапки публичного сайта (territory-interior.ru). Настройка влияет только
-          на публичную часть, админка не меняется.
+          Выберите вариант шапки публичного сайта (601270.ru). Настройка влияет только на публичную
+          часть, админка не меняется.
         </p>
       </header>
 

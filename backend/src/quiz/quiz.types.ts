@@ -101,7 +101,7 @@ export interface QuizTheme {
   cityBadgeShadowOpacity: number;
 }
 
-/** Фон как на territory-interior.ru (светлая тема, light-fon.png) */
+/** Фон как на 601270.ru (светлая тема, light-fon.png) */
 export const DEFAULT_QUIZ_THEME: QuizTheme = {
   background: '#f8fafc',
   backgroundImageUrl: '/images/light-fon.png',

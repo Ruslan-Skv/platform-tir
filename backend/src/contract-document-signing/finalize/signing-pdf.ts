@@ -223,7 +223,7 @@ function hostOf(siteUrl: string): string {
   try {
     return new URL(siteUrl).host;
   } catch {
-    return 'territory-interior.ru';
+    return '601270.ru';
   }
 }
 

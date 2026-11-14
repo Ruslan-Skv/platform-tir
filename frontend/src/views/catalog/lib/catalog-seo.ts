@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 
 import type { ParsedCatalogSearchParams } from '@/views/catalog/lib/catalog-search-params';
 
-const SITE_ORIGIN = process.env.NEXT_PUBLIC_SITE_URL || 'https://territory-interior.ru';
+const SITE_ORIGIN = process.env.NEXT_PUBLIC_SITE_URL || 'https://601270.ru';
 
 export function buildCatalogCanonicalPath(
   pathname: string,

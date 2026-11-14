@@ -7,6 +7,7 @@ set -e
 cd "$(dirname "$0")/.."
 export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin"
 
+# Каталог lineage certbot (имя от первого выпуска сертификата) — не зависит от основного домена 601270.ru
 DOMAIN="territory-interior.ru"
 COMPOSE="docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml -f docker-compose.ssl.yml"
 CERTBOT_IMAGE="certbot/certbot:latest"

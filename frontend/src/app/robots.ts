@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
 
-const SITE_ORIGIN = process.env.NEXT_PUBLIC_SITE_URL || 'https://territory-interior.ru';
+const SITE_ORIGIN = process.env.NEXT_PUBLIC_SITE_URL || 'https://601270.ru';
 
 export default function robots(): MetadataRoute.Robots {
   return {

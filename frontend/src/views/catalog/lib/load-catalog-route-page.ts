@@ -2,7 +2,7 @@ import { getServerApiBaseUrl } from '@/shared/lib/server-api-base-url';
 import type { ParsedCatalogSearchParams } from '@/views/catalog/lib/catalog-search-params';
 import { getCatalogPageCached } from '@/views/catalog/lib/get-catalog-page-cached';
 
-const SITE_ORIGIN = process.env.NEXT_PUBLIC_SITE_URL || 'https://territory-interior.ru';
+const SITE_ORIGIN = process.env.NEXT_PUBLIC_SITE_URL || 'https://601270.ru';
 const DEFAULT_SSR_LIMIT = 15;
 
 export function searchParamsRecordToQueryString(
