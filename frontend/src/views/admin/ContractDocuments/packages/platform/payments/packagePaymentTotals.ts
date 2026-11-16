@@ -41,12 +41,41 @@ export type PackageFurnitureLegPayable = {
 export interface PackagePayableBreakdown {
   /** Сумма по основному договору (поле «Стоимость дог.»). */
   mainContractRub: number | null;
-  /** Суммы по Д/с №1… (только открытые слоты, по snapshot). */
+  /** Суммы по Д/с №1… (доп. работы за вычетом непроводимых, как в печати Д/с). */
   addendumTotalsRub: Array<{ slotIndex1: number; totalRub: number | null }>;
   /** Стоимость договора + суммы по Д/с, где в пакете уже заполнена смета (см. комментарий в расчёте). */
   grandTotalRub: number | null;
   /** Мебель: включённые ноги с суммами (для сводки и оснований ПКО). */
   furnitureLegs?: PackageFurnitureLegPayable[];
+}
+
+/**
+ * Чистый итог слота Д/с без скидки: доп. работы − непроводимые
+ * (как «Итого по смете» в печати Д/с). null — в слоте нет ни одного расчёта.
+ * Отрицательный итог — исключений больше, чем добавлений («уменьшение договора»).
+ */
+function resolveAddendumSlotNetTotalRub(
+  slot: PackageFormData['addendumSlots'][number] | undefined
+): number | null {
+  const additional = slot?.snapshot?.total;
+  const excluded = slot?.excludedSnapshot?.total;
+  const hasAdditional = typeof additional === 'number' && Number.isFinite(additional);
+  const hasExcluded = typeof excluded === 'number' && Number.isFinite(excluded);
+  if (!hasAdditional && !hasExcluded) return null;
+  return (hasAdditional ? (additional as number) : 0) - (hasExcluded ? (excluded as number) : 0);
+}
+
+/** Итог слота со скидкой: скидка — только к доплате (net > 0), «уменьшение
+ * договора» (net < 0) проходит как есть — как в расчёте Д/с «Окна». */
+function resolveAddendumSlotDiscountedTotalRub(
+  form: PackageFormData,
+  slotIndex0: number,
+  rawTotal: number
+): number {
+  if (rawTotal < 0) return rawTotal;
+  // Скидка Д/с замещает договорную (INHERIT → договоровая).
+  const slotDiscountPct = resolveAddendumSlotDiscount(form, slotIndex0).percent;
+  return applyPackageContractDiscountToAmount(rawTotal, slotDiscountPct);
 }
 
 /**
@@ -60,12 +89,9 @@ function computeRepairLikePayableBreakdown(form: PackageFormData): PackagePayabl
   let addendumSumKnown = 0;
   for (let i = 0; i < count; i++) {
     const slot = form.addendumSlots[i];
-    const t = slot?.snapshot?.total;
-    const rawTotal = typeof t === 'number' && Number.isFinite(t) ? t : null;
-    // Скидка Д/с замещает договорную (INHERIT → договоровая).
-    const slotDiscountPct = resolveAddendumSlotDiscount(form, i).percent;
+    const rawTotal = resolveAddendumSlotNetTotalRub(slot);
     const totalRub =
-      rawTotal != null ? applyPackageContractDiscountToAmount(rawTotal, slotDiscountPct) : null;
+      rawTotal != null ? resolveAddendumSlotDiscountedTotalRub(form, i, rawTotal) : null;
     addendumTotalsRub.push({ slotIndex1: i + 1, totalRub });
     if (totalRub != null) {
       addendumSumKnown += totalRub;
@@ -144,11 +170,9 @@ export function computeFurniturePayableBreakdown(form: PackageFormData): Package
   let addendumSumKnown = 0;
   for (let i = 0; i < count; i++) {
     const slot = form.addendumSlots[i];
-    const t = slot?.snapshot?.total;
-    const rawTotal = typeof t === 'number' && Number.isFinite(t) ? t : null;
-    const slotDiscountPct = resolveAddendumSlotDiscount(form, i).percent;
+    const rawTotal = resolveAddendumSlotNetTotalRub(slot);
     const totalRub =
-      rawTotal != null ? applyPackageContractDiscountToAmount(rawTotal, slotDiscountPct) : null;
+      rawTotal != null ? resolveAddendumSlotDiscountedTotalRub(form, i, rawTotal) : null;
     addendumTotalsRub.push({ slotIndex1: i + 1, totalRub });
     if (totalRub != null) {
       addendumSumKnown += totalRub;
