@@ -40,7 +40,10 @@ export type AdminBellPushEvent =
   | 'installer_advance_sheet'
   | 'calendar_event'
   | 'messenger_message'
-  | 'kanban_card';
+  | 'kanban_card'
+  | 'meeting'
+  | 'remote_help_request'
+  | 'remote_help_invite';
 
 @Injectable()
 export class AdminBellPushService {
@@ -199,6 +202,14 @@ export class AdminBellPushService {
       case 'messenger_message':
         return true;
       case 'kanban_card':
+        return true;
+      case 'meeting':
+        return true;
+      case 'remote_help_request':
+        // Адресное уведомление суперадминам о запросе помощи сотрудником.
+        return true;
+      case 'remote_help_invite':
+        // Адресное уведомление сотруднику о приглашении суперадмина.
         return true;
       default:
         return false;

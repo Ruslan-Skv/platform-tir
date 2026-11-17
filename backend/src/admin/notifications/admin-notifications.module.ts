@@ -14,7 +14,9 @@ import { AdminBellIncassationFeedService } from './services/admin-bell-incassati
 import { AdminBellInstallerAdvanceSheetFeedService } from './services/admin-bell-installer-advance-sheet-feed.service';
 import { AdminBellSalesTotalsFeedService } from './services/admin-bell-sales-totals-feed.service';
 import { AdminBellCalendarFeedService } from './admin-bell-calendar-feed.service';
+import { AdminBellMeetingsFeedService } from './services/admin-bell-meetings-feed.service';
 import { AdminBellMessengerFeedService } from './admin-bell-messenger-feed.service';
+import { AdminBellRemoteHelpFeedService } from './services/admin-bell-remote-help-feed.service';
 import { AdminBellKanbanFeedService } from './admin-bell-kanban-feed.service';
 import { AdminBellContractSigningFeedService } from './services/admin-bell-contract-signing-feed.service';
 import { AdminBellContractConcludedFeedService } from './services/admin-bell-contract-concluded-feed.service';
@@ -41,8 +43,10 @@ import { AdminNotificationsService } from './admin-notifications.service';
     AdminBellInstallerAdvanceSheetFeedService,
     AdminBellSalesTotalsFeedService,
     AdminBellCalendarFeedService,
+    AdminBellMeetingsFeedService,
     AdminBellMessengerFeedService,
     AdminBellKanbanFeedService,
+    AdminBellRemoteHelpFeedService,
     AdminBellContractSigningFeedService,
     AdminBellContractConcludedFeedService,
   ],

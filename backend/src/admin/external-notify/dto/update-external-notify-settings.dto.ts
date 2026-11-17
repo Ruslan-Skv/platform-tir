@@ -325,4 +325,25 @@ export class UpdateExternalNotifySettingsDto {
   @IsArray()
   @IsString({ each: true })
   contractConcludedNotifyMaxIds?: string[];
+
+  @ApiPropertyOptional({ type: [String], description: 'Email для запросов удалённой помощи' })
+  @IsOptional()
+  @IsArray()
+  @IsEmail({}, { each: true })
+  remoteHelpNotifyEmails?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Telegram chat ID для запросов удалённой помощи',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  remoteHelpNotifyTelegramIds?: string[];
+
+  @ApiPropertyOptional({ type: [String], description: 'MAX chat ID для запросов удалённой помощи' })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  remoteHelpNotifyMaxIds?: string[];
 }

@@ -32,6 +32,7 @@ export type CalendarEventType =
   | 'measurement'
   | 'contract'
   | 'work_day'
+  | 'meeting'
   | 'custom';
 
 export type CalendarEvent = {

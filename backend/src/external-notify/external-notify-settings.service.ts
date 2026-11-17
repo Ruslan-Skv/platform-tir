@@ -17,7 +17,8 @@ export type ExternalNotifyEvent =
   | 'furniture_schedule'
   | 'measurement'
   | 'measurement_created'
-  | 'contract_concluded';
+  | 'contract_concluded'
+  | 'remote_help';
 
 @Injectable()
 export class ExternalNotifySettingsService {
@@ -110,6 +111,12 @@ export class ExternalNotifySettingsService {
           emails: parseStringArray(block.contractConcludedNotifyEmails),
           telegramIds: parseStringArray(block.contractConcludedNotifyTelegramIds),
           maxIds: parseStringArray(block.contractConcludedNotifyMaxIds),
+        };
+      case 'remote_help':
+        return {
+          emails: parseStringArray(block.remoteHelpNotifyEmails),
+          telegramIds: parseStringArray(block.remoteHelpNotifyTelegramIds),
+          maxIds: parseStringArray(block.remoteHelpNotifyMaxIds),
         };
     }
   }

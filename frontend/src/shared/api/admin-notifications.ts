@@ -813,6 +813,29 @@ export type AdminBellMessengerNotification = {
   occurredAt: string;
 };
 
+export type AdminBellMeetingsNotification = {
+  id: string;
+  kind: 'created' | 'started' | 'cancelled' | 'reminder';
+  kindLabel: string;
+  meetingId: string;
+  title: string;
+  message: string;
+  href: string;
+  occurredAt: string;
+};
+
+export async function getAdminBellMeetingsNotifications(
+  limit = 20
+): Promise<AdminBellMeetingsNotification[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  const res = await apiFetch(`${API_URL}/admin/notifications/bell/meetings?${params}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить уведомления собраний');
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
 export async function getAdminBellMessengerNotifications(
   limit = 20
 ): Promise<AdminBellMessengerNotification[]> {
@@ -895,6 +918,29 @@ export async function getAdminBellKanbanNotifications(
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить уведомления канбана');
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+export type AdminBellRemoteHelpNotification = {
+  id: string;
+  kind: 'request' | 'invite';
+  kindLabel: string;
+  sessionId: string;
+  title: string;
+  message: string;
+  href: string;
+  occurredAt: string;
+};
+
+export async function getAdminBellRemoteHelpNotifications(
+  limit = 20
+): Promise<AdminBellRemoteHelpNotification[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  const res = await apiFetch(`${API_URL}/admin/notifications/bell/remote-help?${params}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить уведомления удалённой помощи');
   const data = await res.json();
   return Array.isArray(data) ? data : [];
 }

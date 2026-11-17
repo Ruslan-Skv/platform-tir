@@ -6,6 +6,7 @@ export const CALENDAR_TYPE_LABELS: Record<CalendarEventType, string> = {
   measurement: 'Замер',
   contract: 'Договор',
   work_day: 'Рабочий день',
+  meeting: 'Онлайн-собрание',
   custom: 'Событие',
 };
 
@@ -16,6 +17,7 @@ export const CALENDAR_TYPE_SHORT_LABELS: Record<CalendarEventType, string> = {
   measurement: 'Замер',
   contract: 'Договор',
   work_day: 'Раб. день',
+  meeting: 'Собрание',
   custom: 'Событие',
 };
 
@@ -27,6 +29,7 @@ const TYPE_DOT: Record<CalendarEventType, string> = {
   measurement: 'filterDotMeasurement',
   contract: 'filterDotContract',
   work_day: 'filterDotWorkDay',
+  meeting: 'filterDotMeeting',
   custom: 'filterDotCustom',
 };
 
@@ -36,6 +39,7 @@ const TYPE_PILL: Record<CalendarEventType, string> = {
   measurement: 'pillMeasurement',
   contract: 'pillContract',
   work_day: 'pillWorkDay',
+  meeting: 'pillMeeting',
   custom: 'pillCustom',
 };
 

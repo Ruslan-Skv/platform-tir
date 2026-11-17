@@ -9,11 +9,20 @@ import {
 import { Prisma, RemoteHelpSessionStatus, UserRole } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { UsersService } from '../../users/users.service';
+import { getIceServersFromEnv, IceServerConfig } from '../../common/utils/webrtc-ice.util';
+import { AdminBellPushService } from '../../bell-push/admin-bell-push.service';
+import { ExternalNotifyService } from '../../external-notify/external-notify.service';
+import { ExternalNotifySettingsService } from '../../external-notify/external-notify-settings.service';
 import { RemoteHelpGateway } from './remote-help.gateway';
 import { CreateRemoteHelpInviteDto } from './dto/remote-help.dto';
 
-/** Не отвеченное приглашение/запрос живёт столько, потом помечается EXPIRED. */
-const STALE_MS = 90_000;
+/** Не отвеченное приглашение суперадмина живёт столько, потом помечается EXPIRED. */
+const PENDING_STALE_MS = 90_000;
+/**
+ * Запрос сотрудника ждёт суперадмина дольше — чтобы уведомление по внешним каналам
+ * (email/Telegram/MAX) успело дойти до суперадмина не за столом.
+ */
+const REQUESTED_STALE_MS = 600_000;
 
 const REMOTE_HELP_USER_SELECT = {
   id: true,
@@ -34,18 +43,14 @@ type RemoteHelpSessionWithUsers = Prisma.RemoteHelpSessionGetPayload<{
   include: typeof sessionInclude;
 }>;
 
-/** Конфигурация ICE-серверов для WebRTC (см. docs/REMOTE-HELP.md). */
-export interface IceServerConfig {
-  urls: string[];
-  username?: string;
-  credential?: string;
-}
-
 @Injectable()
 export class RemoteHelpService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly usersService: UsersService,
+    private readonly adminBellPush: AdminBellPushService,
+    private readonly externalNotifySettings: ExternalNotifySettingsService,
+    private readonly externalNotify: ExternalNotifyService,
     @Inject(forwardRef(() => RemoteHelpGateway))
     private readonly gateway: RemoteHelpGateway,
   ) {}
@@ -67,12 +72,25 @@ export class RemoteHelpService {
     }
 
     await this.expireStale();
-    await this.assertNoOpenSessions(dto.userId, adminId);
 
     const existingRequest = await this.prisma.remoteHelpSession.findFirst({
       where: { userId: dto.userId, status: 'REQUESTED' },
       include: sessionInclude,
     });
+
+    // REQUESTED у приглашаемого не мешает — приглашение его заберёт; блокируют только
+    // ожидающее ответа приглашение и активная сессия у любой из сторон
+    const blocking = await this.prisma.remoteHelpSession.findFirst({
+      where: { status: { in: ['PENDING', 'ACTIVE'] }, OR: [{ userId: dto.userId }, { adminId }] },
+      select: { status: true },
+    });
+    if (blocking) {
+      throw new BadRequestException(
+        blocking.status === 'ACTIVE'
+          ? 'Сессия помощи уже идёт — завершите её прежде чем создавать новую'
+          : 'Уже есть ожидающее ответа приглашение',
+      );
+    }
 
     const session = existingRequest
       ? await this.prisma.remoteHelpSession.update({
@@ -87,13 +105,13 @@ export class RemoteHelpService {
 
     this.gateway.emitInvite(session);
     this.gateway.emitSession(session);
+    this.notifyInvite(session);
     return session;
   }
 
   /** Сотрудник сам запросил помощь. Идемпотентно: незакрытый запрос возвращается. */
   async createRequest(userId: string): Promise<RemoteHelpSessionWithUsers> {
     await this.expireStale();
-    await this.assertNoOpenSessions(userId, userId);
 
     const existing = await this.prisma.remoteHelpSession.findFirst({
       where: { userId, status: { in: ['REQUESTED', 'PENDING', 'ACTIVE'] } },
@@ -107,6 +125,7 @@ export class RemoteHelpService {
     });
     this.gateway.emitRequest(session);
     this.gateway.emitSession(session);
+    this.notifyRequest(session);
     return session;
   }
 
@@ -125,6 +144,7 @@ export class RemoteHelpService {
     });
     this.gateway.emitInvite(updated);
     this.gateway.emitSession(updated);
+    this.notifyInvite(updated);
     return updated;
   }
 
@@ -288,29 +308,18 @@ export class RemoteHelpService {
   }
 
   getIceServers(): IceServerConfig[] {
-    const servers: IceServerConfig[] = [];
-    const turnUrl = process.env.TURN_URL;
-    if (turnUrl) {
-      servers.push({
-        urls: turnUrl
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean),
-        username: process.env.TURN_USERNAME,
-        credential: process.env.TURN_CREDENTIAL,
-      });
-    }
-    servers.push({ urls: ['stun:stun.l.google.com:19302'] });
-    return servers;
+    return getIceServersFromEnv();
   }
 
-  /** Ленивая уборка: не отвеченные приглашения/запросы старше STALE_MS помечаем EXPIRED. */
+  /** Ленивая уборка: не отвеченные приглашения/запросы помечаем EXPIRED (у каждого свой TTL). */
   private async expireStale(): Promise<void> {
-    const staleBefore = new Date(Date.now() - STALE_MS);
+    const now = Date.now();
     const stale = await this.prisma.remoteHelpSession.findMany({
       where: {
-        status: { in: ['REQUESTED', 'PENDING'] },
-        createdAt: { lt: staleBefore },
+        OR: [
+          { status: 'PENDING', createdAt: { lt: new Date(now - PENDING_STALE_MS) } },
+          { status: 'REQUESTED', createdAt: { lt: new Date(now - REQUESTED_STALE_MS) } },
+        ],
       },
       include: sessionInclude,
     });
@@ -324,23 +333,58 @@ export class RemoteHelpService {
     }
   }
 
-  private async assertNoOpenSessions(userId: string, adminId: string): Promise<void> {
-    const open = await this.prisma.remoteHelpSession.findFirst({
-      where: {
-        status: { in: ['REQUESTED', 'PENDING', 'ACTIVE'] },
-        OR: [{ userId }, { adminId }],
-      },
-      select: { userId: true, adminId: true, status: true },
+  /** Push-уведомление сотруднику о приглашении суперадмина. */
+  private notifyInvite(session: RemoteHelpSessionWithUsers): void {
+    const adminName = this.displayName(session.admin);
+    void this.adminBellPush.notifyUsers([session.userId], 'remote_help_invite', {
+      title: 'Запрос на подключение к экрану',
+      body: `${adminName} просит доступ к вашему экрану, чтобы помочь в работе с приложением`,
+      url: '/admin',
+      tag: `remote-help-invite-${session.id}`,
     });
-    if (!open) return;
-    if (open.status === 'REQUESTED') {
-      throw new BadRequestException('У пользователя уже есть незакрытый запрос помощи');
-    }
-    throw new BadRequestException(
-      open.status === 'ACTIVE'
-        ? 'Сессия помощи уже идёт — завершите её прежде чем создавать новую'
-        : 'Уже есть ожидающее ответа приглашение',
+  }
+
+  /** Push + внешние каналы (email/Telegram/MAX): сотрудник запросил помощь. */
+  private notifyRequest(session: RemoteHelpSessionWithUsers): void {
+    const workerName = this.displayName(session.user);
+    const title = 'Запрос удалённой помощи';
+    const text = [
+      title,
+      '',
+      `Сотрудник: ${workerName}`,
+      'Открыть админку: /admin/remote-help',
+    ].join('\n');
+
+    void (async () => {
+      const superAdmins = await this.prisma.user.findMany({
+        where: { role: 'SUPER_ADMIN', isActive: true },
+        select: { id: true },
+      });
+      await this.adminBellPush.notifyUsers(
+        superAdmins.map((u) => u.id),
+        'remote_help_request',
+        {
+          title,
+          body: `${workerName} просит помочь в работе с приложением`,
+          url: '/admin/remote-help',
+          tag: `remote-help-request-${session.id}`,
+        },
+      );
+    })();
+
+    void this.externalNotifySettings.getChannelsForEvent('remote_help').then((channels) =>
+      this.externalNotify.send(channels, {
+        subject: title,
+        text,
+        fromLabel: 'Удалённая помощь',
+      }),
     );
+  }
+
+  private displayName(user: RemoteHelpUser | null): string {
+    if (!user) return 'Суперадмин';
+    const name = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+    return name || user.email;
   }
 
   private async getSessionOrThrow(sessionId: string): Promise<RemoteHelpSessionWithUsers> {

@@ -70,7 +70,8 @@ type ChannelKey =
   | 'installationSchedules'
   | 'measurementsCreated'
   | 'measurements'
-  | 'contractConcluded';
+  | 'contractConcluded'
+  | 'remoteHelp';
 
 type TabId = 'forms' | 'quizzes' | 'other';
 
@@ -103,6 +104,7 @@ const INITIAL: ChannelsState = {
   measurementsCreated: { ...EMPTY },
   measurements: { ...EMPTY },
   contractConcluded: { ...EMPTY },
+  remoteHelp: { ...EMPTY },
 };
 
 const TABS: { id: TabId; label: string; hint: string }[] = [
@@ -233,6 +235,13 @@ const EVENTS_BY_TAB: Record<
         'Перевод договора в статус «Договор подписан» по направлениям: Ремонт, Окна, Двери, Потолки, Жалюзи, Мебель.',
     },
     {
+      key: 'remoteHelp',
+      label: 'Удалённая помощь',
+      title: 'Удалённая помощь',
+      description:
+        'Запросы сотрудников о помощи в работе с приложением (раздел «Удалённая помощь» в админке).',
+    },
+    {
       key: 'siteFeedback',
       label: 'Обратная связь (сайт)',
       title: 'Обратная связь по сайту',
@@ -269,6 +278,7 @@ function pickExternal(
     | 'measurementsCreated'
     | 'measurements'
     | 'contractConcluded'
+    | 'remoteHelp'
 ): NotifyChannelsValue {
   switch (key) {
     case 'order':
@@ -337,6 +347,12 @@ function pickExternal(
         notifyTelegramIds: settings.contractConcludedNotifyTelegramIds,
         notifyMaxIds: settings.contractConcludedNotifyMaxIds,
       };
+    case 'remoteHelp':
+      return {
+        notifyEmails: settings.remoteHelpNotifyEmails,
+        notifyTelegramIds: settings.remoteHelpNotifyTelegramIds,
+        notifyMaxIds: settings.remoteHelpNotifyMaxIds,
+      };
     case 'knowledgeFeedback':
       return {
         notifyEmails: settings.knowledgeFeedbackNotifyEmails,
@@ -387,6 +403,9 @@ function buildExternalPatch(channels: ChannelsState) {
     contractConcludedNotifyEmails: channels.contractConcluded.notifyEmails,
     contractConcludedNotifyTelegramIds: channels.contractConcluded.notifyTelegramIds,
     contractConcludedNotifyMaxIds: channels.contractConcluded.notifyMaxIds,
+    remoteHelpNotifyEmails: channels.remoteHelp.notifyEmails,
+    remoteHelpNotifyTelegramIds: channels.remoteHelp.notifyTelegramIds,
+    remoteHelpNotifyMaxIds: channels.remoteHelp.notifyMaxIds,
     knowledgeFeedbackNotifyEmails: channels.knowledgeFeedback.notifyEmails,
     knowledgeFeedbackNotifyTelegramIds: channels.knowledgeFeedback.notifyTelegramIds,
     knowledgeFeedbackNotifyMaxIds: channels.knowledgeFeedback.notifyMaxIds,
@@ -479,6 +498,7 @@ export function LeadNotificationChannelsSection() {
         measurementsCreated: pickExternal(external, 'measurementsCreated'),
         measurements: pickExternal(external, 'measurements'),
         contractConcluded: pickExternal(external, 'contractConcluded'),
+        remoteHelp: pickExternal(external, 'remoteHelp'),
       });
     } catch (err) {
       console.error('Failed to fetch notification channels:', err);

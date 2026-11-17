@@ -50,6 +50,9 @@ export interface ExternalNotifyChannelsSettings {
   contractConcludedNotifyEmails: string[];
   contractConcludedNotifyTelegramIds: string[];
   contractConcludedNotifyMaxIds: string[];
+  remoteHelpNotifyEmails: string[];
+  remoteHelpNotifyTelegramIds: string[];
+  remoteHelpNotifyMaxIds: string[];
   updatedAt: string;
 }
 
@@ -104,6 +107,9 @@ export async function updateAdminExternalNotifyChannels(
       | 'contractConcludedNotifyEmails'
       | 'contractConcludedNotifyTelegramIds'
       | 'contractConcludedNotifyMaxIds'
+      | 'remoteHelpNotifyEmails'
+      | 'remoteHelpNotifyTelegramIds'
+      | 'remoteHelpNotifyMaxIds'
     >
   >
 ): Promise<ExternalNotifyChannelsSettings> {

@@ -33,9 +33,11 @@ import {
   getAdminBellInstallerAdvanceSheetNotifications,
   getAdminBellKanbanNotifications,
   getAdminBellMeasurementNotifications,
+  getAdminBellMeetingsNotifications,
   getAdminBellMessengerNotifications,
   getAdminBellMyWorkDayRequestReviews,
   getAdminBellNotificationHistory,
+  getAdminBellRemoteHelpNotifications,
   getAdminBellRepairScheduleNotifications,
   getAdminBellSalesTotalsNotifications,
   getAdminBellTrainingNotifications,
@@ -54,8 +56,10 @@ import type {
   AdminBellInstallerAdvanceSheetNotification,
   AdminBellKanbanNotification,
   AdminBellMeasurementNotification,
+  AdminBellMeetingsNotification,
   AdminBellMessengerNotification,
   AdminBellNotificationHistoryItem,
+  AdminBellRemoteHelpNotification,
   AdminBellRepairScheduleNotification,
   AdminBellSalesTotalsNotification,
   AdminBellTrainingNotification,
@@ -117,7 +121,9 @@ import {
   kanbanToBellNotificationItem,
   leadsToBellNotificationItems,
   measurementToBellNotificationItem,
+  meetingsToBellNotificationItem,
   messengerToBellNotificationItem,
+  remoteHelpToBellNotificationItem,
   repairScheduleToBellNotificationItem,
   reviewToBellNotificationItem,
   salesTotalsToBellNotificationItem,
@@ -217,10 +223,16 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
   const [calendarNotifications, setCalendarNotifications] = useState<
     AdminBellCalendarNotification[]
   >([]);
+  const [meetingsNotifications, setMeetingsNotifications] = useState<
+    AdminBellMeetingsNotification[]
+  >([]);
   const [messengerNotifications, setMessengerNotifications] = useState<
     AdminBellMessengerNotification[]
   >([]);
   const [kanbanNotifications, setKanbanNotifications] = useState<AdminBellKanbanNotification[]>([]);
+  const [remoteHelpNotifications, setRemoteHelpNotifications] = useState<
+    AdminBellRemoteHelpNotification[]
+  >([]);
   const [contractSigningNotifications, setContractSigningNotifications] = useState<
     AdminBellContractSigningNotification[]
   >([]);
@@ -253,8 +265,10 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
     installerAdvanceSheets: number;
     salesTotals: number;
     calendar: number;
+    meetings: number;
     messenger: number;
     kanban: number;
+    remoteHelp: number;
     contractSigning: number;
     contractConcluded: number;
   } | null>(null);
@@ -436,12 +450,17 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
       const loadCalendar = hasAccess('admin.calendar')
         ? getAdminBellCalendarNotifications(20)
         : Promise.resolve([] as AdminBellCalendarNotification[]);
+      const loadMeetings = hasAccess('admin.meetings')
+        ? getAdminBellMeetingsNotifications(20)
+        : Promise.resolve([] as AdminBellMeetingsNotification[]);
       const loadMessenger = hasAccess('admin.messenger')
         ? getAdminBellMessengerNotifications(20)
         : Promise.resolve([] as AdminBellMessengerNotification[]);
       const loadKanban = hasAccess('admin.kanban')
         ? getAdminBellKanbanNotifications(20)
         : Promise.resolve([] as AdminBellKanbanNotification[]);
+      // Состав фида зависит от роли (суперадминам — запросы, сотруднику — его приглашения)
+      const loadRemoteHelp = getAdminBellRemoteHelpNotifications(20);
       const canAccessContractSigning =
         hasAccess('admin.contract-documents') || hasAccess('admin.contract-documents.contracts');
       const loadContractSigning =
@@ -479,8 +498,10 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         installerAdvanceSheetsResult,
         salesTotalsResult,
         calendarResult,
+        meetingsResult,
         messengerResult,
         kanbanResult,
+        remoteHelpResult,
         contractSigningResult,
         contractConcludedResult,
       ] = await Promise.allSettled([
@@ -508,8 +529,10 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         loadInstallerAdvanceSheets,
         loadSalesTotals,
         loadCalendar,
+        loadMeetings,
         loadMessenger,
         loadKanban,
+        loadRemoteHelp,
         loadContractSigning,
         loadContractConcluded,
       ]);
@@ -559,9 +582,12 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
       const newSalesTotals =
         salesTotalsResult.status === 'fulfilled' ? (salesTotalsResult.value ?? []) : [];
       const newCalendar = calendarResult.status === 'fulfilled' ? (calendarResult.value ?? []) : [];
+      const newMeetings = meetingsResult.status === 'fulfilled' ? (meetingsResult.value ?? []) : [];
       const newMessenger =
         messengerResult.status === 'fulfilled' ? (messengerResult.value ?? []) : [];
       const newKanban = kanbanResult.status === 'fulfilled' ? (kanbanResult.value ?? []) : [];
+      const newRemoteHelp =
+        remoteHelpResult.status === 'fulfilled' ? (remoteHelpResult.value ?? []) : [];
       const newContractSigning =
         contractSigningResult.status === 'fulfilled' ? (contractSigningResult.value ?? []) : [];
       const newContractConcluded =
@@ -584,8 +610,10 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         installerAdvanceSheets: newInstallerAdvanceSheets.length,
         salesTotals: newSalesTotals.length,
         calendar: newCalendar.length,
+        meetings: newMeetings.length,
         messenger: newMessenger.length,
         kanban: newKanban.length,
+        remoteHelp: newRemoteHelp.length,
         contractSigning: newContractSigning.length,
         contractConcluded: newContractConcluded.length,
       };
@@ -606,8 +634,10 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         newInstallerAdvanceSheets.length +
         newSalesTotals.length +
         newCalendar.length +
+        newMeetings.length +
         newMessenger.length +
         newKanban.length +
+        newRemoteHelp.length +
         newContractSigning.length +
         newContractConcluded.length;
       const prevTotal = prev
@@ -626,8 +656,10 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
           prev.installerAdvanceSheets +
           prev.salesTotals +
           prev.calendar +
+          prev.meetings +
           prev.messenger +
           prev.kanban +
+          prev.remoteHelp +
           prev.contractSigning +
           prev.contractConcluded
         : totalNew;
@@ -679,8 +711,10 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
             ...newInstallerAdvanceSheets.map(installerAdvanceSheetToBellNotificationItem),
             ...newSalesTotals.map(salesTotalsToBellNotificationItem),
             ...newCalendar.map(calendarToBellNotificationItem),
+            ...newMeetings.map(meetingsToBellNotificationItem),
             ...newMessenger.map(messengerToBellNotificationItem),
             ...newKanban.map(kanbanToBellNotificationItem),
+            ...newRemoteHelp.map(remoteHelpToBellNotificationItem),
             ...newContractSigning.map(contractSigningToBellNotificationItem),
             ...newContractConcluded.map(contractConcludedToBellNotificationItem),
           ]
@@ -709,8 +743,10 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
       setInstallerAdvanceSheetNotifications(newInstallerAdvanceSheets);
       setSalesTotalsNotifications(newSalesTotals);
       setCalendarNotifications(newCalendar);
+      setMeetingsNotifications(newMeetings);
       setMessengerNotifications(newMessenger);
       setKanbanNotifications(newKanban);
+      setRemoteHelpNotifications(newRemoteHelp);
       setContractSigningNotifications(newContractSigning);
       setContractConcludedNotifications(newContractConcluded);
     } catch {
@@ -895,8 +931,10 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
     ...installerAdvanceSheetNotifications.map(installerAdvanceSheetToBellNotificationItem),
     ...salesTotalsNotifications.map(salesTotalsToBellNotificationItem),
     ...calendarNotifications.map(calendarToBellNotificationItem),
+    ...meetingsNotifications.map(meetingsToBellNotificationItem),
     ...messengerNotifications.map(messengerToBellNotificationItem),
     ...kanbanNotifications.map(kanbanToBellNotificationItem),
+    ...remoteHelpNotifications.map(remoteHelpToBellNotificationItem),
     ...contractSigningNotifications.map(contractSigningToBellNotificationItem),
     ...contractConcludedNotifications.map(contractConcludedToBellNotificationItem),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());

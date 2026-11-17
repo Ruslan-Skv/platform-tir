@@ -45,7 +45,9 @@ import { AdminBellIncassationFeedService } from './services/admin-bell-incassati
 import { AdminBellInstallerAdvanceSheetFeedService } from './services/admin-bell-installer-advance-sheet-feed.service';
 import { AdminBellSalesTotalsFeedService } from './services/admin-bell-sales-totals-feed.service';
 import { AdminBellCalendarFeedService } from './admin-bell-calendar-feed.service';
+import { AdminBellMeetingsFeedService } from './services/admin-bell-meetings-feed.service';
 import { AdminBellMessengerFeedService } from './admin-bell-messenger-feed.service';
+import { AdminBellRemoteHelpFeedService } from './services/admin-bell-remote-help-feed.service';
 import { AdminBellKanbanFeedService } from './admin-bell-kanban-feed.service';
 import { AdminBellContractSigningFeedService } from './services/admin-bell-contract-signing-feed.service';
 import { AdminBellContractConcludedFeedService } from './services/admin-bell-contract-concluded-feed.service';
@@ -88,8 +90,10 @@ export class AdminNotificationsController {
     private readonly bellSalesTotalsFeed: AdminBellSalesTotalsFeedService,
     private readonly bellInstallerAdvanceSheetFeed: AdminBellInstallerAdvanceSheetFeedService,
     private readonly bellCalendarFeed: AdminBellCalendarFeedService,
+    private readonly bellMeetingsFeed: AdminBellMeetingsFeedService,
     private readonly bellMessengerFeed: AdminBellMessengerFeedService,
     private readonly bellKanbanFeed: AdminBellKanbanFeedService,
+    private readonly bellRemoteHelpFeed: AdminBellRemoteHelpFeedService,
     private readonly bellContractSigningFeed: AdminBellContractSigningFeedService,
     private readonly bellContractConcludedFeed: AdminBellContractConcludedFeedService,
   ) {}
@@ -285,6 +289,14 @@ export class AdminNotificationsController {
   }
 
   @SkipThrottle()
+  @Get('bell/meetings')
+  @ApiOperation({ summary: 'События онлайн-собраний для колокольчика (персонально)' })
+  getBellMeetingsFeed(@Req() req: RequestWithUser, @Query('limit') limit?: string) {
+    const take = Math.min(50, Math.max(1, limit ? parseInt(limit, 10) : 20));
+    return this.bellMeetingsFeed.listForUser(req.user.id, take);
+  }
+
+  @SkipThrottle()
   @Get('bell/messenger')
   @ApiOperation({ summary: 'Сообщения мессенджера для колокольчика (персонально)' })
   getBellMessengerFeed(@Req() req: RequestWithUser, @Query('limit') limit?: string) {
@@ -298,6 +310,17 @@ export class AdminNotificationsController {
   getBellKanbanFeed(@Req() req: RequestWithUser, @Query('limit') limit?: string) {
     const take = Math.min(50, Math.max(1, limit ? parseInt(limit, 10) : 20));
     return this.bellKanbanFeed.listForUser(req.user.id, take);
+  }
+
+  @SkipThrottle()
+  @Get('bell/remote-help')
+  @ApiOperation({
+    summary:
+      'Удалённая помощь для колокольчика: суперадминам — запросы сотрудников, сотруднику — его приглашения',
+  })
+  getBellRemoteHelpFeed(@Req() req: RequestWithUser, @Query('limit') limit?: string) {
+    const take = Math.min(50, Math.max(1, limit ? parseInt(limit, 10) : 20));
+    return this.bellRemoteHelpFeed.listForUser(req.user.id, req.user.role, take);
   }
 
   @SkipThrottle()

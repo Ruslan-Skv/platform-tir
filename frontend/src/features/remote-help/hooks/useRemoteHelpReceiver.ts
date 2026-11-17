@@ -27,6 +27,8 @@ import { RemoteHelpPeer } from '../lib/remote-help-peer';
 
 const TERMINAL_STATUSES = ['ENDED', 'DECLINED', 'CANCELLED', 'EXPIRED'] as const;
 const DISCONNECT_GRACE_MS = 15_000;
+/** Как часто перечитывать свою открытую сессию — восстановление пропущенных приглашений. */
+const MY_SESSION_POLL_MS = 30_000;
 
 export interface RemoteHelpReceiverModel {
   invite: RemoteHelpSession | null;
@@ -188,6 +190,23 @@ export function useRemoteHelpReceiver(): RemoteHelpReceiverModel {
       teardownMedia();
     };
   }, [myId, applySession, teardownMedia]);
+
+  // Страховка от пропущенного сокет-приглашения (другая вкладка, релогин, клик по колокольчику):
+  // периодически перечитываем свою открытую сессию
+  useEffect(() => {
+    if (!myId) return;
+    const timer = window.setInterval(() => {
+      if (inviteRef.current || activeRef.current) return;
+      getMyRemoteHelpSession()
+        .then((session) => {
+          if (session) applySession(session);
+        })
+        .catch(() => {
+          /* сеть/401 — следующий тик поправит */
+        });
+    }, MY_SESSION_POLL_MS);
+    return () => window.clearInterval(timer);
+  }, [myId, applySession]);
 
   /** Согласие: getDisplayMedia обязан вызываться синхронно в жесте клика. */
   const accept = useCallback(() => {

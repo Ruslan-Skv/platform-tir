@@ -574,6 +574,12 @@ const baseNavItems: NavItem[] = [
     resourceId: 'admin.remote-help',
   },
   {
+    label: 'Онлайн-собрания',
+    href: '/admin/meetings',
+    icon: '🎥',
+    resourceId: 'admin.meetings',
+  },
+  {
     label: 'Календарь',
     href: '/admin/calendar',
     icon: '📅',

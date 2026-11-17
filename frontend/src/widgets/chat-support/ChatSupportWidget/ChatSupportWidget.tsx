@@ -259,6 +259,7 @@ export function ChatSupportWidget() {
         className={styles.fab}
         onClick={() => setOpen(!open)}
         aria-label="Чат поддержки"
+        data-tooltip="Чат поддержки"
       >
         <ChatBubbleLeftRightIcon className={styles.fabIcon} />
       </button>

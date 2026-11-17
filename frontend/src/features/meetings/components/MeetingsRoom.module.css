@@ -1,0 +1,314 @@
+/* Комната онлайн-собрания */
+
+.room {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-md, 12px);
+  min-height: 0;
+  flex: 1;
+}
+
+.roomHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-md, 12px);
+  flex-wrap: wrap;
+}
+
+.roomTitle {
+  margin: 0;
+  font-size: 18px;
+}
+
+.roomMeta {
+  margin: 2px 0 0;
+  font-size: var(--admin-font-size-sm, 13px);
+  color: var(--admin-text-muted, #6b6b74);
+}
+
+.roomBody {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: var(--admin-space-md, 12px);
+  min-height: 0;
+  flex: 1;
+}
+
+@media (max-width: 1279px) {
+  .roomBody {
+    grid-template-columns: 1fr;
+  }
+}
+
+.grid {
+  display: grid;
+  gap: var(--admin-space-sm, 8px);
+  min-height: 320px;
+  align-content: stretch;
+  grid-auto-rows: 1fr;
+}
+
+/* Сетка тайлов подстраивается под число участников */
+.grid1 {
+  grid-template-columns: 1fr;
+}
+
+.grid2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.grid3plus {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.tile {
+  position: relative;
+  min-height: 160px;
+  border-radius: var(--admin-radius-md, 10px);
+  overflow: hidden;
+  background: #14161b;
+  border: 1px solid var(--admin-border-color, #e6e6ea);
+}
+
+.tileVideo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.tilePlaceholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tileAvatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--admin-surface, #fff);
+  color: var(--admin-text-muted, #6b6b74);
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.tileBar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.65));
+  color: #fff;
+  font-size: 13px;
+}
+
+.tileName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tileFlags {
+  display: flex;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.flagMicOff {
+  opacity: 0.85;
+}
+
+.flagWeak {
+  color: #ffb020;
+}
+
+/* Тулбар */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--admin-space-sm, 8px);
+  flex-wrap: wrap;
+  padding: 10px;
+  border: 1px solid var(--admin-border-color, #e6e6ea);
+  border-radius: var(--admin-radius-md, 10px);
+  background: var(--admin-surface, #fff);
+}
+
+.toolButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--admin-border-color, #e6e6ea);
+  border-radius: var(--admin-radius-md, 8px);
+  background: var(--admin-surface, #fff);
+  color: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.toolButton:hover {
+  background: var(--admin-bg-hover, #f5f5f7);
+}
+
+.toolButtonActive {
+  background: #e8f0fe;
+  border-color: #2f6fed;
+  color: #2f6fed;
+}
+
+.toolButtonDanger {
+  background: var(--admin-error-bg, #fff1f0);
+  border-color: var(--admin-error-text, #a8071a);
+  color: var(--admin-error-text, #a8071a);
+}
+
+.toolButtonRec {
+  background: #fdecec;
+  border-color: #d93025;
+  color: #d93025;
+}
+
+.recDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d93025;
+  animation: recPulse 1.2s infinite;
+}
+
+@keyframes recPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* Чат */
+
+.sidePanel {
+  display: flex;
+  flex-direction: column;
+  min-height: 320px;
+  max-height: 70vh;
+  border: 1px solid var(--admin-border-color, #e6e6ea);
+  border-radius: var(--admin-radius-md, 10px);
+  background: var(--admin-surface, #fff);
+  overflow: hidden;
+}
+
+.sidePanelTitle {
+  margin: 0;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--admin-border-color, #e6e6ea);
+}
+
+.chatList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chatEmpty {
+  color: var(--admin-text-muted, #6b6b74);
+  font-size: 13px;
+}
+
+.chatMessage {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.chatMeta {
+  color: var(--admin-text-muted, #6b6b74);
+  font-size: 12px;
+}
+
+.chatForm {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid var(--admin-border-color, #e6e6ea);
+}
+
+.chatInput {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--admin-border-color, #e6e6ea);
+  border-radius: var(--admin-radius-md, 8px);
+  font-size: 13px;
+}
+
+/* Экран входа */
+
+.prejoin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--admin-space-lg, 16px);
+  padding: var(--admin-space-xl, 24px);
+  max-width: 520px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.prejoinPreview {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--admin-radius-md, 10px);
+  background: #14161b;
+  overflow: hidden;
+  border: 1px solid var(--admin-border-color, #e6e6ea);
+}
+
+.prejoinPreview video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.prejoinActions {
+  display: flex;
+  gap: var(--admin-space-sm, 8px);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.prejoinHint {
+  margin: 0;
+  font-size: var(--admin-font-size-sm, 13px);
+  color: var(--admin-text-muted, #6b6b74);
+  line-height: 1.5;
+}
+
+.qualityHint {
+  padding: 8px 12px;
+  border-radius: var(--admin-radius-md, 8px);
+  background: #fff8e6;
+  color: #8a6100;
+  font-size: 13px;
+  text-align: center;
+}

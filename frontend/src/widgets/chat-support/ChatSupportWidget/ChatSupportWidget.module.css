@@ -26,6 +26,79 @@
   height: 28px;
 }
 
+/* Tooltip для FAB — оформление как у иконок топ-бара, но над кнопкой (FAB у нижнего края окна) */
+@media (hover: hover) and (pointer: fine) {
+  .fab[data-tooltip]::before,
+  .fab[data-tooltip]::after {
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+    transition:
+      opacity 0.15s ease,
+      transform 0.15s ease;
+    z-index: 20;
+  }
+
+  /* Пузырь прижат к правому краю кнопки, чтобы не уходил за правый край окна */
+  .fab[data-tooltip]::after {
+    content: attr(data-tooltip);
+    bottom: calc(100% + 0.5rem);
+    right: 0;
+    transform: translateY(0.25rem);
+    /* Как в BadgeTooltip */
+    background: linear-gradient(165deg, #ffffff 0%, #f9fafb 40%, #f3f4f6 100%);
+    border: 1px solid rgb(134 239 172 / 0.55);
+    border-radius: 0.5rem;
+    color: #1f2937;
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+    padding: 0.45rem 0.6rem;
+    white-space: nowrap;
+    box-shadow:
+      0 12px 32px rgb(15 23 42 / 0.12),
+      0 4px 14px rgb(15 23 42 / 0.08),
+      inset 0 1px 0 rgb(255 255 255 / 0.9);
+  }
+
+  .fab[data-tooltip]::before {
+    content: '';
+    bottom: calc(100% + 0.25rem);
+    right: 1rem;
+    transform: translateY(0.25rem);
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid #f3f4f6;
+  }
+
+  .fab[data-tooltip]:hover::before,
+  .fab[data-tooltip]:hover::after,
+  .fab[data-tooltip]:focus-visible::before,
+  .fab[data-tooltip]:focus-visible::after {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Tooltip — тёмная тема */
+@media (hover: hover) and (pointer: fine) {
+  :where(html[data-theme='dark'], [data-app-theme='dark']) .fab[data-tooltip]::after {
+    /* Как в BadgeTooltip */
+    color: #f3f4f6;
+    background: linear-gradient(165deg, #525d6e 0%, #3d4655 45%, #2d3542 100%);
+    border-color: rgb(110 231 183 / 0.42);
+    box-shadow:
+      0 14px 36px rgb(0 0 0 / 0.45),
+      0 6px 16px rgb(0 0 0 / 0.28),
+      inset 0 1px 0 rgb(255 255 255 / 0.08);
+  }
+
+  :where(html[data-theme='dark'], [data-app-theme='dark']) .fab[data-tooltip]::before {
+    border-top-color: #3d4655;
+  }
+}
+
 /* Затемнение фона на мобильном — как у Modal (панель чата выше backdrop) */
 .backdrop {
   display: none;

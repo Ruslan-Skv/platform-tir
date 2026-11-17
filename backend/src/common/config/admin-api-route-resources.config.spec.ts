@@ -22,6 +22,12 @@ describe('resolveAdminApiRouteResource', () => {
     });
   });
 
+  it('skips resource check for online meetings (roles checked by controller)', () => {
+    expect(matchAdminApiResourceRule('GET', '/api/v1/admin/meetings')).toBeNull();
+    expect(matchAdminApiResourceRule('POST', '/api/v1/admin/meetings/m1/join')).toBeNull();
+    expect(matchAdminApiResourceRule('PATCH', '/api/v1/admin/meetings/m1?x=1')).toBeNull();
+  });
+
   it('maps contract-document-objects to Договора, not settings hub', () => {
     expect(resolveAdminApiRouteResource('GET', '/api/v1/admin/contract-document-objects')).toEqual({
       resourceId: 'admin.contract-documents.repair',

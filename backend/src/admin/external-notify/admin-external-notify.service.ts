@@ -17,7 +17,8 @@ export type ExternalNotifyEvent =
   | 'installation_schedule'
   | 'measurement'
   | 'measurement_created'
-  | 'contract_concluded';
+  | 'contract_concluded'
+  | 'remote_help';
 
 @Injectable()
 export class AdminExternalNotifyService {
@@ -166,6 +167,15 @@ export class AdminExternalNotifyService {
     if (dto.contractConcludedNotifyMaxIds !== undefined) {
       data.contractConcludedNotifyMaxIds = normalizeStringArray(dto.contractConcludedNotifyMaxIds);
     }
+    if (dto.remoteHelpNotifyEmails !== undefined) {
+      data.remoteHelpNotifyEmails = normalizeStringArray(dto.remoteHelpNotifyEmails);
+    }
+    if (dto.remoteHelpNotifyTelegramIds !== undefined) {
+      data.remoteHelpNotifyTelegramIds = normalizeStringArray(dto.remoteHelpNotifyTelegramIds);
+    }
+    if (dto.remoteHelpNotifyMaxIds !== undefined) {
+      data.remoteHelpNotifyMaxIds = normalizeStringArray(dto.remoteHelpNotifyMaxIds);
+    }
 
     const block = await this.prisma.externalNotifySettings.update({
       where: { id: 'main' },
@@ -255,6 +265,12 @@ export class AdminExternalNotifyService {
           telegramIds: parseStringArray(block.contractConcludedNotifyTelegramIds),
           maxIds: parseStringArray(block.contractConcludedNotifyMaxIds),
         };
+      case 'remote_help':
+        return {
+          emails: parseStringArray(block.remoteHelpNotifyEmails),
+          telegramIds: parseStringArray(block.remoteHelpNotifyTelegramIds),
+          maxIds: parseStringArray(block.remoteHelpNotifyMaxIds),
+        };
     }
   }
 
@@ -306,6 +322,9 @@ export class AdminExternalNotifyService {
     contractConcludedNotifyEmails: Prisma.JsonValue | null;
     contractConcludedNotifyTelegramIds: Prisma.JsonValue | null;
     contractConcludedNotifyMaxIds: Prisma.JsonValue | null;
+    remoteHelpNotifyEmails: Prisma.JsonValue | null;
+    remoteHelpNotifyTelegramIds: Prisma.JsonValue | null;
+    remoteHelpNotifyMaxIds: Prisma.JsonValue | null;
     updatedAt: Date;
   }) {
     return {
@@ -358,6 +377,9 @@ export class AdminExternalNotifyService {
         block.contractConcludedNotifyTelegramIds,
       ),
       contractConcludedNotifyMaxIds: parseStringArray(block.contractConcludedNotifyMaxIds),
+      remoteHelpNotifyEmails: parseStringArray(block.remoteHelpNotifyEmails),
+      remoteHelpNotifyTelegramIds: parseStringArray(block.remoteHelpNotifyTelegramIds),
+      remoteHelpNotifyMaxIds: parseStringArray(block.remoteHelpNotifyMaxIds),
       updatedAt: block.updatedAt.toISOString(),
     };
   }

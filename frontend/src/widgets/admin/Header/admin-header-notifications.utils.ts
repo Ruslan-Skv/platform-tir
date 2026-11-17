@@ -1,5 +1,6 @@
 import type {
   AdminBellInstallerAdvanceSheetNotification,
+  AdminBellRemoteHelpNotification,
   AdminNotificationsSettings,
 } from '@/shared/api/admin-notifications';
 import type { AdminReview } from '@/shared/api/admin-reviews';
@@ -30,8 +31,10 @@ export type AdminBellNotificationType =
   | 'installerAdvanceSheets'
   | 'salesTotals'
   | 'calendar'
+  | 'meetings'
   | 'messenger'
-  | 'kanban';
+  | 'kanban'
+  | 'remoteHelp';
 
 export type AdminBellTrainingNotification = {
   id: string;
@@ -163,6 +166,17 @@ export type AdminBellCalendarNotification = {
   kind: 'created';
   kindLabel: string;
   calendarEventId: string;
+  title: string;
+  message: string;
+  href: string;
+  occurredAt: string;
+};
+
+export type AdminBellMeetingsNotification = {
+  id: string;
+  kind: 'created' | 'started' | 'cancelled' | 'reminder';
+  kindLabel: string;
+  meetingId: string;
   title: string;
   message: string;
   href: string;
@@ -507,6 +521,18 @@ export function calendarToBellNotificationItem(
   };
 }
 
+export function meetingsToBellNotificationItem(
+  item: AdminBellMeetingsNotification
+): AdminBellNotificationItem {
+  return {
+    type: 'meetings',
+    id: item.id,
+    date: item.occurredAt,
+    link: item.href || '/admin/meetings',
+    text: item.message ? `${item.kindLabel}: ${item.message}` : item.kindLabel,
+  };
+}
+
 export function messengerToBellNotificationItem(
   item: AdminBellMessengerNotification
 ): AdminBellNotificationItem {
@@ -527,6 +553,18 @@ export function kanbanToBellNotificationItem(
     id: item.id,
     date: item.occurredAt,
     link: item.href || '/admin/kanban',
+    text: item.message ? `${item.title}: ${item.message}` : item.title,
+  };
+}
+
+export function remoteHelpToBellNotificationItem(
+  item: AdminBellRemoteHelpNotification
+): AdminBellNotificationItem {
+  return {
+    type: 'remoteHelp',
+    id: item.id,
+    date: item.occurredAt,
+    link: item.href || '/admin',
     text: item.message ? `${item.title}: ${item.message}` : item.title,
   };
 }
@@ -682,6 +720,10 @@ export function isNotificationItemEnabled(
     return hasAccess('admin.calendar') && isBellTypeEnabled(item.type, settings);
   }
 
+  if (item.type === 'meetings') {
+    return hasAccess('admin.meetings') && isBellTypeEnabled(item.type, settings);
+  }
+
   if (item.type === 'messenger') {
     return hasAccess('admin.messenger') && isBellTypeEnabled(item.type, settings);
   }
@@ -759,9 +801,14 @@ export function isBellTypeEnabled(
       return settings.notifyOnSalesTotals !== false;
     case 'calendar':
       return true;
+    case 'meetings':
+      return true;
     case 'messenger':
       return true;
     case 'kanban':
+      return true;
+    case 'remoteHelp':
+      // Адресные события сеансов помощи — всегда включены (стиль мессенджера/канбана).
       return true;
     default:
       return false;
@@ -902,6 +949,12 @@ export function buildDesktopNotification(item: AdminBellNotificationItem): {
         body: item.text,
         tag,
       };
+    case 'meetings':
+      return {
+        title: 'Онлайн-собрания',
+        body: item.text,
+        tag,
+      };
     case 'messenger':
       return {
         title: 'Мессенджер',
@@ -911,6 +964,12 @@ export function buildDesktopNotification(item: AdminBellNotificationItem): {
     case 'kanban':
       return {
         title: 'Канбан',
+        body: item.text,
+        tag,
+      };
+    case 'remoteHelp':
+      return {
+        title: 'Удалённая помощь',
         body: item.text,
         tag,
       };

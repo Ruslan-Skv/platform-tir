@@ -236,6 +236,9 @@ model User {
   salaryManagerSalesPlans                 SalaryManagerSalesPlan[]
   remoteHelpSessionsUser                  RemoteHelpSession[]                       @relation("RemoteHelpSessionUser")
   remoteHelpSessionsAdmin                 RemoteHelpSession[]                       @relation("RemoteHelpSessionAdmin")
+  meetingsCreated                         Meeting[]                                 @relation("MeetingCreatedBy")
+  meetingParticipations                   MeetingParticipant[]                      @relation("MeetingParticipantUser")
+  meetingBellEvents                       MeetingBellEvent[]                        @relation("MeetingBellEventUser")
 
   @@unique([employeeCode])
   @@index([officeId])
@@ -538,6 +541,10 @@ model ExternalNotifySettings {
   contractConcludedNotifyEmails      Json? // string[]
   contractConcludedNotifyTelegramIds Json? // string[]
   contractConcludedNotifyMaxIds      Json? // string[]
+
+  remoteHelpNotifyEmails      Json? // string[]
+  remoteHelpNotifyTelegramIds Json? // string[]
+  remoteHelpNotifyMaxIds      Json? // string[]
 
   updatedAt DateTime @updatedAt
 
@@ -5678,4 +5685,65 @@ model RemoteHelpSession {
   @@index([adminId])
   @@index([status, createdAt])
   @@map("remote_help_sessions")
+}
+
+/// Статус онлайн-собрания (видео-конференции сотрудников админки).
+enum MeetingStatus {
+  SCHEDULED // запланировано, ждёт первого входа участника
+  ACTIVE // идёт (хотя бы один участник в комнате)
+  ENDED // завершено (последний участник вышел)
+  CANCELLED // отменено автором до/во время собрания
+}
+
+/// Онлайн-собрание — mesh WebRTC-конференция админов (см. docs/ONLINE-MEETINGS.md).
+model Meeting {
+  id               String               @id @default(cuid())
+  title            String
+  description      String?              @db.Text
+  scheduledAt      DateTime? // запланированное начало (null — «прямо сейчас»)
+  startedAt        DateTime? // фактическое начало — первый вход участника
+  endedAt          DateTime?
+  status           MeetingStatus        @default(SCHEDULED)
+  createdById      String
+  createdBy        User                 @relation("MeetingCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  participants     MeetingParticipant[]
+  createdAt        DateTime             @default(now())
+  MeetingBellEvent MeetingBellEvent[]
+
+  @@index([status, scheduledAt])
+  @@index([createdById])
+  @@map("meetings")
+}
+
+/// Участник онлайн-собрания (состав фиксируется при создании/редактировании).
+model MeetingParticipant {
+  id        String    @id @default(cuid())
+  meetingId String
+  userId    String
+  joinedAt  DateTime? // первый вход в комнату
+  leftAt    DateTime? // последний выход
+  meeting   Meeting   @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  user      User      @relation("MeetingParticipantUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([meetingId, userId])
+  @@index([userId])
+  @@map("meeting_participants")
+}
+
+/// События собраний для колокольчика админки (персонально).
+model MeetingBellEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  meetingId String
+  kind      String // created | started | cancelled
+  title     String
+  message   String   @db.Text
+  href      String
+  createdAt DateTime @default(now())
+  user      User     @relation("MeetingBellEventUser", fields: [userId], references: [id], onDelete: Cascade)
+  meeting   Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([meetingId])
+  @@map("meeting_bell_events")
 }

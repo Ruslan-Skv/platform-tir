@@ -76,6 +76,9 @@
 .filterDotWorkDay {
   background: #64748b;
 }
+.filterDotMeeting {
+  background: #e11d48;
+}
 .filterDotCustom {
   background: #db2777;
 }
@@ -341,6 +344,16 @@
 .pillWorkDay:focus-visible {
   background: #475569;
   border-color: #334155;
+}
+
+.pillMeeting {
+  background: #e11d48;
+  border-color: #be123c;
+}
+.pillMeeting:hover,
+.pillMeeting:focus-visible {
+  background: #be123c;
+  border-color: #9f1239;
 }
 
 .pillCustom {

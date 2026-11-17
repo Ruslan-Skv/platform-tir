@@ -11,6 +11,7 @@ export type CalendarEventType =
   | 'measurement'
   | 'contract'
   | 'work_day'
+  | 'meeting'
   | 'custom';
 
 export type CalendarEventDto = {
@@ -32,8 +33,19 @@ const ALL_TYPES: CalendarEventType[] = [
   'measurement',
   'contract',
   'work_day',
+  'meeting',
   'custom',
 ];
+
+const MEETING_STATUS_LABELS: Record<string, string> = {
+  SCHEDULED: 'Запланировано',
+  ACTIVE: 'Идёт',
+  ENDED: 'Завершено',
+  CANCELLED: 'Отменено',
+};
+
+/** Краткая карточка сотрудника для подписей событий (автор, участники). */
+const USER_NAME_SELECT = { firstName: true, lastName: true, email: true } as const;
 
 /** Направления монтажей / доставок (коды из CRM). */
 const DIRECTION_LABELS: Record<string, string> = {
@@ -106,6 +118,9 @@ export class CalendarService {
     }
     if (types.has('work_day')) {
       jobs.push(this.loadWorkDays(range));
+    }
+    if (types.has('meeting')) {
+      jobs.push(this.loadMeetings(range));
     }
     if (types.has('custom')) {
       jobs.push(this.loadCustomEvents(range));
@@ -213,15 +228,45 @@ export class CalendarService {
     };
   }
 
+  /** Онлайн-собрания: ссылка ведёт прямо на вход в комнату. */
+  private async loadMeetings(range: { gte: Date; lte: Date }): Promise<CalendarEventDto[]> {
+    const rows = await this.prisma.meeting.findMany({
+      where: { scheduledAt: range, status: { not: 'CANCELLED' } },
+      include: {
+        createdBy: { select: USER_NAME_SELECT },
+        participants: { include: { user: { select: USER_NAME_SELECT } }, take: 5 },
+      },
+      orderBy: { scheduledAt: 'asc' },
+      take: 5000,
+    });
+
+    return rows.map((row) => {
+      const author = this.formatUser(row.createdBy);
+      const people = row.participants.map((p) => this.formatUser(p.user)).filter((n) => n !== '—');
+      const at = row.scheduledAt as Date;
+      return {
+        id: `meeting:${row.id}`,
+        type: 'meeting' as const,
+        date: this.toIso(at),
+        timeFrom: at.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+        timeTo: null,
+        title: `Онлайн-собрание · ${row.title}`,
+        subtitle: [author !== '—' ? `от ${author}` : null, people.length ? people.join(', ') : null]
+          .filter(Boolean)
+          .join(' · '),
+        status: MEETING_STATUS_LABELS[row.status] ?? null,
+        href: `/admin/meetings?join=${row.id}`,
+        body: row.description,
+      };
+    });
+  }
+
   private async loadCustomEvents(range: { gte: Date; lte: Date }): Promise<CalendarEventDto[]> {
     const rows = await this.prisma.calendarCustomEvent.findMany({
       where: { deletedAt: null, date: range },
       include: {
-        createdBy: { select: { firstName: true, lastName: true, email: true } },
-        recipients: {
-          include: { user: { select: { firstName: true, lastName: true, email: true } } },
-          take: 5,
-        },
+        createdBy: { select: USER_NAME_SELECT },
+        recipients: { include: { user: { select: USER_NAME_SELECT } }, take: 5 },
       },
       orderBy: [{ date: 'asc' }, { timeFrom: 'asc' }],
       take: 5000,

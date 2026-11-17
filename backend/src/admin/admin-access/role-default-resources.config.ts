@@ -98,6 +98,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.kanban',
     'admin.messenger',
     'admin.calendar',
+    'admin.meetings',
     'admin.settings',
     'admin.settings.product-templates',
     'admin.settings.appearance',
@@ -173,6 +174,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.kanban',
     'admin.messenger',
     'admin.calendar',
+    'admin.meetings',
   ],
   MODERATOR: [
     'admin',
@@ -194,6 +196,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.kanban',
     'admin.messenger',
     'admin.calendar',
+    'admin.meetings',
   ],
   SUPPORT: [
     'admin',
@@ -212,6 +215,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.kanban',
     'admin.messenger',
     'admin.calendar',
+    'admin.meetings',
   ],
   MANAGER: [
     'admin',
@@ -250,6 +254,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.kanban',
     'admin.messenger',
     'admin.calendar',
+    'admin.meetings',
   ],
   TECHNOLOGIST: [
     'admin',
@@ -284,6 +289,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.kanban',
     'admin.messenger',
     'admin.calendar',
+    'admin.meetings',
   ],
   PARTNER: [
     'admin',
