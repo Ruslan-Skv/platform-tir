@@ -27,22 +27,24 @@
   min-width: 0;
 }
 
+/* Иконка, заголовок и подзаголовок повторяют размеры .panelIcon/.panelTitle/.panelSubtitle
+   остальных блоков дашборда на всех ширинах. */
 .icon {
-  font-size: 1.5rem;
-  line-height: 1;
+  font-size: var(--admin-font-size-3xl);
+  line-height: var(--admin-line-height-flat);
   flex-shrink: 0;
 }
 
 .title {
   margin: 0;
-  font-size: var(--admin-font-size-lg);
+  font-size: var(--admin-font-size-xl);
   font-weight: 700;
   color: var(--admin-text-primary);
 }
 
 .subtitle {
   margin: var(--admin-space-2xs) 0 0;
-  font-size: var(--admin-font-size-xs);
+  font-size: var(--admin-font-size-sm);
   line-height: var(--admin-line-height-md);
   color: var(--admin-text-muted);
 }
@@ -374,13 +376,9 @@
     margin-bottom: var(--admin-space-sm);
   }
 
-  .icon {
-    font-size: 1.25rem;
-  }
-
-  .title {
-    font-size: var(--admin-font-size-base);
-  }
+  /* Размеры заголовка/иконки на мобиле не переопределяем: базовые .title/.icon равны
+     фактическим размерам .panelTitle/.panelIcon остальных блоков (их мобильный media query
+     в Dashboard.module.css стоит раньше базовых правил и не применяется). */
 
   .subtitle {
     display: none;

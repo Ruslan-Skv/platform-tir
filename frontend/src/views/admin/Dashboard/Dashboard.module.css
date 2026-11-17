@@ -486,31 +486,9 @@
   }
 }
 
+/* На мобиле заголовок «Динамики обучения» оформлен общими стилями .panelHead/.panelTitle;
+   прячем только ссылку, чтобы длинный заголовок не соперничал с ней за место. */
 @media (max-width: 640px) {
-  .trainingPanel .panelHead {
-    flex-wrap: nowrap;
-    align-items: center;
-    gap: var(--admin-space-sm);
-    padding: var(--admin-space-md) var(--admin-space-lg);
-  }
-
-  .trainingPanel .panelIcon {
-    flex-shrink: 0;
-    font-size: var(--admin-font-size-lg);
-    line-height: 1;
-  }
-
-  .trainingPanel .panelHeadText {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .trainingPanel .panelTitle {
-    font-size: 0.6875rem;
-    line-height: 1.2;
-    white-space: nowrap;
-  }
-
   .trainingPanel .panelLink {
     display: none;
   }
@@ -686,11 +664,21 @@
   border-bottom: 1px solid var(--admin-surface-soft);
 }
 
+/* Как в «Динамике обучения»: длинные списки направлений и менеджеров скроллятся, а не растягивают панель. */
+.chartsWrapSales {
+  max-height: 28rem;
+  overflow-y: auto;
+}
+
 @media (max-width: 700px) {
   .chartsWrap {
     grid-template-columns: 1fr;
     padding: var(--admin-space-xl) var(--admin-space-xl) var(--admin-space-md);
     gap: var(--admin-space-xl);
+  }
+
+  .chartsWrapSales {
+    max-height: 20rem;
   }
 }
 
