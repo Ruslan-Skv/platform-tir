@@ -91,7 +91,13 @@ const nextConfig = {
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+          // camera/microphone — нужны онлайн-собраниям и удалённой помощи (WebRTC),
+          // display-capture — захвату экрана (кнопка скриншота, собрания, удалённая помощь).
+          // Доступ по-прежнему требует согласия пользователя в диалоге браузера.
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(self), microphone=(self), display-capture=(self), geolocation=()',
+          },
           { key: 'Content-Security-Policy', value: csp },
         ],
       },
