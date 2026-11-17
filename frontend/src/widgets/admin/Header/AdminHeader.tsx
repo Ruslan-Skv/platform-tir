@@ -102,7 +102,9 @@ import { AdminMyNotificationsModal } from './AdminMyNotificationsModal';
 import { AdminOnlineAvatars } from './AdminOnlineAvatars';
 import {
   addDismissedNotificationKeys,
+  getDismissedNotificationsKey,
   notificationItemKey,
+  parseDismissedNotificationIds,
   syncDismissedNotificationIds,
 } from './admin-bell-dismissed.storage';
 import {
@@ -777,6 +779,22 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
       cancelled = true;
     };
   }, [authLoading, canLoadAdminNotifications, user?.id]);
+
+  // синхронизация прочитанных уведомлений между вкладками: событие storage
+  // срабатывает в остальных вкладках при записи dismissed-ключей в localStorage
+  useEffect(() => {
+    if (!user?.id) return;
+    const dismissedStorageKey = getDismissedNotificationsKey(user.id);
+    const onDismissedStorageChange = (event: StorageEvent) => {
+      if (event.key !== dismissedStorageKey) return;
+      setDismissedNotificationIds((prev) => {
+        const merged = new Set([...prev, ...parseDismissedNotificationIds(event.newValue)]);
+        return merged.size === prev.size ? prev : merged;
+      });
+    };
+    window.addEventListener('storage', onDismissedStorageChange);
+    return () => window.removeEventListener('storage', onDismissedStorageChange);
+  }, [user?.id]);
 
   useEffect(() => {
     setPublicSiteEditModeState(getPublicSiteEditMode());

@@ -10,15 +10,13 @@ export function notificationItemKey(type: string, id: string) {
   return `${type}:${id}`;
 }
 
-function getDismissedNotificationsKey(userId: string) {
+export function getDismissedNotificationsKey(userId: string) {
   return `${NOTIFICATIONS_DISMISSED_PREFIX}_${userId}`;
 }
 
-export function loadDismissedNotificationIdsFromLocalStorage(userId: string): Set<string> {
-  if (typeof window === 'undefined') return new Set();
+export function parseDismissedNotificationIds(raw: string | null): Set<string> {
+  if (!raw) return new Set();
   try {
-    const raw = localStorage.getItem(getDismissedNotificationsKey(userId));
-    if (!raw) return new Set();
     const parsed: unknown = JSON.parse(raw);
     return Array.isArray(parsed)
       ? new Set(parsed.filter((value): value is string => typeof value === 'string'))
@@ -26,6 +24,11 @@ export function loadDismissedNotificationIdsFromLocalStorage(userId: string): Se
   } catch {
     return new Set();
   }
+}
+
+export function loadDismissedNotificationIdsFromLocalStorage(userId: string): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  return parseDismissedNotificationIds(localStorage.getItem(getDismissedNotificationsKey(userId)));
 }
 
 export function saveDismissedNotificationIdsToLocalStorage(userId: string, ids: Set<string>) {
