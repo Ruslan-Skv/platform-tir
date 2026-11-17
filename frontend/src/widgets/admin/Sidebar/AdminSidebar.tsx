@@ -580,6 +580,12 @@ const baseNavItems: NavItem[] = [
     resourceId: 'admin.meetings',
   },
   {
+    label: 'Скриншоты',
+    href: '/admin/screenshots',
+    icon: '📷',
+    resourceId: 'admin.screenshots',
+  },
+  {
     label: 'Календарь',
     href: '/admin/calendar',
     icon: '📅',

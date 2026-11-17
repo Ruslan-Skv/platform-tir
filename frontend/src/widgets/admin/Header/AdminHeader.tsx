@@ -19,6 +19,7 @@ import { useRouter } from 'next/navigation';
 
 import { useAdminAccessibleResources } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import { AdminProfileModal } from '@/features/admin/profile';
+import { ScreenshotCaptureButton } from '@/features/admin/screenshots';
 import { WorkDayWidget } from '@/features/admin/work-day';
 import { useAuth } from '@/features/auth';
 import { useTheme } from '@/features/theme';
@@ -1143,6 +1144,11 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
             </button>
           </span>
         )}
+        <ScreenshotCaptureButton
+          className={`${styles.iconButton} ${styles.headerReveal}`}
+          iconClassName={styles.themeIcon}
+        />
+
         <button
           type="button"
           className={`${styles.iconButton} ${styles.headerReveal}`}

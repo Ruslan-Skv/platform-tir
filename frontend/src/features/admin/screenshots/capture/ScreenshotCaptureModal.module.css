@@ -1,0 +1,83 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-md, 12px);
+}
+
+.preview {
+  display: block;
+  width: 100%;
+  max-height: 52vh;
+  object-fit: contain;
+  border-radius: var(--admin-radius-sm, 6px);
+  border: 1px solid var(--admin-border, #e2e2e8);
+  background: repeating-conic-gradient(var(--admin-surface-soft, #f5f5f7) 0% 25%, #ffffff 0% 50%) 0
+    0 / 20px 20px;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-xs, 6px) var(--admin-space-md, 12px);
+  font-size: var(--admin-font-size-sm, 13px);
+  color: var(--admin-text-muted, #6b6b74);
+}
+
+.commentLabel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xs, 6px);
+  font-size: var(--admin-font-size-sm, 13px);
+  color: var(--admin-text-secondary, #3f3f46);
+}
+
+.comment {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 72px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: var(--admin-font-size-sm, 13px);
+  color: var(--admin-text-primary, #1f1f24);
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--admin-border, #e2e2e8);
+  border-radius: var(--admin-radius-sm, 6px);
+  resize: vertical;
+}
+
+.comment:focus-visible {
+  outline: none;
+  border-color: var(--admin-primary, #2563eb);
+}
+
+.error {
+  padding: 10px 12px;
+  border-radius: var(--admin-radius-md, 8px);
+  background: var(--admin-error-bg, #fff1f0);
+  color: var(--admin-error-text, #a8071a);
+  font-size: var(--admin-font-size-sm, 13px);
+}
+
+.success {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-md, 12px);
+  padding: var(--admin-space-md, 12px);
+  border-radius: var(--admin-radius-md, 8px);
+  background: var(--admin-success-bg, #f0fdf4);
+  color: var(--admin-success-text, #15803d);
+  font-size: var(--admin-font-size-sm, 13px);
+}
+
+.successLink {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--admin-space-sm, 8px);
+}

@@ -8,6 +8,7 @@ import { UserRole } from '@prisma/client';
 export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   ADMIN: [
     'admin',
+    'admin.screenshots',
     'admin.knowledge',
     'admin.settings.my-notifications',
     'admin.crm',
@@ -136,6 +137,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   ],
   CONTENT_MANAGER: [
     'admin',
+    'admin.screenshots',
     'admin.knowledge',
     'admin.settings.my-notifications',
     'admin.content',
@@ -178,6 +180,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   ],
   MODERATOR: [
     'admin',
+    'admin.screenshots',
     'admin.knowledge',
     'admin.settings.my-notifications',
     'admin.orders',
@@ -200,6 +203,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   ],
   SUPPORT: [
     'admin',
+    'admin.screenshots',
     'admin.knowledge',
     'admin.settings.my-notifications',
     'admin.orders',
@@ -219,6 +223,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   ],
   MANAGER: [
     'admin',
+    'admin.screenshots',
     'admin.knowledge',
     'admin.settings.my-notifications',
     'admin.crm',
@@ -258,6 +263,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   ],
   TECHNOLOGIST: [
     'admin',
+    'admin.screenshots',
     'admin.knowledge',
     'admin.settings.my-notifications',
     'admin.crm',
@@ -293,6 +299,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   ],
   PARTNER: [
     'admin',
+    'admin.screenshots',
     'admin.knowledge',
     'admin.settings.my-notifications',
     'admin.catalog',
@@ -302,6 +309,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   ],
   BRIGADIER: [
     'admin',
+    'admin.screenshots',
     'admin.knowledge',
     'admin.settings.my-notifications',
     'admin.crm',
@@ -332,6 +340,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   ],
   LEAD_SPECIALIST_FURNITURE: [
     'admin',
+    'admin.screenshots',
     'admin.knowledge',
     'admin.settings.my-notifications',
     'admin.crm',
@@ -363,6 +372,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   ],
   LEAD_SPECIALIST_WINDOWS_DOORS: [
     'admin',
+    'admin.screenshots',
     'admin.knowledge',
     'admin.settings.my-notifications',
     'admin.crm',
@@ -394,6 +404,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   ],
   SURVEYOR: [
     'admin',
+    'admin.screenshots',
     'admin.knowledge',
     'admin.settings.my-notifications',
     'admin.crm',
@@ -416,6 +427,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   ],
   DRIVER: [
     'admin',
+    'admin.screenshots',
     'admin.knowledge',
     'admin.settings.my-notifications',
     'admin.crm',
@@ -426,6 +438,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   ],
   INSTALLER: [
     'admin',
+    'admin.screenshots',
     'admin.knowledge',
     'admin.settings.my-notifications',
     'admin.crm',
@@ -435,5 +448,5 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.crm.odpzh-schedules',
     'admin.crm.furniture-schedules.my',
   ],
-  TRAINEE: ['admin.knowledge'],
+  TRAINEE: ['admin.knowledge', 'admin.screenshots'],
 };

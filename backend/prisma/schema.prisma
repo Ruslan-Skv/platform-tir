@@ -239,6 +239,7 @@ model User {
   meetingsCreated                         Meeting[]                                 @relation("MeetingCreatedBy")
   meetingParticipations                   MeetingParticipant[]                      @relation("MeetingParticipantUser")
   meetingBellEvents                       MeetingBellEvent[]                        @relation("MeetingBellEventUser")
+  adminScreenshots                        AdminScreenshot[]
 
   @@unique([employeeCode])
   @@index([officeId])
@@ -5746,4 +5747,28 @@ model MeetingBellEvent {
   @@index([userId, createdAt])
   @@index([meetingId])
   @@map("meeting_bell_events")
+}
+
+/// Скриншот, снятый админом прямо из приложения (кнопка 📷 в шапке админки).
+/// Файл — в uploads/screenshots, отдаётся только через авторизованный API.
+/// Живёт 3 суток (expiresAt), затем удаляется свипером вместе с файлом.
+model AdminScreenshot {
+  id        String   @id @default(cuid())
+  fileName  String // имя файла на диске (screenshot-<timestamp>-<rand>.<ext>)
+  /// Путь вида /uploads/screenshots/<file> (публично не раздаётся)
+  fileUrl   String
+  fileSize  Int      @default(0)
+  mimeType  String   @default("image/png")
+  width     Int? // размер снимка в пикселях
+  height    Int?
+  comment   String?  @db.VarChar(500) // что случилось (заполняет автор)
+  pageUrl   String?  @db.VarChar(500) // маршрут админки, где снят скрин
+  authorId  String
+  createdAt DateTime @default(now())
+  expiresAt DateTime // createdAt + 3 суток; свипер удаляет просроченное
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@index([authorId, createdAt])
+  @@map("admin_screenshots")
 }

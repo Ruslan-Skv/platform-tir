@@ -217,6 +217,8 @@ const ADMIN_API_ROUTE_RESOURCE_PREFIXES_RAW: ReadonlyArray<{
   { prefix: '/api/v1/products', resourceId: 'admin.catalog.products' },
   { prefix: '/api/v1/product-components', resourceId: 'admin.catalog.products' },
   { prefix: '/api/v1/support', resourceId: 'admin.support' },
+  // Скриншоты админки (снимает любой админ, файлы — только через этот API)
+  { prefix: '/api/v1/admin/screenshots', resourceId: 'admin.screenshots' },
 ];
 
 export const ADMIN_API_ROUTE_RESOURCE_PREFIXES = [...ADMIN_API_ROUTE_RESOURCE_PREFIXES_RAW].sort(

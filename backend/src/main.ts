@@ -28,6 +28,10 @@ async function bootstrap() {
   app.use('/uploads/recruitment', (_req: Request, res: Response) => {
     res.status(403).json({ message: 'Forbidden' });
   });
+  // Скриншоты админки — только автору и суперадмину через API (не публично)
+  app.use('/uploads/screenshots', (_req: Request, res: Response) => {
+    res.status(403).json({ message: 'Forbidden' });
+  });
   app.use(
     '/uploads',
     (_req: Request, res: Response, next: NextFunction) => {
