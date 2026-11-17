@@ -6,11 +6,11 @@ import { useEffect, useState } from 'react';
 
 import Link from 'next/link';
 
-import type { AdminScreenshotItem } from '@/shared/api/admin-screenshots';
+import type { AdminScreenshotItem } from '@/shared/api/screenshots/admin-screenshots';
 import {
   downloadAdminScreenshot,
   fetchAdminScreenshotObjectUrl,
-} from '@/shared/api/admin-screenshots';
+} from '@/shared/api/screenshots/admin-screenshots';
 import { Button } from '@/shared/ui/Button';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { Modal } from '@/shared/ui/Modal';

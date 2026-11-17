@@ -3,8 +3,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
-import type { AdminScreenshotItem } from '@/shared/api/admin-screenshots';
-import { deleteAdminScreenshot, listAdminScreenshots } from '@/shared/api/admin-screenshots';
+import type { AdminScreenshotItem } from '@/shared/api/screenshots/admin-screenshots';
+import {
+  deleteAdminScreenshot,
+  listAdminScreenshots,
+} from '@/shared/api/screenshots/admin-screenshots';
 
 export type ScreenshotsFilter = 'all' | 'my';
 

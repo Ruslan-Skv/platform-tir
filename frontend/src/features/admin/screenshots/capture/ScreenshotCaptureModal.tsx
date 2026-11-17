@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 
 import Link from 'next/link';
 
-import { uploadAdminScreenshot } from '@/shared/api/admin-screenshots';
+import { uploadAdminScreenshot } from '@/shared/api/screenshots/admin-screenshots';
 import { Button } from '@/shared/ui/Button';
 import { Modal } from '@/shared/ui/Modal';
 
