@@ -6,6 +6,9 @@
 export const ADMIN_API_SKIPPED_PREFIXES = [
   '/api/v1/admin/access',
   '/api/v1/admin/presence',
+  // Удалённая помощь: роли и владение сессией проверяет контроллер
+  // (сотрудник вызывает requests/accept/decline/end без ресурсной записи)
+  '/api/v1/admin/remote-help',
   '/api/v1/admin/work-days/my',
   '/api/v1/admin/waybills/my',
   '/api/v1/admin/installation-schedules/my',

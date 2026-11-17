@@ -43,6 +43,21 @@ services:
         soft: -1
         hard: -1
 
+  # TURN-сервер для WebRTC-удалённой помощи (обязателен, если участники за симметричным NAT).
+  # Включите, раскомментировав блок, и задайте TURN_URL/TURN_USERNAME/TURN_CREDENTIAL в .env
+  # coturn:
+  #   image: coturn/coturn:4.6-alpine
+  #   container_name: platform-tir-coturn
+  #   network_mode: host
+  #   command:
+  #     - --listening-port=3478
+  #     - --fingerprint
+  #     - --lt-cred-mech
+  #     - --user=${TURN_USERNAME}:${TURN_CREDENTIAL}
+  #     - --realm=platform-tir
+  #     - --no-cli
+  #   restart: unless-stopped
+
 volumes:
   postgres_data:
   elasticsearch_data:

@@ -568,6 +568,12 @@ const baseNavItems: NavItem[] = [
     resourceId: 'admin.messenger',
   },
   {
+    label: 'Удалённая помощь',
+    href: '/admin/remote-help',
+    icon: '🖥️',
+    resourceId: 'admin.remote-help',
+  },
+  {
     label: 'Календарь',
     href: '/admin/calendar',
     icon: '📅',

@@ -10,6 +10,7 @@ import { AdminSectionAccessShell } from '@/features/admin/components/AdminSectio
 import { AdminAccessibleResourcesProvider } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import { WorkDayGate, WorkDayProvider } from '@/features/admin/work-day';
 import { AuthProvider, useAuth } from '@/features/auth';
+import { RemoteHelpReceiver } from '@/features/remote-help';
 import { getOrCreateStore } from '@/features/theme';
 import {
   ADMIN_SIDEBAR_COLLAPSED_WIDTH,
@@ -183,6 +184,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             }
           >
             <AdminPresenceHeartbeat />
+            <RemoteHelpReceiver />
             <AdminHeader
               onMobileMenuOpen={() => setMobileSidebarOpen((open) => !open)}
               mobileMenuOpen={mobileSidebarOpen}

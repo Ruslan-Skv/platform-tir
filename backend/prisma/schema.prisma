@@ -234,6 +234,8 @@ model User {
   salaryCategoriesLeadSpecialist          SalaryCategory[]                          @relation("SalaryCategoryLeadSpecialist")
   salaryEmployeeSalaries                  SalaryEmployeeSalary[]
   salaryManagerSalesPlans                 SalaryManagerSalesPlan[]
+  remoteHelpSessionsUser                  RemoteHelpSession[]                       @relation("RemoteHelpSessionUser")
+  remoteHelpSessionsAdmin                 RemoteHelpSession[]                       @relation("RemoteHelpSessionAdmin")
 
   @@unique([employeeCode])
   @@index([officeId])
@@ -5645,4 +5647,35 @@ model CalendarCustomEventBellEvent {
   @@index([recipientId, createdAt])
   @@index([calendarEventId])
   @@map("calendar_custom_event_bell_events")
+}
+
+/// Статус сеанса удалённой помощи суперадмина сотруднику админки.
+enum RemoteHelpSessionStatus {
+  REQUESTED // сотрудник сам запросил помощь, ждёт суперадмина
+  PENDING // суперадмин пригласил, ждём согласия сотрудника
+  ACTIVE // идёт трансляция экрана
+  ENDED // завершён участниками
+  DECLINED // сотрудник отклонил приглашение
+  CANCELLED // суперадмин отменил до начала
+  EXPIRED // не отвечено вовремя
+}
+
+/// Журнал сеансов удалённой помощи (WebRTC-трансляция экрана сотрудника суперадмину).
+model RemoteHelpSession {
+  id          String                  @id @default(cuid())
+  userId      String // кому помогают (сотрудник)
+  adminId     String? // кто помогает (суперадмин)
+  status      RemoteHelpSessionStatus @default(PENDING)
+  createdAt   DateTime                @default(now())
+  respondedAt DateTime? // согласие/отказ сотрудника
+  startedAt   DateTime? // начало трансляции
+  endedAt     DateTime?
+  endReason   String? // manual | disconnect | share-stopped | timeout
+  user        User                    @relation("RemoteHelpSessionUser", fields: [userId], references: [id], onDelete: Cascade)
+  admin       User?                   @relation("RemoteHelpSessionAdmin", fields: [adminId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([adminId])
+  @@index([status, createdAt])
+  @@map("remote_help_sessions")
 }

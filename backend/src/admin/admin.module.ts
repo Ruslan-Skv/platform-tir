@@ -32,6 +32,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { MarketingModule } from './marketing/marketing.module';
 import { KanbanModule } from './kanban/kanban.module';
 import { MessengerModule } from './messenger/messenger.module';
+import { RemoteHelpModule } from './remote-help/remote-help.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { AdminReviewsModule } from './reviews/admin-reviews.module';
 import { AdminNotificationsModule } from './notifications/admin-notifications.module';
@@ -125,6 +126,7 @@ import { AdminAuthSettingsModule } from './auth-settings/admin-auth-settings.mod
     KanbanModule,
     MessengerModule,
     CalendarModule,
+    RemoteHelpModule,
   ],
   exports: [
     AdminAccessModule,
