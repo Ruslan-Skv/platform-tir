@@ -90,18 +90,13 @@ function chartFillToneClass(index: number): string {
 
 function ActivityBarChart({
   rows,
-  valueKey,
   'aria-label': ariaLabel,
 }: {
   rows: CatalogActivityRow[];
-  valueKey: 'countInPeriod' | 'totalCreated';
   'aria-label': string;
 }) {
-  const sorted = useMemo(
-    () => [...rows].sort((a, b) => b[valueKey] - a[valueKey]),
-    [rows, valueKey]
-  );
-  const totalSum = useMemo(() => rows.reduce((s, r) => s + r[valueKey], 0), [rows, valueKey]);
+  const sorted = useMemo(() => [...rows].sort((a, b) => b.countInPeriod - a.countInPeriod), [rows]);
+  const totalSum = useMemo(() => rows.reduce((s, r) => s + r.countInPeriod, 0), [rows]);
 
   return (
     <div className={styles.chart} role="img" aria-label={ariaLabel}>
@@ -110,7 +105,7 @@ function ActivityBarChart({
       </p>
       <ul className={styles.chartList}>
         {sorted.map((row, index) => {
-          const v = row[valueKey];
+          const v = row.countInPeriod;
           const widthPct = totalSum > 0 ? (v / totalSum) * 100 : 0;
           const shareLabel = formatSharePercent(v, totalSum);
           return (
@@ -163,22 +158,13 @@ function CatalogActivityWidget({
           Нет данных: за период никто не создавал товары (или у карточек не указан автор).
         </p>
       ) : (
-        <>
-          <div className={styles.chartsWrap}>
+        <div className={styles.catalogScroll}>
+          <div className={`${styles.chartsWrap} ${styles.chartsWrapSingle}`}>
             <div className={styles.chartBlock}>
               <h3 className={styles.chartTitle}>За выбранный период</h3>
               <ActivityBarChart
                 rows={rows}
-                valueKey="countInPeriod"
                 aria-label="Товары: сравнение по числу созданных записей за период"
-              />
-            </div>
-            <div className={styles.chartBlock}>
-              <h3 className={styles.chartTitle}>Всего за всё время</h3>
-              <ActivityBarChart
-                rows={rows}
-                valueKey="totalCreated"
-                aria-label="Товары: сравнение по всем созданным записям за всё время"
               />
             </div>
           </div>
@@ -238,7 +224,7 @@ function CatalogActivityWidget({
               </tbody>
             </table>
           </div>
-        </>
+        </div>
       )}
     </section>
   );

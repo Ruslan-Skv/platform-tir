@@ -664,10 +664,27 @@
   border-bottom: 1px solid var(--admin-surface-soft);
 }
 
+/* «Товары»: осталась одна диаграмма — растягиваем её на всю ширину панели. */
+.chartsWrapSingle {
+  grid-template-columns: 1fr;
+}
+
 /* Как в «Динамике обучения»: длинные списки направлений и менеджеров скроллятся, а не растягивают панель. */
 .chartsWrapSales {
   max-height: 28rem;
   overflow-y: auto;
+}
+
+/* «Товары»: диаграмма и таблица скроллятся вместе, а не растягивают панель. */
+.catalogScroll {
+  max-height: 28rem;
+  overflow-y: auto;
+}
+
+@media (max-width: 640px) {
+  .catalogScroll {
+    max-height: 20rem;
+  }
 }
 
 @media (max-width: 700px) {
