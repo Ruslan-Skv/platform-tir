@@ -21,7 +21,6 @@ import {
   getDashboardTrainingDynamics,
 } from '@/shared/api/admin-dashboard';
 import type { AdminDashboardSectionId } from '@/shared/lib/admin/admin-dashboard-sections';
-import { getInitials } from '@/shared/lib/avatar';
 import { getSafeHref } from '@/shared/lib/sanitize';
 
 import styles from './Dashboard.module.css';
@@ -90,22 +89,29 @@ function chartFillToneClass(index: number): string {
 
 function ActivityBarChart({
   rows,
+  valueKey,
   'aria-label': ariaLabel,
 }: {
   rows: CatalogActivityRow[];
+  valueKey: 'countInPeriod' | 'totalCreated';
   'aria-label': string;
 }) {
-  const sorted = useMemo(() => [...rows].sort((a, b) => b.countInPeriod - a.countInPeriod), [rows]);
-  const totalSum = useMemo(() => rows.reduce((s, r) => s + r.countInPeriod, 0), [rows]);
+  const sorted = useMemo(
+    () => [...rows].sort((a, b) => b[valueKey] - a[valueKey]),
+    [rows, valueKey]
+  );
+  const totalSum = useMemo(() => rows.reduce((s, r) => s + r[valueKey], 0), [rows, valueKey]);
+  const hintScope =
+    valueKey === 'countInPeriod' ? 'от суммы за период' : 'от всех созданных за всё время';
 
   return (
     <div className={styles.chart} role="img" aria-label={ariaLabel}>
       <p className={styles.chartHint}>
-        Столбцы — доля каждого администратора от суммы по таблице ({totalSum} шт.).
+        Столбцы — доля каждого администратора {hintScope} ({totalSum} шт.).
       </p>
       <ul className={styles.chartList}>
         {sorted.map((row, index) => {
-          const v = row.countInPeriod;
+          const v = row[valueKey];
           const widthPct = totalSum > 0 ? (v / totalSum) * 100 : 0;
           const shareLabel = formatSharePercent(v, totalSum);
           return (
@@ -133,6 +139,108 @@ function ActivityBarChart({
   );
 }
 
+// ВРЕМЕННЫЕ тестовые данные блока «Товары»: в dev-режиме подставляются, когда API
+// успешно ответил, но строк нет. Нужны для проверки вёрстки (скролл, длинный список).
+// TODO: удалить после проверки.
+const CATALOG_ACTIVITY_TEST_ROWS: CatalogActivityRow[] = [
+  {
+    userId: 'test-01',
+    email: 'anna.kovaleva@tir.ru',
+    firstName: 'Анна',
+    lastName: 'Ковалёва',
+    countInPeriod: 24,
+    totalCreated: 312,
+  },
+  {
+    userId: 'test-02',
+    email: 'd.sokolov@tir.ru',
+    firstName: 'Дмитрий',
+    lastName: 'Соколов',
+    countInPeriod: 19,
+    totalCreated: 278,
+  },
+  {
+    userId: 'test-03',
+    email: 'm.lebedeva@tir.ru',
+    firstName: 'Мария',
+    lastName: 'Лебедева',
+    countInPeriod: 15,
+    totalCreated: 245,
+  },
+  {
+    userId: 'test-04',
+    email: 'i.petrenko@tir.ru',
+    firstName: 'Игорь',
+    lastName: 'Петренко',
+    countInPeriod: 12,
+    totalCreated: 198,
+  },
+  {
+    userId: 'test-05',
+    email: 'o.nikitina@tir.ru',
+    firstName: 'Ольга',
+    lastName: 'Никитина',
+    countInPeriod: 9,
+    totalCreated: 176,
+  },
+  {
+    userId: 'test-06',
+    email: 's.volkov@tir.ru',
+    firstName: 'Сергей',
+    lastName: 'Волков',
+    countInPeriod: 7,
+    totalCreated: 154,
+  },
+  {
+    userId: 'test-07',
+    email: 'e.morozova@tir.ru',
+    firstName: 'Елена',
+    lastName: 'Морозова',
+    countInPeriod: 5,
+    totalCreated: 132,
+  },
+  {
+    userId: 'test-08',
+    email: 'p.kuznetsov@tir.ru',
+    firstName: 'Павел',
+    lastName: 'Кузнецов',
+    countInPeriod: 4,
+    totalCreated: 98,
+  },
+  {
+    userId: 'test-09',
+    email: 'n.orlova@tir.ru',
+    firstName: 'Наталья',
+    lastName: 'Орлова',
+    countInPeriod: 3,
+    totalCreated: 87,
+  },
+  {
+    userId: 'test-10',
+    email: 'v.zaytsev@tir.ru',
+    firstName: 'Виктор',
+    lastName: 'Зайцев',
+    countInPeriod: 2,
+    totalCreated: 65,
+  },
+  {
+    userId: 'test-11',
+    email: 'kostin@tir.ru',
+    firstName: null,
+    lastName: null,
+    countInPeriod: 1,
+    totalCreated: 41,
+  },
+  {
+    userId: 'test-12',
+    email: 't.belova@tir.ru',
+    firstName: 'Татьяна',
+    lastName: 'Белова',
+    countInPeriod: 0,
+    totalCreated: 23,
+  },
+];
+
 function CatalogActivityWidget({
   loading,
   rows,
@@ -140,9 +248,6 @@ function CatalogActivityWidget({
   loading: boolean;
   rows: CatalogActivityRow[];
 }) {
-  const sumInPeriod = rows.reduce((s, r) => s + r.countInPeriod, 0);
-  const sumTotalCreated = rows.reduce((s, r) => s + r.totalCreated, 0);
-
   return (
     <section className={styles.panel}>
       <div className={styles.panelHead}>
@@ -158,71 +263,22 @@ function CatalogActivityWidget({
           Нет данных: за период никто не создавал товары (или у карточек не указан автор).
         </p>
       ) : (
-        <div className={styles.catalogScroll}>
-          <div className={`${styles.chartsWrap} ${styles.chartsWrapSingle}`}>
-            <div className={styles.chartBlock}>
-              <h3 className={styles.chartTitle}>За выбранный период</h3>
-              <ActivityBarChart
-                rows={rows}
-                aria-label="Товары: сравнение по числу созданных записей за период"
-              />
-            </div>
+        <div className={`${styles.chartsWrap} ${styles.chartsWrapScroll}`}>
+          <div className={styles.chartBlock}>
+            <h3 className={styles.chartTitle}>За выбранный период</h3>
+            <ActivityBarChart
+              rows={rows}
+              valueKey="countInPeriod"
+              aria-label="Товары: сравнение по числу созданных записей за период"
+            />
           </div>
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Администратор</th>
-                  <th className={styles.colNum}>За период</th>
-                  <th
-                    className={styles.colPct}
-                    title="Доля от суммы созданных за период по всем администраторам в таблице"
-                  >
-                    % пер.
-                  </th>
-                  <th className={styles.colNum}>Всего</th>
-                  <th
-                    className={styles.colPct}
-                    title="Доля от суммы всего созданного по всем администраторам в таблице"
-                  >
-                    % всего
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={row.userId}>
-                    <td data-label="Администратор">
-                      <div className={styles.userCell}>
-                        <span className={styles.avatar} aria-hidden>
-                          {getInitials(row.firstName, row.lastName, row.email)}
-                        </span>
-                        <div className={styles.userText}>
-                          <span className={styles.userName}>{formatPerson(row)}</span>
-                          <span className={styles.userEmail}>{row.email}</span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className={styles.colNum} data-label="За период">
-                      <span className={styles.badgePeriod}>{row.countInPeriod}</span>
-                    </td>
-                    <td className={styles.colPct} data-label="% пер.">
-                      <span className={styles.pctCell}>
-                        {formatSharePercent(row.countInPeriod, sumInPeriod)}
-                      </span>
-                    </td>
-                    <td className={styles.colNum} data-label="Всего">
-                      <span className={styles.badgeTotal}>{row.totalCreated}</span>
-                    </td>
-                    <td className={styles.colPct} data-label="% всего">
-                      <span className={styles.pctCell}>
-                        {formatSharePercent(row.totalCreated, sumTotalCreated)}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className={styles.chartBlock}>
+            <h3 className={styles.chartTitle}>Всего за всё время</h3>
+            <ActivityBarChart
+              rows={rows}
+              valueKey="totalCreated"
+              aria-label="Товары: сравнение по всем созданным записям за всё время"
+            />
           </div>
         </div>
       )}
@@ -381,6 +437,12 @@ export function Dashboard() {
   const rangeFrom = catalogData?.from ?? trainingData?.period.from;
   const rangeTo = catalogData?.to ?? trainingData?.period.to;
 
+  // В dev-режиме пустой ответ «Товаров» заменяем тестовыми данными (см. CATALOG_ACTIVITY_TEST_ROWS).
+  const catalogRows =
+    catalogData && catalogData.products.length === 0 && process.env.NODE_ENV === 'development'
+      ? CATALOG_ACTIVITY_TEST_ROWS
+      : (catalogData?.products ?? []);
+
   const enabledQuickLinks = useMemo(
     () => settings.quickLinks.filter((link) => link.isEnabled),
     [settings.quickLinks]
@@ -426,11 +488,7 @@ export function Dashboard() {
         ) : null;
       case 'catalogActivity':
         return showCatalogWidget ? (
-          <CatalogActivityWidget
-            key={sectionId}
-            loading={catalogLoading}
-            rows={catalogData?.products ?? []}
-          />
+          <CatalogActivityWidget key={sectionId} loading={catalogLoading} rows={catalogRows} />
         ) : null;
       case 'calendar':
         return showCalendarWidget ? <CalendarDashboardWidget key={sectionId} /> : null;

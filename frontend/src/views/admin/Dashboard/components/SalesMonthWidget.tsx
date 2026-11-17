@@ -136,7 +136,7 @@ export function SalesMonthWidget({
         <p className={styles.empty}>Не удалось загрузить продажи за месяц.</p>
       ) : (
         <>
-          <div className={`${styles.chartsWrap} ${styles.chartsWrapSales}`}>
+          <div className={`${styles.chartsWrap} ${styles.chartsWrapScroll}`}>
             <div className={styles.chartBlock}>
               <h3 className={styles.chartTitle}>По направлениям</h3>
               <SalesBarChart

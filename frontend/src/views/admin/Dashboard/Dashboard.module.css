@@ -664,27 +664,11 @@
   border-bottom: 1px solid var(--admin-surface-soft);
 }
 
-/* «Товары»: осталась одна диаграмма — растягиваем её на всю ширину панели. */
-.chartsWrapSingle {
-  grid-template-columns: 1fr;
-}
-
-/* Как в «Динамике обучения»: длинные списки направлений и менеджеров скроллятся, а не растягивают панель. */
-.chartsWrapSales {
+/* Как в «Динамике обучения»: длинные списки скроллятся, а не растягивают панель.
+   Общий модификатор для «Продаж за месяц» и «Товаров». */
+.chartsWrapScroll {
   max-height: 28rem;
   overflow-y: auto;
-}
-
-/* «Товары»: диаграмма и таблица скроллятся вместе, а не растягивают панель. */
-.catalogScroll {
-  max-height: 28rem;
-  overflow-y: auto;
-}
-
-@media (max-width: 640px) {
-  .catalogScroll {
-    max-height: 20rem;
-  }
 }
 
 @media (max-width: 700px) {
@@ -694,7 +678,7 @@
     gap: var(--admin-space-xl);
   }
 
-  .chartsWrapSales {
+  .chartsWrapScroll {
     max-height: 20rem;
   }
 }
@@ -896,233 +880,6 @@
   }
 }
 
-.tableWrap {
-  padding: var(--admin-space-0);
-  min-height: 120px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-x: contain;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--admin-font-size-base);
-}
-
-.table thead {
-  background: var(--admin-surface-muted);
-}
-
-.table th {
-  text-align: left;
-  padding: var(--admin-space-xl) var(--admin-space-2xl);
-  font-weight: 600;
-  color: var(--admin-text-muted);
-  font-size: var(--admin-font-size-xs);
-  text-transform: uppercase;
-  letter-spacing: var(--admin-letter-spacing-wide);
-  border-bottom: 1px solid var(--admin-border);
-}
-
-.table th.colNum,
-.table td.colNum {
-  text-align: right;
-  width: 100px;
-}
-
-.table th.colPct,
-.table td.colPct {
-  text-align: right;
-  width: 72px;
-  white-space: nowrap;
-}
-
-.pctCell {
-  font-size: var(--admin-font-size-md);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--admin-sidebar-text);
-}
-
-.table td {
-  padding: var(--admin-space-xl) var(--admin-space-2xl);
-  border-bottom: 1px solid var(--admin-surface-soft);
-  vertical-align: middle;
-}
-
-.table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-@media (hover: hover) {
-  .table tbody tr:hover td {
-    background: var(--admin-surface-muted);
-  }
-}
-
-/* Узкие экраны: строки таблицы — карточки (без горизонтального скролла) */
-@media (max-width: 640px) {
-  .tableWrap {
-    overflow-x: visible;
-  }
-
-  .table {
-    display: block;
-  }
-
-  .table thead {
-    display: none;
-  }
-
-  .table tbody {
-    display: block;
-  }
-
-  .table tbody tr {
-    display: block;
-    margin-bottom: var(--admin-space-xl);
-    padding: var(--admin-space-xl) var(--admin-space-xl);
-    background: var(--admin-surface-muted);
-    border-radius: var(--admin-radius-xl);
-    border: 1px solid var(--admin-surface-soft);
-  }
-
-  .table tbody tr:last-child {
-    margin-bottom: 0;
-  }
-
-  .table tbody td {
-    display: block;
-    padding: var(--admin-space-0);
-    border: none;
-    vertical-align: middle;
-  }
-
-  .table tbody td:first-child {
-    padding-bottom: 12px;
-    margin-bottom: var(--admin-space-lg);
-    border-bottom: 1px solid var(--admin-border);
-  }
-
-  .table tbody td:first-child::before {
-    content: attr(data-label);
-    display: block;
-    font-size: var(--admin-font-size-2xs);
-    font-weight: 700;
-    color: var(--admin-text-muted);
-    text-transform: uppercase;
-    letter-spacing: var(--admin-letter-spacing-wider);
-    margin-bottom: var(--admin-space-md);
-  }
-
-  .table tbody td:not(:first-child) {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: var(--admin-space-xl);
-    padding: var(--admin-space-lg) var(--admin-space-0);
-    border-top: 1px solid var(--admin-surface-soft);
-    text-align: right !important;
-  }
-
-  .table tbody td:not(:first-child)::before {
-    content: attr(data-label);
-    font-size: var(--admin-font-size-2xs);
-    font-weight: 600;
-    color: var(--admin-text-muted);
-    text-transform: uppercase;
-    letter-spacing: var(--admin-letter-spacing-wide);
-    flex-shrink: 0;
-    text-align: left;
-  }
-
-  .table tbody td.colNum,
-  .table tbody td.colPct {
-    width: auto;
-  }
-
-  @media (hover: hover) {
-    .table tbody tr:hover td {
-      background: transparent;
-    }
-  }
-}
-
-.userCell {
-  display: flex;
-  align-items: center;
-  gap: var(--admin-space-xl);
-}
-
-.avatar {
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--admin-radius-lg);
-  background: linear-gradient(135deg, var(--dash-turquoise-deep), var(--dash-turquoise));
-  color: var(--admin-surface);
-  font-size: var(--admin-font-size-xs);
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.userText {
-  display: flex;
-  flex-direction: column;
-  gap: var(--admin-space-2xs);
-  min-width: 0;
-}
-
-.userName {
-  font-weight: 600;
-  color: var(--admin-text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.userEmail {
-  font-size: var(--admin-font-size-sm);
-  color: var(--admin-text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-@media (max-width: 640px) {
-  .userName,
-  .userEmail {
-    white-space: normal;
-    word-break: break-word;
-    overflow: visible;
-    text-overflow: unset;
-  }
-}
-
-.badgePeriod,
-.badgeTotal {
-  display: inline-block;
-  min-width: 2rem;
-  padding: var(--admin-space-xs) var(--admin-space-lg);
-  border-radius: var(--admin-radius-md);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.badgePeriod {
-  background: var(--dash-turquoise-soft);
-  color: var(--dash-turquoise-muted);
-  border: 1px solid var(--admin-overlay-color-046);
-}
-
-.badgeTotal {
-  background: var(--admin-success-bg-soft);
-  color: var(--admin-success-deep);
-}
-
 .empty {
   padding: var(--admin-space-28) var(--admin-space-3xl);
   text-align: center;
@@ -1212,69 +969,8 @@
   border-bottom-color: var(--admin-border);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .panelTitle,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .userName {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .panelTitle {
   color: var(--admin-text-primary);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .table thead {
-  background: var(--admin-surface-soft);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .table th {
-  color: var(--admin-text-muted);
-  border-bottom-color: var(--admin-border);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .table td {
-  border-bottom-color: var(--admin-border);
-  color: var(--admin-text-primary);
-}
-
-@media (hover: hover) {
-  :where(html[data-theme='dark'], [data-app-theme='dark']) .table tbody tr:hover td {
-    background: var(--admin-surface-soft);
-  }
-}
-
-@media (max-width: 640px) {
-  :where(html[data-theme='dark'], [data-app-theme='dark']) .table tbody tr {
-    background: var(--admin-surface-soft);
-    border-color: var(--admin-border);
-  }
-
-  :where(html[data-theme='dark'], [data-app-theme='dark']) .table tbody td:first-child {
-    border-bottom-color: var(--admin-border);
-  }
-
-  :where(html[data-theme='dark'], [data-app-theme='dark']) .table tbody td:not(:first-child) {
-    border-top-color: var(--admin-border);
-  }
-
-  @media (hover: hover) {
-    :where(html[data-theme='dark'], [data-app-theme='dark']) .table tbody tr:hover td {
-      background: transparent;
-    }
-  }
-
-  :where(html[data-theme='dark'], [data-app-theme='dark']) .table tbody td:first-child::before,
-  :where(html[data-theme='dark'], [data-app-theme='dark'])
-    .table
-    tbody
-    td:not(:first-child)::before {
-    color: var(--admin-text-muted);
-  }
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .badgePeriod {
-  background: var(--admin-info-bg-soft);
-  color: var(--admin-info-deep);
-  border-color: var(--admin-info-border-soft);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .badgeTotal {
-  background: var(--admin-success-bg-soft);
-  color: var(--admin-success-deep);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .quickLink {
@@ -1333,8 +1029,4 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .chartHint {
   color: var(--admin-text-muted);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .pctCell {
-  color: var(--admin-text-secondary);
 }
