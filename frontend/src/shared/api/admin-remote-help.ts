@@ -163,7 +163,9 @@ function socketBaseUrl(): string {
     const u = new URL(apiUrl);
     return `${u.protocol}//${u.host}`;
   } catch {
-    return 'http://localhost:3001';
+    // Относительный NEXT_PUBLIC_API_URL (прод за nginx): API на том же origin,
+    // socket.io проксируется локацией /socket.io/
+    return typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001';
   }
 }
 
