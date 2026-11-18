@@ -96,7 +96,7 @@ function SystemCard({
 
         {system.videoUrl && (
           <div className={styles.systemVideo}>
-            <VideoPlayer url={system.videoUrl} title={`${system.name} — видео`} />
+            <VideoPlayer lazy url={system.videoUrl} title={`${system.name} — видео`} />
           </div>
         )}
 

@@ -16,3 +16,61 @@
   border: 0;
   object-fit: contain;
 }
+
+/* ===== Постер ленивого режима (до клика) ===== */
+.poster {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  cursor: pointer;
+  font: inherit;
+  background:
+    radial-gradient(400px 200px at 30% 20%, rgb(255 255 255 / 8%), transparent 65%),
+    linear-gradient(160deg, #1f2937, #030712);
+  transition: background 0.15s ease;
+}
+
+.poster:hover {
+  background:
+    radial-gradient(400px 200px at 30% 20%, rgb(255 255 255 / 12%), transparent 65%),
+    linear-gradient(160deg, #273449, #0b1220);
+}
+
+.posterIcon {
+  position: relative;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.95);
+  transition: transform 0.15s ease;
+}
+
+.poster:hover .posterIcon {
+  transform: scale(1.08);
+}
+
+.posterIcon::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0.75rem 0 0.75rem 1.25rem;
+  border-color: transparent transparent transparent #111827;
+  transform: translateX(0.1875rem);
+}
+
+.posterLabel {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #f3f4f6;
+}
