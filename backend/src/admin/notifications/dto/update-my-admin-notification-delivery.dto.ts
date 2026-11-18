@@ -189,6 +189,13 @@ export class UpdateMyAdminNotificationDeliveryDto {
   notifyOnIncassations?: boolean;
 
   @ApiPropertyOptional({
+    description: 'Личное переопределение: итоги продаж — каждый 1 млн ₽ за месяц (журнал ДП)',
+  })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnSalesTotals?: boolean;
+
+  @ApiPropertyOptional({
     description: 'Личное переопределение: ведомости авансов монтажников',
   })
   @IsOptional()
