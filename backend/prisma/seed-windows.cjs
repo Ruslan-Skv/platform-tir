@@ -90,6 +90,7 @@ async function seedBrandsWithSystems() {
         slug: system.slug,
         name: system.name,
         tagline: system.tagline,
+        videoUrl: system.videoUrl ?? null,
         description: system.description,
         chambers: system.chambers,
         mountingDepth: system.mountingDepth,

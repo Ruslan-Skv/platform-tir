@@ -41,6 +41,7 @@ type SeedSystem = {
   slug: string;
   name: string;
   tagline: string | null;
+  videoUrl?: string | null;
   description: string;
   chambers: number | null;
   mountingDepth: number | null;
@@ -134,6 +135,7 @@ async function seedBrandsWithSystems() {
         slug: system.slug,
         name: system.name,
         tagline: system.tagline,
+        videoUrl: system.videoUrl ?? null,
         description: system.description,
         chambers: system.chambers,
         mountingDepth: system.mountingDepth,

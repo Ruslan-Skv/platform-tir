@@ -40,6 +40,7 @@ export function useWindowSystemFormPage(systemId?: string) {
   const [tagline, setTagline] = useState('');
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
   const [chambers, setChambers] = useState('');
   const [mountingDepth, setMountingDepth] = useState('');
   const [glassUnitWidth, setGlassUnitWidth] = useState('');
@@ -97,6 +98,7 @@ export function useWindowSystemFormPage(systemId?: string) {
       setTagline(data.tagline ?? '');
       setDescription(data.description);
       setImageUrl(data.imageUrl ?? '');
+      setVideoUrl(data.videoUrl ?? '');
       setChambers(data.chambers != null ? String(data.chambers) : '');
       setMountingDepth(data.mountingDepth != null ? String(data.mountingDepth) : '');
       setGlassUnitWidth(data.glassUnitWidth ?? '');
@@ -163,6 +165,7 @@ export function useWindowSystemFormPage(systemId?: string) {
         tagline: tagline.trim(),
         description: description.trim(),
         imageUrl: imageUrl.trim(),
+        videoUrl: videoUrl.trim(),
         chambers: chambers.trim() ? Number(chambers) : undefined,
         mountingDepth: mountingDepth.trim() ? Number(mountingDepth) : undefined,
         glassUnitWidth: glassUnitWidth.trim(),
@@ -229,6 +232,8 @@ export function useWindowSystemFormPage(systemId?: string) {
     setDescription,
     imageUrl,
     setImageUrl,
+    videoUrl,
+    setVideoUrl,
     chambers,
     setChambers,
     mountingDepth,

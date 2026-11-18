@@ -38,6 +38,8 @@ export interface AdminWindowSystem {
   tagline: string | null;
   description: string;
   imageUrl: string | null;
+  /** Видео системы (Rutube/YouTube/VK или прямой файл) */
+  videoUrl: string | null;
   chambers: number | null;
   mountingDepth: number | null;
   glassUnitWidth: string | null;
@@ -98,6 +100,8 @@ export interface CreateWindowSystemDto {
   tagline?: string;
   description: string;
   imageUrl?: string;
+  /** Видео системы (Rutube/YouTube/VK или прямой файл) */
+  videoUrl?: string;
   chambers?: number;
   mountingDepth?: number;
   glassUnitWidth?: string;

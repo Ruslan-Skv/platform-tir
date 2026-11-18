@@ -52,6 +52,7 @@ export const DEFAULT_WINDOWS_SECTION: WindowsSectionData = {
           description:
             'Надёжные окна по доступной цене: эффективно сохраняют тепло, защищают от уличного шума и легко интегрируются в любой интерьер.',
           imageUrl: null,
+          videoUrl: null,
           chambers: 3,
           mountingDepth: 60,
           glassUnitWidth: null,
@@ -77,6 +78,7 @@ export const DEFAULT_WINDOWS_SECTION: WindowsSectionData = {
           description:
             'Сочетает изящество формы и исключительные теплозащитные свойства. Выдерживает экстремально низкие температуры и повышенную влажность.',
           imageUrl: null,
+          videoUrl: null,
           chambers: 5,
           mountingDepth: 70,
           glassUnitWidth: '10–41 мм',
@@ -102,6 +104,7 @@ export const DEFAULT_WINDOWS_SECTION: WindowsSectionData = {
           description:
             'Создаёт в доме оптимальный микроклимат и максимально повышает шумоизоляцию. Стойкость к 60 условным годам эксплуатации подтверждена испытаниями.',
           imageUrl: null,
+          videoUrl: null,
           chambers: 6,
           mountingDepth: 80,
           glassUnitWidth: 'до 53 мм',
@@ -140,6 +143,7 @@ export const DEFAULT_WINDOWS_SECTION: WindowsSectionData = {
           description:
             'Стабильная многокамерная конструкция с отличными изолирующими характеристиками и высоким сопротивлением теплопередаче.',
           imageUrl: null,
+          videoUrl: null,
           chambers: 7,
           mountingDepth: 82,
           glassUnitWidth: null,
@@ -165,6 +169,7 @@ export const DEFAULT_WINDOWS_SECTION: WindowsSectionData = {
           description:
             'Проверенная система VEKA: сбалансированные характеристики тепла и тишины, классический дизайн и надёжная конструкция.',
           imageUrl: null,
+          videoUrl: null,
           chambers: 5,
           mountingDepth: 70,
           glassUnitWidth: null,
@@ -190,6 +195,7 @@ export const DEFAULT_WINDOWS_SECTION: WindowsSectionData = {
           description:
             'Экономичное решение VEKA для тёплых и хорошо отапливаемых домов с достойными характеристиками.',
           imageUrl: null,
+          videoUrl: null,
           chambers: 3,
           mountingDepth: 58,
           glassUnitWidth: null,
@@ -228,6 +234,7 @@ export const DEFAULT_WINDOWS_SECTION: WindowsSectionData = {
           description:
             'Оптимизирует затраты на окна и сохраняет качество мирового производителя: два контура уплотнения и стеклопакет до 32 мм.',
           imageUrl: null,
+          videoUrl: null,
           chambers: 4,
           mountingDepth: 60,
           glassUnitWidth: '24–32 мм',
@@ -253,6 +260,7 @@ export const DEFAULT_WINDOWS_SECTION: WindowsSectionData = {
           description:
             'Пятикамерная система WHS by VEKA со стеклопакетом до 44 мм: больше тепла и тишины при разумном бюджете.',
           imageUrl: null,
+          videoUrl: null,
           chambers: 5,
           mountingDepth: 72,
           glassUnitWidth: '24–44 мм',

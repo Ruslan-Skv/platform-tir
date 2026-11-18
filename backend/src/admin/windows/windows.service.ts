@@ -158,6 +158,7 @@ export class WindowsService {
         tagline: emptyToNull(dto.tagline) ?? null,
         description: dto.description,
         imageUrl: emptyToNull(dto.imageUrl) ?? null,
+        videoUrl: emptyToNull(dto.videoUrl) ?? null,
         chambers: dto.chambers ?? null,
         mountingDepth: dto.mountingDepth ?? null,
         glassUnitWidth: emptyToNull(dto.glassUnitWidth) ?? null,
@@ -199,6 +200,7 @@ export class WindowsService {
         ...(dto.tagline !== undefined && { tagline: emptyToNull(dto.tagline) }),
         ...(dto.description !== undefined && { description: dto.description }),
         ...(dto.imageUrl !== undefined && { imageUrl: emptyToNull(dto.imageUrl) }),
+        ...(dto.videoUrl !== undefined && { videoUrl: emptyToNull(dto.videoUrl) }),
         ...(dto.chambers !== undefined && { chambers: dto.chambers }),
         ...(dto.mountingDepth !== undefined && { mountingDepth: dto.mountingDepth }),
         ...(dto.glassUnitWidth !== undefined && {

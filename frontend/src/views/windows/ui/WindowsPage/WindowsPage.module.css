@@ -393,6 +393,19 @@
   gap: 0.5rem;
 }
 
+/* Видео профильной системы (после преимуществ) */
+.systemVideo {
+  margin: 0 0 1.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: #111827;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .systemVideo {
+  border-color: #374151;
+}
+
 .advantages li {
   display: flex;
   align-items: flex-start;

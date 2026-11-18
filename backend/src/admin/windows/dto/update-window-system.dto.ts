@@ -29,6 +29,11 @@ export class UpdateWindowSystemDto {
   @IsOptional()
   imageUrl?: string;
 
+  /** Видео системы (Rutube/YouTube/VK или прямой файл) */
+  @IsString()
+  @IsOptional()
+  videoUrl?: string;
+
   @IsInt()
   @IsOptional()
   chambers?: number;

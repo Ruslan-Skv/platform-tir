@@ -1681,6 +1681,8 @@ model WindowProfileSystem {
   tagline           String? // Короткий подзаголовок («Базовая система линейки REHAU»)
   description       String      @db.Text
   imageUrl          String?
+  /// Видео профильной системы (Rutube/YouTube/VK или прямой файл) — плеер в карточке
+  videoUrl          String?
   chambers          Int? // Количество камер профиля
   mountingDepth     Int? // Монтажная глубина, мм
   glassUnitWidth    String? // Толщина стеклопакета («24–44 мм», «до 53 мм»)

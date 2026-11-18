@@ -18,6 +18,8 @@ export interface WindowProfileSystem {
   tagline: string | null;
   description: string;
   imageUrl: string | null;
+  /** Видео системы (Rutube/YouTube/VK или прямой файл) */
+  videoUrl: string | null;
   chambers: number | null;
   mountingDepth: number | null;
   glassUnitWidth: string | null;

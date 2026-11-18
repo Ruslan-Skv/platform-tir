@@ -11,6 +11,7 @@ import {
 import Link from 'next/link';
 
 import type { WindowProfileSystem } from '@/shared/api/windows';
+import { VideoPlayer } from '@/shared/ui/VideoPlayer';
 
 import { WindowsCtaBlock } from './WindowsCtaBlock';
 import styles from './WindowsPage.module.css';
@@ -91,6 +92,12 @@ function SystemCard({
               </li>
             ))}
           </ul>
+        )}
+
+        {system.videoUrl && (
+          <div className={styles.systemVideo}>
+            <VideoPlayer url={system.videoUrl} title={`${system.name} — видео`} />
+          </div>
         )}
 
         {priceLabel && (

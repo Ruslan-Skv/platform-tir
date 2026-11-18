@@ -27,6 +27,8 @@ export function WindowSystemFormPageView({ model }: WindowSystemFormPageViewProp
     setDescription,
     imageUrl,
     setImageUrl,
+    videoUrl,
+    setVideoUrl,
     chambers,
     setChambers,
     mountingDepth,
@@ -195,6 +197,21 @@ export function WindowSystemFormPageView({ model }: WindowSystemFormPageViewProp
               </button>
             )}
           </div>
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.label}>Видео профильной системы</label>
+          <input
+            type="text"
+            value={videoUrl}
+            onChange={(e) => setVideoUrl(e.target.value)}
+            placeholder="Ссылка на Rutube / YouTube / VK или прямой файл (mp4)"
+            className={styles.input}
+          />
+          <span className={styles.hint}>
+            Например, ссылку на ролик из карточки поставщика (rutube.ru/video/…). Вставляется на
+            страницу «Окна» под преимуществами системы.
+          </span>
         </div>
 
         <fieldset className={styles.fieldset}>
