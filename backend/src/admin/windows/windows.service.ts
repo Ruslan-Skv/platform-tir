@@ -20,6 +20,16 @@ function toCharacteristicJson(
   return items.map((item) => ({ label: item.label, value: item.value }));
 }
 
+/**
+ * Строка из админки: undefined — не менять, пустая строка/пробелы — очистить (null), иначе значение.
+ * Нужно, чтобы «Убрать изображение/цвет» в админке реально очищал поля в БД.
+ */
+function emptyToNull(value?: string): string | null | undefined {
+  if (value === undefined) return undefined;
+  const trimmed = value.trim();
+  return trimmed === '' ? null : trimmed;
+}
+
 @Injectable()
 export class WindowsService {
   constructor(private prisma: PrismaService) {}
@@ -70,9 +80,9 @@ export class WindowsService {
       data: {
         name: dto.name,
         slug: dto.slug,
-        logoUrl: dto.logoUrl ?? null,
-        country: dto.country ?? null,
-        description: dto.description ?? null,
+        logoUrl: emptyToNull(dto.logoUrl) ?? null,
+        country: emptyToNull(dto.country) ?? null,
+        description: emptyToNull(dto.description) ?? null,
         sortOrder: dto.sortOrder ?? 0,
         isActive: dto.isActive ?? true,
       },
@@ -94,9 +104,9 @@ export class WindowsService {
       data: {
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.slug !== undefined && { slug: dto.slug }),
-        ...(dto.logoUrl !== undefined && { logoUrl: dto.logoUrl }),
-        ...(dto.country !== undefined && { country: dto.country }),
-        ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.logoUrl !== undefined && { logoUrl: emptyToNull(dto.logoUrl) }),
+        ...(dto.country !== undefined && { country: emptyToNull(dto.country) }),
+        ...(dto.description !== undefined && { description: emptyToNull(dto.description) }),
         ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),
         ...(dto.isActive !== undefined && { isActive: dto.isActive }),
       },
@@ -145,18 +155,18 @@ export class WindowsService {
         brandId: dto.brandId,
         name: dto.name,
         slug: dto.slug,
-        tagline: dto.tagline ?? null,
+        tagline: emptyToNull(dto.tagline) ?? null,
         description: dto.description,
-        imageUrl: dto.imageUrl ?? null,
+        imageUrl: emptyToNull(dto.imageUrl) ?? null,
         chambers: dto.chambers ?? null,
         mountingDepth: dto.mountingDepth ?? null,
-        glassUnitWidth: dto.glassUnitWidth ?? null,
-        thermalResistance: dto.thermalResistance ?? null,
-        soundInsulation: dto.soundInsulation ?? null,
+        glassUnitWidth: emptyToNull(dto.glassUnitWidth) ?? null,
+        thermalResistance: emptyToNull(dto.thermalResistance) ?? null,
+        soundInsulation: emptyToNull(dto.soundInsulation) ?? null,
         characteristics: toCharacteristicJson(dto.characteristics),
         advantages: dto.advantages ?? [],
         priceFrom: dto.priceFrom ?? null,
-        badge: dto.badge ?? null,
+        badge: emptyToNull(dto.badge) ?? null,
         sortOrder: dto.sortOrder ?? 0,
         isActive: dto.isActive ?? true,
       },
@@ -186,22 +196,26 @@ export class WindowsService {
         ...(dto.brandId !== undefined && { brandId: dto.brandId }),
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.slug !== undefined && { slug: dto.slug }),
-        ...(dto.tagline !== undefined && { tagline: dto.tagline }),
+        ...(dto.tagline !== undefined && { tagline: emptyToNull(dto.tagline) }),
         ...(dto.description !== undefined && { description: dto.description }),
-        ...(dto.imageUrl !== undefined && { imageUrl: dto.imageUrl }),
+        ...(dto.imageUrl !== undefined && { imageUrl: emptyToNull(dto.imageUrl) }),
         ...(dto.chambers !== undefined && { chambers: dto.chambers }),
         ...(dto.mountingDepth !== undefined && { mountingDepth: dto.mountingDepth }),
-        ...(dto.glassUnitWidth !== undefined && { glassUnitWidth: dto.glassUnitWidth }),
-        ...(dto.thermalResistance !== undefined && {
-          thermalResistance: dto.thermalResistance,
+        ...(dto.glassUnitWidth !== undefined && {
+          glassUnitWidth: emptyToNull(dto.glassUnitWidth),
         }),
-        ...(dto.soundInsulation !== undefined && { soundInsulation: dto.soundInsulation }),
+        ...(dto.thermalResistance !== undefined && {
+          thermalResistance: emptyToNull(dto.thermalResistance),
+        }),
+        ...(dto.soundInsulation !== undefined && {
+          soundInsulation: emptyToNull(dto.soundInsulation),
+        }),
         ...(dto.characteristics !== undefined && {
           characteristics: toCharacteristicJson(dto.characteristics),
         }),
         ...(dto.advantages !== undefined && { advantages: dto.advantages }),
         ...(dto.priceFrom !== undefined && { priceFrom: dto.priceFrom }),
-        ...(dto.badge !== undefined && { badge: dto.badge }),
+        ...(dto.badge !== undefined && { badge: emptyToNull(dto.badge) }),
         ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),
         ...(dto.isActive !== undefined && { isActive: dto.isActive }),
       } as Prisma.WindowProfileSystemUncheckedUpdateInput,
@@ -228,6 +242,20 @@ export class WindowsService {
         heroImageUrl: null,
         seoTitle: null,
         seoDescription: null,
+        comparisonShow: true,
+        comparisonTitle: null,
+        comparisonNote: null,
+        comparisonShowChambers: true,
+        comparisonShowDepth: true,
+        comparisonShowGlass: true,
+        comparisonShowThermal: true,
+        comparisonShowSound: true,
+        ctaBackgroundColor: null,
+        ctaBackgroundImage: null,
+        ctaBackgroundFit: 'contain',
+        ctaBackgroundImageOpacity: 30,
+        ctaTextColor: null,
+        ctaShowButtons: true,
         updatedAt: new Date(),
       }
     );
@@ -238,20 +266,70 @@ export class WindowsService {
       where: { id: 'main' },
       create: {
         id: 'main',
-        title: dto.title ?? 'Пластиковые окна',
-        subtitle: dto.subtitle ?? null,
-        description: dto.description ?? null,
-        heroImageUrl: dto.heroImageUrl ?? null,
-        seoTitle: dto.seoTitle ?? null,
-        seoDescription: dto.seoDescription ?? null,
+        title: dto.title?.trim() || 'Пластиковые окна',
+        subtitle: emptyToNull(dto.subtitle) ?? null,
+        description: emptyToNull(dto.description) ?? null,
+        heroImageUrl: emptyToNull(dto.heroImageUrl) ?? null,
+        seoTitle: emptyToNull(dto.seoTitle) ?? null,
+        seoDescription: emptyToNull(dto.seoDescription) ?? null,
+        comparisonShow: dto.comparisonShow ?? true,
+        comparisonTitle: emptyToNull(dto.comparisonTitle) ?? null,
+        comparisonNote: emptyToNull(dto.comparisonNote) ?? null,
+        comparisonShowChambers: dto.comparisonShowChambers ?? true,
+        comparisonShowDepth: dto.comparisonShowDepth ?? true,
+        comparisonShowGlass: dto.comparisonShowGlass ?? true,
+        comparisonShowThermal: dto.comparisonShowThermal ?? true,
+        comparisonShowSound: dto.comparisonShowSound ?? true,
+        ctaBackgroundColor: emptyToNull(dto.ctaBackgroundColor) ?? null,
+        ctaBackgroundImage: emptyToNull(dto.ctaBackgroundImage) ?? null,
+        ctaBackgroundFit: dto.ctaBackgroundFit ?? 'contain',
+        ctaBackgroundImageOpacity: dto.ctaBackgroundImageOpacity ?? 30,
+        ctaTextColor: emptyToNull(dto.ctaTextColor) ?? null,
+        ctaShowButtons: dto.ctaShowButtons ?? true,
       },
       update: {
-        ...(dto.title !== undefined && { title: dto.title }),
-        ...(dto.subtitle !== undefined && { subtitle: dto.subtitle }),
-        ...(dto.description !== undefined && { description: dto.description }),
-        ...(dto.heroImageUrl !== undefined && { heroImageUrl: dto.heroImageUrl }),
-        ...(dto.seoTitle !== undefined && { seoTitle: dto.seoTitle }),
-        ...(dto.seoDescription !== undefined && { seoDescription: dto.seoDescription }),
+        ...(dto.title !== undefined && { title: dto.title.trim() || 'Пластиковые окна' }),
+        ...(dto.subtitle !== undefined && { subtitle: emptyToNull(dto.subtitle) }),
+        ...(dto.description !== undefined && { description: emptyToNull(dto.description) }),
+        ...(dto.heroImageUrl !== undefined && { heroImageUrl: emptyToNull(dto.heroImageUrl) }),
+        ...(dto.seoTitle !== undefined && { seoTitle: emptyToNull(dto.seoTitle) }),
+        ...(dto.seoDescription !== undefined && {
+          seoDescription: emptyToNull(dto.seoDescription),
+        }),
+        ...(dto.comparisonShow !== undefined && { comparisonShow: dto.comparisonShow }),
+        ...(dto.comparisonTitle !== undefined && {
+          comparisonTitle: emptyToNull(dto.comparisonTitle),
+        }),
+        ...(dto.comparisonNote !== undefined && {
+          comparisonNote: emptyToNull(dto.comparisonNote),
+        }),
+        ...(dto.comparisonShowChambers !== undefined && {
+          comparisonShowChambers: dto.comparisonShowChambers,
+        }),
+        ...(dto.comparisonShowDepth !== undefined && {
+          comparisonShowDepth: dto.comparisonShowDepth,
+        }),
+        ...(dto.comparisonShowGlass !== undefined && {
+          comparisonShowGlass: dto.comparisonShowGlass,
+        }),
+        ...(dto.comparisonShowThermal !== undefined && {
+          comparisonShowThermal: dto.comparisonShowThermal,
+        }),
+        ...(dto.comparisonShowSound !== undefined && {
+          comparisonShowSound: dto.comparisonShowSound,
+        }),
+        ...(dto.ctaBackgroundColor !== undefined && {
+          ctaBackgroundColor: emptyToNull(dto.ctaBackgroundColor),
+        }),
+        ...(dto.ctaBackgroundImage !== undefined && {
+          ctaBackgroundImage: emptyToNull(dto.ctaBackgroundImage),
+        }),
+        ...(dto.ctaBackgroundFit !== undefined && { ctaBackgroundFit: dto.ctaBackgroundFit }),
+        ...(dto.ctaTextColor !== undefined && { ctaTextColor: emptyToNull(dto.ctaTextColor) }),
+        ...(dto.ctaBackgroundImageOpacity !== undefined && {
+          ctaBackgroundImageOpacity: dto.ctaBackgroundImageOpacity,
+        }),
+        ...(dto.ctaShowButtons !== undefined && { ctaShowButtons: dto.ctaShowButtons }),
       },
     });
   }

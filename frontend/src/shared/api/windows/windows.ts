@@ -53,6 +53,21 @@ export interface WindowsPageSettings {
   heroImageUrl: string | null;
   seoTitle: string | null;
   seoDescription: string | null;
+  comparisonShow: boolean;
+  comparisonTitle: string | null;
+  comparisonNote: string | null;
+  comparisonShowChambers: boolean;
+  comparisonShowDepth: boolean;
+  comparisonShowGlass: boolean;
+  comparisonShowThermal: boolean;
+  comparisonShowSound: boolean;
+  ctaBackgroundColor: string | null;
+  ctaBackgroundImage: string | null;
+  /** Вариант размещения фоновой картинки: cover | contain | tile */
+  ctaBackgroundFit: string;
+  ctaBackgroundImageOpacity: number;
+  ctaTextColor: string | null;
+  ctaShowButtons: boolean;
   updatedAt: string;
 }
 

@@ -22,6 +22,20 @@ export interface WindowsSettingsForm {
   seoTitle: string;
   seoDescription: string;
   heroImageUrl: string;
+  comparisonShow: boolean;
+  comparisonTitle: string;
+  comparisonNote: string;
+  comparisonShowChambers: boolean;
+  comparisonShowDepth: boolean;
+  comparisonShowGlass: boolean;
+  comparisonShowThermal: boolean;
+  comparisonShowSound: boolean;
+  ctaBackgroundColor: string;
+  ctaBackgroundImage: string;
+  ctaBackgroundFit: string;
+  ctaBackgroundImageOpacity: number;
+  ctaTextColor: string;
+  ctaShowButtons: boolean;
 }
 
 export function useWindowsPage() {
@@ -31,6 +45,7 @@ export function useWindowsPage() {
   const [loading, setLoading] = useState(true);
   const [savingSettings, setSavingSettings] = useState(false);
   const [uploadingSettingsImage, setUploadingSettingsImage] = useState(false);
+  const [uploadingCtaImage, setUploadingCtaImage] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<
     | { kind: 'brand'; id: string; name: string; note?: string }
@@ -61,6 +76,20 @@ export function useWindowsPage() {
         seoTitle: settings.seoTitle ?? '',
         seoDescription: settings.seoDescription ?? '',
         heroImageUrl: settings.heroImageUrl ?? '',
+        comparisonShow: settings.comparisonShow ?? true,
+        comparisonTitle: settings.comparisonTitle ?? '',
+        comparisonNote: settings.comparisonNote ?? '',
+        comparisonShowChambers: settings.comparisonShowChambers ?? true,
+        comparisonShowDepth: settings.comparisonShowDepth ?? true,
+        comparisonShowGlass: settings.comparisonShowGlass ?? true,
+        comparisonShowThermal: settings.comparisonShowThermal ?? true,
+        comparisonShowSound: settings.comparisonShowSound ?? true,
+        ctaBackgroundColor: settings.ctaBackgroundColor ?? '',
+        ctaBackgroundImage: settings.ctaBackgroundImage ?? '',
+        ctaBackgroundFit: settings.ctaBackgroundFit ?? 'contain',
+        ctaBackgroundImageOpacity: settings.ctaBackgroundImageOpacity ?? 30,
+        ctaTextColor: settings.ctaTextColor ?? '',
+        ctaShowButtons: settings.ctaShowButtons ?? true,
       });
     } catch {
       showMessage('error', 'Ошибка загрузки раздела «Окна»');
@@ -73,7 +102,10 @@ export function useWindowsPage() {
     loadAll();
   }, [loadAll]);
 
-  const updateSettingsField = (field: keyof WindowsSettingsForm, value: string) => {
+  const updateSettingsField = (
+    field: keyof WindowsSettingsForm,
+    value: WindowsSettingsForm[keyof WindowsSettingsForm]
+  ) => {
     setSettingsForm((prev) => (prev ? { ...prev, [field]: value } : prev));
   };
 
@@ -82,12 +114,30 @@ export function useWindowsPage() {
     setSavingSettings(true);
     try {
       await updateWindowsSettings({
-        title: settingsForm.title.trim() || undefined,
-        subtitle: settingsForm.subtitle.trim() || undefined,
-        description: settingsForm.description.trim() || undefined,
-        heroImageUrl: settingsForm.heroImageUrl.trim() || undefined,
-        seoTitle: settingsForm.seoTitle.trim() || undefined,
-        seoDescription: settingsForm.seoDescription.trim() || undefined,
+        // Пустые строки отправляем как есть: бэкенд превращает их в null (очистка поля)
+        title: settingsForm.title.trim(),
+        subtitle: settingsForm.subtitle.trim(),
+        description: settingsForm.description.trim(),
+        heroImageUrl: settingsForm.heroImageUrl.trim(),
+        seoTitle: settingsForm.seoTitle.trim(),
+        seoDescription: settingsForm.seoDescription.trim(),
+        comparisonShow: settingsForm.comparisonShow,
+        comparisonTitle: settingsForm.comparisonTitle.trim(),
+        comparisonNote: settingsForm.comparisonNote.trim(),
+        comparisonShowChambers: settingsForm.comparisonShowChambers,
+        comparisonShowDepth: settingsForm.comparisonShowDepth,
+        comparisonShowGlass: settingsForm.comparisonShowGlass,
+        comparisonShowThermal: settingsForm.comparisonShowThermal,
+        comparisonShowSound: settingsForm.comparisonShowSound,
+        ctaBackgroundColor: settingsForm.ctaBackgroundColor.trim(),
+        ctaBackgroundImage: settingsForm.ctaBackgroundImage.trim(),
+        ctaBackgroundFit: settingsForm.ctaBackgroundFit,
+        ctaBackgroundImageOpacity: Math.max(
+          0,
+          Math.min(100, settingsForm.ctaBackgroundImageOpacity)
+        ),
+        ctaTextColor: settingsForm.ctaTextColor.trim(),
+        ctaShowButtons: settingsForm.ctaShowButtons,
       });
       showMessage('success', 'Настройки раздела сохранены');
     } catch (e) {
@@ -109,6 +159,22 @@ export function useWindowsPage() {
       showMessage('error', err instanceof Error ? err.message : 'Ошибка загрузки');
     } finally {
       setUploadingSettingsImage(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleCtaFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingCtaImage(true);
+    try {
+      const { imageUrl } = await uploadWindowsImage(file);
+      updateSettingsField('ctaBackgroundImage', imageUrl);
+      showMessage('success', 'Фон блока загружен — не забудьте сохранить');
+    } catch (err) {
+      showMessage('error', err instanceof Error ? err.message : 'Ошибка загрузки');
+    } finally {
+      setUploadingCtaImage(false);
       e.target.value = '';
     }
   };
@@ -163,6 +229,8 @@ export function useWindowsPage() {
     savingSettings,
     uploadingSettingsImage,
     handleSettingsFileSelect,
+    uploadingCtaImage,
+    handleCtaFileSelect,
     loading,
     message,
     deleteTarget,

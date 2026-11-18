@@ -159,16 +159,17 @@ export function useWindowSystemFormPage(systemId?: string) {
         brandId,
         name: name.trim(),
         slug: slug.trim(),
-        tagline: tagline.trim() || undefined,
+        // Пустые строки отправляем как есть: бэкенд превращает их в null (очистка поля)
+        tagline: tagline.trim(),
         description: description.trim(),
-        imageUrl: imageUrl.trim() || undefined,
+        imageUrl: imageUrl.trim(),
         chambers: chambers.trim() ? Number(chambers) : undefined,
         mountingDepth: mountingDepth.trim() ? Number(mountingDepth) : undefined,
-        glassUnitWidth: glassUnitWidth.trim() || undefined,
-        thermalResistance: thermalResistance.trim() || undefined,
-        soundInsulation: soundInsulation.trim() || undefined,
+        glassUnitWidth: glassUnitWidth.trim(),
+        thermalResistance: thermalResistance.trim(),
+        soundInsulation: soundInsulation.trim(),
         priceFrom: priceFrom.trim() ? Number(priceFrom) : undefined,
-        badge: badge.trim() || undefined,
+        badge: badge.trim(),
         advantages: advantages.map((a) => a.trim()).filter(Boolean),
         characteristics: characteristics
           .map(({ label, value }) => ({ label: label.trim(), value: value.trim() }))

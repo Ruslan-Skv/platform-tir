@@ -70,9 +70,10 @@ export function useWindowBrandFormPage(brandId?: string) {
       const payload = {
         name: name.trim(),
         slug: slug.trim(),
-        logoUrl: logoUrl.trim() || undefined,
-        country: country.trim() || undefined,
-        description: description.trim() || undefined,
+        // Пустые строки отправляем как есть: бэкенд превращает их в null (очистка поля)
+        logoUrl: logoUrl.trim(),
+        country: country.trim(),
+        description: description.trim(),
         sortOrder,
         isActive,
       };

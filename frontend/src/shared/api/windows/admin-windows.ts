@@ -62,6 +62,20 @@ export interface AdminWindowsSettings {
   heroImageUrl: string | null;
   seoTitle: string | null;
   seoDescription: string | null;
+  comparisonShow: boolean;
+  comparisonTitle: string | null;
+  comparisonNote: string | null;
+  comparisonShowChambers: boolean;
+  comparisonShowDepth: boolean;
+  comparisonShowGlass: boolean;
+  comparisonShowThermal: boolean;
+  comparisonShowSound: boolean;
+  ctaBackgroundColor: string | null;
+  ctaBackgroundImage: string | null;
+  ctaBackgroundFit: string;
+  ctaBackgroundImageOpacity: number;
+  ctaTextColor: string | null;
+  ctaShowButtons: boolean;
   updatedAt: string;
 }
 
@@ -106,6 +120,20 @@ export interface UpdateWindowsSettingsDto {
   heroImageUrl?: string;
   seoTitle?: string;
   seoDescription?: string;
+  comparisonShow?: boolean;
+  comparisonTitle?: string;
+  comparisonNote?: string;
+  comparisonShowChambers?: boolean;
+  comparisonShowDepth?: boolean;
+  comparisonShowGlass?: boolean;
+  comparisonShowThermal?: boolean;
+  comparisonShowSound?: boolean;
+  ctaBackgroundColor?: string;
+  ctaBackgroundImage?: string;
+  ctaBackgroundFit?: string;
+  ctaBackgroundImageOpacity?: number;
+  ctaTextColor?: string;
+  ctaShowButtons?: boolean;
 }
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {

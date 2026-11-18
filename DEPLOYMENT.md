@@ -447,6 +447,21 @@ docker restart uptime-kuma
 docker compose ... exec backend npx prisma migrate deploy
 ```
 
+### Наполнение раздела «Окна» (прод)
+
+После деплоя с миграциями раздела «Окна» заполните его контентом (REHAU/VEKA/WHS, настройки страницы, пункт меню):
+
+```bash
+docker compose ... exec backend node prisma/seed-windows.cjs
+```
+
+Идемпотентно: создаёт только недостающее, правки из админки не затирает.
+Принудительно обновить тексты брендов/систем из `prisma/data/windows-section.json`:
+
+```bash
+docker compose ... exec -e WINDOWS_SECTION_FORCE=1 backend node prisma/seed-windows.cjs
+```
+
 ### Резервное копирование
 
 **Автоматическое** (скрипт + cron):

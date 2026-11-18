@@ -22,6 +22,8 @@ export function WindowsAdminPageView({ model }: WindowsAdminPageViewProps) {
     savingSettings,
     uploadingSettingsImage,
     handleSettingsFileSelect,
+    uploadingCtaImage,
+    handleCtaFileSelect,
     loading,
     message,
     deleteTarget,
@@ -159,6 +161,235 @@ export function WindowsAdminPageView({ model }: WindowsAdminPageViewProps) {
                 >
                   {savingSettings ? 'Сохранение...' : 'Сохранить настройки'}
                 </button>
+              </div>
+            </div>
+
+            <div className={styles.subformDivider} />
+
+            <div className={styles.form}>
+              <h3 className={styles.subformTitle}>Таблица сравнения</h3>
+              <div className={styles.field}>
+                <label className={styles.checkboxLabel}>
+                  <input
+                    type="checkbox"
+                    checked={settingsForm.comparisonShow}
+                    onChange={(e) => updateSettingsField('comparisonShow', e.target.checked)}
+                    className={styles.checkbox}
+                  />
+                  Показывать таблицу сравнения на странице
+                </label>
+              </div>
+              <div className={styles.fieldRow}>
+                <div className={styles.field}>
+                  <label className={styles.label}>Заголовок таблицы</label>
+                  <input
+                    type="text"
+                    value={settingsForm.comparisonTitle}
+                    onChange={(e) => updateSettingsField('comparisonTitle', e.target.value)}
+                    placeholder="Сравнение профильных систем"
+                    className={styles.input}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label className={styles.label}>Примечание под таблицей</label>
+                  <input
+                    type="text"
+                    value={settingsForm.comparisonNote}
+                    onChange={(e) => updateSettingsField('comparisonNote', e.target.value)}
+                    placeholder="Характеристики приведены по данным производителей…"
+                    className={styles.input}
+                  />
+                </div>
+              </div>
+              <div className={styles.field}>
+                <span className={styles.label}>Колонки таблицы</span>
+                <div className={styles.checkboxGrid}>
+                  <label className={styles.checkboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={settingsForm.comparisonShowChambers}
+                      onChange={(e) =>
+                        updateSettingsField('comparisonShowChambers', e.target.checked)
+                      }
+                      className={styles.checkbox}
+                    />
+                    Камеры
+                  </label>
+                  <label className={styles.checkboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={settingsForm.comparisonShowDepth}
+                      onChange={(e) => updateSettingsField('comparisonShowDepth', e.target.checked)}
+                      className={styles.checkbox}
+                    />
+                    Глубина
+                  </label>
+                  <label className={styles.checkboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={settingsForm.comparisonShowGlass}
+                      onChange={(e) => updateSettingsField('comparisonShowGlass', e.target.checked)}
+                      className={styles.checkbox}
+                    />
+                    Стеклопакет
+                  </label>
+                  <label className={styles.checkboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={settingsForm.comparisonShowThermal}
+                      onChange={(e) =>
+                        updateSettingsField('comparisonShowThermal', e.target.checked)
+                      }
+                      className={styles.checkbox}
+                    />
+                    Теплозащита Rопр
+                  </label>
+                  <label className={styles.checkboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={settingsForm.comparisonShowSound}
+                      onChange={(e) => updateSettingsField('comparisonShowSound', e.target.checked)}
+                      className={styles.checkbox}
+                    />
+                    Звукоизоляция
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.subformDivider} />
+
+            <div className={styles.form}>
+              <h3 className={styles.subformTitle}>Блок «Поможем выбрать профиль»</h3>
+              <div className={styles.fieldRow}>
+                <div className={styles.field}>
+                  <label className={styles.label}>Цвет фона блока (HEX)</label>
+                  <div className={styles.colorRow}>
+                    <input
+                      type="color"
+                      value={settingsForm.ctaBackgroundColor || '#ffffff'}
+                      onChange={(e) => updateSettingsField('ctaBackgroundColor', e.target.value)}
+                      className={styles.colorInput}
+                    />
+                    <input
+                      type="text"
+                      value={settingsForm.ctaBackgroundColor}
+                      onChange={(e) => updateSettingsField('ctaBackgroundColor', e.target.value)}
+                      placeholder="пусто — прозрачный фон"
+                      className={styles.input}
+                    />
+                    {settingsForm.ctaBackgroundColor && (
+                      <button
+                        type="button"
+                        className={styles.changeImageBtn}
+                        onClick={() => updateSettingsField('ctaBackgroundColor', '')}
+                      >
+                        Сбросить
+                      </button>
+                    )}
+                  </div>
+                  <span className={styles.hint}>По умолчанию блок прозрачный.</span>
+                </div>
+                <div className={styles.field}>
+                  <label className={styles.label}>Цвет текста блока (HEX)</label>
+                  <div className={styles.colorRow}>
+                    <input
+                      type="color"
+                      value={settingsForm.ctaTextColor || '#111827'}
+                      onChange={(e) => updateSettingsField('ctaTextColor', e.target.value)}
+                      className={styles.colorInput}
+                    />
+                    <input
+                      type="text"
+                      value={settingsForm.ctaTextColor}
+                      onChange={(e) => updateSettingsField('ctaTextColor', e.target.value)}
+                      placeholder="пусто — цвет по теме сайта"
+                      className={styles.input}
+                    />
+                    {settingsForm.ctaTextColor && (
+                      <button
+                        type="button"
+                        className={styles.changeImageBtn}
+                        onClick={() => updateSettingsField('ctaTextColor', '')}
+                      >
+                        Сбросить
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className={styles.fieldRow}>
+                <div className={styles.field}>
+                  <label className={styles.label}>Размещение фоновой картинки</label>
+                  <select
+                    value={settingsForm.ctaBackgroundFit}
+                    onChange={(e) => updateSettingsField('ctaBackgroundFit', e.target.value)}
+                    className={styles.input}
+                  >
+                    <option value="contain">Вписать целиком (без обрезки)</option>
+                    <option value="cover">Заполнить блок с обрезкой</option>
+                    <option value="tile">Замостить плиткой в оригинальном размере</option>
+                  </select>
+                </div>
+                <div className={styles.field}>
+                  <label className={styles.label}>Прозрачность фоновой картинки, %</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={settingsForm.ctaBackgroundImageOpacity}
+                    onChange={(e) =>
+                      updateSettingsField('ctaBackgroundImageOpacity', Number(e.target.value))
+                    }
+                    className={styles.input}
+                  />
+                  <span className={styles.hint}>
+                    0 — картинка невидима, 100 — полностью непрозрачна. Применяется к загруженной
+                    картинке.
+                  </span>
+                </div>
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label}>Фоновая картинка блока</label>
+                {settingsForm.ctaBackgroundImage ? (
+                  <div className={styles.imagePreview}>
+                    <img
+                      src={getWindowsImageUrl(settingsForm.ctaBackgroundImage)}
+                      alt="Фон блока «Поможем выбрать профиль»"
+                    />
+                    <div className={styles.imageActions}>
+                      <button
+                        type="button"
+                        className={styles.changeImageBtn}
+                        onClick={() => updateSettingsField('ctaBackgroundImage', '')}
+                        disabled={uploadingCtaImage}
+                      >
+                        Убрать
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <label className={styles.uploadBtn}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleCtaFileSelect}
+                      className={styles.fileInput}
+                    />
+                    {uploadingCtaImage ? 'Загрузка...' : '+ Загрузить фон'}
+                  </label>
+                )}
+              </div>
+              <div className={styles.field}>
+                <label className={styles.checkboxLabel}>
+                  <input
+                    type="checkbox"
+                    checked={settingsForm.ctaShowButtons}
+                    onChange={(e) => updateSettingsField('ctaShowButtons', e.target.checked)}
+                    className={styles.checkbox}
+                  />
+                  Показывать кнопки «Вызвать замерщика» и «Получить расчёт»
+                </label>
               </div>
             </div>
           </section>

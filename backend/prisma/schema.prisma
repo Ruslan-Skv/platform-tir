@@ -1703,14 +1703,34 @@ model WindowProfileSystem {
 
 /// Настройки публичной страницы «Окна» (герой-блок + SEO), единственная запись с id="main".
 model WindowsPageBlock {
-  id             String   @id @default("main")
-  title          String   @default("Пластиковые окна")
+  id             String  @id @default("main")
+  title          String  @default("Пластиковые окна")
   subtitle       String?
-  description    String?  @db.Text
+  description    String? @db.Text
   heroImageUrl   String?
   seoTitle       String?
-  seoDescription String?  @db.Text
-  updatedAt      DateTime @updatedAt
+  seoDescription String? @db.Text
+
+  // Таблица сравнения профильных систем
+  comparisonShow         Boolean @default(true)
+  comparisonTitle        String?
+  comparisonNote         String? @db.Text
+  comparisonShowChambers Boolean @default(true)
+  comparisonShowDepth    Boolean @default(true)
+  comparisonShowGlass    Boolean @default(true)
+  comparisonShowThermal  Boolean @default(true)
+  comparisonShowSound    Boolean @default(true)
+
+  // CTA-блок «Поможем выбрать профиль»
+  ctaBackgroundColor        String?
+  ctaBackgroundImage        String?
+  /// Вариант размещения фоновой картинки: cover (заполнить с обрезкой) | contain (вписать) | tile (замостить)
+  ctaBackgroundFit          String  @default("contain")
+  ctaBackgroundImageOpacity Int     @default(30)
+  ctaTextColor              String?
+  ctaShowButtons            Boolean @default(true)
+
+  updatedAt DateTime @updatedAt
 
   @@map("windows_page_block")
 }

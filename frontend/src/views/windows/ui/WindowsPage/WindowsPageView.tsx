@@ -10,14 +10,18 @@ import {
 
 import Link from 'next/link';
 
-import { useFormContext } from '@/features/forms/context/FormContext';
 import type { WindowProfileSystem } from '@/shared/api/windows';
-import { Button } from '@/shared/ui/Button/Button';
 
+import { WindowsCtaBlock } from './WindowsCtaBlock';
 import styles from './WindowsPage.module.css';
 import type { WindowsPageModel } from './hooks/useWindowsPage';
 
 const RUBLE_FORMAT = new Intl.NumberFormat('ru-RU');
+
+const DEFAULT_COMPARISON_TITLE = 'Сравнение профильных систем';
+const DEFAULT_COMPARISON_NOTE =
+  'Характеристики приведены по данным производителей. Итоговые свойства окна зависят от ' +
+  'стеклопакета, фурнитуры и монтажа — подберём комплектацию на бесплатном замере.';
 
 function formatPriceFrom(priceFrom: number | null): string | null {
   if (priceFrom == null) return null;
@@ -28,11 +32,9 @@ function formatPriceFrom(priceFrom: number | null): string | null {
 function SystemCard({
   system,
   getImageUrl,
-  onOrder,
 }: {
   system: WindowProfileSystem;
   getImageUrl: (url: string | null | undefined) => string;
-  onOrder: () => void;
 }) {
   const imageUrl = getImageUrl(system.imageUrl);
   const specs: { label: string; value: string }[] = [
@@ -91,12 +93,11 @@ function SystemCard({
           </ul>
         )}
 
-        <div className={styles.systemFooter}>
-          {priceLabel && <span className={styles.priceFrom}>{priceLabel}</span>}
-          <Button variant="primary" onClick={onOrder} data-action-button="order-window">
-            Рассчитать стоимость
-          </Button>
-        </div>
+        {priceLabel && (
+          <div className={styles.systemFooter}>
+            <span className={styles.priceFrom}>{priceLabel}</span>
+          </div>
+        )}
       </div>
     </article>
   );
@@ -105,11 +106,35 @@ function SystemCard({
 export function WindowsPageView({ model }: { model: WindowsPageModel }) {
   const { settings, brands, activeBrand, activeSystem, selectBrand, selectSystem, getImageUrl } =
     model;
-  const { measurementModal, quoteModal } = useFormContext();
 
   const comparisonRows = brands.flatMap((brand) =>
     brand.systems.map((system) => ({ brand, system }))
   );
+
+  const comparisonColumns = [
+    settings.comparisonShowChambers !== false && { key: 'chambers', title: 'Камеры' },
+    settings.comparisonShowDepth !== false && { key: 'depth', title: 'Глубина' },
+    settings.comparisonShowGlass !== false && { key: 'glass', title: 'Стеклопакет' },
+    settings.comparisonShowThermal !== false && { key: 'thermal', title: 'Теплозащита Rопр' },
+    settings.comparisonShowSound !== false && { key: 'sound', title: 'Звукоизоляция' },
+  ].filter(Boolean) as { key: string; title: string }[];
+
+  const comparisonCellValue = (system: WindowProfileSystem, key: string): string => {
+    switch (key) {
+      case 'chambers':
+        return system.chambers != null ? String(system.chambers) : '—';
+      case 'depth':
+        return system.mountingDepth != null ? `${system.mountingDepth} мм` : '—';
+      case 'glass':
+        return system.glassUnitWidth ?? '—';
+      case 'thermal':
+        return system.thermalResistance ?? '—';
+      case 'sound':
+        return system.soundInsulation ?? '—';
+      default:
+        return '—';
+    }
+  };
 
   return (
     <div className={styles.page}>
@@ -120,26 +145,14 @@ export function WindowsPageView({ model }: { model: WindowsPageModel }) {
           <span aria-current="page">{settings.title}</span>
         </nav>
 
+        <h1 className={styles.pageTitle}>{settings.title}</h1>
+
         <section className={styles.hero}>
           <div className={styles.heroText}>
-            <h1 className={styles.heroTitle}>{settings.title}</h1>
             {settings.subtitle && <p className={styles.heroSubtitle}>{settings.subtitle}</p>}
             {settings.description && (
               <p className={styles.heroDescription}>{settings.description}</p>
             )}
-            <div className={styles.heroActions}>
-              <Button
-                variant="primary"
-                size="lg"
-                onClick={measurementModal.open}
-                data-action-button="measurement"
-              >
-                Вызвать замерщика
-              </Button>
-              <Button variant="outline" size="lg" onClick={quoteModal.open}>
-                Рассчитать стоимость
-              </Button>
-            </div>
             <ul className={styles.heroNotes}>
               <li>
                 <ShieldCheckIcon aria-hidden="true" />
@@ -157,7 +170,6 @@ export function WindowsPageView({ model }: { model: WindowsPageModel }) {
           </div>
           {settings.heroImageUrl && (
             <div className={styles.heroImage}>
-              {}
               <img src={getImageUrl(settings.heroImageUrl)} alt={settings.title} loading="eager" />
             </div>
           )}
@@ -243,7 +255,6 @@ export function WindowsPageView({ model }: { model: WindowsPageModel }) {
                         key={activeSystem.slug}
                         system={activeSystem}
                         getImageUrl={getImageUrl}
-                        onOrder={quoteModal.open}
                       />
                     )}
                   </>
@@ -257,19 +268,21 @@ export function WindowsPageView({ model }: { model: WindowsPageModel }) {
           </section>
         )}
 
-        {comparisonRows.length > 0 && (
+        {settings.comparisonShow !== false && comparisonRows.length > 0 && (
           <section className={styles.comparisonSection} aria-label="Сравнение профильных систем">
-            <h2 className={styles.sectionTitle}>Сравнение профильных систем</h2>
+            <h2 className={styles.sectionTitle}>
+              {settings.comparisonTitle?.trim() || DEFAULT_COMPARISON_TITLE}
+            </h2>
             <div className={styles.tableScroll}>
               <table className={styles.comparisonTable}>
                 <thead>
                   <tr>
                     <th scope="col">Профиль</th>
-                    <th scope="col">Камеры</th>
-                    <th scope="col">Глубина</th>
-                    <th scope="col">Стеклопакет</th>
-                    <th scope="col">Теплозащита Rопр</th>
-                    <th scope="col">Звукоизоляция</th>
+                    {comparisonColumns.map((column) => (
+                      <th key={column.key} scope="col">
+                        {column.title}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
@@ -279,43 +292,23 @@ export function WindowsPageView({ model }: { model: WindowsPageModel }) {
                         <span className={styles.comparisonBrand}>{brand.name}</span>
                         {system.name}
                       </th>
-                      <td>{system.chambers ?? '—'}</td>
-                      <td>{system.mountingDepth != null ? `${system.mountingDepth} мм` : '—'}</td>
-                      <td>{system.glassUnitWidth ?? '—'}</td>
-                      <td>{system.thermalResistance ?? '—'}</td>
-                      <td>{system.soundInsulation ?? '—'}</td>
+                      {comparisonColumns.map((column) => (
+                        <td key={column.key}>{comparisonCellValue(system, column.key)}</td>
+                      ))}
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <p className={styles.comparisonNote}>
-              Характеристики приведены по данным производителей. Итоговые свойства окна зависят от
-              стеклопакета, фурнитуры и монтажа — подберём комплектацию на бесплатном замере.
-            </p>
+            {settings.comparisonNote?.trim() ? (
+              <p className={styles.comparisonNote}>{settings.comparisonNote.trim()}</p>
+            ) : settings.comparisonNote === null ? (
+              <p className={styles.comparisonNote}>{DEFAULT_COMPARISON_NOTE}</p>
+            ) : null}
           </section>
         )}
 
-        <section className={styles.ctaSection}>
-          <h2 className={styles.ctaTitle}>Поможем выбрать профиль</h2>
-          <p className={styles.ctaText}>
-            Расскажите про помещение и бюджет — предложим оптимальную профильную систему, рассчитаем
-            стоимость с монтажом и ответим на вопросы.
-          </p>
-          <div className={styles.ctaActions}>
-            <Button
-              variant="primary"
-              size="lg"
-              onClick={measurementModal.open}
-              data-action-button="measurement"
-            >
-              Вызвать замерщика
-            </Button>
-            <Button variant="outline" size="lg" onClick={quoteModal.open}>
-              Получить расчёт
-            </Button>
-          </div>
-        </section>
+        <WindowsCtaBlock settings={settings} getImageUrl={getImageUrl} />
       </div>
     </div>
   );
