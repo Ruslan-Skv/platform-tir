@@ -386,6 +386,7 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.content.mission',
       },
       { label: 'Наши работы', href: '/admin/content/photo', resourceId: 'admin.content.photo' },
+      { label: 'Окна', href: '/admin/content/windows', resourceId: 'admin.content.windows' },
       {
         label: 'Отзывы',
         href: '/admin/content/comments',

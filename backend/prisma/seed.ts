@@ -712,6 +712,7 @@ async function main() {
   const defaultNavItems = [
     { name: 'Каталог', href: '/catalog/products', hasDropdown: true },
     { name: 'Ремонт квартир', href: '/catalog/services', hasDropdown: true },
+    { name: 'Окна', href: '/windows', hasDropdown: false },
     { name: 'Акции', href: '/promotions', hasDropdown: true },
     { name: 'Блог', href: '/blog', hasDropdown: true },
     { name: 'Наши работы', href: '/photo', hasDropdown: true },

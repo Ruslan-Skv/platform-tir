@@ -201,6 +201,7 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
   { id: 'admin.content.contacts', label: 'Контакты', path: '/admin/content/contacts' },
   { id: 'admin.content.mission', label: 'Миссия компании', path: '/admin/content/mission' },
   { id: 'admin.content.photo', label: 'Наши работы', path: '/admin/content/photo' },
+  { id: 'admin.content.windows', label: 'Окна', path: '/admin/content/windows' },
   { id: 'admin.content.comments', label: 'Комментарии', path: '/admin/content/comments' },
   { id: 'admin.content.navigation', label: 'Меню навигации', path: '/admin/content/navigation' },
   { id: 'admin.content.footer', label: 'Футер', path: '/admin/content/footer' },

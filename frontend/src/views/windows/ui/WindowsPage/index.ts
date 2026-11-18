@@ -1,0 +1,1 @@
+export { WindowsPage } from './WindowsPage';

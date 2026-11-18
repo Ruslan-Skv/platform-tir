@@ -1654,6 +1654,67 @@ model Promotion {
   @@map("promotions")
 }
 
+// --- Окна (профильные системы: REHAU, VEKA, WHS) ---
+/// Производитель профильных систем (вкладка на публичной странице «Окна»).
+model WindowBrand {
+  id          String                @id @default(cuid())
+  name        String // REHAU, VEKA, WHS
+  slug        String                @unique
+  logoUrl     String?
+  country     String? // Страна бренда для карточки
+  description String?               @db.Text
+  sortOrder   Int                   @default(0)
+  isActive    Boolean               @default(true)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  systems     WindowProfileSystem[]
+
+  @@map("window_brands")
+}
+
+/// Профильная система производителя (Blitz, Grazio, INTELIO 80, Softline 82 и т.д.).
+model WindowProfileSystem {
+  id                String      @id @default(cuid())
+  brandId           String
+  name              String
+  slug              String      @unique
+  tagline           String? // Короткий подзаголовок («Базовая система линейки REHAU»)
+  description       String      @db.Text
+  imageUrl          String?
+  chambers          Int? // Количество камер профиля
+  mountingDepth     Int? // Монтажная глубина, мм
+  glassUnitWidth    String? // Толщина стеклопакета («24–44 мм», «до 53 мм»)
+  thermalResistance String? // Сопротивление теплопередаче («0,85 м²·°С/Вт»)
+  soundInsulation   String? // Звукоизоляция («до 40 дБ(А)»)
+  /// Дополнительные характеристики пары «название — значение» ([{ label, value }])
+  characteristics   Json?
+  advantages        String[] // Список преимуществ карточки
+  priceFrom         Int? // Цена «от», ₽
+  badge             String? // Метка карточки («Хит», «Для севера»)
+  sortOrder         Int         @default(0)
+  isActive          Boolean     @default(true)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  brand             WindowBrand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@index([brandId])
+  @@map("window_profile_systems")
+}
+
+/// Настройки публичной страницы «Окна» (герой-блок + SEO), единственная запись с id="main".
+model WindowsPageBlock {
+  id             String   @id @default("main")
+  title          String   @default("Пластиковые окна")
+  subtitle       String?
+  description    String?  @db.Text
+  heroImageUrl   String?
+  seoTitle       String?
+  seoDescription String?  @db.Text
+  updatedAt      DateTime @updatedAt
+
+  @@map("windows_page_block")
+}
+
 model Comment {
   id          String        @id @default(cuid())
   postId      String

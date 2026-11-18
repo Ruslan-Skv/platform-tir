@@ -1,0 +1,677 @@
+.page {
+  min-height: 60vh;
+  padding: 1.5rem 0 4rem;
+  color: #1f2937;
+  background:
+    radial-gradient(1200px 400px at 85% -5%, rgb(var(--color-accent-rgb) / 6%), transparent 70%),
+    #f8fafc;
+}
+
+.container {
+  max-width: var(--container-max-width);
+  margin: 0 auto;
+  padding: 0 var(--container-padding);
+}
+
+/* ===== Хлебные крошки ===== */
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 1.25rem;
+}
+
+.breadcrumbs svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+}
+
+.breadcrumbs a {
+  color: #6b7280;
+  text-decoration: none;
+}
+
+.breadcrumbs a:hover {
+  color: var(--color-accent);
+}
+
+/* ===== Герой ===== */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 2rem;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 1.25rem;
+  padding: 2.25rem;
+  margin-bottom: 2.5rem;
+}
+
+.heroTitle {
+  margin: 0 0 0.75rem;
+  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  line-height: 1.15;
+  font-weight: 700;
+  color: #111827;
+}
+
+.heroSubtitle {
+  margin: 0 0 0.75rem;
+  font-size: 1.125rem;
+  line-height: 1.5;
+  color: #374151;
+}
+
+.heroDescription {
+  margin: 0 0 1.5rem;
+  line-height: 1.6;
+  color: #4b5563;
+}
+
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.heroNotes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.heroNotes li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.heroNotes svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  color: var(--color-accent);
+}
+
+.heroImage img {
+  width: 100%;
+  height: 100%;
+  max-height: 340px;
+  object-fit: cover;
+  border-radius: 0.875rem;
+}
+
+/* ===== Заголовки секций ===== */
+.sectionTitle {
+  margin: 0 0 1.25rem;
+  font-size: clamp(1.375rem, 2.5vw, 1.75rem);
+  line-height: 1.25;
+  font-weight: 700;
+  color: #111827;
+}
+
+/* ===== Вкладки брендов ===== */
+.brandsSection {
+  margin-bottom: 2.75rem;
+}
+
+.brandTabs {
+  display: flex;
+  gap: 0.625rem;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding-bottom: 0.5rem;
+  scrollbar-width: thin;
+}
+
+.brandTab {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.875rem 1.25rem;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 600;
+  font-size: 1rem;
+  color: #374151;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    color 0.15s ease;
+}
+
+.brandTab:hover {
+  border-color: rgb(var(--color-accent-rgb) / 45%);
+  color: #111827;
+}
+
+.brandTab[data-active] {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
+  box-shadow: var(--focus-ring-accent);
+}
+
+.brandTabLogo {
+  width: 1.75rem;
+  height: 1.75rem;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.brandTabCount {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+.brandTab[data-active] .brandTabCount {
+  color: rgb(var(--color-accent-rgb) / 80%);
+}
+
+.brandPanel {
+  margin-top: 1.25rem;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 1.25rem;
+  padding: 1.75rem;
+}
+
+.brandHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 0.875rem;
+  margin-bottom: 0.75rem;
+}
+
+.brandName {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.brandCountry {
+  font-size: 0.8125rem;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  padding: 0.125rem 0.625rem;
+}
+
+.brandDescription {
+  margin: 0 0 1.25rem;
+  line-height: 1.6;
+  color: #4b5563;
+  flex-basis: 100%;
+}
+
+/* ===== Пилюли профильных систем ===== */
+.systemTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.systemTab {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid #d1d5db;
+  border-radius: 0.625rem;
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #4b5563;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.systemTab:hover {
+  border-color: rgb(var(--color-accent-rgb) / 45%);
+  color: #111827;
+}
+
+.systemTab[data-active] {
+  background: #111827;
+  border-color: #111827;
+  color: #ffffff;
+}
+
+.emptySystems {
+  margin: 0;
+  color: #6b7280;
+}
+
+/* ===== Карточка системы ===== */
+.systemCard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 1.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  background: #fafafa;
+}
+
+.systemMedia {
+  position: relative;
+  min-height: 260px;
+  border-radius: 0.875rem;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.systemMedia img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 1rem;
+}
+
+.systemMediaPlaceholder {
+  height: 100%;
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  text-align: center;
+  padding: 1.5rem;
+  background:
+    radial-gradient(320px 160px at 30% 20%, rgb(var(--color-accent-rgb) / 8%), transparent 65%),
+    linear-gradient(160deg, #f3f4f6, #e5e7eb);
+  border: 1px dashed #d1d5db;
+  border-radius: 0.875rem;
+}
+
+.systemMediaName {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.systemMediaSpecs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.375rem;
+}
+
+.systemMediaSpecs span {
+  font-size: 0.8125rem;
+  color: #4b5563;
+  background: rgb(255 255 255 / 75%);
+  border-radius: 999px;
+  padding: 0.25rem 0.625rem;
+}
+
+.badge {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--color-accent);
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+}
+
+.systemName {
+  margin: 0 0 0.25rem;
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.systemTagline {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+.systemDescription {
+  margin: 0 0 1.25rem;
+  line-height: 1.6;
+  color: #4b5563;
+}
+
+.specsList {
+  margin: 0 0 1.25rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.specsRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.875rem;
+  font-size: 0.9375rem;
+}
+
+.specsRow + .specsRow {
+  border-top: 1px solid #f3f4f6;
+}
+
+.specsRow dt {
+  color: #6b7280;
+}
+
+.specsRow dd {
+  margin: 0;
+  font-weight: 600;
+  color: #1f2937;
+  text-align: right;
+}
+
+.advantages {
+  list-style: none;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.5rem;
+}
+
+.advantages li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: #374151;
+}
+
+.advantageIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  margin-top: 0.0625rem;
+  color: #059669;
+}
+
+.systemFooter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.priceFrom {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+/* ===== Таблица сравнения ===== */
+.comparisonSection {
+  margin-bottom: 2.75rem;
+}
+
+.tableScroll {
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  background: #ffffff;
+}
+
+.comparisonTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+  min-width: 720px;
+}
+
+.comparisonTable th,
+.comparisonTable td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.comparisonTable thead th {
+  background: #f9fafb;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.comparisonTable tbody th {
+  font-weight: 600;
+  color: #111827;
+}
+
+.comparisonTable tbody tr + tr th,
+.comparisonTable tbody tr + tr td {
+  border-top: 1px solid #f3f4f6;
+}
+
+.comparisonBrand {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.comparisonNote {
+  margin: 0.75rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: #6b7280;
+}
+
+/* ===== CTA ===== */
+.ctaSection {
+  text-align: center;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 1.25rem;
+  padding: 2.5rem 1.5rem;
+}
+
+.ctaTitle {
+  margin: 0 0 0.5rem;
+  font-size: clamp(1.25rem, 2.5vw, 1.625rem);
+  font-weight: 700;
+  color: #111827;
+}
+
+.ctaText {
+  margin: 0 auto 1.5rem;
+  max-width: 560px;
+  line-height: 1.6;
+  color: #4b5563;
+}
+
+.ctaActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+/* ===== Адаптив ===== */
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr;
+    padding: 1.5rem;
+  }
+
+  .systemCard {
+    grid-template-columns: 1fr;
+  }
+
+  .systemMedia {
+    min-height: 200px;
+  }
+
+  .systemMediaPlaceholder {
+    min-height: 180px;
+  }
+}
+
+@media (max-width: 600px) {
+  .brandPanel {
+    padding: 1.25rem;
+  }
+
+  .systemCard {
+    padding: 1rem;
+  }
+
+  .systemFooter {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .systemFooter button {
+    width: 100%;
+  }
+}
+
+/* ===== Тёмная тема ===== */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .page {
+  color: #e5e7eb;
+  background:
+    radial-gradient(1200px 400px at 85% -5%, rgb(var(--color-accent-rgb) / 10%), transparent 70%),
+    #0b1220;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .breadcrumbs,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .breadcrumbs a,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .heroNotes,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .comparisonNote {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .hero,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .brandPanel,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .ctaSection,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .tableScroll,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .specsList {
+  background: #111827;
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .heroTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .brandName,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .systemName,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .ctaTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .priceFrom {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .heroSubtitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .brandTab,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .brandDescription,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .systemDescription,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .ctaText {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .brandTab {
+  background: #111827;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .brandTab[data-active] {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .systemCard {
+  background: #0f172a;
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .systemMedia {
+  background: #111827;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .systemMediaPlaceholder {
+  background: linear-gradient(160deg, #1f2937, #111827);
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .systemMediaName {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .systemMediaSpecs span {
+  background: rgb(17 24 39 / 80%);
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .specsRow dt {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .specsRow dd {
+  color: #f3f4f6;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .specsRow + .specsRow {
+  border-top-color: #1f2937;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .advantages li {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .systemTab {
+  color: #d1d5db;
+  border-color: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .systemTab[data-active] {
+  background: #f9fafb;
+  border-color: #f9fafb;
+  color: #111827;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .comparisonTable thead th {
+  background: #0f172a;
+  color: #d1d5db;
+  border-bottom-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .comparisonTable tbody th {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .comparisonTable tbody tr + tr th,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .comparisonTable tbody tr + tr td {
+  border-top-color: #1f2937;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .brandCountry {
+  color: #9ca3af;
+  border-color: #374151;
+}
