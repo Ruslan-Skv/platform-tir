@@ -13,6 +13,7 @@ import {
   CategoryTreeNode,
   CategoryWithIncludes,
   countActiveItemsInCategorySubtree,
+  mapPublicCatalogBlock,
   mapPublicCategoryTree,
   mapPublicItems,
   PublicCatalogItem,
@@ -50,10 +51,7 @@ export class ServiceCatalogPublicService {
     );
 
     return {
-      block: {
-        id: block.id,
-        title: block.title,
-      },
+      block: mapPublicCatalogBlock(block),
       categories: mapPublicCategoryTree(tree, markupById),
     };
   }
@@ -70,6 +68,8 @@ export class ServiceCatalogPublicService {
         image: true,
         cardBackgroundImage: true,
         cardBackgroundTransparent: true,
+        iconDisabled: true,
+        countTextColor: true,
         showPricesInPublic: true,
         parent: { select: { id: true, name: true, slug: true } },
       },
@@ -133,6 +133,8 @@ export class ServiceCatalogPublicService {
         image: ch.image,
         cardBackgroundImage: ch.cardBackgroundImage,
         cardBackgroundTransparent: ch.cardBackgroundTransparent,
+        iconDisabled: ch.iconDisabled,
+        countTextColor: ch.countTextColor,
         itemsCount: countActiveItemsInCategorySubtree(ch as CategoryTreeNode),
       })) ?? [];
 
@@ -145,6 +147,8 @@ export class ServiceCatalogPublicService {
       image: rootNode.image,
       cardBackgroundImage: rootNode.cardBackgroundImage,
       cardBackgroundTransparent: rootNode.cardBackgroundTransparent,
+      iconDisabled: rootNode.iconDisabled,
+      countTextColor: rootNode.countTextColor,
       items,
       itemSections,
       showPricesInPublic: rootNode.showPricesInPublic,

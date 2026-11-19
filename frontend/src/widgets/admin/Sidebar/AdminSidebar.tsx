@@ -386,6 +386,11 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.content.mission',
       },
       { label: 'Наши работы', href: '/admin/content/photo', resourceId: 'admin.content.photo' },
+      {
+        label: 'Ремонт квартир',
+        href: '/admin/content/service-catalog',
+        resourceId: 'admin.content.service-catalog',
+      },
       { label: 'Окна', href: '/admin/content/windows', resourceId: 'admin.content.windows' },
       {
         label: 'Отзывы',

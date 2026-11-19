@@ -1,4 +1,9 @@
-import { Prisma, ServiceCatalogCategory, ServiceCatalogWorkGroup } from '@prisma/client';
+import {
+  Prisma,
+  ServiceCatalogBlock,
+  ServiceCatalogCategory,
+  ServiceCatalogWorkGroup,
+} from '@prisma/client';
 import { serviceCatalogPriceWithMarkup } from '../../common/utils/service-catalog-price';
 import {
   categoryRowsToMarkupMap,
@@ -54,6 +59,93 @@ export type PublicCatalogItem = {
   workGroup?: ServiceCatalogWorkGroup | null;
   price?: number;
 };
+
+/** Преимущество hero-блока страницы «Ремонт квартир». */
+export type PublicCatalogHeroNote = {
+  icon: string | null;
+  text: string;
+};
+
+/** Этап секции «Этапы работы». */
+export type PublicCatalogStep = {
+  title: string;
+  description: string | null;
+};
+
+export type PublicCatalogBlock = {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  description: string | null;
+  heroImageUrl: string | null;
+  heroNotes: PublicCatalogHeroNote[] | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  steps: PublicCatalogStep[] | null;
+  seoTextTitle: string | null;
+  seoText: string | null;
+  ctaTitle: string | null;
+  ctaText: string | null;
+  ctaBackgroundColor: string | null;
+  ctaTextColor: string | null;
+  ctaBackgroundImage: string | null;
+  ctaBackgroundFit: string;
+  ctaBackgroundImageOpacity: number;
+  ctaShowButtons: boolean;
+};
+
+function mapHeroNotes(value: Prisma.JsonValue | null): PublicCatalogHeroNote[] | null {
+  if (!Array.isArray(value)) return null;
+  const notes = value.flatMap((entry): PublicCatalogHeroNote[] => {
+    if (typeof entry !== 'object' || entry === null) return [];
+    const record = entry as Record<string, unknown>;
+    if (typeof record.text !== 'string' || record.text.trim() === '') return [];
+    const icon =
+      typeof record.icon === 'string' && record.icon.trim() !== '' ? record.icon.trim() : null;
+    return [{ icon, text: record.text.trim() }];
+  });
+  return notes.length > 0 ? notes : null;
+}
+
+function mapSteps(value: Prisma.JsonValue | null): PublicCatalogStep[] | null {
+  if (!Array.isArray(value)) return null;
+  const steps = value.flatMap((entry): PublicCatalogStep[] => {
+    if (typeof entry !== 'object' || entry === null) return [];
+    const record = entry as Record<string, unknown>;
+    if (typeof record.title !== 'string' || record.title.trim() === '') return [];
+    return [
+      {
+        title: record.title.trim(),
+        description: typeof record.description === 'string' ? record.description : null,
+      },
+    ];
+  });
+  return steps.length > 0 ? steps : null;
+}
+
+export function mapPublicCatalogBlock(block: ServiceCatalogBlock): PublicCatalogBlock {
+  return {
+    id: block.id,
+    title: block.title,
+    subtitle: block.subtitle,
+    description: block.description,
+    heroImageUrl: block.heroImageUrl,
+    heroNotes: mapHeroNotes(block.heroNotes),
+    seoTitle: block.seoTitle,
+    seoDescription: block.seoDescription,
+    steps: mapSteps(block.steps),
+    seoTextTitle: block.seoTextTitle,
+    seoText: block.seoText,
+    ctaTitle: block.ctaTitle,
+    ctaText: block.ctaText,
+    ctaBackgroundColor: block.ctaBackgroundColor,
+    ctaTextColor: block.ctaTextColor,
+    ctaBackgroundImage: block.ctaBackgroundImage,
+    ctaBackgroundFit: block.ctaBackgroundFit,
+    ctaBackgroundImageOpacity: block.ctaBackgroundImageOpacity,
+    ctaShowButtons: block.ctaShowButtons,
+  };
+}
 
 export function mapPublicItems(
   showPrices: boolean,
@@ -113,6 +205,8 @@ export function mapPublicCategoryTree(
       image: c.image,
       cardBackgroundImage: c.cardBackgroundImage,
       cardBackgroundTransparent: c.cardBackgroundTransparent,
+      iconDisabled: c.iconDisabled,
+      countTextColor: c.countTextColor,
       showPricesInPublic: c.showPricesInPublic,
       items: ownItems,
       totalWorkTypes,

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { UpdateServiceCatalogBlockDto } from './dto/update-service-catalog-block.dto';
 
@@ -24,9 +25,20 @@ export class ServiceCatalogBlockService {
 
   async updateBlock(dto: UpdateServiceCatalogBlockDto) {
     await this.getBlock();
+    const { heroNotes, steps, ...rest } = dto;
     return this.prisma.serviceCatalogBlock.update({
       where: { id: 'main' },
-      data: dto,
+      data: {
+        ...rest,
+        // Json-поля: явный null задаётся через Prisma.JsonNull
+        ...(heroNotes !== undefined && {
+          heroNotes:
+            heroNotes === null ? Prisma.JsonNull : (heroNotes as unknown as Prisma.InputJsonValue),
+        }),
+        ...(steps !== undefined && {
+          steps: steps === null ? Prisma.JsonNull : (steps as unknown as Prisma.InputJsonValue),
+        }),
+      },
     });
   }
 }

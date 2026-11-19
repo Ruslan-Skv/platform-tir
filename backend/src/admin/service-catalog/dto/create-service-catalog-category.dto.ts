@@ -34,6 +34,16 @@ export class CreateServiceCatalogCategoryDto {
   @IsOptional()
   cardBackgroundTransparent?: boolean;
 
+  /** Не показывать плитку с иконкой/картинкой в карточке категории на странице «Ремонт квартир» */
+  @IsBoolean()
+  @IsOptional()
+  iconDisabled?: boolean;
+
+  /** Цвет строки «N видов работ» в карточке категории (HEX) */
+  @IsString()
+  @IsOptional()
+  countTextColor?: string | null;
+
   @IsBoolean()
   @IsOptional()
   showPricesInPublic?: boolean;

@@ -54,6 +54,8 @@ export class ServiceCatalogCategoriesService {
         image: dto.image ?? null,
         cardBackgroundImage: dto.cardBackgroundImage ?? null,
         cardBackgroundTransparent: dto.cardBackgroundTransparent ?? false,
+        iconDisabled: dto.iconDisabled ?? false,
+        countTextColor: dto.countTextColor ?? null,
         priceMarkupPercent: new Prisma.Decimal(dto.priceMarkupPercent ?? 0),
         showPricesInPublic: dto.showPricesInPublic ?? true,
         sortOrder: dto.sortOrder ?? 0,
@@ -193,6 +195,8 @@ export class ServiceCatalogCategoriesService {
     if (dto.cardBackgroundTransparent !== undefined) {
       data.cardBackgroundTransparent = dto.cardBackgroundTransparent;
     }
+    if (dto.iconDisabled !== undefined) data.iconDisabled = dto.iconDisabled;
+    if (dto.countTextColor !== undefined) data.countTextColor = dto.countTextColor;
     if (dto.showPricesInPublic !== undefined) data.showPricesInPublic = dto.showPricesInPublic;
     if (dto.priceMarkupPercent !== undefined) {
       data.priceMarkupPercent = new Prisma.Decimal(dto.priceMarkupPercent);

@@ -890,10 +890,39 @@ model ServiceItem {
 
 // --- Ремонт квартир (виды работ с ценами) ---
 model ServiceCatalogBlock {
-  id                 String   @id @default("main")
-  title              String   @default("Ремонт квартир")
-  showPricesInPublic Boolean  @default(true) // Показывать стоимость в публичной части
-  updatedAt          DateTime @updatedAt
+  id                 String  @id @default("main")
+  title              String  @default("Ремонт квартир")
+  showPricesInPublic Boolean @default(true) // Показывать стоимость в публичной части
+
+  // Hero-блок страницы «Ремонт квартир»
+  subtitle       String? // Подзаголовок под H1
+  description    String? @db.Text
+  /// Картинка hero-блока (URL или data URL)
+  heroImageUrl   String?
+  /// Преимущества под описанием: [{ icon: ключ serviceCatalogIconMap, text }] (до 4)
+  heroNotes      Json?
+  seoTitle       String?
+  seoDescription String? @db.Text
+
+  // Секция «Этапы работы»: [{ title, description? }] (до 6)
+  steps Json?
+
+  // SEO-текст внизу страницы
+  seoTextTitle String?
+  seoText      String? @db.Text
+
+  // CTA-блок «Поможем подобрать услугу»
+  ctaTitle                  String?
+  ctaText                   String? @db.Text
+  ctaBackgroundColor        String?
+  ctaTextColor              String?
+  ctaBackgroundImage        String?
+  /// Вариант размещения фоновой картинки: cover (заполнить с обрезкой) | contain (вписать) | tile (замостить)
+  ctaBackgroundFit          String  @default("contain")
+  ctaBackgroundImageOpacity Int     @default(30)
+  ctaShowButtons            Boolean @default(true)
+
+  updatedAt DateTime @updatedAt
 
   @@map("service_catalog_block")
 }
@@ -909,6 +938,10 @@ model ServiceCatalogCategory {
   cardBackgroundImage       String?
   /// Публичная плитка категории без заливки (#fff / тёмный фон) — виден фон страницы; при фоновой картинке слой затемнения слабее
   cardBackgroundTransparent Boolean                  @default(false)
+  /// Не показывать плитку с иконкой/картинкой в карточке категории на странице «Ремонт квартир»
+  iconDisabled              Boolean                  @default(false)
+  /// Цвет строки «N видов работ» в карточке категории (HEX) — чтобы не сливалась с фоновой картинкой
+  countTextColor            String?
   /// Наценка на все виды работ в этой категории, % к базовой цене позиции (может быть отрицательной). 0 — наследовать у родителя; ненулевое — своя наценка. Публичка показывает только итог.
   priceMarkupPercent        Decimal                  @default(0) @db.Decimal(10, 2)
   showPricesInPublic        Boolean                  @default(true) // Показывать стоимость в публичной части

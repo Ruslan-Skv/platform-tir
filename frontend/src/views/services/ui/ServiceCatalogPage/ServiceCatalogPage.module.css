@@ -1,73 +1,142 @@
-/* Аналогично каталогу товаров */
+/* По структуре раздел «Ремонт квартир» повторяет страницу «Окна» (WindowsPage.module.css) */
 .page {
-  display: grid;
-  gap: 1.5rem;
-  grid-template-rows: auto 1fr;
-  margin: 0 auto;
-  max-width: 1280px;
   min-height: 60vh;
-  padding: 1rem;
+  padding: 1.5rem 0 4rem;
+  color: #1f2937;
+  /* Фон не задаём: раздел живёт на общем фоне сайта */
+  background: transparent;
 }
 
-@media (width <= 1280px) {
-  .page {
-    max-width: 1200px;
-  }
+.container {
+  max-width: var(--container-max-width);
+  margin: 0 auto;
+  padding: 0 var(--container-padding);
 }
 
+/* ===== Хлебные крошки ===== */
 .breadcrumbs {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.375rem;
   font-size: 0.875rem;
-  margin-bottom: 0.5rem;
+  color: #6b7280;
+  margin-bottom: 1.25rem;
 }
 
-.breadcrumbLink {
+.breadcrumbs svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+}
+
+.breadcrumbs a {
   color: #6b7280;
   text-decoration: none;
-  cursor: pointer;
 }
 
-.breadcrumbLink:hover,
-.breadcrumbLink:focus-visible {
+.breadcrumbs a:hover,
+.breadcrumbs a:focus-visible {
   color: var(--color-accent);
 }
 
-.breadcrumbSep {
-  color: #9ca3af;
-}
-
-.breadcrumbCurrent {
-  color: #374151;
-  font-weight: 500;
-}
-
-.mainContent {
-  grid-row: 2;
-}
-
-.title {
+/* ===== Заголовок раздела ===== */
+.pageTitle {
+  margin: 0 0 1rem;
   font-size: 1.5rem;
   font-weight: 600;
-  margin: 0 0 1rem;
   color: #111827;
+}
+
+/* ===== Герой ===== */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 2rem;
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  margin-bottom: 2.5rem;
+}
+
+.heroSubtitle {
+  margin: 0 0 0.75rem;
+  font-size: 1.125rem;
+  line-height: 1.5;
+  font-weight: 600;
+  color: #374151;
+}
+
+.heroDescription {
+  margin: 0 0 1.5rem;
+  line-height: 1.6;
+  color: #4b5563;
+  text-align: justify;
+  hyphens: auto;
+}
+
+.heroNotes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.heroNotes li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.heroNotes svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  color: var(--color-accent);
+}
+
+.heroImage img {
+  width: 100%;
+  height: 100%;
+  max-height: 340px;
+  object-fit: cover;
+  border-radius: 0.875rem;
+}
+
+/* ===== Заголовки секций ===== */
+.sectionTitle {
+  margin: 0 0 1rem;
+  font-size: 1.25rem;
+  line-height: 1.3;
+  font-weight: 600;
+  color: #111827;
+}
+
+/* ===== Категории работ ===== */
+.categoriesSection {
+  margin-bottom: 2.75rem;
 }
 
 .grid {
   display: grid;
-  gap: 0.65rem;
-  /* ~4 карточки в ряд на контейнере 1280px (раньше min 200px давало 5) */
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
   align-items: stretch;
 }
 
 .categoryCard {
   display: flex;
-  align-items: stretch;
-  padding: 0.825rem 0.9rem;
-  background: #fff;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  /* Только background-color: шорткат background сбросил бы background-size/position
+     фоновой картинки (правила ниже по файлу, например тёмная тема) */
+  background-color: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   text-decoration: none;
@@ -82,9 +151,18 @@
     box-shadow 0.2s;
 }
 
-.categoryCard:hover {
+.categoryCard:hover,
+.categoryCard:focus-visible {
   border-color: rgb(var(--color-accent-rgb) / 0.4);
-  box-shadow: 0 2px 8px rgb(0 0 0 / 0.05);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.06);
+}
+
+/* Контент карточки — над фоновым изображением */
+.categoryCard > .categoryCardMedia,
+.categoryCard > .categoryCardBody,
+.categoryCard > .categoryCardFooter {
+  position: relative;
+  z-index: 1;
 }
 
 .categoryCardHasBg {
@@ -98,7 +176,7 @@
 
 .categoryCardTransparent.categoryCardHasBg .categoryCardBgScrim {
   background: linear-gradient(
-    115deg,
+    180deg,
     rgb(255 255 255 / 0.55) 0%,
     rgb(255 255 255 / 0.32) 45%,
     rgb(255 255 255 / 0.14) 100%
@@ -112,67 +190,57 @@
   position: absolute;
   z-index: 0;
   background: linear-gradient(
-    115deg,
+    180deg,
     rgb(255 255 255 / 0.94) 0%,
-    rgb(255 255 255 / 0.78) 42%,
+    rgb(255 255 255 / 0.78) 45%,
     rgb(255 255 255 / 0.55) 100%
   );
 }
 
-.categoryCardMain {
-  align-items: flex-start;
-  display: flex;
-  flex: 1;
-  gap: 0.65rem;
-  min-width: 0;
-  position: relative;
-  z-index: 1;
-}
-
-.categoryCardIcon {
+.categoryCardMedia {
   align-items: center;
-  align-self: center;
   background: rgb(243 244 246 / 0.92);
-  border-radius: 8px;
+  border-radius: 10px;
   display: flex;
   flex-shrink: 0;
-  height: 40px;
+  height: 48px;
   justify-content: center;
-  width: 40px;
+  width: 48px;
   box-shadow: 0 0 0 1px rgb(0 0 0 / 0.04);
+  overflow: hidden;
 }
 
 .categoryCardIconSvg {
   color: #6b7280;
-  height: 20px;
-  width: 20px;
+  height: 24px;
+  width: 24px;
+  transition: color 0.2s;
 }
 
 .categoryCardImage {
-  border-radius: 8px;
+  border-radius: 0;
   height: 100%;
   object-fit: cover;
   width: 100%;
 }
 
-.categoryCard:hover .categoryCardIconSvg {
+.categoryCard:hover .categoryCardIconSvg,
+.categoryCard:focus-visible .categoryCardIconSvg {
   color: var(--color-accent);
 }
 
-.categoryCardText {
-  align-items: flex-start;
+.categoryCardBody {
   display: flex;
   flex: 1;
-  flex-direction: row;
-  gap: 0.35rem;
+  flex-direction: column;
+  gap: 0.25rem;
   min-width: 0;
 }
 
 .categoryCardTitle {
   color: #111827;
-  flex: 1 1 auto;
-  font-size: 0.9375rem;
-  font-weight: 400;
+  font-size: 1rem;
+  font-weight: 600;
   line-height: 1.3;
   margin: 0;
   min-width: 0;
@@ -180,13 +248,154 @@
   word-break: break-word;
 }
 
+.categoryCardDescription {
+  color: #6b7280;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+.categoryCardFooter {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: auto;
+}
+
 .categoryCardCount {
   color: #9ca3af;
-  flex-shrink: 0;
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
   line-height: 1.2;
+}
+
+.categoryCardArrow {
+  color: #9ca3af;
+  height: 1rem;
+  width: 1rem;
+  flex-shrink: 0;
+  transition:
+    color 0.2s,
+    transform 0.2s;
+}
+
+.categoryCard:hover .categoryCardArrow,
+.categoryCard:focus-visible .categoryCardArrow {
+  color: var(--color-accent);
+  transform: translateX(2px);
+}
+
+/* ===== Этапы работы ===== */
+.stepsSection {
+  margin-bottom: 2.75rem;
+}
+
+.stepsList {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  list-style: none;
   margin: 0;
+  padding: 0;
+  counter-reset: steps;
+}
+
+.stepItem {
+  background-color: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.25rem;
+  min-width: 0;
+}
+
+.stepNumber {
+  display: block;
+  color: var(--color-accent);
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  margin-bottom: 0.625rem;
+}
+
+.stepTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #111827;
+  margin: 0 0 0.375rem;
+}
+
+.stepDescription {
+  color: #6b7280;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ===== SEO-текст ===== */
+.seoSection {
+  margin-bottom: 2.75rem;
+}
+
+.seoText {
+  color: #4b5563;
+  font-size: 0.9375rem;
+  line-height: 1.7;
+  margin: 0;
+  text-align: justify;
+  hyphens: auto;
+}
+
+/* ===== CTA ===== */
+.ctaSection {
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  background: transparent;
+  border: 1px solid #e5e7eb;
+  border-radius: 1.25rem;
+  padding: 2.5rem 1.5rem;
+  color: #111827;
+}
+
+.ctaBgImage {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ctaContent {
+  position: relative;
+  z-index: 1;
+}
+
+.ctaTitle {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: inherit;
+}
+
+.ctaText {
+  margin: 0 auto 1.5rem;
+  max-width: 560px;
+  line-height: 1.6;
+  color: inherit;
+  opacity: 0.85;
+}
+
+.ctaActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
 }
 
 .loading,
@@ -196,136 +405,193 @@
   margin: 0;
 }
 
-@media (width <= 768px) {
-  .page {
-    gap: 0.5rem;
-    padding: 0.4rem 0.75rem 0.75rem;
-    min-width: 0;
-    max-width: 100%;
-    box-sizing: border-box;
+/* ===== Адаптив ===== */
+@media (width <= 900px) {
+  .hero {
+    grid-template-columns: 1fr;
   }
 
-  .mainContent {
+  .heroImage img {
+    max-height: 260px;
+  }
+}
+
+@media (width <= 768px) {
+  .page {
+    padding: 0.75rem 0 2.5rem;
     min-width: 0;
+  }
+
+  .container {
     max-width: 100%;
+    box-sizing: border-box;
   }
 
   .breadcrumbs {
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.75rem;
   }
 
-  /* Как заголовок каталога (ProductsGrid .title на мобилке) */
-  .title {
+  .pageTitle {
     font-size: 1.25rem;
-    margin-bottom: 0.65rem;
+    margin-bottom: 0.75rem;
   }
 
-  /*
-   * Список категорий: .mainContent повышает специфичность,
-   * иначе тёмная тема ниже по файлу перебивает flex/фон и ломает вёрстку.
-   */
-  .mainContent .grid {
-    background: transparent;
-    border: none;
-    border-radius: 0;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-    max-width: 100%;
-    min-width: 0;
-    overflow: visible;
-    width: 100%;
+  .hero {
+    gap: 1rem;
+    margin-bottom: 1.75rem;
   }
 
-  .mainContent .categoryCard {
-    align-items: stretch;
-    background: #fff;
-    border: none;
+  .heroSubtitle {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .heroDescription {
+    margin-bottom: 1rem;
+    /* На узких экранах выключка по ширине даёт рваные пробелы */
+    text-align: left;
+    hyphens: none;
+  }
+
+  .heroNotes {
+    gap: 0.625rem 1rem;
+    font-size: 0.8125rem;
+  }
+
+  .categoriesSection {
+    margin-bottom: 2rem;
+  }
+
+  /* Компактные карточки в две колонки */
+  .grid {
+    gap: 0.5rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .categoryCard {
     border-radius: 10px;
-    box-shadow: none;
-    box-sizing: border-box;
-    max-width: 100%;
-    min-width: 0;
-    padding: 0.45rem 0.6rem;
+    gap: 0.5rem;
+    padding: 0.6rem;
   }
 
-  .mainContent .categoryCard:not(.categoryCardHasBg):hover,
-  .mainContent .categoryCard:not(.categoryCardHasBg):focus-visible {
-    background: #f9fafb;
-    box-shadow: none;
+  .categoryCard:not(.categoryCardHasBg):hover,
+  .categoryCard:not(.categoryCardHasBg):focus-visible {
+    background-color: #f9fafb;
   }
 
-  .mainContent .categoryCardHasBg:hover,
-  .mainContent .categoryCardHasBg:focus-visible {
-    box-shadow: none;
+  .categoryCardMedia {
+    border-radius: 8px;
+    height: 36px;
+    width: 36px;
   }
 
-  .mainContent .categoryCardMain {
-    gap: 0.55rem;
-  }
-
-  .mainContent .categoryCardIcon {
-    align-self: center;
-    border-radius: 7px;
-    flex-shrink: 0;
-    height: 34px;
-    min-width: 34px;
-    width: 34px;
-  }
-
-  .mainContent .categoryCardIconSvg {
+  .categoryCardIconSvg {
     height: 18px;
     width: 18px;
   }
 
-  .mainContent .categoryCardText {
-    flex: 1 1 auto;
-    gap: 0.3rem;
-    min-width: 0;
-  }
-
-  .mainContent .categoryCardTitle {
+  .categoryCardTitle {
     font-size: 0.875rem;
-    line-height: 1.3;
-    margin: 0;
-    min-width: 0;
-    overflow-wrap: break-word;
-    word-break: break-word;
   }
 
-  .mainContent .categoryCardCount {
-    flex-shrink: 0;
+  /* Описание не влезает в компактную плитку */
+  .categoryCardDescription {
+    display: none;
+  }
+
+  .categoryCardFooter {
+    padding-top: 0;
+  }
+
+  .categoryCardCount {
     font-size: 0.6875rem;
-    line-height: 1.2;
-    margin: 0;
-    white-space: nowrap;
+  }
+
+  .categoryCardArrow {
+    height: 0.875rem;
+    width: 0.875rem;
+  }
+
+  .stepsSection,
+  .seoSection {
+    margin-bottom: 2rem;
+  }
+
+  .stepsList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stepItem {
+    padding: 0.875rem;
+  }
+
+  .stepNumber {
+    font-size: 1.125rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .stepTitle {
+    font-size: 0.9375rem;
+  }
+
+  .stepDescription {
+    font-size: 0.8125rem;
+  }
+
+  .seoText {
+    font-size: 0.875rem;
+    text-align: left;
+    hyphens: none;
+  }
+
+  .ctaSection {
+    border-radius: 1rem;
+    padding: 1.75rem 1rem;
   }
 }
 
-/* Тёмная тема */
-:where(html[data-theme='dark'], [data-app-theme='dark']) .breadcrumbLink {
+@media (width <= 480px) {
+  .stepsList {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== Тёмная тема ===== */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .page {
+  color: #e5e7eb;
+  background: transparent;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .breadcrumbs,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .breadcrumbs a,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .heroNotes,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .stepDescription,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCardCount {
   color: #9ca3af;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .breadcrumbLink:hover {
-  color: var(--color-accent);
+:where(html[data-theme='dark'], [data-app-theme='dark']) .pageTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .stepTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCardTitle {
+  color: #f9fafb;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .breadcrumbSep {
-  color: #6b7280;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .breadcrumbCurrent {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .heroSubtitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .ctaText {
   color: #d1d5db;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
-  color: #d1d5db;
+:where(html[data-theme='dark'], [data-app-theme='dark']) .heroDescription,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .seoText,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCardDescription {
+  color: #9ca3af;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCard {
-  background: #171717;
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCard,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .stepItem {
+  /* background-color, не шорткат: иначе сбросится background-size/position фоновой картинки */
+  background-color: #171717;
   border-color: #374151;
   color: #d1d5db;
 }
@@ -334,11 +600,18 @@
   background-color: transparent;
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCard:hover,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCard:focus-visible,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .stepItem:hover {
+  border-color: rgb(var(--color-accent-rgb) / 0.5);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.3);
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark'])
   .categoryCardTransparent.categoryCardHasBg
   .categoryCardBgScrim {
   background: linear-gradient(
-    115deg,
+    180deg,
     rgb(23 23 23 / 0.55) 0%,
     rgb(23 23 23 / 0.32) 45%,
     rgb(23 23 23 / 0.14) 100%
@@ -347,36 +620,37 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCardBgScrim {
   background: linear-gradient(
-    115deg,
+    180deg,
     rgb(23 23 23 / 0.92) 0%,
     rgb(23 23 23 / 0.78) 45%,
     rgb(23 23 23 / 0.55) 100%
   );
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCard:hover {
-  border-color: rgb(var(--color-accent-rgb) / 0.5);
-  box-shadow: 0 4px 12px rgb(0 0 0 / 0.3);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCardIcon {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCardMedia {
   background: rgb(55 65 81 / 0.92);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCardIconSvg {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCardIconSvg,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCardArrow {
   color: #9ca3af;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCard:hover .categoryCardIconSvg {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCard:hover .categoryCardIconSvg,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .categoryCard:focus-visible
+  .categoryCardIconSvg,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCard:hover .categoryCardArrow,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .categoryCard:focus-visible
+  .categoryCardArrow {
   color: var(--color-accent);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCardTitle {
-  color: #d1d5db;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCardCount {
-  color: #6b7280;
+:where(html[data-theme='dark'], [data-app-theme='dark']) .ctaSection {
+  background: transparent;
+  border-color: #374151;
+  color: #f9fafb;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .loading,
@@ -385,30 +659,11 @@
 }
 
 @media (width <= 768px) {
-  :where(html[data-theme='dark'], [data-app-theme='dark']) .mainContent .grid {
-    background: transparent;
-    border: none;
-  }
-
-  :where(html[data-theme='dark'], [data-app-theme='dark']) .mainContent .categoryCard {
-    background: #171717;
-    border: none;
-  }
-
   :where(html[data-theme='dark'], [data-app-theme='dark'])
-    .mainContent
     .categoryCard:not(.categoryCardHasBg):hover,
   :where(html[data-theme='dark'], [data-app-theme='dark'])
-    .mainContent
     .categoryCard:not(.categoryCardHasBg):focus-visible {
-    box-shadow: none;
-    background: #1f2937;
-  }
-
-  :where(html[data-theme='dark'], [data-app-theme='dark']) .mainContent .categoryCardHasBg:hover,
-  :where(html[data-theme='dark'], [data-app-theme='dark'])
-    .mainContent
-    .categoryCardHasBg:focus-visible {
+    background-color: #1f2937;
     box-shadow: none;
   }
 }

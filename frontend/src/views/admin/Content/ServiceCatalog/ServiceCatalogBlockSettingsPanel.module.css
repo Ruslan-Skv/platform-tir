@@ -1,0 +1,365 @@
+/* Стили форм — по образцу настроек страницы «Окна» (admin Content/Windows) */
+.page {
+  padding: var(--admin-space-4xl);
+  max-width: 1200px;
+  color: var(--admin-text-secondary);
+}
+
+.pageHeader {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--admin-space-2xl);
+  margin-bottom: var(--admin-space-4xl);
+}
+
+.pageHeaderActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-2xl);
+}
+
+.pageTitle {
+  font-size: var(--admin-font-size-2xl);
+  font-weight: 700;
+  margin: 0;
+  color: var(--admin-text-secondary);
+}
+
+.viewLink {
+  padding: var(--admin-space-md) var(--admin-space-2xl);
+  color: var(--admin-overlay-color-135);
+  text-decoration: none;
+  font-size: var(--admin-font-size-base);
+}
+
+.viewLink:hover {
+  text-decoration: underline;
+}
+
+.settingsSection {
+  padding: var(--admin-space-3xl);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  margin-bottom: var(--admin-space-4xl);
+}
+
+.sectionTitle {
+  font-size: var(--admin-font-size-xl);
+  font-weight: 600;
+  margin: 0 0 var(--admin-space-2xl);
+  color: var(--admin-text-secondary);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xl);
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--admin-space-2xl);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xs);
+  min-width: 0;
+}
+
+.label {
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+}
+
+.input,
+.textarea,
+.iconSelect {
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-secondary);
+  font: inherit;
+  font-size: var(--admin-font-size-base);
+}
+
+.input:focus,
+.textarea:focus,
+.iconSelect:focus {
+  outline: none;
+  border-color: var(--admin-overlay-color-135);
+}
+
+.textarea {
+  resize: vertical;
+}
+
+.iconSelect {
+  width: auto;
+  flex-shrink: 0;
+}
+
+.fileInput {
+  display: none;
+}
+
+.uploadBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--admin-space-sm);
+  padding: var(--admin-space-lg) var(--admin-space-2xl);
+  border: 1px dashed var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-overlay-color-135);
+  cursor: pointer;
+  font-size: var(--admin-font-size-base);
+}
+
+.uploadBtn:hover {
+  border-color: var(--admin-overlay-color-135);
+}
+
+.imagePreview {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-2xl);
+}
+
+.imagePreview img {
+  width: 220px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: var(--admin-radius-sm);
+}
+
+.changeImageBtn {
+  padding: var(--admin-space-xs) var(--admin-space-lg);
+  background: none;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-text-muted);
+  cursor: pointer;
+  font-size: var(--admin-font-size-sm);
+}
+
+.subformDivider {
+  height: 1px;
+  background: var(--admin-border);
+  margin: var(--admin-space-2xl) 0;
+}
+
+.subformTitle {
+  margin: 0;
+  font-size: var(--admin-font-size-lg);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+}
+
+.hint {
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-muted);
+  margin: calc(-1 * var(--admin-space-sm)) 0 0;
+}
+
+.checkboxLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-space-md);
+  font-size: var(--admin-font-size-base);
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+}
+
+.checkbox {
+  width: 1rem;
+  height: 1rem;
+}
+
+.colorRow {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-lg);
+}
+
+.colorInput {
+  width: 2.75rem;
+  height: 2.25rem;
+  padding: 2px;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface-soft);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Строки редакторов списков (преимущества, этапы) */
+.listRow {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-md);
+}
+
+.stepRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+  padding: var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+}
+
+.stepRowHead {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-md);
+}
+
+.stepIndex {
+  flex-shrink: 0;
+  width: 1.5rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-sm);
+}
+
+.removeRowBtn {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-text-muted);
+  cursor: pointer;
+  font-size: var(--admin-font-size-sm);
+}
+
+.removeRowBtn:hover {
+  border-color: var(--admin-danger-border-strong);
+  color: var(--admin-danger-border-strong);
+}
+
+.addRowBtn {
+  align-self: flex-start;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  background: none;
+  border: 1px dashed var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-text-muted);
+  cursor: pointer;
+  font-size: var(--admin-font-size-sm);
+}
+
+.addRowBtn:hover {
+  border-color: var(--admin-overlay-color-135);
+  color: var(--admin-overlay-color-135);
+}
+
+.settingsActions {
+  display: flex;
+  gap: var(--admin-space-2xl);
+  margin-top: var(--admin-space-xl);
+}
+
+.saveButton {
+  padding: var(--admin-space-lg) var(--admin-space-4xl);
+  background: var(--admin-overlay-color-135);
+  color: white;
+  border: none;
+  border-radius: var(--admin-radius-sm);
+  cursor: pointer;
+  font-size: var(--admin-font-size-base);
+}
+
+.saveButton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.saveButton:hover:not(:disabled) {
+  background: var(--admin-overlay-color-111);
+}
+
+.loading {
+  color: var(--admin-text-muted);
+}
+
+.message {
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
+  margin-bottom: var(--admin-space-xl);
+}
+
+.ok {
+  background: var(--admin-overlay-success-soft);
+  color: var(--admin-success-text, #067647);
+}
+
+.err {
+  background: var(--admin-overlay-danger-soft);
+  color: var(--admin-danger-text, #b42318);
+}
+
+@media (max-width: 800px) {
+  .fieldRow {
+    grid-template-columns: 1fr;
+  }
+
+  .listRow {
+    flex-wrap: wrap;
+  }
+
+  .imagePreview {
+    flex-wrap: wrap;
+  }
+}
+
+/* ===== Тёмная тема ===== */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .pageTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .subformTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .checkboxLabel {
+  color: var(--admin-surface-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .subformDivider {
+  background: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .colorInput,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .textarea,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .iconSelect {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-text-secondary);
+  color: var(--admin-surface-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .settingsSection,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .stepRow {
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .uploadBtn,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addRowBtn {
+  color: var(--admin-info-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .uploadBtn,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addRowBtn,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .removeRowBtn {
+  border-color: var(--admin-text-secondary);
+}

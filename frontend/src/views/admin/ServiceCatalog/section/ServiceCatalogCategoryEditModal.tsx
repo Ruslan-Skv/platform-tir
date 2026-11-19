@@ -44,6 +44,8 @@ function formFromCategory(data: ServiceCatalogCategory): EditServiceCategoryForm
     image: data.image || '',
     cardBackgroundImage: data.cardBackgroundImage || '',
     cardBackgroundTransparent: Boolean(data.cardBackgroundTransparent),
+    iconDisabled: Boolean(data.iconDisabled),
+    countTextColor: data.countTextColor || '',
     showPricesInPublic: data.showPricesInPublic ?? true,
     priceMarkupPercent: Number(data.priceMarkupPercent ?? 0),
     isActive: data.isActive ?? true,
@@ -60,6 +62,8 @@ function normalizeEditForm(form: EditServiceCategoryForm): EditServiceCategoryFo
     image: form.image.trim(),
     cardBackgroundImage: form.cardBackgroundImage.trim(),
     cardBackgroundTransparent: form.cardBackgroundTransparent,
+    iconDisabled: form.iconDisabled,
+    countTextColor: form.countTextColor.trim(),
     showPricesInPublic: form.showPricesInPublic,
     priceMarkupPercent: Number(form.priceMarkupPercent) || 0,
     isActive: form.isActive,
@@ -78,6 +82,8 @@ function editFormsEqual(a: EditServiceCategoryForm, b: EditServiceCategoryForm):
     left.image === right.image &&
     left.cardBackgroundImage === right.cardBackgroundImage &&
     left.cardBackgroundTransparent === right.cardBackgroundTransparent &&
+    left.iconDisabled === right.iconDisabled &&
+    left.countTextColor === right.countTextColor &&
     left.showPricesInPublic === right.showPricesInPublic &&
     left.priceMarkupPercent === right.priceMarkupPercent &&
     left.isActive === right.isActive
@@ -243,6 +249,8 @@ export function ServiceCatalogCategoryEditModal({
           ? nextSnapshot.cardBackgroundImage
           : null,
         cardBackgroundTransparent: nextSnapshot.cardBackgroundTransparent,
+        iconDisabled: nextSnapshot.iconDisabled,
+        countTextColor: nextSnapshot.countTextColor ? nextSnapshot.countTextColor : null,
         showPricesInPublic: nextSnapshot.showPricesInPublic,
         priceMarkupPercent: nextSnapshot.priceMarkupPercent,
         isActive: nextSnapshot.isActive,
@@ -493,6 +501,16 @@ export function ServiceCatalogCategoryEditModal({
                   </div>
                 </div>
               ) : null}
+
+              <label className={styles.checkboxRow} style={{ marginTop: 'var(--admin-space-md)' }}>
+                <input
+                  type="checkbox"
+                  checked={form.iconDisabled}
+                  disabled={saving}
+                  onChange={(e) => setForm((prev) => ({ ...prev, iconDisabled: e.target.checked }))}
+                />
+                <span>Скрывать иконку в карточке на «Ремонт квартир»</span>
+              </label>
             </div>
 
             <div data-modal-form-group data-modal-span>
@@ -522,6 +540,44 @@ export function ServiceCatalogCategoryEditModal({
               {form.cardBackgroundImage ? (
                 <img src={form.cardBackgroundImage} alt="" className={styles.cardBgPreviewImg} />
               ) : null}
+            </div>
+
+            <div data-modal-form-group data-modal-span>
+              <label htmlFor="service-cat-edit-count-color">
+                Цвет строки «N видов работ» в карточке (HEX)
+              </label>
+              <div className={styles.cardBgRow}>
+                <input
+                  id="service-cat-edit-count-color"
+                  type="color"
+                  className={styles.colorInput}
+                  value={form.countTextColor || '#9ca3af'}
+                  disabled={saving}
+                  onChange={(e) => setForm((prev) => ({ ...prev, countTextColor: e.target.value }))}
+                />
+                <input
+                  type="text"
+                  className={styles.colorTextField}
+                  value={form.countTextColor}
+                  disabled={saving}
+                  placeholder="пусто — цвет по умолчанию"
+                  onChange={(e) => setForm((prev) => ({ ...prev, countTextColor: e.target.value }))}
+                />
+                {form.countTextColor ? (
+                  <button
+                    type="button"
+                    className={styles.clearCardBgButton}
+                    disabled={saving}
+                    onClick={() => setForm((prev) => ({ ...prev, countTextColor: '' }))}
+                  >
+                    Сбросить
+                  </button>
+                ) : null}
+              </div>
+              <span className={styles.fieldHint}>
+                Задайте контрастный цвет (например, белый), чтобы строка не сливалась с фоновой
+                картинкой карточки.
+              </span>
             </div>
 
             <div data-modal-form-group data-modal-span>

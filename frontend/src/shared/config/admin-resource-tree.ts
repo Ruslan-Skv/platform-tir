@@ -42,6 +42,7 @@ export const ADMIN_RESOURCE_PARENT: Readonly<Record<string, string>> = {
   'admin.content.contacts': 'admin.content',
   'admin.content.mission': 'admin.content',
   'admin.content.photo': 'admin.content',
+  'admin.content.service-catalog': 'admin.content',
   'admin.content.windows': 'admin.content',
   'admin.content.comments': 'admin.content',
   'admin.content.navigation': 'admin.content',

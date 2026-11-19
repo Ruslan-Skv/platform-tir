@@ -16,6 +16,8 @@ export type NewServiceCategoryForm = {
   image: string;
   cardBackgroundImage: string;
   cardBackgroundTransparent: boolean;
+  iconDisabled: boolean;
+  countTextColor: string;
   showPricesInPublic: boolean;
   priceMarkupPercent: number;
   isActive: boolean;
@@ -41,6 +43,8 @@ export type ServiceCatalogCategory = {
   image: string | null;
   cardBackgroundImage?: string | null;
   cardBackgroundTransparent?: boolean;
+  iconDisabled?: boolean;
+  countTextColor?: string | null;
   showPricesInPublic: boolean;
   priceMarkupPercent?: number;
   sortOrder: number;
@@ -60,6 +64,8 @@ export type EditServiceCategoryForm = {
   image: string;
   cardBackgroundImage: string;
   cardBackgroundTransparent: boolean;
+  iconDisabled: boolean;
+  countTextColor: string;
   showPricesInPublic: boolean;
   priceMarkupPercent: number;
   isActive: boolean;
