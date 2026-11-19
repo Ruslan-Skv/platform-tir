@@ -21,6 +21,8 @@ export interface ServiceCatalogHeroNote {
 export interface ServiceCatalogStep {
   title: string;
   description: string | null;
+  /** Фоновая картинка карточки этапа (URL или data URL) */
+  backgroundImage?: string | null;
 }
 
 export interface ServiceCatalogBlockContent {
@@ -33,6 +35,8 @@ export interface ServiceCatalogBlockContent {
   seoTitle: string | null;
   seoDescription: string | null;
   steps: ServiceCatalogStep[] | null;
+  /** Прозрачный фон карточек этапов работы — виден общий фон страницы */
+  stepsCardTransparent: boolean;
   seoTextTitle: string | null;
   seoText: string | null;
   ctaTitle: string | null;

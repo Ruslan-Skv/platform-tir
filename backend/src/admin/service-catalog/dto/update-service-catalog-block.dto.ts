@@ -29,6 +29,11 @@ export class ServiceCatalogStepDto {
   @IsString()
   @IsOptional()
   description?: string | null;
+
+  /** Фоновая картинка карточки этапа (URL или data URL) */
+  @IsString()
+  @IsOptional()
+  backgroundImage?: string | null;
 }
 
 export class UpdateServiceCatalogBlockDto {
@@ -73,6 +78,11 @@ export class UpdateServiceCatalogBlockDto {
   @Type(() => ServiceCatalogStepDto)
   @IsOptional()
   steps?: ServiceCatalogStepDto[] | null;
+
+  /** Прозрачный фон карточек этапов работы — виден общий фон страницы */
+  @IsBoolean()
+  @IsOptional()
+  stepsCardTransparent?: boolean;
 
   // SEO-текст внизу
   @IsString()

@@ -26,6 +26,8 @@ export function ServiceCatalogBlockSettingsPanel({ model }: ServiceCatalogBlockS
     addStep,
     removeStep,
     handleFileSelect,
+    handleStepFileSelect,
+    removeStepBackground,
     handleSave,
     maxHeroNotes,
     maxSteps,
@@ -210,6 +212,30 @@ export function ServiceCatalogBlockSettingsPanel({ model }: ServiceCatalogBlockS
               placeholder="Короткое описание этапа"
               className={styles.input}
             />
+            <div className={styles.stepBgRow}>
+              {step.backgroundImage ? (
+                <>
+                  <img src={step.backgroundImage} alt="" className={styles.stepBgPreview} />
+                  <button
+                    type="button"
+                    className={styles.changeImageBtn}
+                    onClick={() => removeStepBackground(index)}
+                  >
+                    Убрать фон
+                  </button>
+                </>
+              ) : (
+                <label className={styles.uploadBtn}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleStepFileSelect(index)}
+                    className={styles.fileInput}
+                  />
+                  + Фоновая картинка
+                </label>
+              )}
+            </div>
           </div>
         ))}
         {form.steps.length < maxSteps ? (
@@ -217,6 +243,17 @@ export function ServiceCatalogBlockSettingsPanel({ model }: ServiceCatalogBlockS
             + Добавить этап
           </button>
         ) : null}
+        <div className={styles.field}>
+          <label className={styles.checkboxLabel}>
+            <input
+              type="checkbox"
+              checked={form.stepsCardTransparent}
+              onChange={(e) => updateField('stepsCardTransparent', e.target.checked)}
+              className={styles.checkbox}
+            />
+            Прозрачный фон карточек этапов
+          </label>
+        </div>
       </div>
 
       <div className={styles.subformDivider} />

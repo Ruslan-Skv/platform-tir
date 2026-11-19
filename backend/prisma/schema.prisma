@@ -907,6 +907,9 @@ model ServiceCatalogBlock {
   // Секция «Этапы работы»: [{ title, description? }] (до 6)
   steps Json?
 
+  /// Прозрачный фон карточек этапов работы — виден общий фон страницы
+  stepsCardTransparent Boolean @default(false)
+
   // SEO-текст внизу страницы
   seoTextTitle String?
   seoText      String? @db.Text

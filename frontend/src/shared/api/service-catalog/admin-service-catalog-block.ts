@@ -1,5 +1,6 @@
-import type { ServiceCatalogHeroNote, ServiceCatalogStep } from '@/shared/api/service-catalog';
 import { apiFetch } from '@/shared/lib/api-fetch';
+
+import type { ServiceCatalogHeroNote, ServiceCatalogStep } from './service-catalog';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
@@ -34,6 +35,7 @@ export interface AdminServiceCatalogBlock {
   seoTitle: string | null;
   seoDescription: string | null;
   steps: ServiceCatalogStep[] | null;
+  stepsCardTransparent: boolean;
   seoTextTitle: string | null;
   seoText: string | null;
   ctaTitle: string | null;
@@ -57,6 +59,7 @@ export interface UpdateServiceCatalogBlockDto {
   seoTitle?: string | null;
   seoDescription?: string | null;
   steps?: ServiceCatalogStep[] | null;
+  stepsCardTransparent?: boolean;
   seoTextTitle?: string | null;
   seoText?: string | null;
   ctaTitle?: string | null;

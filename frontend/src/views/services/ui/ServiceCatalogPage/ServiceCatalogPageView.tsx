@@ -201,17 +201,25 @@ export function ServiceCatalogPageView({ model }: ServiceCatalogPageViewProps) {
         <section className={styles.stepsSection} aria-label="Этапы работы">
           <h2 className={styles.sectionTitle}>{DEFAULT_STEPS_TITLE}</h2>
           <ol className={styles.stepsList}>
-            {steps.map((step, index) => (
-              <li key={step.title} className={styles.stepItem}>
-                <span className={styles.stepNumber} aria-hidden="true">
-                  {String(index + 1).padStart(2, '0')}
-                </span>
-                <h3 className={styles.stepTitle}>{step.title}</h3>
-                {step.description?.trim() ? (
-                  <p className={styles.stepDescription}>{step.description}</p>
-                ) : null}
-              </li>
-            ))}
+            {steps.map((step, index) => {
+              const stepBg = step.backgroundImage?.trim();
+              return (
+                <li
+                  key={step.title}
+                  className={`${styles.stepItem} ${stepBg ? styles.stepItemHasBg : ''} ${block.stepsCardTransparent ? styles.stepItemTransparent : ''}`}
+                  style={stepBg ? { backgroundImage: `url(${stepBg})` } : undefined}
+                >
+                  {stepBg ? <span className={styles.stepItemBgScrim} aria-hidden /> : null}
+                  <span className={styles.stepNumber} aria-hidden="true">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                  <h3 className={styles.stepTitle}>{step.title}</h3>
+                  {step.description?.trim() ? (
+                    <p className={styles.stepDescription}>{step.description}</p>
+                  ) : null}
+                </li>
+              );
+            })}
           </ol>
         </section>
 

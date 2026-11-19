@@ -70,6 +70,7 @@ export type PublicCatalogHeroNote = {
 export type PublicCatalogStep = {
   title: string;
   description: string | null;
+  backgroundImage: string | null;
 };
 
 export type PublicCatalogBlock = {
@@ -82,6 +83,7 @@ export type PublicCatalogBlock = {
   seoTitle: string | null;
   seoDescription: string | null;
   steps: PublicCatalogStep[] | null;
+  stepsCardTransparent: boolean;
   seoTextTitle: string | null;
   seoText: string | null;
   ctaTitle: string | null;
@@ -117,6 +119,10 @@ function mapSteps(value: Prisma.JsonValue | null): PublicCatalogStep[] | null {
       {
         title: record.title.trim(),
         description: typeof record.description === 'string' ? record.description : null,
+        backgroundImage:
+          typeof record.backgroundImage === 'string' && record.backgroundImage.trim() !== ''
+            ? record.backgroundImage.trim()
+            : null,
       },
     ];
   });
@@ -134,6 +140,7 @@ export function mapPublicCatalogBlock(block: ServiceCatalogBlock): PublicCatalog
     seoTitle: block.seoTitle,
     seoDescription: block.seoDescription,
     steps: mapSteps(block.steps),
+    stepsCardTransparent: block.stepsCardTransparent,
     seoTextTitle: block.seoTextTitle,
     seoText: block.seoText,
     ctaTitle: block.ctaTitle,

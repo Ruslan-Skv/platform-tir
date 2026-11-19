@@ -2,12 +2,12 @@
 
 import { type ChangeEvent, useCallback, useEffect, useState } from 'react';
 
+import type { ServiceCatalogHeroNote, ServiceCatalogStep } from '@/shared/api/service-catalog';
 import {
   type AdminServiceCatalogBlock,
   getAdminServiceCatalogBlock,
   updateAdminServiceCatalogBlock,
-} from '@/shared/api/admin-service-catalog-block';
-import type { ServiceCatalogHeroNote, ServiceCatalogStep } from '@/shared/api/service-catalog';
+} from '@/shared/api/service-catalog/admin-service-catalog-block';
 
 export interface ServiceCatalogBlockForm {
   title: string;
@@ -18,6 +18,7 @@ export interface ServiceCatalogBlockForm {
   seoTitle: string;
   seoDescription: string;
   steps: ServiceCatalogStep[];
+  stepsCardTransparent: boolean;
   seoTextTitle: string;
   seoText: string;
   ctaTitle: string;
@@ -43,6 +44,7 @@ function blockToForm(block: AdminServiceCatalogBlock): ServiceCatalogBlockForm {
     seoTitle: block.seoTitle ?? '',
     seoDescription: block.seoDescription ?? '',
     steps: Array.isArray(block.steps) ? block.steps : [],
+    stepsCardTransparent: block.stepsCardTransparent !== false,
     seoTextTitle: block.seoTextTitle ?? '',
     seoText: block.seoText ?? '',
     ctaTitle: block.ctaTitle ?? '',
@@ -130,7 +132,10 @@ export function useServiceCatalogBlockSettings() {
   const addStep = useCallback(() => {
     setForm((prev) => {
       if (!prev || prev.steps.length >= MAX_STEPS) return prev;
-      return { ...prev, steps: [...prev.steps, { title: '', description: '' }] };
+      return {
+        ...prev,
+        steps: [...prev.steps, { title: '', description: '', backgroundImage: null }],
+      };
     });
   }, []);
 
@@ -158,6 +163,30 @@ export function useServiceCatalogBlockSettings() {
     [updateField]
   );
 
+  /** Фоновая картинка карточки этапа — base64 data URL. */
+  const handleStepFileSelect = useCallback(
+    (index: number) => (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          updateStep(index, { backgroundImage: reader.result });
+        }
+      };
+      reader.readAsDataURL(file);
+      e.target.value = '';
+    },
+    [updateStep]
+  );
+
+  const removeStepBackground = useCallback(
+    (index: number) => {
+      updateStep(index, { backgroundImage: null });
+    },
+    [updateStep]
+  );
+
   const handleSave = useCallback(async () => {
     if (!form) return;
     setSaving(true);
@@ -171,7 +200,10 @@ export function useServiceCatalogBlockSettings() {
         heroNotes: form.heroNotes.filter((note) => note.text.trim() !== ''),
         seoTitle: emptyToNull(form.seoTitle),
         seoDescription: emptyToNull(form.seoDescription),
-        steps: form.steps.filter((step) => step.title.trim() !== ''),
+        steps: form.steps
+          .filter((step) => step.title.trim() !== '')
+          .map((step) => ({ ...step, backgroundImage: step.backgroundImage?.trim() || null })),
+        stepsCardTransparent: form.stepsCardTransparent,
         seoTextTitle: emptyToNull(form.seoTextTitle),
         seoText: emptyToNull(form.seoText),
         ctaTitle: emptyToNull(form.ctaTitle),
@@ -208,6 +240,8 @@ export function useServiceCatalogBlockSettings() {
     addStep,
     removeStep,
     handleFileSelect,
+    handleStepFileSelect,
+    removeStepBackground,
     handleSave,
     maxHeroNotes: MAX_HERO_NOTES,
     maxSteps: MAX_STEPS,

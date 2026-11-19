@@ -221,6 +221,21 @@
   gap: var(--admin-space-md);
 }
 
+.stepBgRow {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-lg);
+  flex-wrap: wrap;
+}
+
+.stepBgPreview {
+  width: 160px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: var(--admin-radius-sm);
+  border: 1px solid var(--admin-border);
+}
+
 .stepIndex {
   flex-shrink: 0;
   width: 1.5rem;
@@ -350,6 +365,10 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .settingsSection,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .stepRow {
   background: var(--admin-text-secondary);
+  border-color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .stepBgPreview {
   border-color: var(--admin-text-secondary);
 }
 
