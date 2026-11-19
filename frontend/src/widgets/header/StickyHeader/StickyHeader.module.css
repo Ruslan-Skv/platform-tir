@@ -15,8 +15,12 @@
 }
 
 /* Контейнер шапки: в начале страницы — сплошная белая полоса на всю ширину,
- * после прокрутки — прозрачный, а «стекло» рисует ::before-пилюля ниже */
+ * после прокрутки — прозрачный, а «стекло» рисует ::before-пилюля ниже.
+ * --pill-inset-* — геометрия пилюли, их держит в синхроне ::before и якорь
+ * иконок-утилит справа. */
 .toolbar {
+  --pill-inset-bottom: 0.5rem;
+  --pill-inset-top: 0.375rem;
   background: #ffffff;
   padding-bottom: 0;
   position: relative;
@@ -33,7 +37,7 @@
   backdrop-filter: blur(20px) saturate(1.4);
   border: 1px solid rgb(229 229 229 / 50%);
   border-radius: 999px;
-  bottom: 0.5rem;
+  bottom: var(--pill-inset-bottom);
   box-shadow: 0 4px 24px rgb(0 0 0 / 6%);
   content: '';
   left: max(1rem, calc(50% - 51rem));
@@ -41,7 +45,7 @@
   pointer-events: none;
   position: absolute;
   right: max(1rem, calc(50% - 51rem));
-  top: 0.375rem;
+  top: var(--pill-inset-top);
   transform: scaleX(0.5);
   transition:
     transform 0.6s cubic-bezier(0.4, 0, 0.2, 1),
@@ -172,8 +176,35 @@
 }
 
 .scrolled .logoSection {
-  /* Воздух между логотипом и верхней границей «пилюли»; снизу ряд навигации прижат */
+  /* Воздух между логотипом и верхней границей «пилюли»; снизу ряд навигации прижат.
+   * Справа ряду нужен запас: вдоль правой границы пилюли по дуге стоят
+   * иконки-утилиты (см. .pillUtilities). */
   padding: 0.875rem 0 0.25rem;
+}
+
+/* Якорь иконок-утилит пилюли: накрывает правое скругление (дугу) и не ловит
+ * клики собой — только кнопки. Показывается только в режиме пилюли и только
+ * на десктопах шире 1024px (дальше правее уже мобильная/планшетная вёрстка). */
+.pillUtilities {
+  bottom: var(--pill-inset-bottom);
+  display: none;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  top: var(--pill-inset-top);
+  width: 4.5rem;
+  z-index: 3;
+}
+
+@media (width > 1024px) {
+  .scrolled .pillUtilities {
+    display: block;
+  }
+
+  /* Резерв под иконки-утилиты у правой границы пилюли */
+  .scrolled .logoSection {
+    padding-right: 2.25rem;
+  }
 }
 
 /* Мобильная шапка: трансформации не применяются (шапка всегда сплошная) */

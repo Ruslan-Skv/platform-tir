@@ -22,6 +22,14 @@
   background: transparent;
 }
 
+/* В режиме пилюли вдоль её правой границы по дуге расставлены иконки-утилиты —
+ * навигации нужен справа запас, чтобы последние пункты с ними не пересекались */
+@media (width > 1024px) {
+  [data-glass-nav='true'] .container {
+    padding-right: 2.25rem;
+  }
+}
+
 /* Темная тема */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .container {
   background: rgb(31 41 55 / 50%);

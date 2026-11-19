@@ -26,6 +26,7 @@ import headerStyles from '../Header/Header.module.css';
 import { Navigation } from '../Navigation';
 import { TopBar } from '../TopBar';
 import { type CatalogHeaderSearchState, useCatalogHeaderSearch } from '../useCatalogHeaderSearch';
+import { PillUtilityIcons } from './PillUtilityIcons';
 import styles from './StickyHeader.module.css';
 
 const PHONE_LINK = 'tel:+78152601270';
@@ -341,6 +342,14 @@ function StickyHeaderChrome({
             )}
           </div>
         </div>
+
+        {/* Иконки-утилиты переезжают в пилюлю (вдоль правой границы, по дуге),
+         * когда TopBar сворачивается */}
+        {scrolled && (
+          <div className={styles.pillUtilities}>
+            <PillUtilityIcons />
+          </div>
+        )}
 
         <Navigation
           onNavigationClick={onNavigationClick}
