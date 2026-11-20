@@ -207,9 +207,10 @@ export function packageFormForTemplate(
   );
 
   const prepaymentRaw = form.contract.prepaymentAmount.trim();
-  const prepaymentAmountWords = prepaymentRaw
-    ? amountToRussianWords(form.contract.prepaymentAmount)
-    : '';
+  /** Сумма оплаты в печати ПКО — целыми рублями, как остальные суммы документов пакета. */
+  const prepaymentAmountForPrint =
+    options?.templateTab === 'cashOrder' ? roundMoneyStringToWhole(prepaymentRaw) : prepaymentRaw;
+  const prepaymentAmountWords = prepaymentRaw ? amountToRussianWords(prepaymentAmountForPrint) : '';
 
   const { grandTotalRub } = computePackagePayableBreakdown(form);
   const grandTotalAmount =
@@ -532,6 +533,7 @@ export function packageFormForTemplate(
   const contractDiscount = resolveContractDiscount(form);
   const contractForTemplate = {
     ...form.contract,
+    prepaymentAmount: prepaymentAmountForPrint,
     totalAmount: contractTotalAmountForPrint,
     totalAmountWords: contractTotalAmountWordsForPrint,
     prepaymentAmountWords,
