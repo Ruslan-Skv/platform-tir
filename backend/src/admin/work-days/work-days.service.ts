@@ -276,12 +276,16 @@ export class WorkDaysService implements OnModuleInit {
       hasOpenAbsence: todayDay?.absences.some((a) => !a.endedAt) ?? false,
       canRestartToday: todayDay ? canRestartWorkDay(todayDay, today) : false,
       remainingRestartsToday: remainingRestartsToday(todayDay),
+      // Выходной по графику и объявленный праздник тоже «блокирующие»: окно старта
+      // дня показывается как в рабочий день, чтобы выход на работу в такой день
+      // фиксировался (запись помечается isDayOffWork, без опозданий и ранних уходов).
+      // Согласованный выходной — исключение: явка не требуется, админка доступна сразу.
       canAccessAdmin:
         !tracked ||
         !settings.isEnabled ||
         !settings.blockAdminWithoutWorkDay ||
         role === UserRole.SUPER_ADMIN ||
-        !isWorkDayToday ||
+        approvedDayOff ||
         (todayDay?.status === WorkDayStatus.OPEN && !openPrevious),
       schedule: scheduleResolved,
       office: user.office

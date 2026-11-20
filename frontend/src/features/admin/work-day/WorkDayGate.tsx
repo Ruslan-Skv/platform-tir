@@ -165,7 +165,7 @@ export function WorkDayGate({ children }: { children: React.ReactNode }) {
               {!status.isWorkDayToday ? (
                 <p className={styles.hint}>
                   Сегодня по вашему графику нерабочий день. День можно начать — он будет отмечен как
-                  «работа в выходной».
+                  «работа в выходной»: время зафиксируется по факту, без опозданий и ранних уходов.
                 </p>
               ) : null}
               {status.todayWorkDay && status.todayWorkDay.status !== 'OPEN' ? (

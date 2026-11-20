@@ -142,8 +142,8 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
       ? buildWorkDayEndSummary(displayName, todayDay)
       : null;
 
-  // Кнопка старта дня прямо со страницы: нужна в том числе для работы в свой выходной,
-  // когда виджет учёта при входе в админку не блокирует интерфейс.
+  // Кнопка старта дня прямо со страницы: нужна, например, для работы в согласованный
+  // выходной — явка тогда не обязательна, и окно старта при входе в админку не показывается.
   const trackedStatus = liveStatus?.tracked ? liveStatus : null;
   const startOffice = trackedStatus?.office ?? null;
   const startDayButton =
