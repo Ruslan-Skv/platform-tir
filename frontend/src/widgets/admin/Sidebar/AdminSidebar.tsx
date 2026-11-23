@@ -399,6 +399,11 @@ const baseNavItems: NavItem[] = [
       },
       { label: 'Жалюзи', href: '/admin/content/blinds', resourceId: 'admin.content.blinds' },
       {
+        label: 'Мебель',
+        href: '/admin/content/furniture',
+        resourceId: 'admin.content.furniture',
+      },
+      {
         label: 'Отзывы',
         href: '/admin/content/comments',
         resourceId: 'admin.content.comments',

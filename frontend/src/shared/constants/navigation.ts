@@ -20,7 +20,7 @@ export const navigation: NavigationItem[] = [
   },
   {
     name: 'Мебель на заказ',
-    href: '/catalog/products/custom-furniture',
+    href: '/furniture',
     hasDropdown: false,
   },
   {

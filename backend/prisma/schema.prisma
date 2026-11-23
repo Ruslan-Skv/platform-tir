@@ -1980,6 +1980,115 @@ model BlindsPageBlock {
   @@map("blinds_page_block")
 }
 
+// --- Мебель (категории изделий: кухни, шкафы-купе, гардеробные, прихожие...) ---
+/// Категория мебельных изделий (вкладка на публичной странице «Мебель»).
+model FurnitureCategory {
+  id          String             @id @default(cuid())
+  name        String // Кухни, Шкафы-купе, Гардеробные
+  slug        String             @unique
+  imageUrl    String? // Картинка категории для вкладки
+  description String?            @db.Text
+  sortOrder   Int                @default(0)
+  isActive    Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  products    FurnitureProduct[]
+
+  @@map("furniture_categories")
+}
+
+/// Изделие в категории (прямая кухня, угловой шкаф-купе, модульная гардеробная и т.д.).
+model FurnitureProduct {
+  id              String            @id @default(cuid())
+  categoryId      String
+  name            String
+  slug            String            @unique
+  tagline         String? // Короткий подзаголовок («Кухня вдоль одной стены»)
+  description     String            @db.Text
+  imageUrl        String?
+  /// Видео об изделии (Rutube/YouTube/VK или прямой файл) — плеер в карточке
+  videoUrl        String?
+  /// Конфигурация («Прямая», «Угловая», «П-образная», «Встроенная», «Корпусная»)
+  configuration   String?
+  /// Материал фасадов («ЛДСП Egger», «МДФ в плёнке ПВХ», «МДФ эмаль», «Шпон»)
+  facadeMaterial  String?
+  /// Фурнитура («Blum», «Hettich», «Boyard», «GTV»)
+  hardware        String?
+  /// Дополнительные характеристики пары «название — значение» ([{ label, value }])
+  characteristics Json?
+  advantages      String[] // Список преимуществ карточки
+  priceFrom       Int? // Цена «от», ₽
+  /// Единица цены: «пог. м» (кухни), «м²», null — за изделие целиком
+  priceUnit       String?
+  badge           String? // Метка карточки («Хит», «Премиум»)
+  sortOrder       Int               @default(0)
+  isActive        Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  category        FurnitureCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId])
+  @@map("furniture_products")
+}
+
+/// Настройки публичной страницы «Мебель» (герой-блок + SEO + калькулятор + материалы + FAQ + этапы), единственная запись с id="main".
+model FurniturePageBlock {
+  id             String  @id @default("main")
+  title          String  @default("Мебель")
+  subtitle       String?
+  description    String? @db.Text
+  heroImageUrl   String?
+  seoTitle       String?
+  seoDescription String? @db.Text
+
+  // Таблица сравнения изделий
+  comparisonShow              Boolean @default(true)
+  comparisonTitle             String?
+  comparisonNote              String? @db.Text
+  comparisonShowConfiguration Boolean @default(true)
+  comparisonShowFacade        Boolean @default(true)
+  comparisonShowHardware      Boolean @default(true)
+  comparisonShowPrice         Boolean @default(true)
+
+  // Блок «Материалы и фурнитура»
+  materialsShow  Boolean @default(true)
+  materialsTitle String?
+  /// Карточки материалов и фурнитуры ([{ name, description }])
+  materials      Json?
+
+  // Калькулятор стоимости
+  calcShow                 Boolean @default(true)
+  calcTitle                String?
+  calcNote                 String? @db.Text
+  /// Сборка и установка изделия, ₽
+  calcAssemblyPrice        Int     @default(3000)
+  /// Опция «Доставка», ₽
+  calcDeliveryPrice        Int     @default(1500)
+  /// Опция «Премиум-фурнитура (Blum/Hettich)», ₽ за изделие
+  calcPremiumHardwarePrice Int     @default(5900)
+  /// Минимальная сумма заказа калькулятора, ₽
+  calcMinOrder             Int     @default(15000)
+
+  // Этапы работы ([{ title, description }])
+  steps Json?
+
+  // FAQ ([{ question, answer }])
+  faq Json?
+
+  // CTA-блок «Поможем спроектировать мебель»
+  ctaBackgroundColor        String?
+  ctaBackgroundImage        String?
+  /// Вариант размещения фоновой картинки: cover (заполнить с обрезкой) | contain (вписать) | tile (замостить)
+  ctaBackgroundFit          String  @default("contain")
+  ctaBackgroundImageOpacity Int     @default(30)
+  ctaTextColor              String?
+  ctaShowButtons            Boolean @default(true)
+
+  updatedAt DateTime @updatedAt
+
+  @@map("furniture_page_block")
+}
+
 model Comment {
   id          String        @id @default(cuid())
   postId      String

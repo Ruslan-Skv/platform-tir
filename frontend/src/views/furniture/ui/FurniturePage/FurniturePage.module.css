@@ -1,0 +1,1146 @@
+.page {
+  min-height: 60vh;
+  padding: 1.5rem 0 4rem;
+  color: #1f2937;
+  /* Фон не задаём: раздел живёт на общем фоне сайта */
+  background: transparent;
+}
+
+.container {
+  max-width: var(--container-max-width);
+  margin: 0 auto;
+  padding: 0 var(--container-padding);
+}
+
+/* ===== Хлебные крошки ===== */
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 1.25rem;
+}
+
+.breadcrumbs svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+}
+
+.breadcrumbs a {
+  color: #6b7280;
+  text-decoration: none;
+}
+
+.breadcrumbs a:hover {
+  color: var(--color-accent);
+}
+
+/* ===== Заголовок раздела ===== */
+.pageTitle {
+  margin: 0 0 1rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+/* ===== Герой ===== */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 2rem;
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  margin-bottom: 2rem;
+}
+
+.heroSubtitle {
+  margin: 0 0 0.75rem;
+  font-size: 1.125rem;
+  line-height: 1.5;
+  font-weight: 600;
+  color: #374151;
+}
+
+.heroDescription {
+  margin: 0 0 1.5rem;
+  line-height: 1.6;
+  color: #4b5563;
+  text-align: justify;
+  hyphens: auto;
+}
+
+.heroNotes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.heroNotes li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.heroNotes svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  color: var(--color-accent);
+}
+
+.heroImage img {
+  width: 100%;
+  height: 100%;
+  max-height: 340px;
+  object-fit: cover;
+  border-radius: 0.875rem;
+}
+
+/* ===== Заголовки секций ===== */
+.sectionTitle {
+  margin: 0 0 1rem;
+  font-size: 1.25rem;
+  line-height: 1.3;
+  font-weight: 600;
+  color: #111827;
+}
+
+/* ===== Вкладки категорий ===== */
+.categoriesSection {
+  margin-bottom: 2.75rem;
+}
+
+.categoryTabs {
+  display: flex;
+  gap: 0.625rem;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding-bottom: 0.5rem;
+  scrollbar-width: thin;
+}
+
+.categoryTab {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.875rem 1.25rem;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 600;
+  font-size: 1rem;
+  color: #374151;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    color 0.15s ease;
+}
+
+.categoryTab:hover {
+  border-color: #7fb3e3;
+  color: #111827;
+}
+
+.categoryTab[data-active] {
+  border-color: #7fb3e3;
+  color: #2a6db5;
+  background: rgba(122, 178, 226, 0.12);
+}
+
+.categoryTabCount {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+.categoryTab[data-active] .categoryTabCount {
+  color: rgba(42, 109, 181, 0.75);
+}
+
+.categoryPanel {
+  margin-top: 1.25rem;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+}
+
+.categoryHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 0.875rem;
+  margin-bottom: 0.75rem;
+}
+
+.categoryName {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.categoryDescription {
+  margin: 0 0 1.25rem;
+  line-height: 1.6;
+  color: #4b5563;
+  flex-basis: 100%;
+}
+
+/* ===== Пилюли изделий ===== */
+.productTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.productTab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid #d1d5db;
+  border-radius: 0.625rem;
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #4b5563;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.productTab:hover {
+  border-color: #9ed7b4;
+  color: #111827;
+}
+
+.productTab[data-active] {
+  background: #e9f7ee;
+  border-color: #9ed7b4;
+  color: #2a7a45;
+}
+
+.productTabType {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.productTab[data-active] .productTabType {
+  color: #2a7a45;
+}
+
+.emptyProducts {
+  margin: 0;
+  color: #6b7280;
+}
+
+/* ===== Карточка изделия ===== */
+.productCard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 1.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  background: #fafafa;
+}
+
+.productMedia {
+  position: relative;
+  align-self: start;
+  min-height: 260px;
+  border-radius: 0.875rem;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.productMedia img {
+  width: 100%;
+  max-height: 460px;
+  object-fit: cover;
+}
+
+.productMediaPlaceholder {
+  height: 100%;
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  text-align: center;
+  padding: 1.5rem;
+  background:
+    radial-gradient(320px 160px at 30% 20%, rgb(var(--color-accent-rgb) / 8%), transparent 65%),
+    linear-gradient(160deg, #f3f4f6, #e5e7eb);
+  border: 1px dashed #d1d5db;
+  border-radius: 0.875rem;
+}
+
+.productMediaName {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.productMediaSpecs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.375rem;
+}
+
+.productMediaSpecs span {
+  font-size: 0.8125rem;
+  color: #4b5563;
+  background: rgb(255 255 255 / 75%);
+  border-radius: 999px;
+  padding: 0.25rem 0.625rem;
+}
+
+.badge {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--color-accent);
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+}
+
+.productName {
+  margin: 0 0 0.25rem;
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.productTagline {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+.productDescription {
+  margin: 0 0 1.25rem;
+  line-height: 1.6;
+  color: #4b5563;
+  text-align: justify;
+  hyphens: auto;
+}
+
+.specsList {
+  margin: 0 0 1.25rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.specsRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.875rem;
+  font-size: 0.9375rem;
+}
+
+.specsRow + .specsRow {
+  border-top: 1px solid #f3f4f6;
+}
+
+.specsRow dt {
+  color: #6b7280;
+}
+
+.specsRow dd {
+  margin: 0;
+  font-weight: 400;
+  color: #1f2937;
+  text-align: right;
+}
+
+.advantages {
+  list-style: none;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.5rem;
+}
+
+.productVideo {
+  margin: 0 0 1.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: #111827;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .productVideo {
+  border-color: #374151;
+}
+
+.advantages li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: #374151;
+}
+
+.advantageIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  margin-top: 0.0625rem;
+  color: #059669;
+}
+
+.productFooter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.priceFrom {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+/* ===== Таблица сравнения ===== */
+.comparisonSection {
+  margin-bottom: 2.75rem;
+}
+
+.tableScroll {
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  background: #ffffff;
+}
+
+.comparisonTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+  min-width: 680px;
+}
+
+.comparisonTable th,
+.comparisonTable td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.comparisonTable thead th {
+  background: #f9fafb;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.comparisonTable tbody th {
+  font-weight: 600;
+  color: #111827;
+}
+
+.comparisonTable tbody tr + tr th,
+.comparisonTable tbody tr + tr td {
+  border-top: 1px solid #f3f4f6;
+}
+
+.comparisonCategory {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.comparisonNote {
+  margin: 0.75rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: #6b7280;
+}
+
+/* ===== Материалы и фурнитура ===== */
+.materialsSection {
+  margin-bottom: 2.75rem;
+}
+
+.materialsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.materialCard {
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  background: #ffffff;
+}
+
+.materialName {
+  margin: 0 0 0.5rem;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.materialDescription {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: #6b7280;
+}
+
+/* ===== Калькулятор ===== */
+.calcSection {
+  margin-bottom: 2.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 1.25rem;
+  padding: 1.75rem;
+  background: #ffffff;
+}
+
+.calcGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 2rem;
+}
+
+.calcFieldset {
+  border: none;
+  margin: 0 0 1.5rem;
+  padding: 0;
+}
+
+.calcLegend {
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  padding: 0;
+}
+
+.calcSlider {
+  display: block;
+  margin-bottom: 1.25rem;
+}
+
+.calcSliderLabel {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.375rem;
+  font-size: 0.9375rem;
+  color: #374151;
+}
+
+.calcSliderValue {
+  font-weight: 600;
+  color: #111827;
+  font-variant-numeric: tabular-nums;
+}
+
+.calcSlider input[type='range'] {
+  width: 100%;
+  accent-color: var(--color-accent);
+}
+
+.calcSliderNote {
+  margin: -0.75rem 0 1.25rem;
+  font-size: 0.8125rem;
+  color: #9ca3af;
+}
+
+.calcCheckbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  color: #374151;
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+}
+
+.calcCheckbox input {
+  accent-color: var(--color-accent);
+  width: 1.0625rem;
+  height: 1.0625rem;
+}
+
+.calcResult {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  background: #fafafa;
+}
+
+.calcResultTitle {
+  margin: 0 0 1rem;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.calcProducts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  max-height: 260px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.calcProductOption {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.625rem;
+  font: inherit;
+  font-size: 0.9375rem;
+  color: #374151;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.calcProductOption:hover {
+  border-color: #7fb3e3;
+}
+
+.calcProductOption[data-active] {
+  border-color: #7fb3e3;
+  background: rgba(122, 178, 226, 0.12);
+  color: #2a6db5;
+}
+
+.calcProductName {
+  display: flex;
+  flex-direction: column;
+  font-weight: 600;
+}
+
+.calcProductCategory {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+.calcProductOption[data-active] .calcProductCategory {
+  color: rgba(42, 109, 181, 0.75);
+}
+
+.calcProductPrice {
+  flex-shrink: 0;
+  font-weight: 600;
+  color: #111827;
+  font-variant-numeric: tabular-nums;
+}
+
+.calcBreakdown {
+  margin: 0 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.calcBreakdown div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.calcBreakdown dt {
+  color: #6b7280;
+}
+
+.calcBreakdown dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.calcTotal {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  margin: 0 0 0.75rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid #e5e7eb;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.calcTotal strong {
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.calcMinNote {
+  margin: -0.375rem 0 0.75rem;
+  font-size: 0.8125rem;
+  color: #9ca3af;
+}
+
+.calcNote {
+  margin: 0.875rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: #6b7280;
+}
+
+/* ===== Этапы работы ===== */
+.stepsSection {
+  margin-bottom: 2.75rem;
+}
+
+.stepsList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.25rem;
+}
+
+.stepItem {
+  display: flex;
+  gap: 0.875rem;
+  align-items: flex-start;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  background: #ffffff;
+}
+
+.stepNumber {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: rgba(122, 178, 226, 0.16);
+  color: #2a6db5;
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.stepTitle {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.stepDescription {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: #6b7280;
+}
+
+/* ===== FAQ ===== */
+.faqSection {
+  margin-bottom: 2.75rem;
+}
+
+.faqList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.faqItem {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.875rem;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.faqItem[open] {
+  border-color: #7fb3e3;
+}
+
+.faqQuestion {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  cursor: pointer;
+  list-style: none;
+}
+
+.faqQuestion::-webkit-details-marker {
+  display: none;
+}
+
+.faqChevron {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  color: #6b7280;
+  transition: transform 0.2s ease;
+}
+
+.faqItem[open] .faqChevron {
+  transform: rotate(180deg);
+  color: var(--color-accent);
+}
+
+.faqAnswer {
+  margin: 0;
+  padding: 0 1.25rem 1.25rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: #4b5563;
+}
+
+/* ===== CTA ===== */
+.ctaSection {
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  background: transparent;
+  border: 1px solid #e5e7eb;
+  border-radius: 1.25rem;
+  padding: 2.5rem 1.5rem;
+  color: #111827;
+}
+
+.ctaBgImage {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ctaContent {
+  position: relative;
+  z-index: 1;
+}
+
+.ctaTitle {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: inherit;
+}
+
+.ctaText {
+  margin: 0 auto 1.5rem;
+  max-width: 560px;
+  line-height: 1.6;
+  color: inherit;
+  opacity: 0.85;
+}
+
+.ctaActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+/* ===== Адаптив ===== */
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .productCard {
+    grid-template-columns: 1fr;
+  }
+
+  .productMedia {
+    min-height: 200px;
+  }
+
+  .productMediaPlaceholder {
+    min-height: 180px;
+  }
+
+  .calcGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .productCard {
+    padding: 1rem;
+  }
+
+  .calcSection {
+    padding: 1.25rem;
+  }
+}
+
+/* ===== Тёмная тема ===== */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .page {
+  color: #e5e7eb;
+  background: transparent;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .breadcrumbs,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .breadcrumbs a,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .heroNotes,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .comparisonNote,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcNote {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .tableScroll,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .specsList,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcSection,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .materialCard,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .stepItem,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .faqItem {
+  background: #111827;
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .ctaSection {
+  background: transparent;
+  border-color: #374151;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .pageTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryName,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .productName,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .priceFrom,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcLegend,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcResultTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcTotal,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcProductPrice,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .materialName,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .stepTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .faqQuestion {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .heroSubtitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryTab,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryDescription,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .productDescription,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .ctaText,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .faqAnswer,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .materialDescription,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcBreakdown dt {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryTab {
+  background: #111827;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryTab:hover {
+  border-color: #3b6ea5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryTab[data-active] {
+  color: #93c5fd;
+  border-color: #3b6ea5;
+  background: rgba(59, 130, 246, 0.14);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .categoryTab[data-active]
+  .categoryTabCount {
+  color: rgba(147, 197, 253, 0.7);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .productCard {
+  background: #0f172a;
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .productMedia {
+  background: #111827;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .productMediaPlaceholder {
+  background: linear-gradient(160deg, #1f2937, #111827);
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .productMediaName {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .productMediaSpecs span {
+  background: rgb(17 24 39 / 80%);
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .specsRow dt {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .specsRow dd {
+  color: #f3f4f6;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .specsRow + .specsRow {
+  border-top-color: #1f2937;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .advantages li {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .productTab {
+  color: #d1d5db;
+  border-color: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .productTab:hover {
+  border-color: #2f6e48;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .productTab[data-active] {
+  background: rgba(52, 163, 97, 0.16);
+  border-color: #2f6e48;
+  color: #8ce0a9;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .productTabType {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .productTab[data-active] .productTabType {
+  color: #8ce0a9;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .comparisonTable thead th {
+  background: #0f172a;
+  color: #d1d5db;
+  border-bottom-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .comparisonTable tbody th {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .comparisonTable tbody tr + tr th,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .comparisonTable tbody tr + tr td {
+  border-top-color: #1f2937;
+}
+
+/* Калькулятор — тёмная тема */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcResult {
+  background: #0f172a;
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcSliderLabel,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcCheckbox,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcBreakdown {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcSliderValue {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcProductOption {
+  background: #111827;
+  border-color: #374151;
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcProductOption:hover {
+  border-color: #3b6ea5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcProductOption[data-active] {
+  border-color: #3b6ea5;
+  background: rgba(59, 130, 246, 0.14);
+  color: #93c5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .calcProductOption[data-active]
+  .calcProductCategory {
+  color: rgba(147, 197, 253, 0.7);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcTotal {
+  border-top-color: #374151;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcMinNote,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcSliderNote {
+  color: #6b7280;
+}
+
+/* Этапы и FAQ — тёмная тема */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .stepNumber {
+  background: rgba(59, 130, 246, 0.16);
+  color: #93c5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .stepDescription {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .faqItem[open] {
+  border-color: #3b6ea5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .faqChevron {
+  color: #9ca3af;
+}

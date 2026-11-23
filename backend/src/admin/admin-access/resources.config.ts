@@ -222,6 +222,7 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     path: '/admin/content/stretch-ceilings',
   },
   { id: 'admin.content.blinds', label: 'Жалюзи', path: '/admin/content/blinds' },
+  { id: 'admin.content.furniture', label: 'Мебель', path: '/admin/content/furniture' },
   { id: 'admin.content.comments', label: 'Комментарии', path: '/admin/content/comments' },
   { id: 'admin.content.navigation', label: 'Меню навигации', path: '/admin/content/navigation' },
   { id: 'admin.content.footer', label: 'Футер', path: '/admin/content/footer' },

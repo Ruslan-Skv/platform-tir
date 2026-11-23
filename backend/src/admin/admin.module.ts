@@ -46,6 +46,7 @@ import { PromotionModule } from './promotions/promotion.module';
 import { WindowsModule } from './windows/windows.module';
 import { StretchCeilingsModule } from './stretch-ceilings/stretch-ceilings.module';
 import { BlindsModule } from './blinds/blinds.module';
+import { FurnitureModule } from './furniture/furniture.module';
 import { UserCabinetModule } from './user-cabinet/user-cabinet.module';
 import { AdminCatalogBlockModule } from './catalog-block/admin-catalog-block.module';
 import { AdminAccessModule } from './admin-access/admin-access.module';
@@ -121,6 +122,7 @@ import { AdminAuthSettingsModule } from './auth-settings/admin-auth-settings.mod
     WindowsModule,
     StretchCeilingsModule,
     BlindsModule,
+    FurnitureModule,
     UserCabinetModule,
     AdminCatalogBlockModule,
     ServiceCatalogModule,
