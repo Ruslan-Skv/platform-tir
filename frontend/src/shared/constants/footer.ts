@@ -56,7 +56,7 @@ export const footerSections: FooterSection[] = [
       { name: 'Ремонт квартир', href: '/repair' },
       { name: 'Двери', href: '/doors' },
       { name: 'Окна', href: '/windows' },
-      { name: 'Потолки', href: '/ceilings' },
+      { name: 'Потолки', href: '/stretch-ceilings' },
       { name: 'Жалюзи', href: '/blinds' },
       { name: 'Мебель', href: '/furniture' },
       { name: 'Акции', href: '/sales' },

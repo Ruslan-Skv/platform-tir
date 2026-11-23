@@ -207,6 +207,11 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     path: '/admin/content/service-catalog',
   },
   { id: 'admin.content.windows', label: 'Окна', path: '/admin/content/windows' },
+  {
+    id: 'admin.content.stretch-ceilings',
+    label: 'Натяжные потолки',
+    path: '/admin/content/stretch-ceilings',
+  },
   { id: 'admin.content.comments', label: 'Комментарии', path: '/admin/content/comments' },
   { id: 'admin.content.navigation', label: 'Меню навигации', path: '/admin/content/navigation' },
   { id: 'admin.content.footer', label: 'Футер', path: '/admin/content/footer' },

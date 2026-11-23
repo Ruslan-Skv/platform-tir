@@ -393,6 +393,11 @@ const baseNavItems: NavItem[] = [
       },
       { label: 'Окна', href: '/admin/content/windows', resourceId: 'admin.content.windows' },
       {
+        label: 'Натяжные потолки',
+        href: '/admin/content/stretch-ceilings',
+        resourceId: 'admin.content.stretch-ceilings',
+      },
+      {
         label: 'Отзывы',
         href: '/admin/content/comments',
         resourceId: 'admin.content.comments',

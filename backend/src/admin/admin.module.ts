@@ -44,6 +44,7 @@ import { AdminQuizModule } from './quiz/admin-quiz.module';
 import { PhotoModule } from './photo/photo.module';
 import { PromotionModule } from './promotions/promotion.module';
 import { WindowsModule } from './windows/windows.module';
+import { StretchCeilingsModule } from './stretch-ceilings/stretch-ceilings.module';
 import { UserCabinetModule } from './user-cabinet/user-cabinet.module';
 import { AdminCatalogBlockModule } from './catalog-block/admin-catalog-block.module';
 import { AdminAccessModule } from './admin-access/admin-access.module';
@@ -117,6 +118,7 @@ import { AdminAuthSettingsModule } from './auth-settings/admin-auth-settings.mod
     PhotoModule,
     PromotionModule,
     WindowsModule,
+    StretchCeilingsModule,
     UserCabinetModule,
     AdminCatalogBlockModule,
     ServiceCatalogModule,

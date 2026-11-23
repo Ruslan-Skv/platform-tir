@@ -1773,6 +1773,112 @@ model WindowsPageBlock {
   @@map("windows_page_block")
 }
 
+// --- Натяжные потолки (производители полотен: MSD, Bauf, Pongs, Descor, Cerutti) ---
+/// Производитель полотен натяжных потолков (вкладка на публичной странице «Натяжные потолки»).
+model CeilingManufacturer {
+  id          String          @id @default(cuid())
+  name        String // MSD, Bauf, Pongs, Descor, Cerutti
+  slug        String          @unique
+  logoUrl     String?
+  country     String? // Страна производителя для карточки
+  description String?         @db.Text
+  sortOrder   Int             @default(0)
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  fabrics     CeilingFabric[]
+
+  @@map("ceiling_manufacturers")
+}
+
+/// Фактура/коллекция полотна производителя (матовая, глянцевая, сатиновая, тканевая и т.д.).
+model CeilingFabric {
+  id              String              @id @default(cuid())
+  manufacturerId  String
+  name            String
+  slug            String              @unique
+  /// Тип фактуры полотна («Матовая», «Глянцевая», «Сатиновая», «Тканевая» и т.д.)
+  textureType     String?
+  tagline         String? // Короткий подзаголовок («Классика для любой комнаты»)
+  description     String              @db.Text
+  imageUrl        String?
+  /// Видео о фактуре (Rutube/YouTube/VK или прямой файл) — плеер в карточке
+  videoUrl        String?
+  /// Ширина полотна («до 3,2 м», «до 5,1 м бесшовное»)
+  width           String?
+  /// Дополнительные характеристики пары «название — значение» ([{ label, value }])
+  characteristics Json?
+  advantages      String[] // Список преимуществ карточки
+  priceFrom       Int? // Цена «от», ₽/м²
+  badge           String? // Метка карточки («Хит», «Бесшовное»)
+  sortOrder       Int                 @default(0)
+  isActive        Boolean             @default(true)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  manufacturer    CeilingManufacturer @relation(fields: [manufacturerId], references: [id], onDelete: Cascade)
+
+  @@index([manufacturerId])
+  @@map("ceiling_fabrics")
+}
+
+/// Настройки публичной страницы «Натяжные потолки» (герой-блок + SEO + калькулятор + FAQ + этапы), единственная запись с id="main".
+model StretchCeilingsPageBlock {
+  id             String  @id @default("main")
+  title          String  @default("Натяжные потолки")
+  subtitle       String?
+  description    String? @db.Text
+  heroImageUrl   String?
+  seoTitle       String?
+  seoDescription String? @db.Text
+
+  // Таблица сравнения фактур
+  comparisonShow        Boolean @default(true)
+  comparisonTitle       String?
+  comparisonNote        String? @db.Text
+  comparisonShowTexture Boolean @default(true)
+  comparisonShowWidth   Boolean @default(true)
+  comparisonShowPrice   Boolean @default(true)
+  comparisonShowCountry Boolean @default(true)
+
+  // Калькулятор стоимости
+  calcShow               Boolean @default(true)
+  calcTitle              String?
+  calcNote               String? @db.Text
+  /// Цена багета за м.п. периметра, ₽
+  calcPricePerMeterBaget Int     @default(180)
+  /// Цена за каждый угол сверх 4, ₽
+  calcPricePerCorner     Int     @default(150)
+  /// Цена за точку светильника, ₽
+  calcPricePerLight      Int     @default(450)
+  /// Цена за обход трубы, ₽
+  calcPricePerPipe       Int     @default(350)
+  /// Опция «Монтаж люстры», ₽
+  calcLightOptionPrice   Int     @default(600)
+  /// Опция «Закладная под карниз», ₽
+  calcCorniceOptionPrice Int     @default(900)
+  /// Минимальная сумма заказа калькулятора, ₽
+  calcMinOrder           Int     @default(3000)
+
+  // Этапы работы ([{ title, description }])
+  steps Json?
+
+  // FAQ ([{ question, answer }])
+  faq Json?
+
+  // CTA-блок «Поможем выбрать потолок»
+  ctaBackgroundColor        String?
+  ctaBackgroundImage        String?
+  /// Вариант размещения фоновой картинки: cover (заполнить с обрезкой) | contain (вписать) | tile (замостить)
+  ctaBackgroundFit          String  @default("contain")
+  ctaBackgroundImageOpacity Int     @default(30)
+  ctaTextColor              String?
+  ctaShowButtons            Boolean @default(true)
+
+  updatedAt DateTime @updatedAt
+
+  @@map("stretch_ceilings_page_block")
+}
+
 model Comment {
   id          String        @id @default(cuid())
   postId      String

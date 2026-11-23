@@ -25,7 +25,7 @@ export const navigation: NavigationItem[] = [
   },
   {
     name: 'Натяжные потолки',
-    href: '/catalog/products/stretch-ceilings',
+    href: '/stretch-ceilings',
     hasDropdown: false,
   },
   {

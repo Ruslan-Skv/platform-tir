@@ -1,0 +1,478 @@
+.page {
+  padding: var(--admin-space-4xl);
+  max-width: 1200px;
+  color: var(--admin-text-secondary);
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--admin-space-2xl);
+  margin-bottom: var(--admin-space-4xl);
+}
+
+.headerActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-2xl);
+}
+
+.title {
+  font-size: var(--admin-font-size-2xl);
+  font-weight: 700;
+  margin: 0;
+  color: var(--admin-text-secondary);
+}
+
+.createButton {
+  padding: var(--admin-space-md) var(--admin-space-2xl);
+  background: var(--admin-overlay-color-135);
+  color: white;
+  text-decoration: none;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-base);
+}
+
+.createButton:hover {
+  background: var(--admin-overlay-color-111);
+}
+
+.viewLink {
+  padding: var(--admin-space-md) var(--admin-space-2xl);
+  color: var(--admin-overlay-color-135);
+  text-decoration: none;
+  font-size: var(--admin-font-size-base);
+}
+
+.viewLink:hover {
+  text-decoration: underline;
+}
+
+.message {
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
+  border-radius: var(--admin-radius-sm);
+  margin-bottom: var(--admin-space-2xl);
+}
+
+.message.success {
+  background: var(--admin-overlay-color-101);
+  color: var(--admin-overlay-color-108);
+}
+
+.message.error {
+  background: var(--admin-overlay-color-065);
+  color: var(--admin-overlay-color-070);
+}
+
+.loading,
+.empty {
+  padding: var(--admin-space-8xl);
+  text-align: center;
+  color: var(--admin-text-muted);
+}
+
+.section {
+  margin-bottom: var(--admin-space-6xl);
+}
+
+.sectionTitle {
+  font-size: var(--admin-font-size-xl);
+  font-weight: 600;
+  margin: 0 0 var(--admin-space-2xl);
+  color: var(--admin-text-secondary);
+}
+
+/* ===== Настройки ===== */
+.settingsSection {
+  padding: var(--admin-space-3xl);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  margin-bottom: var(--admin-space-6xl);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-2xl);
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--admin-space-2xl);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xs);
+  min-width: 0;
+}
+
+.label {
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+}
+
+.input,
+.textarea {
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-secondary);
+  font: inherit;
+  font-size: var(--admin-font-size-base);
+}
+
+.input:focus,
+.textarea:focus {
+  outline: none;
+  border-color: var(--admin-overlay-color-135);
+}
+
+.textarea {
+  resize: vertical;
+}
+
+.fileInput {
+  display: none;
+}
+
+.uploadBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--admin-space-sm);
+  padding: var(--admin-space-lg) var(--admin-space-2xl);
+  border: 1px dashed var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-overlay-color-135);
+  cursor: pointer;
+  font-size: var(--admin-font-size-base);
+}
+
+.uploadBtn:hover {
+  border-color: var(--admin-overlay-color-135);
+}
+
+.imagePreview {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-2xl);
+}
+
+.imagePreview img {
+  width: 220px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: var(--admin-radius-sm);
+}
+
+.changeImageBtn {
+  padding: var(--admin-space-xs) var(--admin-space-lg);
+  background: none;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-text-muted);
+  cursor: pointer;
+  font-size: var(--admin-font-size-sm);
+}
+
+.settingsActions {
+  display: flex;
+  gap: var(--admin-space-2xl);
+}
+
+/* ===== Подсекции настроек ===== */
+.subformDivider {
+  height: 1px;
+  background: var(--admin-border);
+  margin: var(--admin-space-xl) 0;
+}
+
+.subformTitle {
+  margin: 0 0 var(--admin-space-xl);
+  font-size: var(--admin-font-size-lg);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+}
+
+.checkboxLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-space-md);
+  font-size: var(--admin-font-size-base);
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+}
+
+.checkbox {
+  width: 1rem;
+  height: 1rem;
+}
+
+.checkboxGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-lg) var(--admin-space-3xl);
+}
+
+.colorRow {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-lg);
+}
+
+.colorInput {
+  width: 2.75rem;
+  height: 2.25rem;
+  padding: 2px;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface-soft);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.hint {
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-muted);
+}
+
+.imageActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+}
+
+.saveButton {
+  padding: var(--admin-space-lg) var(--admin-space-4xl);
+  background: var(--admin-overlay-color-135);
+  color: white;
+  border: none;
+  border-radius: var(--admin-radius-sm);
+  cursor: pointer;
+  font-size: var(--admin-font-size-base);
+}
+
+.saveButton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.saveButton:hover:not(:disabled) {
+  background: var(--admin-overlay-color-111);
+}
+
+/* ===== Таблицы ===== */
+.tableScroll {
+  overflow-x: auto;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--admin-font-size-base);
+  min-width: 760px;
+}
+
+.table th,
+.table td {
+  padding: var(--admin-space-lg) var(--admin-space-2xl);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.table thead th {
+  background: var(--admin-surface-soft);
+  font-weight: 600;
+  color: var(--admin-text-muted);
+  border-bottom: 1px solid var(--admin-border);
+  white-space: nowrap;
+}
+
+.table tbody tr + tr td,
+.table tbody tr + tr th {
+  border-top: 1px solid var(--admin-border);
+}
+
+.cellName {
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+  white-space: nowrap;
+}
+
+.rowLogo {
+  width: 1.5rem;
+  height: 1.5rem;
+  object-fit: contain;
+  vertical-align: middle;
+  margin-right: var(--admin-space-sm);
+}
+
+.badgeChip {
+  display: inline-block;
+  margin-left: var(--admin-space-sm);
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  background: var(--admin-overlay-color-101);
+  color: var(--admin-overlay-color-108);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 500;
+  border-radius: var(--admin-radius-xs);
+}
+
+.statusActive,
+.statusInactive {
+  padding: var(--admin-space-xs) var(--admin-space-lg);
+  border: none;
+  border-radius: var(--admin-radius-xs);
+  font-size: var(--admin-font-size-xs);
+  cursor: pointer;
+}
+
+.statusActive {
+  background: var(--admin-overlay-color-101);
+  color: var(--admin-overlay-color-108);
+}
+
+.statusInactive {
+  background: var(--admin-overlay-color-064);
+  color: var(--admin-overlay-color-070);
+}
+
+.rowActions {
+  display: flex;
+  gap: var(--admin-space-2xl);
+  white-space: nowrap;
+}
+
+.editLink {
+  color: var(--admin-overlay-color-135);
+  text-decoration: none;
+  font-size: var(--admin-font-size-base);
+}
+
+.editLink:hover {
+  text-decoration: underline;
+}
+
+.deleteButton {
+  padding: var(--admin-space-0);
+  background: none;
+  border: none;
+  color: var(--admin-overlay-color-070);
+  font-size: var(--admin-font-size-base);
+  cursor: pointer;
+}
+
+.deleteButton:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 800px) {
+  .fieldRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== Тёмная тема ===== */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .page {
+  color: var(--admin-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .subformTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .checkboxLabel,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cellName {
+  color: var(--admin-surface-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .subformDivider {
+  background: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .colorInput {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .createButton {
+  background: var(--admin-accent);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .createButton:hover {
+  background: var(--admin-accent);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .viewLink,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .editLink,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .uploadBtn {
+  color: var(--admin-info-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .settingsSection,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .tableScroll {
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .table thead th {
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .textarea {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-text-secondary);
+  color: var(--admin-surface-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .uploadBtn {
+  border-color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deleteButton {
+  color: var(--admin-danger-border-strong);
+}
+
+/* ===== Редакторы списков (этапы, FAQ) — из form-стилей ===== */
+.dynamicRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--admin-space-lg);
+  align-items: center;
+}
+
+.removeRowBtn {
+  padding: var(--admin-space-xs) var(--admin-space-lg);
+  background: none;
+  border: none;
+  color: var(--admin-overlay-color-070);
+  font-size: var(--admin-font-size-sm);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.removeRowBtn:hover {
+  text-decoration: underline;
+}
+
+.addRowBtn {
+  align-self: flex-start;
+  padding: var(--admin-space-xs) var(--admin-space-lg);
+  background: none;
+  border: 1px dashed var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-overlay-color-135);
+  font-size: var(--admin-font-size-sm);
+  cursor: pointer;
+}
