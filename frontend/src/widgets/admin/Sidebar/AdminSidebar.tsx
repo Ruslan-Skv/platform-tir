@@ -397,6 +397,7 @@ const baseNavItems: NavItem[] = [
         href: '/admin/content/stretch-ceilings',
         resourceId: 'admin.content.stretch-ceilings',
       },
+      { label: 'Жалюзи', href: '/admin/content/blinds', resourceId: 'admin.content.blinds' },
       {
         label: 'Отзывы',
         href: '/admin/content/comments',

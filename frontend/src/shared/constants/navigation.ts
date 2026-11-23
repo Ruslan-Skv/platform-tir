@@ -29,6 +29,11 @@ export const navigation: NavigationItem[] = [
     hasDropdown: false,
   },
   {
+    name: 'Жалюзи',
+    href: '/blinds',
+    hasDropdown: false,
+  },
+  {
     name: 'Окна',
     href: '/windows',
     hasDropdown: false,

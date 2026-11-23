@@ -1,0 +1,317 @@
+.page {
+  padding: var(--admin-space-4xl);
+  max-width: 900px;
+  color: var(--admin-text-secondary);
+}
+
+.header {
+  margin-bottom: var(--admin-space-4xl);
+}
+
+.backLink {
+  display: inline-block;
+  color: var(--admin-overlay-color-135);
+  text-decoration: none;
+  font-size: var(--admin-font-size-base);
+  margin-bottom: var(--admin-space-md);
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}
+
+.title {
+  font-size: var(--admin-font-size-3xl);
+  font-weight: 700;
+  margin: 0;
+  color: var(--admin-text-secondary);
+}
+
+.message {
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
+  border-radius: var(--admin-radius-sm);
+  margin-bottom: var(--admin-space-2xl);
+}
+
+.message.success {
+  background: var(--admin-overlay-color-101);
+  color: var(--admin-overlay-color-108);
+}
+
+.message.error {
+  background: var(--admin-overlay-color-065);
+  color: var(--admin-overlay-color-070);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-2xl);
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--admin-space-2xl);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xs);
+  min-width: 0;
+}
+
+.label {
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+}
+
+.input,
+.textarea,
+select.input {
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-secondary);
+  font: inherit;
+  font-size: var(--admin-font-size-base);
+}
+
+.input:focus,
+.textarea:focus,
+select.input:focus {
+  outline: none;
+  border-color: var(--admin-overlay-color-135);
+}
+
+.textarea {
+  resize: vertical;
+}
+
+.hint {
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-muted);
+}
+
+.inlineLink {
+  color: var(--admin-overlay-color-135);
+}
+
+/* Изображение */
+.imageBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-lg);
+}
+
+.fileInput {
+  display: none;
+}
+
+.uploadBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--admin-space-lg) var(--admin-space-2xl);
+  border: 1px dashed var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: none;
+  color: var(--admin-overlay-color-135);
+  cursor: pointer;
+  font-size: var(--admin-font-size-base);
+}
+
+.uploadBtn:hover {
+  border-color: var(--admin-overlay-color-135);
+}
+
+.imagePreview {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-2xl);
+}
+
+.imagePreview img {
+  width: 220px;
+  height: 140px;
+  object-fit: contain;
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface-soft);
+}
+
+.imageActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+}
+
+.changeImageBtn {
+  padding: var(--admin-space-xs) var(--admin-space-lg);
+  background: none;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-text-muted);
+  cursor: pointer;
+  font-size: var(--admin-font-size-sm);
+}
+
+/* Группировка характеристик */
+.fieldset {
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  padding: var(--admin-space-2xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-2xl);
+  margin: 0;
+}
+
+.legend {
+  padding: 0 var(--admin-space-lg);
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+}
+
+/* Динамические строки */
+.dynamicRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: var(--admin-space-lg);
+  align-items: center;
+}
+
+.removeRowBtn {
+  padding: var(--admin-space-xs) var(--admin-space-lg);
+  background: none;
+  border: none;
+  color: var(--admin-overlay-color-070);
+  font-size: var(--admin-font-size-sm);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.removeRowBtn:hover {
+  text-decoration: underline;
+}
+
+.addRowBtn {
+  align-self: flex-start;
+  padding: var(--admin-space-xs) var(--admin-space-lg);
+  background: none;
+  border: 1px dashed var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-overlay-color-135);
+  font-size: var(--admin-font-size-sm);
+  cursor: pointer;
+}
+
+.addRowBtn:hover {
+  border-color: var(--admin-overlay-color-135);
+}
+
+.checkboxLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-space-md);
+  font-size: var(--admin-font-size-base);
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+}
+
+.checkbox {
+  width: 1rem;
+  height: 1rem;
+}
+
+.actions {
+  display: flex;
+  gap: var(--admin-space-2xl);
+  align-items: center;
+}
+
+.saveButton {
+  padding: var(--admin-space-lg) var(--admin-space-4xl);
+  background: var(--admin-overlay-color-135);
+  color: white;
+  border: none;
+  border-radius: var(--admin-radius-sm);
+  cursor: pointer;
+  font-size: var(--admin-font-size-base);
+}
+
+.saveButton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.saveButton:hover:not(:disabled) {
+  background: var(--admin-overlay-color-111);
+}
+
+.cancelLink {
+  color: var(--admin-overlay-color-135);
+  text-decoration: none;
+  font-size: var(--admin-font-size-base);
+}
+
+.cancelLink:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 800px) {
+  .fieldRow {
+    grid-template-columns: 1fr;
+  }
+
+  .dynamicRow {
+    grid-template-columns: 1fr;
+  }
+
+  .imagePreview {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* ===== Тёмная тема ===== */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .page {
+  color: var(--admin-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
+  color: var(--admin-surface-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .backLink,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .uploadBtn,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addRowBtn,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cancelLink,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .inlineLink {
+  color: var(--admin-info-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .textarea,
+:where(html[data-theme='dark'], [data-app-theme='dark']) select.input {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-text-secondary);
+  color: var(--admin-surface-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .fieldset {
+  border-color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .uploadBtn {
+  border-color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .removeRowBtn {
+  color: var(--admin-danger-border-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .checkboxLabel {
+  color: var(--admin-surface-muted);
+}

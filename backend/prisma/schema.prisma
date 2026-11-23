@@ -1879,6 +1879,107 @@ model StretchCeilingsPageBlock {
   @@map("stretch_ceilings_page_block")
 }
 
+// --- Жалюзи (категории изделий: рулонные шторы, зебра, вертикальные, горизонтальные, плиссе) ---
+/// Категория солнцезащитных изделий (вкладка на публичной странице «Жалюзи»).
+model BlindsCategory {
+  id          String          @id @default(cuid())
+  name        String // Рулонные шторы, Шторы зебра, Вертикальные жалюзи
+  slug        String          @unique
+  imageUrl    String? // Картинка категории для вкладки
+  description String?         @db.Text
+  sortOrder   Int             @default(0)
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  products    BlindsProduct[]
+
+  @@map("blinds_categories")
+}
+
+/// Система/модель изделия в категории (UNI-2, MINI, зебра, ламели 89 мм и т.д.).
+model BlindsProduct {
+  id              String         @id @default(cuid())
+  categoryId      String
+  name            String
+  slug            String         @unique
+  tagline         String? // Короткий подзаголовок («Кассетные с направляющими на створку»)
+  description     String         @db.Text
+  imageUrl        String?
+  /// Видео об изделии (Rutube/YouTube/VK или прямой файл) — плеер в карточке
+  videoUrl        String?
+  /// Способ установки («На створку», «На проём», «На стену / потолок»)
+  mountType       String?
+  /// Материал полотна или ламелей («Ткань blackout», «Алюминий 25 мм», «Дерево»)
+  material        String?
+  /// Управление («Цепочное», «Пружинное», «Электропривод», «Без сверления»)
+  controlType     String?
+  /// Дополнительные характеристики пары «название — значение» ([{ label, value }])
+  characteristics Json?
+  advantages      String[] // Список преимуществ карточки
+  priceFrom       Int? // Цена «от», ₽/м² с монтажом
+  badge           String? // Метка карточки («Хит», «Blackout»)
+  sortOrder       Int            @default(0)
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  category        BlindsCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId])
+  @@map("blinds_products")
+}
+
+/// Настройки публичной страницы «Жалюзи» (герой-блок + SEO + калькулятор + FAQ + этапы), единственная запись с id="main".
+model BlindsPageBlock {
+  id             String  @id @default("main")
+  title          String  @default("Жалюзи")
+  subtitle       String?
+  description    String? @db.Text
+  heroImageUrl   String?
+  seoTitle       String?
+  seoDescription String? @db.Text
+
+  // Таблица сравнения изделий
+  comparisonShow         Boolean @default(true)
+  comparisonTitle        String?
+  comparisonNote         String? @db.Text
+  comparisonShowMount    Boolean @default(true)
+  comparisonShowMaterial Boolean @default(true)
+  comparisonShowControl  Boolean @default(true)
+  comparisonShowPrice    Boolean @default(true)
+
+  // Калькулятор стоимости
+  calcShow         Boolean @default(true)
+  calcTitle        String?
+  calcNote         String? @db.Text
+  /// Монтаж одного изделия, ₽
+  calcMountPrice   Int     @default(300)
+  /// Опция «Электропривод», ₽ за изделие
+  calcMotorPrice   Int     @default(5500)
+  /// Опция «Крепление без сверления», ₽ за изделие
+  calcNoDrillPrice Int     @default(400)
+  /// Минимальная сумма заказа калькулятора, ₽
+  calcMinOrder     Int     @default(2500)
+
+  // Этапы работы ([{ title, description }])
+  steps Json?
+
+  // FAQ ([{ question, answer }])
+  faq Json?
+
+  // CTA-блок «Поможем выбрать жалюзи»
+  ctaBackgroundColor        String?
+  ctaBackgroundImage        String?
+  /// Вариант размещения фоновой картинки: cover (заполнить с обрезкой) | contain (вписать) | tile (замостить)
+  ctaBackgroundFit          String  @default("contain")
+  ctaBackgroundImageOpacity Int     @default(30)
+  ctaTextColor              String?
+  ctaShowButtons            Boolean @default(true)
+
+  updatedAt DateTime @updatedAt
+
+  @@map("blinds_page_block")
+}
+
 model Comment {
   id          String        @id @default(cuid())
   postId      String

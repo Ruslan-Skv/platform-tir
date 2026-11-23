@@ -103,7 +103,7 @@ export const categories: Category[] = [
     description: 'Горизонтальные, вертикальные, рулонные',
     image: DEFAULT_DIRECTION_IMAGES.blinds ?? '',
     productCount: 73,
-    href: '/catalog?category=жалюзи',
+    href: '/blinds',
   },
   // {
   //   id: 7,
