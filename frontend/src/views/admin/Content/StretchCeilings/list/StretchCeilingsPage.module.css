@@ -476,3 +476,8 @@
   font-size: var(--admin-font-size-sm);
   cursor: pointer;
 }
+
+/* Отступ между полем вопроса и строкой ответа в редакторе FAQ */
+.dynamicRowSpacing {
+  margin-top: 0.5rem;
+}

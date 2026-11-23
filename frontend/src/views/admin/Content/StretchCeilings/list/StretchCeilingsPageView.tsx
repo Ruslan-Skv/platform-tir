@@ -448,7 +448,7 @@ export function StretchCeilingsAdminPageView({ model }: StretchCeilingsAdminPage
                     placeholder="Сколько стоит натяжной потолок за квадратный метр?"
                     className={styles.input}
                   />
-                  <div className={styles.dynamicRow} style={{ marginTop: '0.5rem' }}>
+                  <div className={`${styles.dynamicRow} ${styles.dynamicRowSpacing}`}>
                     <input
                       type="text"
                       value={item.answer}
