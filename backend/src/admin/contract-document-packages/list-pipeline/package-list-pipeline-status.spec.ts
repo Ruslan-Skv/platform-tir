@@ -279,6 +279,47 @@ describe('computePackageListPipelineStatus', () => {
     ).toBe('CLOSED');
   });
 
+  it('closes repair contract paid by net addendum amount (договор 1931р-3)', () => {
+    // Регрессия прод-бага: Д/с добавил 6220 и исключил 3389.6 работ из договора.
+    // Оплатили 36346 по договору + 2830 по Д/с — договор закрыт, а не «В работе».
+    const formData = {
+      contract: { totalAmount: '36346' },
+      addendumSlotCount: 1,
+      addendumSlots: [
+        { status: 'SIGNED', snapshot: { total: 6220 }, excludedSnapshot: { total: 3389.6 } },
+      ],
+      repairWorkStartActSignedAt: '2026-11-14',
+      repairWorkStartActPhotoUrl: '/uploads/act.jpg',
+      repairContractCloseActSignedAt: '2026-11-16',
+      repairContractCloseActPhotoUrl: '/uploads/close.jpg',
+    };
+    const payments = [
+      { amount: '25000', paymentType: 'PREPAYMENT', paymentDate: '2026-10-15' },
+      { amount: '11346', paymentType: 'FINAL', paymentDate: '2026-11-18' },
+      { amount: '2830', paymentType: 'AMENDMENT', addendumNumber: 1, paymentDate: '2026-11-18' },
+    ];
+    const input = {
+      kind: ContractDocumentPackageKind.REPAIR,
+      status: ContractDocumentPackageStatus.CONTRACT_CONCLUDED,
+      formData,
+      payments,
+    };
+    expect(computePackageListPipelineStatus(input)).toBe('CLOSED');
+    // «Всё к оплате» = 36346 + 2830.4 = 39176.4, журнал оплат 39176 — 100%.
+    expect(computePackagePaidPercent(input)).toBe(100);
+
+    // Тот же Д/с без исключений (валовыми 6220): оплаты 2830 не хватает — не закрыт.
+    expect(
+      computePackageListPipelineStatus({
+        ...input,
+        formData: {
+          ...formData,
+          addendumSlots: [{ status: 'SIGNED', snapshot: { total: 6220 } }],
+        },
+      }),
+    ).toBe('WORK_IN_PROGRESS');
+  });
+
   it('reduces payable by negative addendum (уменьшение договора)', () => {
     expect(
       computePackageListPipelineStatus({
@@ -382,6 +423,45 @@ describe('computeAddendumSlotTotalRub', () => {
     };
     expect(computeAddendumSlotTotalRub(ContractDocumentPackageKind.REPAIR, slot, 0)).toBe(4500);
     expect(computeAddendumSlotTotalRub(ContractDocumentPackageKind.REPAIR, null, 0)).toBeNull();
+  });
+
+  it('subtracts excluded works for repair addendum (договор 1931р-3: 6220 − 3389.6)', () => {
+    // Слот Д/с №1 реального договора 1931р-3 (REPAIR): добавлен потолок ПВХ
+    // на 6220, исключён «потолок маляр» на 3389.6 — к доплате 2830.4.
+    const slot = {
+      status: 'SIGNED',
+      discountType: 'INHERIT',
+      snapshot: { total: 6220 },
+      excludedSnapshot: { total: 3389.6 },
+    };
+    expect(computeAddendumSlotTotalRub(ContractDocumentPackageKind.REPAIR, slot, 0)).toBe(2830.4);
+  });
+
+  it('nets repair addendum with own discount on positive part and passes negative through', () => {
+    // Скидка Д/с применяется к положительной разнице «добавления − исключения».
+    const slotPositive = {
+      discountType: 'PERCENT',
+      discountPercent: '10',
+      snapshot: { total: 5000 },
+      excludedSnapshot: { total: 1000 },
+    };
+    expect(computeAddendumSlotTotalRub(ContractDocumentPackageKind.REPAIR, slotPositive, 0)).toBe(
+      3600,
+    );
+    // Исключено больше, чем добавлено: отрицательный итог без скидки — уменьшение договора.
+    const slotNegative = {
+      discountType: 'INHERIT',
+      snapshot: { total: 1000 },
+      excludedSnapshot: { total: 3000 },
+    };
+    expect(computeAddendumSlotTotalRub(ContractDocumentPackageKind.REPAIR, slotNegative, 10)).toBe(
+      -2000,
+    );
+    // Д/с только из исключений — итог отрицательный, null быть не должно.
+    const slotExcludedOnly = { discountType: 'INHERIT', excludedSnapshot: { total: 1500 } };
+    expect(
+      computeAddendumSlotTotalRub(ContractDocumentPackageKind.REPAIR, slotExcludedOnly, 0),
+    ).toBe(-1500);
   });
 
   it('applies discount only to positive net part and allows negative total', () => {

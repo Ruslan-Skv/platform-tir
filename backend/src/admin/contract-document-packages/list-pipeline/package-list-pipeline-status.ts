@@ -217,6 +217,10 @@ function addendumSlotHasData(slot: Record<string, unknown> | null): boolean {
   const snap = asObj(slot.snapshot);
   const t = snap?.total;
   if (typeof t === 'number' && Number.isFinite(t)) return true;
+  // Д/с может состоять только из исключений (уменьшение договора) — паритет с фронтом.
+  const excludedSnap = asObj(slot.excludedSnapshot);
+  const excludedTotal = excludedSnap?.total;
+  if (typeof excludedTotal === 'number' && Number.isFinite(excludedTotal)) return true;
   const selected = slot.selectedPresetIds;
   const excluded = slot.excludedSelectedPresetIds;
   if (Array.isArray(selected) && selected.length > 0) return true;
@@ -421,8 +425,22 @@ export function computeAddendumSlotTotalRub(
   const snap = asObj(slot?.snapshot);
   const rawTotal =
     typeof snap?.total === 'number' && Number.isFinite(snap.total) ? snap.total : null;
+  const excludedSnap = asObj(slot?.excludedSnapshot);
+  const rawExcluded =
+    typeof excludedSnap?.total === 'number' && Number.isFinite(excludedSnap.total)
+      ? excludedSnap.total
+      : null;
   if (!isProductKind(kind)) {
-    return rawTotal != null ? applyDiscount(rawTotal, slotDiscountPct) : null;
+    /*
+     * Паритет с frontend `resolveAddendumSlotNetTotalRub`: добавленные работы
+     * минус исключённые (непроводимые), скидка — только с положительной части.
+     * Отрицательный итог — Д/с уменьшает сумму договора. Без вычета исключённых
+     * работ «всё к оплате» завышается, и полностью оплаченный договор не
+     * признаётся закрытым (план-график ремонта, ОДПЖ, синхронизация з/п).
+     */
+    if (rawTotal == null && rawExcluded == null) return null;
+    const net = (rawTotal ?? 0) - (rawExcluded ?? 0);
+    return net < 0 ? net : applyDiscount(net, slotDiscountPct);
   }
   /*
    * Паритет с frontend `computeWindowsAddendumTotals`: строки спецификации
@@ -430,12 +448,7 @@ export function computeAddendumSlotTotalRub(
    * только с положительной части. Итог может быть отрицательным — такое Д/с
    * уменьшает сумму договора, платить по нему не нужно.
    */
-  const excludedSnap = asObj(slot?.excludedSnapshot);
-  const rawExcluded =
-    typeof excludedSnap?.total === 'number' && Number.isFinite(excludedSnap.total)
-      ? excludedSnap.total
-      : 0;
-  const accountGrossNet = (rawTotal ?? 0) - rawExcluded;
+  const accountGrossNet = (rawTotal ?? 0) - (rawExcluded ?? 0);
   const accountNetAfterDiscount =
     slotDiscountPct > 0 && accountGrossNet > 0
       ? applyDiscount(accountGrossNet, slotDiscountPct)
