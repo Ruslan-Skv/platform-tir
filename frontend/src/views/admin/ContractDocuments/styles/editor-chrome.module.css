@@ -320,8 +320,18 @@
   color: var(--admin-sidebar-text);
 }
 
-.tab:hover {
+.tab:hover:not(:disabled) {
   background: var(--admin-surface-soft);
+}
+
+/* Заблокированная кнопка-вкладка (вариант отображения сметы подписанного договора):
+   без наведения, неактивная приглушена; активная сохраняет подсветку — видно, что зафиксировано. */
+.tab:disabled {
+  cursor: not-allowed;
+}
+
+.tab:disabled:not(.tabActive) {
+  opacity: 0.55;
 }
 
 .tabActive {

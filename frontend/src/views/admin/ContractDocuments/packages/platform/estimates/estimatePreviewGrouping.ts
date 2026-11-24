@@ -119,6 +119,23 @@ export function storePackageEstimatePreviewGroupMode(
   dispatchGroupModeChange({ scope: packageId, mode });
 }
 
+/**
+ * Зафиксировать вариант отображения подписанного договора: если своей настройки нет,
+ * текущий вариант (в т.ч. унаследованный от общей) записывается как настройка договора —
+ * смета/счёт-заказ, их печать и документы перестают следить за общей настройкой раздела
+ * «Расчёты». Своя настройка договора не перезаписывается. События не рассылает: вариант не меняется.
+ */
+export function pinPackageEstimatePreviewGroupMode(packageId: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const key = packageScopeStorageKey(packageId);
+    if (normalizeEstimatePreviewGroupMode(window.localStorage.getItem(key))) return;
+    window.localStorage.setItem(key, readStoredEstimatePreviewGroupMode());
+  } catch {
+    // квота / приватный режим
+  }
+}
+
 function dispatchGroupModeChange(detail: EstimatePreviewGroupModeChangeDetail): void {
   window.dispatchEvent(
     new CustomEvent<EstimatePreviewGroupModeChangeDetail>(

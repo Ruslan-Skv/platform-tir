@@ -41,14 +41,20 @@ export function PackageEstimateTabView(props: PackageEstimateTabProps) {
 
   // Вариант отображения сметы — настройка этого договора (своя, иначе общая из «Расчётов»):
   // переключение здесь не меняет вид в других договорах и предпросмотрах расчётов.
+  // Подписанный договор — вариант зафиксирован: кнопки заблокированы, а печать и документы
+  // не следят за общей настройкой (настройку договора фиксирует контроллер редактора).
   const [groupMode, setGroupMode] = useState<EstimatePreviewGroupMode>(() =>
     readStoredPackageEstimatePreviewGroupMode(packageId)
   );
   useEffect(() => subscribePackageEstimatePreviewGroupMode(packageId, setGroupMode), [packageId]);
   const selectGroupMode = (mode: EstimatePreviewGroupMode) => {
+    if (signedDocsLocked) return;
     setGroupMode(mode);
     storePackageEstimatePreviewGroupMode(packageId, mode);
   };
+  const groupModeLockTitle = signedDocsLocked
+    ? 'Договор подписан: вариант отображения зафиксирован.'
+    : undefined;
 
   return (
     <div
@@ -114,6 +120,8 @@ export function PackageEstimateTabView(props: PackageEstimateTabProps) {
                         : cdChrome.tab
                     }
                     aria-pressed={groupMode === 'byRooms'}
+                    disabled={signedDocsLocked}
+                    title={groupModeLockTitle}
                     onClick={() => selectGroupMode('byRooms')}
                   >
                     Первично по помещениям
@@ -126,6 +134,8 @@ export function PackageEstimateTabView(props: PackageEstimateTabProps) {
                         : cdChrome.tab
                     }
                     aria-pressed={groupMode === 'byCategories'}
+                    disabled={signedDocsLocked}
+                    title={groupModeLockTitle}
                     onClick={() => selectGroupMode('byCategories')}
                   >
                     Первично по категориям

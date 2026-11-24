@@ -2,6 +2,7 @@ import type { EstimateSnapshotRoom } from './applyEstimatePresetIds';
 import {
   DEFAULT_ESTIMATE_PREVIEW_GROUP_MODE,
   buildEstimateRoomSections,
+  pinPackageEstimatePreviewGroupMode,
   readStoredEstimatePreviewGroupMode,
   readStoredPackageEstimatePreviewGroupMode,
   storeEstimatePreviewGroupMode,
@@ -126,6 +127,35 @@ describe('настройка конкретного договора (packageSco
     storeEstimatePreviewGroupMode('byRooms');
     expect(seen).toEqual(['byCategories', 'byRooms']);
 
+    unsub();
+  });
+
+  it('фиксация: унаследованный вариант становится настройкой договора — общая больше не влияет', () => {
+    window.localStorage.setItem('admin_estimates_preview_group_mode_v1', 'byCategories');
+
+    pinPackageEstimatePreviewGroupMode('pkg_a');
+
+    storeEstimatePreviewGroupMode('byRooms');
+    expect(readStoredPackageEstimatePreviewGroupMode('pkg_a')).toBe('byCategories');
+    // Другой договор по-прежнему наследует общую настройку.
+    expect(readStoredPackageEstimatePreviewGroupMode('pkg_b')).toBe('byRooms');
+  });
+
+  it('фиксация: не перезаписывает свою настройку договора', () => {
+    storePackageEstimatePreviewGroupMode('pkg_a', 'byCategories');
+
+    pinPackageEstimatePreviewGroupMode('pkg_a');
+
+    expect(readStoredPackageEstimatePreviewGroupMode('pkg_a')).toBe('byCategories');
+  });
+
+  it('фиксация: не уведомляет подписчиков — вариант не меняется', () => {
+    const seen: string[] = [];
+    const unsub = subscribePackageEstimatePreviewGroupMode('pkg_a', (m) => seen.push(m));
+
+    pinPackageEstimatePreviewGroupMode('pkg_a');
+
+    expect(seen).toEqual([]);
     unsub();
   });
 

@@ -16,6 +16,7 @@ import { isProductDirectionPackageKind } from '../../../config/productDirectionP
 import { DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT } from '../../../families/product-like/print/productWorkOrder';
 import { type PackageContractObjectBlockFieldId, executePackageDocumentPrint } from '../../editor';
 import { recomputePackageEstimateSnapshots } from '../../estimates/applyEstimatePresetIds';
+import { pinPackageEstimatePreviewGroupMode } from '../../estimates/estimatePreviewGrouping';
 import {
   type PackageDocumentTemplateTabId,
   buildPersistedFormData,
@@ -229,6 +230,10 @@ export function usePackageDocumentEditorController({
     packageFlowStatus === 'CONTRACT_CONCLUDED' || packageFlowStatus === 'REFUSED';
   /** «Договор подписан»: файл спецификации можно дополнять новыми версиями (изменения по Д/с). */
   const contractConcluded = packageFlowStatus === 'CONTRACT_CONCLUDED';
+  /** Подписанный договор: вариант отображения сметы зафиксирован (кнопки на вкладке заблокированы). */
+  useEffect(() => {
+    if (signedDocsLocked) pinPackageEstimatePreviewGroupMode(packageId);
+  }, [signedDocsLocked, packageId]);
   const {
     packageVersions,
     setPackageVersions,
