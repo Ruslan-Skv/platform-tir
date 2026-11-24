@@ -1,5 +1,31 @@
 /* Co-located: UI прикрепления расчётов (вкладка «Смета» и блоки Д/с). */
 
+/* Строка поля скидки: слева скидка, справа переключатель варианта отображения сметы
+   (в одной строке — переключатель не увеличивает высоту блока). */
+.estimateDiscountRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-lg);
+  min-width: 0;
+}
+
+.estimateGroupModeSwitch {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: var(--admin-space-sm);
+}
+
+@media (max-width: 900px) {
+  .estimateDiscountRow {
+    flex-wrap: wrap;
+  }
+
+  .estimateGroupModeSwitch {
+    margin-left: auto;
+  }
+}
+
 .estimatePickAndAttachedRow {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(180px, 38%);

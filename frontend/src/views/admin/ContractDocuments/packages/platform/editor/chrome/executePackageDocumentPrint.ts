@@ -9,6 +9,10 @@ import {
   resolvePackageEditorPrintOptions,
   shouldUseWindowsPackageCompactPrint,
 } from '../../../families/product-like/print/productPackagePrint';
+import {
+  readStoredEstimatePreviewGroupMode,
+  readStoredPackageEstimatePreviewGroupMode,
+} from '../../estimates/estimatePreviewGrouping';
 import { buildEstimateSheetPrintHtml } from '../../estimates/packageEstimateDocPrintEmbedHtml';
 import type { EstimateEmbedSection } from '../../estimates/packageEstimateDocPrintEmbedHtml';
 import { resolveContractDiscount } from '../../form/packageContractDiscount';
@@ -36,6 +40,8 @@ export type ExecutePackageDocumentPrintInput = {
   selectedEstimateSections: EstimateEmbedSection[];
   directorName: string;
   customerFullName: string;
+  /** Договор пакета: вариант отображения сметы — из настройки этого договора. */
+  packageScopeId?: string;
 };
 
 /** Печать активной вкладки редактора пакета документов. */
@@ -50,7 +56,12 @@ export function executePackageDocumentPrint(input: ExecutePackageDocumentPrintIn
     selectedEstimateSections,
     directorName,
     customerFullName,
+    packageScopeId,
   } = input;
+
+  const estimateGroupMode = packageScopeId
+    ? readStoredPackageEstimatePreviewGroupMode(packageScopeId)
+    : readStoredEstimatePreviewGroupMode();
 
   const windowsPrintOptions = resolvePackageEditorPrintOptions(packageKind, activeTab, form);
 
@@ -89,6 +100,7 @@ export function executePackageDocumentPrint(input: ExecutePackageDocumentPrintIn
               ? resolveContractDiscount(form).amountRub
               : null,
           docPrintRootClass: WINDOWS_PACKAGE_UNIFIED_PRINT_CLASS,
+          groupMode: estimateGroupMode,
         });
         printWindowsEstimateSheetHtml(
           sheetHtml,

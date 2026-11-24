@@ -1,7 +1,14 @@
 'use client';
 
+import { useMemo } from 'react';
+
 import cdDocPreview from '../../../../styles/documents-preview.module.css';
 import cdEstimateTab from '../../../../styles/estimate-tab.module.css';
+import type { EstimateSnapshotRoom } from '../../estimates/applyEstimatePresetIds';
+import {
+  type EstimatePreviewGroupMode,
+  buildEstimateRoomSections,
+} from '../../estimates/estimatePreviewGrouping';
 import {
   applyPackageContractDiscountToAmount,
   formatDiscountPercentShort,
@@ -19,8 +26,47 @@ export type PackageEstimateMergedSheetProps = Pick<
   | 'selectedEstimateSections'
   | 'contractDiscountPercentParsed'
   | 'estimatePrintSheetRef'
->;
+> & {
+  /** Вариант отображения сметы — управляется переключателем в строке скидки (PackageEstimateTabView). */
+  groupMode: EstimatePreviewGroupMode;
+};
 
+/** Таблица позиций одного помещения (снимка категории) — общая для обоих вариантов отображения. */
+function EstimateRoomLinesTable({ lines }: { lines: EstimateSnapshotRoom['lines'] }) {
+  return (
+    <table className={cdDocPreview.estimateA4Table}>
+      <thead>
+        <tr>
+          <th>№</th>
+          <th>Наименование</th>
+          <th>Ед.</th>
+          <th>Кол-во</th>
+          <th>Цена</th>
+          <th>Сумма</th>
+        </tr>
+      </thead>
+      <tbody>
+        {lines.map((line, lineIndex) => (
+          <tr key={`${line.name}-${lineIndex}`}>
+            <td>{lineIndex + 1}</td>
+            <td>{line.name}</td>
+            <td>{line.unit}</td>
+            <td>{line.quantity}</td>
+            <td>{formatPackageMoneyValue(line.price)}</td>
+            <td>{formatPackageMoneyValue(line.amount)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+/**
+ * Объединённая смета/счёт-заказ пакета (лист A4 — он же уходит в печать).
+ * Вариант отображения (по умолчанию — первично по помещениям) задаётся пропом `groupMode`:
+ * переключатель live в строке «Скидка на работы» (PackageEstimateTabView) и синхронизирован
+ * с модалкой «Предпросмотр расчёта» и печатью Д/с.
+ */
 export function PackageEstimateMergedSheet({
   form,
   isProductDirectionPackage,
@@ -28,7 +74,13 @@ export function PackageEstimateMergedSheet({
   selectedEstimateSections,
   contractDiscountPercentParsed,
   estimatePrintSheetRef,
+  groupMode,
 }: PackageEstimateMergedSheetProps) {
+  const roomSections = useMemo(
+    () => buildEstimateRoomSections(selectedEstimateSections),
+    [selectedEstimateSections]
+  );
+
   return (
     <div
       className={`${cdEstimateTab.field} ${cdEstimateTab.fieldSpanAll} ${attachStyles.estimateSheetField} ${attachStyles.estimateAttachWindowsTypography}`}
@@ -49,7 +101,35 @@ export function PackageEstimateMergedSheet({
               <h4 className={cdDocPreview.estimateA4Title}>
                 {isProductDirectionPackage ? 'Счёт-заказ на работы.' : 'Смета работ'}
               </h4>
-              {selectedEstimateSections.length > 0 ? (
+              {groupMode === 'byRooms' && roomSections.length > 0 ? (
+                roomSections.map((roomSection, roomIndex) => (
+                  <section
+                    key={`${roomSection.roomName}-${roomIndex}`}
+                    className={cdDocPreview.estimateA4CategorySection}
+                  >
+                    <p className={cdDocPreview.estimateA4Meta}>
+                      Помещение: <strong>{roomSection.roomName}</strong>
+                      ;&nbsp;&nbsp;&nbsp;&nbsp;Категорий: {roomSection.categories.length}
+                    </p>
+                    {roomSection.categories.map((block, blockIndex) => (
+                      <section
+                        key={`${roomSection.roomName}-${block.categoryName}-${blockIndex}`}
+                        className={cdDocPreview.estimateA4Room}
+                      >
+                        <div
+                          className={`${cdDocPreview.estimateA4RoomHeader} ${cdDocPreview.estimateA4SecondaryRoomHeader}`}
+                        >
+                          <span>
+                            {blockIndex + 1}. Категория работ: {block.categoryName}
+                          </span>
+                          <strong>{formatPackageMoneyValue(block.room.total)} руб.</strong>
+                        </div>
+                        <EstimateRoomLinesTable lines={block.room.lines} />
+                      </section>
+                    ))}
+                  </section>
+                ))
+              ) : selectedEstimateSections.length > 0 ? (
                 selectedEstimateSections.map((section) => (
                   <section
                     key={section.categoryName}
@@ -64,36 +144,15 @@ export function PackageEstimateMergedSheet({
                         key={`${section.categoryName}-${room.name}-${roomIndex}`}
                         className={cdDocPreview.estimateA4Room}
                       >
-                        <div className={cdDocPreview.estimateA4RoomHeader}>
+                        <div
+                          className={`${cdDocPreview.estimateA4RoomHeader} ${cdDocPreview.estimateA4SecondaryRoomHeader}`}
+                        >
                           <span>
                             {roomIndex + 1}. {room.name}
                           </span>
                           <strong>{formatPackageMoneyValue(room.total)} руб.</strong>
                         </div>
-                        <table className={cdDocPreview.estimateA4Table}>
-                          <thead>
-                            <tr>
-                              <th>№</th>
-                              <th>Наименование</th>
-                              <th>Ед.</th>
-                              <th>Кол-во</th>
-                              <th>Цена</th>
-                              <th>Сумма</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {room.lines.map((line, lineIndex) => (
-                              <tr key={`${line.name}-${lineIndex}`}>
-                                <td>{lineIndex + 1}</td>
-                                <td>{line.name}</td>
-                                <td>{line.unit}</td>
-                                <td>{line.quantity}</td>
-                                <td>{formatPackageMoneyValue(line.price)}</td>
-                                <td>{formatPackageMoneyValue(line.amount)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                        <EstimateRoomLinesTable lines={room.lines} />
                       </section>
                     ))}
                   </section>
@@ -105,7 +164,19 @@ export function PackageEstimateMergedSheet({
                 </p>
               )}
               <section className={cdDocPreview.estimateA4Summary}>
-                {selectedEstimateSections.length > 0 ? (
+                {groupMode === 'byRooms' && roomSections.length > 0 ? (
+                  <>
+                    <h5 className={cdDocPreview.estimateA4SummaryTitle}>Итоги по помещениям</h5>
+                    <ul className={cdDocPreview.estimateA4SummaryList}>
+                      {roomSections.map((roomSection, roomIndex) => (
+                        <li key={`room-summary-${roomSection.roomName}-${roomIndex}`}>
+                          <span>{roomSection.roomName}</span>
+                          <strong>{formatPackageMoneyValue(roomSection.total)} руб.</strong>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                ) : selectedEstimateSections.length > 0 ? (
                   <>
                     <h5 className={cdDocPreview.estimateA4SummaryTitle}>Итоги по категориям</h5>
                     <ul className={cdDocPreview.estimateA4SummaryList}>

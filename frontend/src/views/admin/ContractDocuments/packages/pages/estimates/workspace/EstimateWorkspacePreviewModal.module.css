@@ -32,3 +32,47 @@
   line-height: var(--modal-lh);
   margin: 0 0 var(--modal-space-md);
 }
+
+/* Строка над листом: подсказка + переключатель «помещения/категории» (как табы редактора). */
+.topBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--modal-space-md);
+  margin: 0 0 var(--modal-space-md);
+}
+
+.topBar .hint {
+  flex: 1 1 340px;
+  margin: 0;
+}
+
+.modeSwitch {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: var(--admin-space-sm);
+}
+
+.modeSwitchButton {
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  border: 1px solid transparent;
+  border-radius: var(--admin-radius-md);
+  background: transparent;
+  font-size: var(--modal-fs-sm);
+  line-height: var(--modal-lh);
+  color: var(--modal-text-muted);
+  cursor: pointer;
+}
+
+.modeSwitchButton:hover {
+  background: var(--admin-surface-soft);
+}
+
+.modeSwitchButtonActive,
+.modeSwitchButtonActive:hover {
+  background: var(--admin-info-bg-soft);
+  border-color: var(--admin-info-border-soft);
+  color: var(--admin-info-strong);
+  font-weight: 600;
+}

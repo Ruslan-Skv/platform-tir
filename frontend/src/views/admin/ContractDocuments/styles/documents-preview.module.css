@@ -1439,6 +1439,16 @@
   line-height: var(--admin-line-height-sm);
 }
 
+/*
+ * Вторичный уровень сметы/счёт-заказа (помещение внутри категории / категория внутри
+ * помещения) — без жирного: выделенным остаётся только первичный уровень («Помещение:» /
+ * «Категория работ:») и суммы. Заказ-наряды и итоговая смета используют базовый класс
+ * без этого модификатора и жирный сохраняют.
+ */
+.estimateA4SecondaryRoomHeader {
+  font-weight: 400;
+}
+
 .estimateA4Table {
   width: 100%;
   border-collapse: collapse;
@@ -1805,6 +1815,11 @@ table.doorsSpecificationA4Table.supplierRequestA4Table td:nth-child(6) {
   margin-bottom: var(--admin-space-xs);
   font-weight: 600;
   line-height: var(--admin-line-height-sm);
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SecondaryRoomHeader),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SecondaryRoomHeader) {
+  font-weight: 400;
 }
 
 .docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table),

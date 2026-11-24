@@ -19,6 +19,11 @@ import {
   type EstimateDocPrintExecutorPartyLabel,
   buildEstimateDocPrintFooterHtml,
 } from './estimateDocPrintSignatures';
+import {
+  type EstimatePreviewGroupMode,
+  type EstimateRoomSection,
+  buildEstimateRoomSections,
+} from './estimatePreviewGrouping';
 
 export type EstimateEmbedSection = {
   categoryName: string;
@@ -191,6 +196,103 @@ function formatMoney(value: number): string {
   return formatMoneyWholeGrouped(value);
 }
 
+/** Таблица позиций одного помещения (снимка категории) — общая для обоих вариантов отображения. */
+function estimateRoomLinesTableHtml(room: EstimateSnapshotRoom): string {
+  return `<table class="estimateA4Table">
+      <thead>
+        <tr>
+          <th>№</th>
+          <th>Наименование</th>
+          <th>Ед.</th>
+          <th>Кол-во</th>
+          <th>Цена</th>
+          <th>Сумма</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${room.lines
+          .map(
+            (line, lineIndex) => `<tr>
+          <td>${lineIndex + 1}</td>
+          <td>${escapeHtml(line.name)}</td>
+          <td>${escapeHtml(line.unit)}</td>
+          <td>${line.quantity}</td>
+          <td>${formatMoney(line.price)}</td>
+          <td>${formatMoney(line.amount)}</td>
+        </tr>`
+          )
+          .join('')}
+      </tbody>
+    </table>`;
+}
+
+/** Секция «категория → помещения» (первично по категориям). */
+function estimateCategorySectionHtml(section: EstimateEmbedSection): string {
+  return `<section class="estimateA4CategorySection">
+  <p class="estimateA4Meta">Категория работ: <strong>${escapeHtml(section.categoryName)}</strong>;&nbsp;&nbsp;&nbsp;&nbsp;Помещений: ${section.rooms.length}</p>
+  ${section.rooms
+    .map(
+      (room, roomIndex) => `<section class="estimateA4Room">
+    <div class="estimateA4RoomHeader estimateA4SecondaryRoomHeader">
+      <span>${roomIndex + 1}. ${escapeHtml(room.name)}</span>
+      <strong>${formatMoney(room.total)} руб.</strong>
+    </div>
+    ${estimateRoomLinesTableHtml(room)}
+  </section>`
+    )
+    .join('')}
+</section>`;
+}
+
+/** Секция «помещение → категории» (первично по помещениям): внутри помещения — блоки категорий. */
+function estimateRoomSectionHtml(roomSection: EstimateRoomSection): string {
+  return `<section class="estimateA4CategorySection">
+  <p class="estimateA4Meta">Помещение: <strong>${escapeHtml(roomSection.roomName)}</strong>;&nbsp;&nbsp;&nbsp;&nbsp;Категорий: ${roomSection.categories.length}</p>
+  ${roomSection.categories
+    .map(
+      (block, blockIndex) => `<section class="estimateA4Room">
+    <div class="estimateA4RoomHeader estimateA4SecondaryRoomHeader">
+      <span>${blockIndex + 1}. Категория работ: ${escapeHtml(block.categoryName)}</span>
+      <strong>${formatMoney(block.room.total)} руб.</strong>
+    </div>
+    ${estimateRoomLinesTableHtml(block.room)}
+  </section>`
+    )
+    .join('')}
+</section>`;
+}
+
+/**
+ * Итоговая часть сметы: по помещениям (первично по помещениям) или по категориям.
+ * `roomSections` пуст → считаем, что режим «по помещениям» неприменим (нет секций) → итоги по категориям.
+ */
+function estimateSummaryInnerHtml(
+  sections: EstimateEmbedSection[],
+  roomSections: EstimateRoomSection[]
+): string {
+  if (roomSections.length > 0) {
+    return `<h5 class="estimateA4SummaryTitle">Итоги по помещениям</h5>
+  <ul class="estimateA4SummaryList">
+    ${roomSections
+      .map(
+        (roomSection) =>
+          `<li><span>${escapeHtml(roomSection.roomName)}</span><strong>${formatMoney(roomSection.total)} руб.</strong></li>`
+      )
+      .join('')}
+  </ul>`;
+  }
+  if (sections.length === 0) return '';
+  return `<h5 class="estimateA4SummaryTitle">Итоги по категориям</h5>
+  <ul class="estimateA4SummaryList">
+    ${sections
+      .map((section) => {
+        const categoryTotal = section.rooms.reduce((sum, room) => sum + room.total, 0);
+        return `<li><span>${escapeHtml(section.categoryName)}</span><strong>${formatMoney(categoryTotal)} руб.</strong></li>`;
+      })
+      .join('')}
+  </ul>`;
+}
+
 export type { EstimateDocPrintExecutorPartyLabel };
 export {
   buildEstimateDocPrintFooterHtml,
@@ -240,7 +342,9 @@ export function buildEstimateDiscountTotalsBlockHtml(options: {
 
 /**
  * HTML-блок сметы для вставки в `.docPrint` (Д/с и т.п.): как на вкладке «Смета» —
- * категории, таблицы по помещениям, итоги по категориям, итого, подписи, примечание, подписи.
+ * таблицы помещений, итоги, итого, подписи, примечание, подписи.
+ * `groupMode: 'byRooms'` (первично по помещениям): помещения сверху, внутри — блоки по категориям,
+ * итоги — по помещениям.
  *
  * Договорная скидка: цены и суммы **по строкам** всегда без скидки (как в расчёте).
  * При переданном `contractDiscountPercent` скидка отражается **только** в подвальном `discountBlock`
@@ -263,6 +367,8 @@ export function buildEstimateDocPrintEmbedHtml(options: {
   grossLabel?: string;
   finalLabel?: string;
   executorPartyLabel?: EstimateDocPrintExecutorPartyLabel;
+  /** Вариант отображения: первично по помещениям или по категориям (по умолчанию). */
+  groupMode?: EstimatePreviewGroupMode;
 }): string {
   const {
     snapshot,
@@ -274,6 +380,7 @@ export function buildEstimateDocPrintEmbedHtml(options: {
     grossLabel,
     finalLabel,
     executorPartyLabel = 'Подрядчик',
+    groupMode = 'byCategories',
   } = options;
   if (!snapshot?.rooms?.length) return '';
 
@@ -282,62 +389,13 @@ export function buildEstimateDocPrintEmbedHtml(options: {
     sections = [{ categoryName: '—', rooms: snapshot.rooms }];
   }
 
-  const categoriesHtml = sections
-    .map(
-      (section) => `<section class="estimateA4CategorySection">
-  <p class="estimateA4Meta">Категория работ: <strong>${escapeHtml(section.categoryName)}</strong>;&nbsp;&nbsp;&nbsp;&nbsp;Помещений: ${section.rooms.length}</p>
-  ${section.rooms
-    .map(
-      (room, roomIndex) => `<section class="estimateA4Room">
-    <div class="estimateA4RoomHeader">
-      <span>${roomIndex + 1}. ${escapeHtml(room.name)}</span>
-      <strong>${formatMoney(room.total)} руб.</strong>
-    </div>
-    <table class="estimateA4Table">
-      <thead>
-        <tr>
-          <th>№</th>
-          <th>Наименование</th>
-          <th>Ед.</th>
-          <th>Кол-во</th>
-          <th>Цена</th>
-          <th>Сумма</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${room.lines
-          .map(
-            (line, lineIndex) => `<tr>
-          <td>${lineIndex + 1}</td>
-          <td>${escapeHtml(line.name)}</td>
-          <td>${escapeHtml(line.unit)}</td>
-          <td>${line.quantity}</td>
-          <td>${formatMoney(line.price)}</td>
-          <td>${formatMoney(line.amount)}</td>
-        </tr>`
-          )
-          .join('')}
-      </tbody>
-    </table>
-  </section>`
-    )
-    .join('')}
-</section>`
-    )
-    .join('');
+  const roomSections = groupMode === 'byRooms' ? buildEstimateRoomSections(sections) : [];
+  const sectionsHtml =
+    roomSections.length > 0
+      ? roomSections.map(estimateRoomSectionHtml).join('')
+      : sections.map(estimateCategorySectionHtml).join('');
 
-  const summaryInner =
-    sections.length > 0
-      ? `<h5 class="estimateA4SummaryTitle">Итоги по категориям</h5>
-  <ul class="estimateA4SummaryList">
-    ${sections
-      .map((section) => {
-        const categoryTotal = section.rooms.reduce((sum, room) => sum + room.total, 0);
-        return `<li><span>${escapeHtml(section.categoryName)}</span><strong>${formatMoney(categoryTotal)} руб.</strong></li>`;
-      })
-      .join('')}
-  </ul>`
-      : '';
+  const summaryInner = estimateSummaryInnerHtml(sections, roomSections);
 
   const discountBlock = includeTotals
     ? buildEstimateDiscountTotalsBlockHtml({
@@ -351,7 +409,7 @@ export function buildEstimateDocPrintEmbedHtml(options: {
     : '';
 
   const bodyHtml = `<div class="estimateA4DocPrintEmbed estimateRoomsEmbed">
-${categoriesHtml}
+${sectionsHtml}
 <section class="estimateA4Summary">
 ${summaryInner}
 </section>
@@ -380,6 +438,8 @@ export function buildEstimateSheetPrintHtml(options: {
   discountAmountRub?: number | null;
   /** Класс корня `.docPrint` (например `windowsPackageUnifiedPrint`). */
   docPrintRootClass?: string;
+  /** Вариант отображения: первично по помещениям или по категориям (по умолчанию). */
+  groupMode?: EstimatePreviewGroupMode;
 }): string {
   const snapshot = options.snapshot;
   if (!snapshot?.rooms?.length) {
@@ -403,6 +463,7 @@ export function buildEstimateSheetPrintHtml(options: {
     discountAmountRub: options.discountAmountRub,
     grossLabel,
     finalLabel,
+    groupMode: options.groupMode,
   });
   const footer = buildEstimateDocPrintFooterHtml({
     directorName: options.directorName,

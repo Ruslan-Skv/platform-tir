@@ -858,6 +858,8 @@ function buildPrintStylesheet(
     display: flex; justify-content: space-between; align-items: baseline; gap: 10pt;
     margin-bottom: 3pt; font-weight: 700; line-height: 1.25;
   }
+  /* Вторичный уровень сметы/счёт-заказа — обычный вес (заказ-наряды жирный сохраняют). */
+  .docPrint .estimateA4DocPrintEmbed .estimateA4SecondaryRoomHeader { font-weight: 400; }
   .docPrint .estimateA4DocPrintEmbed .estimateA4Table {
     width: 100%; border-collapse: collapse; table-layout: fixed;
   }

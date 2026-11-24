@@ -229,6 +229,7 @@ export function usePackageDocumentEditorTabProps({
 
   const estimateTabProps = useMemo(
     (): PackageEstimateTabProps => ({
+      packageId: packageId ?? '',
       form,
       signedDocsLocked,
       isProductDirectionPackage,
@@ -257,6 +258,7 @@ export function usePackageDocumentEditorTabProps({
       ...estimateTabHandlers,
     }),
     [
+      packageId,
       form,
       signedDocsLocked,
       isProductDirectionPackage,

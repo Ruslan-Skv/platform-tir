@@ -46,6 +46,7 @@ import { buildPackageTemplatePreviewHtml } from '@/views/admin/ContractDocuments
 import { PACKAGE_TEMPLATE_TAB_IDS } from '@/views/admin/ContractDocuments/packages/platform/editor/template/packageTemplateTabUtils';
 import { applyEstimatePresetIdsToPackageForm } from '@/views/admin/ContractDocuments/packages/platform/estimates/applyEstimatePresetIds';
 import { estimatePresetsCatalogKind } from '@/views/admin/ContractDocuments/packages/platform/estimates/estimatePresetsCatalogKind';
+import { readStoredPackageEstimatePreviewGroupMode } from '@/views/admin/ContractDocuments/packages/platform/estimates/estimatePreviewGrouping';
 import {
   buildEstimateSectionsFromPresetIds,
   buildEstimateSheetPrintHtml,
@@ -327,6 +328,7 @@ function buildEstimateHtml(ctx: PackageCustomerShareContext): string {
         ? resolveContractDiscount(ctx.form).amountRub
         : null,
     docPrintRootClass: isProduct ? WINDOWS_PACKAGE_UNIFIED_PRINT_CLASS : undefined,
+    groupMode: readStoredPackageEstimatePreviewGroupMode(ctx.packageId),
   });
 }
 
@@ -369,6 +371,7 @@ export function buildPackageCustomerDocumentHtml(
     packageKind: ctx.packageKind,
     windowsWorkOrderMarkupPercent: ctx.windowsWorkOrderMarkupPercent,
     ceilingsWorkOrderCornerPrice: ctx.ceilingsWorkOrderCornerPrice,
+    packageScopeId: ctx.packageId,
     estimatePresets: ctx.estimatePresets,
     estimateGroups: ctx.estimateGroups,
     templateOverrides: ctx.templateOverrides,

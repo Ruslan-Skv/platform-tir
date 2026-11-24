@@ -15,6 +15,8 @@ import { PackageEstimateTabView } from './PackageEstimateTabView';
 export type EstimateUsageEntry = { contractNumber: string; contractDate: string };
 
 export type PackageEstimateTabProps = {
+  /** Договор пакета: вариант отображения сметы хранится на каждый договор отдельно. */
+  packageId: string;
   form: PackageFormData;
   signedDocsLocked: boolean;
   isProductDirectionPackage: boolean;

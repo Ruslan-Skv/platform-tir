@@ -250,7 +250,7 @@ export function PackageDocumentEditorTabContent({
         </>
       );
     }
-    return <PackageEstimateTab {...estimateTabProps} />;
+    return <PackageEstimateTab {...estimateTabProps} packageId={packageId} />;
   }
 
   if (activeTab === 'workOrder' && isFurniture) {

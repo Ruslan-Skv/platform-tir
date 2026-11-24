@@ -22,6 +22,8 @@ export type BuildPackageTemplatePreviewHtmlOptions = {
   windowsWorkOrderMarkupPercent: number;
   /** Стоимость одного угла в заказ-наряде потолков, ₽; null — не задана, блок «Углы» не добавляется. */
   ceilingsWorkOrderCornerPrice?: number | null;
+  /** Договор пакета: вариант отображения сметы в Д/с — из настройки этого договора. */
+  packageScopeId?: string;
   estimatePresets: ContractEstimatePreset[];
   estimateGroups: ContractEstimateGroup[];
   templateOverrides: Partial<Record<PackageDocumentTemplateTabId, string>>;
@@ -37,6 +39,7 @@ export function buildPackageTemplatePreviewHtml(
     packageKind,
     windowsWorkOrderMarkupPercent,
     ceilingsWorkOrderCornerPrice,
+    packageScopeId,
     estimatePresets,
     estimateGroups,
     templateOverrides,
@@ -78,6 +81,7 @@ export function buildPackageTemplatePreviewHtml(
     packageKind,
     windowsWorkOrderMarkupPercent,
     ceilingsWorkOrderCornerPrice,
+    packageScopeId,
   });
   const tpl = templateOverrides[templateTab] ?? resolveTemplateHtml(templateTab);
   let html = prepareContractTemplateHtmlForPreview(

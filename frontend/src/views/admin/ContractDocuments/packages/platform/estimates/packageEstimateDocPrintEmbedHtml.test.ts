@@ -1,6 +1,9 @@
 import type { ContractEstimatePreset } from '@/shared/api/admin-contract-document-packages';
 
-import { buildEstimateSectionsFromPresetIds } from './packageEstimateDocPrintEmbedHtml';
+import {
+  buildEstimateDocPrintEmbedHtml,
+  buildEstimateSectionsFromPresetIds,
+} from './packageEstimateDocPrintEmbedHtml';
 
 const ROOM_NAMES = ['Гостиная', 'Спальня', 'Кухня'];
 
@@ -79,5 +82,43 @@ describe('buildEstimateSectionsFromPresetIds: комплексный расчё�
     const sections = buildEstimateSectionsFromPresetIds([preset.id], [preset], []);
     expect(sections.map((s) => s.categoryName)).toEqual(['Малярные работы', 'Стены']);
     expect(sections.every((s) => s.rooms.length === 1)).toBe(true);
+  });
+});
+
+describe('buildEstimateDocPrintEmbedHtml: вариант отображения', () => {
+  const embedOptions = (groupMode: 'byRooms' | 'byCategories') => {
+    const preset = multiCategoryPreset();
+    return {
+      sections: buildEstimateSectionsFromPresetIds([preset.id], [preset], []),
+      snapshot: preset.snapshot!,
+      directorName: 'Иванов И.И.',
+      customerFullName: 'Петров П.П.',
+      includeFooter: false,
+      groupMode,
+    };
+  };
+
+  it('по умолчанию (по категориям): секции «Категория работ», итоги по категориям', () => {
+    const html = buildEstimateDocPrintEmbedHtml(embedOptions('byCategories'));
+    expect(html).toContain('Категория работ: <strong>Работы по полам</strong>');
+    expect(html).toContain('Итоги по категориям');
+    expect(html).not.toContain('Итоги по помещениям');
+    // 3 категории × 3 помещения — нумерация помещений внутри категории.
+    expect(html.match(/<span>1\. Гостиная<\/span>/g)?.length).toBe(3);
+    // Вторичный уровень (помещения) — без жирного: класс-модификатор на заголовках.
+    expect(html).toContain('estimateA4RoomHeader estimateA4SecondaryRoomHeader');
+  });
+
+  it('первично по помещениям: секции «Помещение», внутри — категории, итоги по помещениям', () => {
+    const html = buildEstimateDocPrintEmbedHtml(embedOptions('byRooms'));
+    expect(html).toContain('Помещение: <strong>Гостиная</strong>');
+    expect(html).toContain('Категорий: 3');
+    expect(html).toContain('1. Категория работ: Работы по полам');
+    expect(html).toContain('Итоги по помещениям');
+    expect(html).not.toContain('Итоги по категориям');
+    // Вторичный уровень (категории) — без жирного.
+    expect(html).toContain('estimateA4RoomHeader estimateA4SecondaryRoomHeader');
+    // Итог помещения — сумма трёх категорий по 100.
+    expect(html).toContain('<span>Гостиная</span><strong>300 руб.</strong>');
   });
 });

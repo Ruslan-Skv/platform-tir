@@ -641,6 +641,7 @@ export function usePackageDocumentEditorController({
     estimateGroups,
     windowsWorkOrderMarkupPercent,
     ceilingsWorkOrderCornerPrice,
+    packageScopeId: packageId,
     templateOverrides,
     resolveTemplateHtml,
   });
@@ -650,6 +651,7 @@ export function usePackageDocumentEditorController({
       packageKind,
       activeTab,
       form,
+      packageScopeId: packageId,
       renderedDoc,
       isProductDirectionPackage,
       estimateAppendixContractRef,

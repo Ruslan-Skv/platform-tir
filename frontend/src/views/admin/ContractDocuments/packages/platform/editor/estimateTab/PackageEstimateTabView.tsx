@@ -1,10 +1,19 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+
 import Link from 'next/link';
 
 import cdHub from '../../../../styles/contracts-list-hub.module.css';
+import cdChrome from '../../../../styles/editor-chrome.module.css';
 import cdEstimateTab from '../../../../styles/estimate-tab.module.css';
 import cdProduct from '../../../../styles/product-package.module.css';
+import {
+  type EstimatePreviewGroupMode,
+  readStoredPackageEstimatePreviewGroupMode,
+  storePackageEstimatePreviewGroupMode,
+  subscribePackageEstimatePreviewGroupMode,
+} from '../../estimates/estimatePreviewGrouping';
 import { contractDiscountHint } from '../../form/packageContractDiscount';
 import { PackageDiscountControls, PackageDiscountHint } from '../shared/PackageDiscountControls';
 import { PackageLockNotice, packageLockNoticeMessage } from '../shared/packageLockNoticeUi';
@@ -28,7 +37,18 @@ import {
 } from './packageEstimateTabStyles';
 
 export function PackageEstimateTabView(props: PackageEstimateTabProps) {
-  const { signedDocsLocked, isProductDirectionPackage, linkedCrmCustomerId } = props;
+  const { signedDocsLocked, isProductDirectionPackage, linkedCrmCustomerId, packageId } = props;
+
+  // Вариант отображения сметы — настройка этого договора (своя, иначе общая из «Расчётов»):
+  // переключение здесь не меняет вид в других договорах и предпросмотрах расчётов.
+  const [groupMode, setGroupMode] = useState<EstimatePreviewGroupMode>(() =>
+    readStoredPackageEstimatePreviewGroupMode(packageId)
+  );
+  useEffect(() => subscribePackageEstimatePreviewGroupMode(packageId, setGroupMode), [packageId]);
+  const selectGroupMode = (mode: EstimatePreviewGroupMode) => {
+    setGroupMode(mode);
+    storePackageEstimatePreviewGroupMode(packageId, mode);
+  };
 
   return (
     <div
@@ -62,28 +82,58 @@ export function PackageEstimateTabView(props: PackageEstimateTabProps) {
           <div className={ESTIMATE_SECTION_FIELDS}>
             <PackageEstimateAttachPanel {...props} />
             {(props.form.estimate.snapshot?.rooms?.length ?? 0) > 0 ? (
-              <div
-                className={`${cdEstimateTab.field} ${cdEstimateTab.fieldSpanAll} ${cdEstimateTab.estimateDiscountField}`}
-              >
-                <label htmlFor="estimate_discount_value">
-                  {props.isProductDirectionPackage
-                    ? 'Скидка на работы (счёт-заказ)'
-                    : 'Скидка на работы (по смете)'}
-                </label>
-                <PackageDiscountControls
-                  idPrefix="estimate_discount"
-                  mode={props.form.contract.discountType}
-                  percent={props.form.contract.discountPercent}
-                  amount={props.form.contract.discountAmount ?? ''}
-                  disabled={props.signedDocsLocked}
-                  onModeChange={props.onContractDiscountTypeChange}
-                  onPercentChange={props.onContractDiscountPercentChange}
-                  onAmountChange={props.onContractDiscountAmountChange}
-                />
-                <PackageDiscountHint>{contractDiscountHint(props.form)}</PackageDiscountHint>
+              <div className={`${cdEstimateTab.fieldSpanAll} ${attachStyles.estimateDiscountRow}`}>
+                <div className={`${cdEstimateTab.field} ${cdEstimateTab.estimateDiscountField}`}>
+                  <label htmlFor="estimate_discount_value">
+                    {props.isProductDirectionPackage
+                      ? 'Скидка на работы (счёт-заказ)'
+                      : 'Скидка на работы (по смете)'}
+                  </label>
+                  <PackageDiscountControls
+                    idPrefix="estimate_discount"
+                    mode={props.form.contract.discountType}
+                    percent={props.form.contract.discountPercent}
+                    amount={props.form.contract.discountAmount ?? ''}
+                    disabled={props.signedDocsLocked}
+                    onModeChange={props.onContractDiscountTypeChange}
+                    onPercentChange={props.onContractDiscountPercentChange}
+                    onAmountChange={props.onContractDiscountAmountChange}
+                  />
+                  <PackageDiscountHint>{contractDiscountHint(props.form)}</PackageDiscountHint>
+                </div>
+                <div
+                  className={attachStyles.estimateGroupModeSwitch}
+                  role="group"
+                  aria-label="Вариант отображения сметы"
+                >
+                  <button
+                    type="button"
+                    className={
+                      groupMode === 'byRooms'
+                        ? `${cdChrome.tab} ${cdChrome.tabActive}`
+                        : cdChrome.tab
+                    }
+                    aria-pressed={groupMode === 'byRooms'}
+                    onClick={() => selectGroupMode('byRooms')}
+                  >
+                    Первично по помещениям
+                  </button>
+                  <button
+                    type="button"
+                    className={
+                      groupMode === 'byCategories'
+                        ? `${cdChrome.tab} ${cdChrome.tabActive}`
+                        : cdChrome.tab
+                    }
+                    aria-pressed={groupMode === 'byCategories'}
+                    onClick={() => selectGroupMode('byCategories')}
+                  >
+                    Первично по категориям
+                  </button>
+                </div>
               </div>
             ) : null}
-            <PackageEstimateMergedSheet {...props} />
+            <PackageEstimateMergedSheet {...props} groupMode={groupMode} />
             <p
               className={`${ESTIMATE_HINT} ${cdEstimateTab.fieldSpanAll} ${attachStyles.estimateTabHintFullWidth}`}
             >

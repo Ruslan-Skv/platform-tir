@@ -18,6 +18,10 @@ import { productContractCostFieldsForTemplate } from '../../families/product-lik
 import { buildWindowsWorkOrderAddendumForTemplate } from '../../families/product-like/print/productWorkOrder';
 import { buildDoorsDeliveryNoteProductsHtml } from '../../families/product-like/specification/doorsSpecification';
 import {
+  readStoredEstimatePreviewGroupMode,
+  readStoredPackageEstimatePreviewGroupMode,
+} from '../estimates/estimatePreviewGrouping';
+import {
   buildEstimateDiscountTotalsBlockHtml,
   buildEstimateDocPrintEmbedHtml,
   buildEstimateDocPrintFooterHtml,
@@ -104,6 +108,11 @@ export function packageFormForTemplate(
     windowsWorkOrderMarkupPercent?: number;
     /** Стоимость одного угла в заказ-наряде потолков, ₽; null — не задана, блок «Углы» не добавляется. */
     ceilingsWorkOrderCornerPrice?: number | null;
+    /**
+     * Договор пакета: вариант отображения сметы («первично по помещениям/категориям»)
+     * берётся из настройки этого договора, иначе — общая (раздел «Расчёты»).
+     */
+    packageScopeId?: string;
   }
 ): PackageFormData & {
   meta: { currentDate: string };
@@ -250,8 +259,14 @@ export function packageFormForTemplate(
       : null;
   const addendumSlotForPrint =
     addendumSlotIdx !== null ? form.addendumSlots[addendumSlotIdx] : undefined;
+  const resolveEstimateGroupMode = () =>
+    options?.packageScopeId
+      ? readStoredPackageEstimatePreviewGroupMode(options.packageScopeId)
+      : readStoredEstimatePreviewGroupMode();
+
   const buildAddendumEstimateRoomsHtml = () => {
     if (!addendumSlotSnap && !addendumExcludedSnap) return '';
+    const groupMode = resolveEstimateGroupMode();
     const additionalHtml = addendumSlotSnap
       ? buildEstimateDocPrintEmbedHtml({
           sections: addendumSections,
@@ -260,6 +275,7 @@ export function packageFormForTemplate(
           customerFullName: form.customer.fullName,
           includeFooter: false,
           includeTotals: false,
+          groupMode,
         })
       : '';
     const excludedHtml = addendumExcludedSnap
@@ -270,6 +286,7 @@ export function packageFormForTemplate(
           customerFullName: form.customer.fullName,
           includeFooter: false,
           includeTotals: false,
+          groupMode,
         })
       : '';
     const additionalTotal = addendumSlotSnap?.total ?? 0;
@@ -312,6 +329,7 @@ export function packageFormForTemplate(
     if (!addendumSlotForPrint || !windowsAddendumSlotHasAnyPrintContent(addendumSlotForPrint)) {
       return '';
     }
+    const groupMode = resolveEstimateGroupMode();
     const additionalHtml = addendumSlotSnap
       ? buildEstimateDocPrintEmbedHtml({
           sections: addendumSections,
@@ -320,6 +338,7 @@ export function packageFormForTemplate(
           customerFullName: form.customer.fullName,
           includeFooter: false,
           includeTotals: false,
+          groupMode,
         })
       : '';
     const excludedHtml = addendumExcludedSnap
@@ -330,6 +349,7 @@ export function packageFormForTemplate(
           customerFullName: form.customer.fullName,
           includeFooter: false,
           includeTotals: false,
+          groupMode,
         })
       : '';
     return buildWindowsAddendumPrintHtml({
