@@ -368,9 +368,8 @@
   gap: var(--admin-space-xs);
   width: 100%;
   min-width: 0;
-  /* Вплотную к строке заголовка; нижняя грань вкладок совпадает с разделителем шапки
-     (её padding-bottom + border-bottom), поэтому панель заходит на него на 1px. */
-  margin-top: calc(var(--admin-space-xs) - var(--admin-space-md));
+  /* Сверху — стандартный gap шапки до ряда заголовка и кнопок; нижняя грань вкладок совпадает
+     с разделителем шапки (её padding-bottom + border-bottom), поэтому панель заходит на него на 1px. */
   margin-bottom: calc(-1 * var(--admin-space-md) - 1px);
 }
 
