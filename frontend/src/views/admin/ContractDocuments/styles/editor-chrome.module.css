@@ -530,18 +530,24 @@
 }
 
 /* ── Шапка вкладки документа («Смета», «Д/с», «Спецификация», «Файлы»…) ──
-   Белая карточка с отступами — как карточки новых разделов; жёлтая подложка самой
-   вкладки снимается в data-tab.module.css. Тройной класс перебивает компактные
-   отступы .estimateTabCompact .sectionCard и типографику товарных вкладок
-   (.windowsContractFormSection :where(h1…h5)) при любом порядке стилей в бандле. */
-.packageTabCard.packageTabCard.packageTabCard {
+   Карточка — приглушённая панель: на ней белые поля, списки и лист предпросмотра
+   не сливаются с фоном. Жёлтая подложка самой вкладки снимается в data-tab.module.css.
+
+   Специфичность. Компактные правила вкладок (.estimateTabCompact.dataCompact .field
+   input/select/label) и типографика товарных вкладок (.windowsContractFormSection)
+   доходят до (0,4,1). Поэтому правила набора написаны как «карточка ×3 + класс ×2»
+   и перебивают их при любом порядке стилей в бандле. Сама карточка — «класс ×5»:
+   снимает прозрачную подложку .packageDocumentEditorPage .blockData:not(…) (0,4,0).
+   Составной селектор — только классы этого модуля. */
+.packageTabCard.packageTabCard.packageTabCard.packageTabCard.packageTabCard {
+  --package-tab-control-h: 28px;
   padding: var(--admin-space-md) var(--admin-space-xl);
-  background: var(--admin-surface);
+  background: var(--admin-surface-soft);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-lg);
 }
 
-.packageTabCardTitle.packageTabCardTitle.packageTabCardTitle {
+.packageTabCard.packageTabCard.packageTabCard .packageTabCardTitle.packageTabCardTitle {
   margin: 0 0 var(--admin-space-2xs);
   padding: 0;
   border: 0;
@@ -551,38 +557,389 @@
   color: var(--admin-text-primary);
 }
 
-.packageTabCardHint {
+.packageTabCard.packageTabCard.packageTabCard .packageTabCardHint.packageTabCardHint {
   margin: 0 0 var(--admin-space-md);
   font-size: var(--admin-font-size-sm);
   line-height: var(--admin-line-height-base);
   color: var(--admin-text-muted);
 }
 
-.packageAddendumDateFieldRow {
-  max-width: 320px;
-  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-lg);
+/* Шапка карточки: заголовок → плашка «только чтение» → описание, с равными отбивками. */
+.packageTabCard.packageTabCard.packageTabCard .packageTabHead.packageTabHead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+  margin: 0 0 var(--admin-space-md);
 }
 
-.packageAddendumMetaInlineRow {
+.packageTabCard.packageTabCard.packageTabCard .packageTabHead.packageTabHead > * {
+  margin: 0;
+}
+
+/* Подзаголовок раздела внутри карточки («Прикреплённые файлы», «Таблица материалов»). */
+.packageTabCard.packageTabCard.packageTabCard .packageTabSubTitle.packageTabSubTitle {
+  margin: 0 0 var(--admin-space-sm);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  line-height: var(--admin-line-height-sm);
+  color: var(--admin-text-primary);
+}
+
+/* Подсказка под полем или кнопкой. */
+.packageTabCard.packageTabCard.packageTabCard .packageTabFieldHint.packageTabFieldHint {
+  margin: 0;
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
+  color: var(--admin-text-muted);
+}
+
+/* Несколько подсказок подряд — столбиком, с отбивкой от следующего блока. */
+.packageTabCard.packageTabCard.packageTabCard .packageTabHintStack.packageTabHintStack {
+  display: grid;
+  gap: var(--admin-space-2xs);
+  margin: 0 0 var(--admin-space-md);
+}
+
+/* Подпись блока внутри карточки («Прикреплённые», «Раздел 1: …»). */
+.packageTabCard.packageTabCard.packageTabCard .packageTabCaption.packageTabCaption {
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  line-height: var(--admin-line-height-sm);
+  color: var(--admin-text-secondary);
+}
+
+/* Лист предпросмотра внутри карточки лежит прямо на панели — без второй рамки. */
+.packageTabCard.packageTabCard.packageTabCard .packageTabA4.packageTabA4 {
+  border-color: transparent;
+  background: transparent;
+}
+
+/* ── Ряд полей шапки: дата | срок | скидка. Подписи полей в одну строку,
+   ширина поля задана классом размера, а не длиной подписи. ── */
+.packageTabCard.packageTabCard.packageTabCard .packageTabFieldRow.packageTabFieldRow {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--admin-space-md);
-  align-items: flex-end;
-  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-lg);
+  align-items: flex-start;
+  gap: var(--admin-space-md) var(--admin-space-xl);
+  margin: var(--admin-space-sm) 0 var(--admin-space-md);
 }
 
-.packageAddendumMetaInlineRow .packageAddendumDateFieldRow {
+.packageTabCard.packageTabCard.packageTabCard .packageTabField.packageTabField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-2xs);
+  min-width: 0;
   margin: 0;
-  max-width: 320px;
 }
 
-.packageAddendumWorkPeriodIncreaseFieldRow {
-  margin: 0;
-  max-width: 240px;
+.packageTabCard.packageTabCard.packageTabCard
+  .packageTabField.packageTabField
+  > :is(label, span):not(.packageTabInputWrap) {
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  line-height: var(--admin-line-height-sm);
+  color: var(--admin-text-secondary);
+  white-space: nowrap;
 }
 
-.packageAddendumWorkPeriodIncreaseFieldRow input {
+.packageTabCard.packageTabCard.packageTabCard
+  .packageTabField.packageTabField
+  :is(input, select):where(:not([type='checkbox']):not([type='radio']):not([type='file'])) {
+  box-sizing: border-box;
+  height: var(--package-tab-control-h);
+  min-height: var(--package-tab-control-h);
+  padding: 0 var(--admin-space-md);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
+  color: var(--admin-text-primary);
+  background: var(--admin-surface);
+}
+
+/* Фокус — синяя рамка с кольцом, как у полей вкладки «Данные». */
+.packageTabCard.packageTabCard.packageTabCard
+  .packageTabField.packageTabField
+  :is(input, select):where(:not(:disabled):not([readonly])):focus {
+  border-color: var(--admin-focus-ring, #3b82f6);
+  box-shadow: 0 0 0 1px var(--admin-focus-ring, #3b82f6);
+  outline: none;
+}
+
+/* Заблокированное поле (договор подписан) остаётся полем, а не серым пятном. */
+.packageTabCard.packageTabCard.packageTabCard
+  .packageTabField.packageTabField
+  :is(input, select):disabled {
+  background: var(--admin-surface-muted);
+  border-color: var(--admin-border);
+  color: var(--admin-text-secondary);
+  opacity: 1;
+  cursor: default;
+}
+
+/* Размеры полей — по содержимому: дата, дни, процент, сумма. */
+.packageTabCard.packageTabCard.packageTabCard .packageTabFieldDate.packageTabFieldDate > input {
+  width: 9.5rem;
+}
+
+.packageTabCard.packageTabCard.packageTabCard
+  .packageTabFieldDays.packageTabFieldDays
+  > :is(input, .packageTabInputWrap) {
+  width: 6.5rem;
+}
+
+.packageTabCard.packageTabCard.packageTabCard
+  .packageTabFieldPercent.packageTabFieldPercent
+  > input {
+  width: 6.5rem;
+}
+
+.packageTabCard.packageTabCard.packageTabCard .packageTabFieldMoney.packageTabFieldMoney > input {
+  width: 10rem;
+}
+
+.packageTabCard.packageTabCard.packageTabCard .packageTabFieldWide.packageTabFieldWide {
+  max-width: 24rem;
+}
+
+.packageTabCard.packageTabCard.packageTabCard
+  .packageTabFieldWide.packageTabFieldWide
+  > :is(input, select) {
   width: 100%;
+}
+
+/* Поле «кол-во дней»: единица — суффикс внутри поля, а не плейсхолдер. */
+.packageTabCard.packageTabCard.packageTabCard .packageTabInputWrap.packageTabInputWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.packageTabCard.packageTabCard.packageTabCard .packageTabInputWrap.packageTabInputWrap > input {
+  flex: 1 1 0;
+  width: 100%;
+  min-width: 0;
+  padding-right: 2.5rem;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.packageTabCard.packageTabCard.packageTabCard
+  .packageTabInputWrap
+  > input::-webkit-inner-spin-button,
+.packageTabCard.packageTabCard.packageTabCard
+  .packageTabInputWrap
+  > input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.packageTabCard.packageTabCard.packageTabCard .packageTabInputSuffix.packageTabInputSuffix {
+  position: absolute;
+  right: var(--admin-space-sm);
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-none);
+  color: var(--admin-text-muted);
+  pointer-events: none;
+}
+
+/* ── Скидка: строка «[тип ▾][значение]» (PackageDiscountControls) ── */
+.packageTabCard.packageTabCard.packageTabCard
+  .packageTabFieldDiscount.packageTabFieldDiscount
+  > div {
+  display: flex;
+  gap: var(--admin-space-xs);
+  width: 10rem;
+  max-width: 100%;
+}
+
+.packageTabCard.packageTabCard.packageTabCard
+  .packageTabFieldDiscount.packageTabFieldDiscount
+  > div
+  > select {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 0;
+  padding: 0 var(--admin-space-sm);
+}
+
+.packageTabCard.packageTabCard.packageTabCard
+  .packageTabFieldDiscount.packageTabFieldDiscount
+  > div
+  > input {
+  flex: 1 1 0;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Скидка Д/с: «По договору (…) | Своя, % | Своя, руб.»; значение появляется, когда скидка своя. */
+.packageTabCard.packageTabCard.packageTabCard
+  .packageTabFieldDiscountWide.packageTabFieldDiscountWide
+  > div {
+  display: flex;
+  gap: var(--admin-space-xs);
+}
+
+.packageTabCard.packageTabCard.packageTabCard
+  .packageTabFieldDiscountWide.packageTabFieldDiscountWide
+  > div
+  > select {
+  flex: 0 1 auto;
+  width: 10.5rem;
+  min-width: 0;
+}
+
+.packageTabCard.packageTabCard.packageTabCard
+  .packageTabFieldDiscountWide.packageTabFieldDiscountWide
+  > div:has(> input)
+  > select {
+  width: 8rem;
+}
+
+.packageTabCard.packageTabCard.packageTabCard
+  .packageTabFieldDiscountWide.packageTabFieldDiscountWide
+  > div
+  > input {
+  flex: 0 0 6.5rem;
+  width: 6.5rem;
+  min-width: 0;
+}
+
+/* ── Кнопки внутри вкладки: одна высота с полями (28px), один радиус и шрифт.
+   Классы самостоятельные — без .primaryBtn / .secondaryBtn, у которых свои размеры. ── */
+.packageTabBtn.packageTabBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--admin-space-xs);
+  box-sizing: border-box;
+  height: var(--package-tab-control-h, 28px);
+  padding: 0 var(--admin-space-md);
+  border: 1px solid transparent;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  line-height: var(--admin-line-height-sm);
+  white-space: nowrap;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.packageTabBtn.packageTabBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.packageTabBtn.packageTabBtn > svg {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+}
+
+/* Кнопка-иконка («+»): квадрат той же высоты. */
+.packageTabBtnIcon.packageTabBtnIcon {
+  width: var(--package-tab-control-h, 28px);
+  padding: 0;
+}
+
+/* Внутри поля (столбец) кнопка не растягивается на всю ширину. */
+.packageTabCard.packageTabCard.packageTabCard .packageTabField.packageTabField > .packageTabBtn {
+  align-self: flex-start;
+}
+
+.packageTabBtnPrimary.packageTabBtnPrimary {
+  background: var(--admin-info);
+  color: var(--admin-text-inverse, var(--admin-surface));
+}
+
+.packageTabBtnPrimary.packageTabBtnPrimary:hover:not(:disabled) {
+  background: var(--admin-info-strong);
+}
+
+.packageTabBtnSecondary.packageTabBtnSecondary {
+  background: var(--admin-surface);
+  border-color: var(--admin-border-strong);
+  color: var(--admin-text-secondary);
+}
+
+.packageTabBtnSecondary.packageTabBtnSecondary:hover:not(:disabled) {
+  background: var(--admin-surface-muted);
+  border-color: var(--admin-text-muted);
+  color: var(--admin-text-primary);
+}
+
+/* ── Строка «поле слева, переключатель справа» ── */
+.packageTabCard.packageTabCard.packageTabCard .packageTabToolbarRow.packageTabToolbarRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--admin-space-md) var(--admin-space-lg);
+  margin: 0;
+}
+
+.packageTabSegmentedGroup.packageTabSegmentedGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  min-height: var(--package-tab-control-h, 28px);
+}
+
+.packageTabSegmentedCaption.packageTabSegmentedCaption {
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
+  color: var(--admin-text-muted);
+  white-space: nowrap;
+}
+
+/* Сегментный переключатель: белая «таблетка», активный сегмент — голубой. */
+.packageTabSegmented.packageTabSegmented {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  box-sizing: border-box;
+  min-height: var(--package-tab-control-h, 28px);
+  padding: 2px;
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface);
+}
+
+.packageTabSegmentedBtn.packageTabSegmentedBtn {
+  display: inline-flex;
+  align-items: center;
+  height: calc(var(--package-tab-control-h, 28px) - 6px);
+  padding: 0 var(--admin-space-md);
+  border: 0;
+  border-radius: calc(var(--admin-radius-sm) - 2px);
+  background: transparent;
+  color: var(--admin-text-secondary);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 500;
+  line-height: var(--admin-line-height-sm);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.packageTabSegmentedBtn.packageTabSegmentedBtn:hover:not(:disabled):not([aria-pressed='true']) {
+  background: var(--admin-surface-soft);
+}
+
+.packageTabSegmentedBtn.packageTabSegmentedBtn[aria-pressed='true'] {
+  background: var(--admin-info-bg-soft);
+  color: var(--admin-info-strong);
+  font-weight: 600;
+}
+
+.packageTabSegmentedBtn.packageTabSegmentedBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* --- dark theme --- */
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .packageTabCard.packageTabCard.packageTabCard.packageTabCard.packageTabCard {
+  border-color: var(--admin-border-strong);
 }
 
 /* Скидка Д/с (наследование договоровой или своя) — третье поле строки метаданных */

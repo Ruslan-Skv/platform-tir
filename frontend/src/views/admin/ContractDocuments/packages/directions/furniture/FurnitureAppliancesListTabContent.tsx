@@ -4,13 +4,24 @@ import { PlusIcon } from '@heroicons/react/24/outline';
 
 import { useCallback, useMemo } from 'react';
 
+import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
+
 import cdDataTab from '../../../styles/data-tab.module.css';
 import cdProduct from '../../../styles/product-package.module.css';
+import { DetachEstimateIcon } from '../../platform/editor/shared/DetachEstimateIcon';
 import {
   PackageLockNotice,
   packageLockNoticeMessage,
 } from '../../platform/editor/shared/packageLockNoticeUi';
-import { PACKAGE_TAB_TITLE } from '../../platform/ui/packageTabClassNames';
+import {
+  PACKAGE_TAB_BTN,
+  PACKAGE_TAB_BTN_SECONDARY,
+  PACKAGE_TAB_CARD,
+  PACKAGE_TAB_HEAD,
+  PACKAGE_TAB_HINT,
+  PACKAGE_TAB_SUBTITLE,
+  PACKAGE_TAB_TITLE,
+} from '../../platform/ui/packageTabClassNames';
 import styles from './FurnitureAppliancesListTabContent.module.css';
 import type {
   FurnitureAppliancesDocs,
@@ -86,7 +97,7 @@ export function FurnitureAppliancesListTabContent({
 
     return (
       <section key={group} className={styles.section} aria-label={GROUP_TITLE[group]}>
-        <h4 className={styles.subTitle}>{GROUP_TITLE[group]}</h4>
+        <h4 className={PACKAGE_TAB_SUBTITLE}>{GROUP_TITLE[group]}</h4>
 
         <div className={cdProduct.windowsAddendumSpecTableWrap}>
           <table className={`${cdProduct.windowsAddendumSpecTable} ${styles.table}`}>
@@ -175,14 +186,13 @@ export function FurnitureAppliancesListTabContent({
 
                   {!disabled ? (
                     <td>
-                      <button
-                        type="button"
-                        className={cdProduct.windowsAddendumSpecRemove}
+                      <AdminTableIconButton
                         aria-label="Удалить строку"
+                        title="Удалить"
                         onClick={() => setLines(docs.lines.filter((_, i) => i !== index))}
                       >
-                        ×
-                      </button>
+                        <DetachEstimateIcon />
+                      </AdminTableIconButton>
                     </td>
                   ) : null}
                 </tr>
@@ -194,10 +204,10 @@ export function FurnitureAppliancesListTabContent({
         {!disabled ? (
           <button
             type="button"
-            className={cdProduct.windowsAddendumSpecAdd}
+            className={`${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_SECONDARY}`}
             onClick={() => setLines([...docs.lines, newFurnitureAppliancesLine({ group })])}
           >
-            <PlusIcon width={16} height={16} aria-hidden />
+            <PlusIcon aria-hidden />
             Добавить позицию
           </button>
         ) : null}
@@ -210,28 +220,34 @@ export function FurnitureAppliancesListTabContent({
   };
 
   return (
-    <div className={`${cdDataTab.blockData} ${cdProduct.blockData} ${styles.wrap}`}>
-      {disabled ? (
-        <PackageLockNotice>{packageLockNoticeMessage('specification')}</PackageLockNotice>
-      ) : null}
+    <div
+      className={`${cdDataTab.blockData} ${cdProduct.blockData} ${PACKAGE_TAB_CARD} ${styles.wrap}`}
+    >
+      <div className={PACKAGE_TAB_HEAD}>
+        <h3 className={PACKAGE_TAB_TITLE}>
+          Перечень товара
+          {contractNumberLabel ? ` · ${contractNumberLabel}` : ''}
+        </h3>
 
-      <h3 className={PACKAGE_TAB_TITLE}>
-        Перечень товара
-        {contractNumberLabel ? ` · ${contractNumberLabel}` : ''}
-      </h3>
+        {disabled ? (
+          <PackageLockNotice>{packageLockNoticeMessage('specification')}</PackageLockNotice>
+        ) : null}
 
-      <p className={styles.hint}>
-        Бытовая техника и сантехника (Excel «Переч»). Итог записывается в стоимость договора на
-        технику; предоплата — 100%.
-      </p>
+        <p className={PACKAGE_TAB_HINT}>
+          Бытовая техника и сантехника (Excel «Переч»). Итог записывается в стоимость договора на
+          технику; предоплата — 100%.
+        </p>
+      </div>
 
       {renderGroup('appliances')}
 
       {renderGroup('plumbing')}
 
-      <p className={styles.total}>
-        Итого стоимость: {formatFurnitureAppliancesMoney(grandTotal)} ₽
-      </p>
+      <section className={styles.section}>
+        <p className={styles.total}>
+          Итого стоимость: {formatFurnitureAppliancesMoney(grandTotal)} ₽
+        </p>
+      </section>
     </div>
   );
 }

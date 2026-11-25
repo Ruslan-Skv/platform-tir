@@ -4,10 +4,9 @@ import cdDocPreview from '../../../../styles/documents-preview.module.css';
 import cdTemplates from '../../../../styles/templates-library.module.css';
 import { ProductAddendumTab } from '../../../families/product-like/addendum/ProductAddendumTab';
 import type { usePackageAddendumEditor } from '../../hooks/addendum/usePackageAddendumEditor';
-import attachStyles from '../estimateTab/PackageEstimateAttach.module.css';
 import { PackageAddendumEstimateBlock } from './PackageAddendumEstimateBlock';
 
-const ADDENDUM_LOCKED_HINT = `${cdDocPreview.hint} ${cdTemplates.hint} ${attachStyles.estimateTabHint}`;
+const ADDENDUM_LOCKED_HINT = `${cdDocPreview.hint} ${cdTemplates.hint}`;
 
 export type PackageAddendumEditorPaneProps = {
   activeAddendumSlot: number | null;

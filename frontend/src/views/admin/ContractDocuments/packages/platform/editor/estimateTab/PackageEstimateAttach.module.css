@@ -1,31 +1,5 @@
 /* Co-located: UI прикрепления расчётов (вкладка «Смета» и блоки Д/с). */
 
-/* Строка поля скидки: слева скидка, справа переключатель варианта отображения сметы
-   (в одной строке — переключатель не увеличивает высоту блока). */
-.estimateDiscountRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--admin-space-lg);
-  min-width: 0;
-}
-
-.estimateGroupModeSwitch {
-  display: inline-flex;
-  flex-shrink: 0;
-  gap: var(--admin-space-sm);
-}
-
-@media (max-width: 900px) {
-  .estimateDiscountRow {
-    flex-wrap: wrap;
-  }
-
-  .estimateGroupModeSwitch {
-    margin-left: auto;
-  }
-}
-
 .estimatePickAndAttachedRow {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(180px, 38%);
@@ -59,36 +33,38 @@
   }
 }
 
+/* «Прикреплённые»: белая панель на серой карточке вкладки, расчёты — строки списка. */
 .estimateAttachedColumn {
   border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-sm);
-  padding: var(--admin-space-xs) var(--admin-space-sm);
-  background: var(--admin-surface-muted);
+  border-radius: var(--admin-radius-md);
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  background: var(--admin-surface);
   min-width: 0;
   max-height: 188px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: var(--admin-space-2xs);
+  gap: var(--admin-space-xs);
 }
 
 .estimateAttachedColumnTitle {
-  font-size: var(--admin-font-size-2xs);
-  font-weight: 700;
-  color: var(--admin-sidebar-text);
-  letter-spacing: var(--admin-letter-spacing-wide);
-  line-height: var(--admin-line-height-xs);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+  letter-spacing: normal;
+  line-height: var(--admin-line-height-sm);
 }
 
 .estimateAttachedEmpty {
   margin: 0;
-  font-size: var(--admin-font-size-2xs);
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
-  line-height: var(--admin-line-height-xs);
+  line-height: var(--admin-line-height-sm);
 }
 
 .estimateAttachedPresetMain {
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .estimateAttachedPresetMain strong {
@@ -97,63 +73,58 @@
 }
 
 .estimateAttachedPresetMeta {
-  font-size: var(--admin-font-size-2xs);
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
 }
 
-/* Наценка прикреплённого расчёта: то же поле, что в разделе «Расчёты». */
+/* Наценка прикреплённого расчёта: то же поле, что в разделе «Расчёты» — строкой под названием. */
 .estimateAttachedMarkup {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 4px;
-  margin-top: 2px;
+  margin-top: var(--admin-space-2xs);
   white-space: nowrap;
 }
 
 .estimateAttachedMarkupLabel {
-  font-size: var(--admin-font-size-2xs);
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
 }
 
+/* Компактный вариант поля из набора шапки вкладки (та же рамка и радиус, высота 24px). */
 .estimateAttachedMarkupInput {
   box-sizing: border-box;
-  width: 4rem;
+  width: 3.5rem;
   max-width: 100%;
+  height: 24px;
   margin: 0;
-  padding: calc(var(--admin-space-sm) * 0.5) var(--admin-space-xs);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-xs);
-  font-size: var(--admin-font-size-2xs);
-  line-height: 1.25;
+  padding: 0 var(--admin-space-sm);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
   background: var(--admin-surface);
   color: var(--admin-text-primary);
 }
 
 .estimateAttachedMarkupInput:focus {
-  border-color: var(--admin-accent, #2563eb);
-  box-shadow: var(--admin-shadow-focus-soft);
+  border-color: var(--admin-focus-ring, #3b82f6);
+  box-shadow: 0 0 0 1px var(--admin-focus-ring, #3b82f6);
   outline: none;
 }
 
 .estimateAttachedMarkupInput:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+  background: var(--admin-surface-muted);
+  border-color: var(--admin-border);
+  color: var(--admin-text-secondary);
+  opacity: 1;
+  cursor: default;
 }
 
 .estimateAttachedMarkupInherited {
   font-style: normal;
-  font-size: var(--admin-font-size-2xs);
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
-}
-
-.estimateAttachedRemoveBtn {
-  padding: var(--admin-space-0) var(--admin-space-sm);
-  min-width: 24px;
-  min-height: 24px;
-  font-size: var(--admin-font-size-xl);
-  line-height: var(--admin-line-height-flat);
-  font-weight: 500;
-  flex-shrink: 0;
 }
 
 @media (max-width: 900px) {
@@ -174,23 +145,6 @@
   align-items: center;
 }
 
-.estimateAttachPrimaryBtn {
-  padding: var(--admin-space-xs) var(--admin-space-lg);
-  font-size: var(--admin-font-size-xs);
-}
-
-.estimateAttachPrimaryBtn.estimateAttachPrimaryBtn {
-  padding: var(--admin-space-xs) var(--admin-space-lg);
-  font-size: var(--admin-font-size-xs);
-  line-height: var(--admin-line-height-sm);
-}
-
-.estimateTabHint {
-  margin: 1px 0 0;
-  font-size: var(--admin-font-size-2xs);
-  line-height: var(--admin-line-height-sm);
-}
-
 .estimateTabHintFullWidth {
   grid-column: 1 / -1;
   margin-top: var(--admin-space-2xs);
@@ -198,7 +152,7 @@
 
 .estimateAttachedPresetList {
   display: grid;
-  gap: var(--admin-space-xs);
+  gap: var(--admin-space-2xs);
 }
 
 .estimateAttachedPresetRow {
@@ -206,57 +160,18 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: var(--admin-space-xs);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-xs);
-  padding: var(--admin-space-xs) var(--admin-space-xs);
+  padding: var(--admin-space-sm) 0;
+  border-bottom: 1px solid var(--admin-border);
   cursor: grab;
-  background: var(--admin-surface);
+}
+
+.estimateAttachedPresetRow:last-child {
+  padding-bottom: var(--admin-space-2xs);
+  border-bottom: 0;
 }
 
 .estimateSheetField {
   gap: var(--admin-space-2xs);
-}
-
-.estimateSheetField > label {
-  font-size: var(--admin-font-size-2xs);
-}
-
-/* Товарные пакеты: тот же размер, что у подсказок (.hint → admin-font-size-xs). */
-.estimateAttachWindowsTypography.estimateTabHint,
-.estimateAttachWindowsTypography .estimateAttachedColumnTitle {
-  font-size: var(--admin-font-size-xs);
-  font-weight: normal;
-  letter-spacing: normal;
-  line-height: var(--admin-line-height-sm);
-}
-
-.estimateAttachWindowsTypography.estimateTabHint,
-.estimateAttachWindowsTypography .estimateAttachedEmpty,
-.estimateAttachWindowsTypography .estimateAttachedPresetMeta,
-.estimateAttachWindowsTypography .estimateTabHint {
-  font-size: var(--admin-font-size-xs);
-  line-height: var(--admin-line-height-sm);
-}
-
-.estimateAttachWindowsTypography .estimateAttachedPresetMain strong {
-  font-size: var(--admin-font-size-xs);
-  font-weight: 600;
-}
-
-.estimateAttachWindowsTypography .estimateAttachedRemoveBtn {
-  font-size: var(--admin-font-size-xs);
-  line-height: 1;
-}
-
-.estimateAttachWindowsTypography.estimateSheetField > label,
-.estimateAttachWindowsTypography .estimateSheetField > label {
-  font-size: var(--admin-font-size-xs);
-  font-weight: 600;
-}
-
-.estimateAttachWindowsTypography .estimateAttachPrimaryBtn {
-  font-size: var(--admin-font-size-xs);
-  line-height: var(--admin-line-height-sm);
 }
 
 /* Перебивает windowsContractFormSection select/label (sm) — как у подсказок вкладки. */

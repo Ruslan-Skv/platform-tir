@@ -305,7 +305,6 @@
 
 .estimateTabCompact.windowsContractTabTypography .hint,
 .estimateTabCompact.windowsContractTabTypography .estimateTabHint,
-.estimateTabCompact.windowsContractTabTypography .windowsSpecFileHint,
 .estimateTabCompact.windowsContractTabTypography .windowsSpecFileMeta,
 .estimateTabCompact.windowsContractTabTypography .link {
   font-size: var(--windows-contract-tab-font-size);
@@ -321,12 +320,6 @@
 .estimateTabCompact.windowsContractTabTypography .secondaryBtn,
 .estimateTabCompact.windowsContractTabTypography .primaryBtn {
   font-size: var(--windows-contract-tab-font-size);
-}
-
-/* «Прикрепить» / «Добавить в раздел…» — компактные, не как обычные primaryBtn вкладки. */
-.estimateTabCompact.windowsContractTabTypography .estimateAttachPrimaryBtn {
-  font-size: var(--admin-font-size-xs);
-  padding: var(--admin-space-xs) var(--admin-space-lg);
 }
 
 .estimateTabCompact.windowsContractTabTypography .estimateAttachedColumnTitle {
@@ -416,31 +409,6 @@
   ) {
   font-size: var(--admin-font-size-xs);
   line-height: var(--admin-line-height-sm);
-}
-
-/* Д/с: мета-поля (дата, увеличение срока) — в стиле формы «Спецификации». */
-.estimateTabCompact.windowsContractTabTypography.windowsAddendumTab
-  .windowsAddendumMetaField
-  input {
-  font-size: var(--admin-font-size-xs);
-  line-height: var(--admin-line-height-sm);
-  border: 1px solid color-mix(in srgb, var(--admin-border, #e2e8f0) 60%, transparent);
-}
-
-.estimateTabCompact.windowsContractTabTypography.windowsAddendumTab
-  .windowsAddendumMetaField
-  input::placeholder {
-  color: var(--admin-text-primary, #0f172a);
-  opacity: 0.35;
-}
-
-/* Фокус мета-полей — синий, как у ячеек таблиц (перебивает accent-рамку редактора пакета). */
-.estimateTabCompact.windowsContractTabTypography.windowsAddendumTab
-  .windowsAddendumMetaField
-  input:not([readonly]):not(:disabled):focus {
-  border-color: var(--admin-focus-ring, #3b82f6) !important;
-  box-shadow: 0 0 0 1px var(--admin-focus-ring, #3b82f6) !important;
-  outline: none;
 }
 
 .windowsAddendumSpecTable {
@@ -611,22 +579,6 @@
   margin-top: var(--admin-space-sm);
 }
 
-.windowsAddendumSpecAddBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  min-width: 24px;
-  min-height: 24px;
-  flex-shrink: 0;
-}
-
-.windowsAddendumSpecAddBtnIcon {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-}
-
 .windowsAddendumSpecSectionTotal {
   margin: 0;
   font-size: inherit;
@@ -753,11 +705,6 @@
   line-height: var(--admin-line-height-sm) !important;
 }
 
-.windowsSpecificationAmountField {
-  gap: var(--admin-space-2xs);
-  margin-bottom: 0;
-}
-
 /* Строки версий файла спецификации: «Версия №N · файл · размер · дата · Скачать · Удалить». */
 .windowsSpecVersionRow {
   display: flex;
@@ -820,36 +767,6 @@
   line-height: 1.35;
 }
 
-.windowsSpecificationAmountField > label {
-  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm)) !important;
-  font-weight: 600 !important;
-  color: var(--admin-text-secondary) !important;
-  line-height: var(--admin-line-height-sm) !important;
-}
-
-.windowsSpecificationAmountField input {
-  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm)) !important;
-  line-height: var(--admin-line-height-sm) !important;
-  padding: var(--admin-space-xs) var(--admin-space-sm);
-}
-
-.doorsSpecificationDiscountField > label {
-  font-size: var(--admin-font-size-xs) !important;
-  font-weight: 600 !important;
-  color: var(--admin-text-secondary) !important;
-  line-height: var(--admin-line-height-sm) !important;
-}
-
-.doorsSpecificationDiscountField input {
-  font-size: var(--admin-font-size-xs) !important;
-  line-height: var(--admin-line-height-sm) !important;
-  padding: var(--admin-space-xs) var(--admin-space-sm);
-}
-
-.estimateTabCompact.windowsContractTabTypography.dataCompact
-  .windowsContractFormSection
-  .windowsSpecificationAmountField
-  > label,
 .estimateTabCompact.windowsContractTabTypography.dataCompact
   .windowsContractFormSection
   .windowsSpecFieldCaption {
@@ -857,15 +774,6 @@
   font-weight: 600;
   color: var(--admin-text-secondary);
   line-height: var(--admin-line-height-sm);
-}
-
-.estimateTabCompact.windowsContractTabTypography.dataCompact
-  .windowsContractFormSection
-  .windowsSpecificationAmountField
-  input {
-  font-size: var(--windows-contract-tab-font-size);
-  line-height: var(--admin-line-height-sm);
-  padding: var(--admin-space-xs) var(--admin-space-sm);
 }
 
 .estimateTabCompact.windowsContractTabTypography
@@ -937,70 +845,6 @@
 
 .doorsSpecificationFieldsRow {
   margin-bottom: var(--admin-space-sm);
-}
-
-.doorsSpecificationImportRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--admin-space-sm) var(--admin-space-md);
-  margin-bottom: var(--admin-space-sm);
-}
-
-.doorsSpecificationImportBtn {
-  flex-shrink: 0;
-}
-
-.doorsSpecificationImportHint {
-  margin: 0;
-  font-size: var(--admin-font-size-xs);
-  line-height: var(--admin-line-height-sm);
-  color: var(--admin-text-secondary);
-}
-
-.estimateTabCompact.windowsContractTabTypography
-  .windowsContractFormSection
-  .doorsSpecificationDiscountField {
-  gap: var(--admin-space-2xs);
-  margin-bottom: 0;
-}
-
-.estimateTabCompact.windowsContractTabTypography
-  .windowsContractFormSection
-  .doorsSpecificationDiscountField
-  label {
-  font-size: var(--admin-font-size-xs);
-  font-weight: 600;
-  color: var(--admin-text-secondary);
-  line-height: var(--admin-line-height-sm);
-}
-
-.estimateTabCompact.windowsContractTabTypography
-  .windowsContractFormSection
-  .doorsSpecificationDiscountField
-  input {
-  font-size: var(--admin-font-size-xs);
-  line-height: var(--admin-line-height-sm);
-  padding: var(--admin-space-xs) var(--admin-space-sm);
-  border: 1px solid color-mix(in srgb, var(--admin-border, #e2e8f0) 60%, transparent);
-}
-
-/* Фокус поля скидки — синий, как у ячеек таблицы (перебивает accent-рамку редактора пакета). */
-.estimateTabCompact.windowsContractTabTypography
-  .windowsContractFormSection
-  .doorsSpecificationDiscountField
-  input:not([readonly]):not(:disabled):focus {
-  border-color: var(--admin-focus-ring, #3b82f6) !important;
-  box-shadow: 0 0 0 1px var(--admin-focus-ring, #3b82f6) !important;
-  outline: none;
-}
-
-.estimateTabCompact.windowsContractTabTypography
-  .windowsContractFormSection
-  .doorsSpecificationTable
-  .estimateAttachedRemoveBtn {
-  font-size: var(--admin-font-size-xs);
-  line-height: 1;
 }
 
 .doorsSpecificationTableWrap {
@@ -1082,8 +926,7 @@
 }
 
 /* Плейсхолдеры формы: заметно прозрачнее основного текста. */
-.doorsSpecificationTable input:not(.doorsSpecificationAmountReadonly)::placeholder,
-.doorsSpecificationDiscountField input::placeholder {
+.doorsSpecificationTable input:not(.doorsSpecificationAmountReadonly)::placeholder {
   color: var(--admin-text-primary, #0f172a);
   opacity: 0.35;
 }
@@ -1139,22 +982,6 @@
   margin-top: var(--admin-space-sm);
 }
 
-.doorsSpecificationAddBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  min-width: 24px;
-  min-height: 24px;
-  flex-shrink: 0;
-}
-
-.doorsSpecificationAddBtnIcon {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-}
-
 .supplierRequestToolbar {
   display: flex;
   align-items: center;
@@ -1165,29 +992,6 @@
 
 .supplierRequestToolbarNotice {
   margin-left: auto;
-}
-
-.supplierRequestWordBtn {
-  padding: 6px 14px;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  background: var(--admin-surface, #fff);
-  color: var(--admin-text-primary);
-  cursor: pointer;
-  font-size: 13px;
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease;
-}
-
-.supplierRequestWordBtn:hover {
-  background: var(--admin-surface-muted, #f1f5f9);
-  border-color: #94a3b8;
-}
-
-.supplierRequestWordBtn:disabled {
-  cursor: default;
-  opacity: 0.6;
 }
 
 .doorsSpecificationSectionTotal {
@@ -1229,24 +1033,6 @@
   justify-content: flex-start;
   gap: var(--admin-space-2xs) var(--admin-space-sm);
   margin-bottom: var(--admin-space-sm);
-}
-
-.ceilingsSpecificationCompactField {
-  flex: 0 0 auto;
-  width: 7.5rem;
-  max-width: 7.5rem;
-  min-width: 0;
-}
-
-.ceilingsSpecificationCompactField input {
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  padding: var(--admin-space-2xs) var(--admin-space-xs) !important;
-}
-
-.ceilingsSpecificationCompactField > label {
-  white-space: nowrap;
 }
 
 .ceilingsSpecificationTotals {
@@ -1385,16 +1171,6 @@
   align-items: center;
   gap: var(--admin-space-xs);
   margin-left: auto;
-}
-
-.ceilingsSpecificationBlockAddBtn {
-  min-width: 28px;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-  line-height: 1;
 }
 
 .ceilingsSpecificationBlockBody {

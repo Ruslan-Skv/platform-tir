@@ -1,8 +1,7 @@
-﻿'use client';
+'use client';
 
 import type { ComponentProps } from 'react';
 
-import cdChrome from '../../../../styles/editor-chrome.module.css';
 import cdProduct from '../../../../styles/product-package.module.css';
 import { PackageAddendumEstimateBlock } from '../../../platform/editor/addendum/PackageAddendumEstimateBlock';
 import {
@@ -10,7 +9,16 @@ import {
   packageLockNoticeMessage,
 } from '../../../platform/editor/shared/packageLockNoticeUi';
 import type { PackageAddendumSlotEstimateBlock } from '../../../platform/form/packageForm';
-import { PACKAGE_TAB_CARD, PACKAGE_TAB_TITLE } from '../../../platform/ui/packageTabClassNames';
+import {
+  PACKAGE_TAB_CARD,
+  PACKAGE_TAB_FIELD,
+  PACKAGE_TAB_FIELD_DATE,
+  PACKAGE_TAB_FIELD_DAYS,
+  PACKAGE_TAB_FIELD_ROW,
+  PACKAGE_TAB_INPUT_SUFFIX,
+  PACKAGE_TAB_INPUT_WRAP,
+  PACKAGE_TAB_TITLE,
+} from '../../../platform/ui/packageTabClassNames';
 import { ProductAddendumGrandTotalsSummary } from './ProductAddendumGrandTotalsSummary';
 import { ProductAddendumSpecificationLinesEditor } from './ProductAddendumSpecificationLinesEditor';
 import {
@@ -72,9 +80,9 @@ export function ProductAddendumTab({
             <h3 className={PACKAGE_TAB_TITLE}>Дополнительное соглашение №{slotOrdinal}</h3>
           </div>
           {signedLockNotice}
-          <div className={cdChrome.packageAddendumMetaInlineRow}>
+          <div className={PACKAGE_TAB_FIELD_ROW}>
             <div
-              className={`${PRODUCT_ADDENDUM_FIELD} ${cdProduct.windowsAddendumMetaField} ${cdChrome.packageAddendumDateFieldRow}`}
+              className={`${PRODUCT_ADDENDUM_FIELD} ${PACKAGE_TAB_FIELD} ${PACKAGE_TAB_FIELD_DATE}`}
             >
               <label htmlFor={`windows_addendum_date_${slotOrdinal}`}>
                 Дата доп. соглашения (в шапке слева)
@@ -90,23 +98,28 @@ export function ProductAddendumTab({
               />
             </div>
             <div
-              className={`${PRODUCT_ADDENDUM_FIELD} ${cdProduct.windowsAddendumMetaField} ${cdChrome.packageAddendumWorkPeriodIncreaseFieldRow}`}
+              className={`${PRODUCT_ADDENDUM_FIELD} ${PACKAGE_TAB_FIELD} ${PACKAGE_TAB_FIELD_DAYS}`}
             >
               <label htmlFor={`windows_addendum_work_period_increase_${slotOrdinal}`}>
                 Увеличение срока по договору
               </label>
-              <input
-                id={`windows_addendum_work_period_increase_${slotOrdinal}`}
-                type="number"
-                inputMode="numeric"
-                value={workPeriodIncreaseDays}
-                onChange={(e) => onWorkPeriodIncreaseDaysChange(e.target.value)}
-                placeholder="дн."
-                autoComplete="off"
-                disabled={readOnly}
-                min={0}
-                step={1}
-              />
+              <span className={PACKAGE_TAB_INPUT_WRAP}>
+                <input
+                  id={`windows_addendum_work_period_increase_${slotOrdinal}`}
+                  type="number"
+                  inputMode="numeric"
+                  value={workPeriodIncreaseDays}
+                  onChange={(e) => onWorkPeriodIncreaseDaysChange(e.target.value)}
+                  placeholder="0"
+                  autoComplete="off"
+                  disabled={readOnly}
+                  min={0}
+                  step={1}
+                />
+                <span className={PACKAGE_TAB_INPUT_SUFFIX} aria-hidden>
+                  дн.
+                </span>
+              </span>
             </div>
           </div>
 

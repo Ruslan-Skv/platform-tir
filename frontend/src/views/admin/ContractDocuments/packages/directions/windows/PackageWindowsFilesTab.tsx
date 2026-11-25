@@ -11,7 +11,6 @@ import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import cdHub from '../../../styles/contracts-list-hub.module.css';
 import cdDataTab from '../../../styles/data-tab.module.css';
 import cdEstimateTab from '../../../styles/estimate-tab.module.css';
-import cdWorkspace from '../../../styles/estimates-workspace.module.css';
 import cdHubModals from '../../../styles/hub-modals.module.css';
 import cdProduct from '../../../styles/product-package.module.css';
 import cdTemplates from '../../../styles/templates-library.module.css';
@@ -22,7 +21,11 @@ import {
 import { PACKAGE_WINDOWS_ADDITIONAL_FILES_MAX } from '../../platform/form/normalize';
 import type { PackageFormData } from '../../platform/form/packageForm';
 import {
+  PACKAGE_TAB_BTN,
+  PACKAGE_TAB_BTN_SECONDARY,
+  PACKAGE_TAB_CAPTION,
   PACKAGE_TAB_CARD,
+  PACKAGE_TAB_FIELD_HINT,
   PACKAGE_TAB_HINT,
   PACKAGE_TAB_TITLE,
 } from '../../platform/ui/packageTabClassNames';
@@ -127,15 +130,12 @@ export function PackageWindowsFilesTab({
           <div className={FILES_SECTION_FIELDS}>
             <div className={`${FILES_FIELD} ${cdEstimateTab.fieldSpanAll}`}>
               <span
-                className={`${cdHubModals.windowsSpecFieldCaption} ${cdProduct.windowsSpecFieldCaption}`}
+                className={`${cdHubModals.windowsSpecFieldCaption} ${cdProduct.windowsSpecFieldCaption} ${PACKAGE_TAB_CAPTION}`}
                 id="windows-files-caption"
               >
                 Прикреплённые файлы
               </span>
-              <div
-                className={cdHubModals.windowsSpecFileControlRow}
-                aria-labelledby="windows-files-caption"
-              >
+              <div aria-labelledby="windows-files-caption">
                 <input
                   ref={fileInputRef}
                   id="windows-additional-file"
@@ -147,23 +147,23 @@ export function PackageWindowsFilesTab({
                 />
                 <label
                   htmlFor="windows-additional-file"
-                  className={`${cdWorkspace.secondaryBtn} ${cdHubModals.windowsSpecFilePickBtn}`}
+                  className={`${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_SECONDARY} ${cdHubModals.windowsSpecFilePickBtn}`}
                   data-disabled={uploading || maxReached ? '' : undefined}
                 >
                   <ArrowUpTrayIcon aria-hidden />
                   {uploading ? 'Загрузка…' : 'Загрузить файл'}
                 </label>
-                {files.length ? (
-                  <span
-                    className={`${cdHubModals.windowsSpecFileMeta} ${cdProduct.windowsSpecFileMeta}`}
-                  >
-                    Загружено файлов: {files.length} из {PACKAGE_WINDOWS_ADDITIONAL_FILES_MAX}.
-                  </span>
-                ) : null}
               </div>
+              {files.length ? (
+                <p
+                  className={`${PACKAGE_TAB_FIELD_HINT} ${cdHubModals.windowsSpecFileMeta} ${cdProduct.windowsSpecFileMeta}`}
+                >
+                  Загружено файлов: {files.length} из {PACKAGE_WINDOWS_ADDITIONAL_FILES_MAX}.
+                </p>
+              ) : null}
               {uploadError ? (
                 <p
-                  className={`${cdHubModals.windowsSpecFileMeta} ${cdProduct.windowsSpecFileMeta}`}
+                  className={`${PACKAGE_TAB_FIELD_HINT} ${cdHubModals.windowsSpecFileMeta} ${cdProduct.windowsSpecFileMeta}`}
                   role="alert"
                 >
                   {uploadError}
@@ -171,7 +171,7 @@ export function PackageWindowsFilesTab({
               ) : null}
               {!files.length && !uploading ? (
                 <p
-                  className={`${cdHubModals.windowsSpecFileMeta} ${cdProduct.windowsSpecFileMeta}`}
+                  className={`${PACKAGE_TAB_FIELD_HINT} ${cdHubModals.windowsSpecFileMeta} ${cdProduct.windowsSpecFileMeta}`}
                 >
                   Файлы ещё не прикреплены.
                 </p>

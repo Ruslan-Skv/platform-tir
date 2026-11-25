@@ -1,27 +1,41 @@
+/* Вкладка «Спецификация» пакета «Мебель». Карточка, заголовок, поля и кнопки —
+   набор шапки вкладки (packageTab* в editor-chrome); здесь — только раскладка. */
 .wrap {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 8px 0 16px;
 }
 
 .section {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--admin-space-md);
 }
 
-.hint {
-  margin: 0;
-  font-size: 13px;
-  color: #64748b;
-  line-height: 1.4;
+/* Отбивка между разделами карточки. */
+.section + .section {
+  margin-top: var(--admin-space-2xl);
 }
 
-.subTitle {
-  margin: 0;
-  font-size: 14px;
+/* Кнопка в колонке не растягивается на всю ширину. */
+.section > button {
+  align-self: flex-start;
+}
+
+/* Таблица позиций: компактный шрифт, как в остальных спецификациях. Двойной класс
+   перебивает font-size: inherit таблицы из product-package при любом порядке стилей. */
+.specTable.specTable {
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
+}
+
+.specTable.specTable th {
   font-weight: 600;
+  color: var(--admin-text-secondary);
+}
+
+/* Колонка действий («×») — узкая: иначе делит лишнюю ширину с остальными. */
+.specTable.specTable th:last-child {
+  width: 3rem;
 }
 
 .specTable input {
@@ -42,38 +56,39 @@
 
 .total {
   margin: 0;
+  font-size: var(--admin-font-size-sm);
   font-weight: 600;
   text-align: right;
 }
 
+/* Прикреплённый файл: белая панель на серой карточке. */
 .fileBlock {
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 10px 12px;
-  background: #fff;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  background: var(--admin-surface);
 }
 
 .fileHeader {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 6px;
+  gap: var(--admin-space-xl);
 }
 
 .fileActions {
   display: flex;
-  gap: 8px;
+  gap: var(--admin-space-sm);
   flex-wrap: wrap;
 }
 
 .fileMeta {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--admin-font-size-xs);
 }
 
 .fileEmpty {
   margin: 0;
-  font-size: 13px;
-  color: #94a3b8;
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-muted);
 }

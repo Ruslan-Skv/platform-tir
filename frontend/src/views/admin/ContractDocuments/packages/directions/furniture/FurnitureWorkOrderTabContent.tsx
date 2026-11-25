@@ -4,14 +4,24 @@ import { PlusIcon } from '@heroicons/react/24/outline';
 
 import { useCallback, useMemo } from 'react';
 
+import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
+
 import cdDataTab from '../../../styles/data-tab.module.css';
-import cdWorkspace from '../../../styles/estimates-workspace.module.css';
 import cdProduct from '../../../styles/product-package.module.css';
+import { DetachEstimateIcon } from '../../platform/editor/shared/DetachEstimateIcon';
 import {
   PackageLockNotice,
   packageLockNoticeMessage,
 } from '../../platform/editor/shared/packageLockNoticeUi';
-import { PACKAGE_TAB_TITLE } from '../../platform/ui/packageTabClassNames';
+import {
+  PACKAGE_TAB_BTN,
+  PACKAGE_TAB_BTN_SECONDARY,
+  PACKAGE_TAB_CARD,
+  PACKAGE_TAB_HEAD,
+  PACKAGE_TAB_HINT,
+  PACKAGE_TAB_SUBTITLE,
+  PACKAGE_TAB_TITLE,
+} from '../../platform/ui/packageTabClassNames';
 import styles from './FurnitureWorkOrderTabContent.module.css';
 import type {
   FurnitureMontageDocs,
@@ -79,20 +89,24 @@ export function FurnitureWorkOrderTabContent({
   );
 
   return (
-    <div className={`${cdDataTab.blockData} ${cdProduct.blockData} ${styles.wrap}`}>
-      {disabled ? (
-        <PackageLockNotice>
-          {packageLockNoticeMessage('estimate', { productDirection: true })}
-        </PackageLockNotice>
-      ) : null}
-      <h3 className={PACKAGE_TAB_TITLE}>Заказ-наряд</h3>
-      <p className={styles.hint}>
-        К договорам № {manufactureContractNumber || '—м'} и {montageContractNumber || '—с'}. Блок
-        монтажа синхронизирован со счёт-заказом.
-      </p>
+    <div
+      className={`${cdDataTab.blockData} ${cdProduct.blockData} ${PACKAGE_TAB_CARD} ${styles.wrap}`}
+    >
+      <div className={PACKAGE_TAB_HEAD}>
+        <h3 className={PACKAGE_TAB_TITLE}>Заказ-наряд</h3>
+        {disabled ? (
+          <PackageLockNotice>
+            {packageLockNoticeMessage('estimate', { productDirection: true })}
+          </PackageLockNotice>
+        ) : null}
+        <p className={PACKAGE_TAB_HINT}>
+          К договорам № {manufactureContractNumber || '—м'} и {montageContractNumber || '—с'}. Блок
+          монтажа синхронизирован со счёт-заказом.
+        </p>
+      </div>
 
       <section className={styles.section}>
-        <h4 className={styles.subTitle}>Изготовление</h4>
+        <h4 className={PACKAGE_TAB_SUBTITLE}>Изготовление</h4>
         <div className={cdProduct.windowsAddendumSpecTableWrap}>
           <table className={`${cdProduct.windowsAddendumSpecTable} ${styles.table}`}>
             <thead>
@@ -149,9 +163,9 @@ export function FurnitureWorkOrderTabContent({
                   </td>
                   {!disabled ? (
                     <td>
-                      <button
-                        type="button"
-                        className={cdWorkspace.secondaryBtn}
+                      <AdminTableIconButton
+                        aria-label="Удалить строку"
+                        title="Удалить"
                         onClick={() =>
                           setManufactureLines(
                             docs.workOrderManufactureLines.filter((row) => row.id !== line.id)
@@ -159,8 +173,8 @@ export function FurnitureWorkOrderTabContent({
                         }
                         disabled={docs.workOrderManufactureLines.length <= 1}
                       >
-                        ×
-                      </button>
+                        <DetachEstimateIcon />
+                      </AdminTableIconButton>
                     </td>
                   ) : null}
                 </tr>
@@ -171,7 +185,7 @@ export function FurnitureWorkOrderTabContent({
         {!disabled ? (
           <button
             type="button"
-            className={`${cdWorkspace.secondaryBtn} ${cdProduct.windowsAddendumSpecAddBtn}`}
+            className={`${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_SECONDARY}`}
             onClick={() =>
               setManufactureLines([
                 ...docs.workOrderManufactureLines,
@@ -179,7 +193,7 @@ export function FurnitureWorkOrderTabContent({
               ])
             }
           >
-            <PlusIcon className={cdProduct.windowsAddendumSpecAddBtnIcon} aria-hidden />
+            <PlusIcon aria-hidden />
             Добавить
           </button>
         ) : null}
@@ -189,7 +203,7 @@ export function FurnitureWorkOrderTabContent({
       </section>
 
       <section className={styles.section}>
-        <h4 className={styles.subTitle}>Монтаж</h4>
+        <h4 className={PACKAGE_TAB_SUBTITLE}>Монтаж</h4>
         <div className={cdProduct.windowsAddendumSpecTableWrap}>
           <table className={`${cdProduct.windowsAddendumSpecTable} ${styles.table}`}>
             <thead>
@@ -246,16 +260,16 @@ export function FurnitureWorkOrderTabContent({
                   </td>
                   {!disabled ? (
                     <td>
-                      <button
-                        type="button"
-                        className={cdWorkspace.secondaryBtn}
+                      <AdminTableIconButton
+                        aria-label="Удалить строку"
+                        title="Удалить"
                         onClick={() =>
                           setMontageLines(docs.estimateLines.filter((row) => row.id !== line.id))
                         }
                         disabled={docs.estimateLines.length <= 1}
                       >
-                        ×
-                      </button>
+                        <DetachEstimateIcon />
+                      </AdminTableIconButton>
                     </td>
                   ) : null}
                 </tr>
@@ -266,10 +280,10 @@ export function FurnitureWorkOrderTabContent({
         {!disabled ? (
           <button
             type="button"
-            className={`${cdWorkspace.secondaryBtn} ${cdProduct.windowsAddendumSpecAddBtn}`}
+            className={`${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_SECONDARY}`}
             onClick={() => setMontageLines([...docs.estimateLines, newFurnitureMontageLine()])}
           >
-            <PlusIcon className={cdProduct.windowsAddendumSpecAddBtnIcon} aria-hidden />
+            <PlusIcon aria-hidden />
             Добавить
           </button>
         ) : null}

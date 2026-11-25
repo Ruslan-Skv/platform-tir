@@ -7,9 +7,12 @@ import { type ReactNode, useMemo } from 'react';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
 
-import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
 import cdProduct from '../../../../styles/product-package.module.css';
-import attachStyles from '../../../platform/editor/estimateTab/PackageEstimateAttach.module.css';
+import { DetachEstimateIcon } from '../../../platform/editor/shared/DetachEstimateIcon';
+import {
+  PACKAGE_TAB_FIELD,
+  PACKAGE_TAB_FIELD_PERCENT,
+} from '../../../platform/ui/packageTabClassNames';
 import {
   fabricHasColorOptions,
   findFabricSeriesItem,
@@ -126,26 +129,22 @@ function SpecBlock({
         {headerExtra}
         <div className={cdProduct.ceilingsSpecificationBlockActions}>
           {!readOnly && onAdd ? (
-            <button
-              type="button"
-              className={`${cdWorkspace.secondaryBtn} ${attachStyles.estimateAttachedRemoveBtn} ${cdProduct.ceilingsSpecificationBlockAddBtn}`}
+            <AdminTableIconButton
               aria-label={addAriaLabel || `Добавить в «${title}»`}
               title={addAriaLabel || `Добавить в «${title}»`}
               onClick={onAdd}
             >
-              +
-            </button>
+              <PlusIcon aria-hidden />
+            </AdminTableIconButton>
           ) : null}
           {!readOnly && onAddManual ? (
-            <button
-              type="button"
-              className={`${cdWorkspace.secondaryBtn} ${attachStyles.estimateAttachedRemoveBtn} ${cdProduct.ceilingsSpecificationBlockAddBtn}`}
+            <AdminTableIconButton
               aria-label={addManualAriaLabel || `Добавить вручную в «${title}»`}
               title={addManualAriaLabel || `Добавить вручную в «${title}»`}
               onClick={onAddManual}
             >
-              <PencilSquareIcon className={cdProduct.doorsSpecificationAddBtnIcon} aria-hidden />
-            </button>
+              <PencilSquareIcon aria-hidden />
+            </AdminTableIconButton>
           ) : null}
         </div>
       </div>
@@ -190,9 +189,7 @@ export function CeilingsSpecificationEditor({
   return (
     <div className={cdProduct.ceilingsSpecificationEditor}>
       <div className={cdProduct.ceilingsSpecificationTotalsRow}>
-        <div
-          className={`${fieldClassName} ${cdProduct.doorsSpecificationDiscountField} ${cdProduct.ceilingsSpecificationCompactField}`}
-        >
+        <div className={`${fieldClassName} ${PACKAGE_TAB_FIELD} ${PACKAGE_TAB_FIELD_PERCENT}`}>
           <label htmlFor="ceilings-extra-markup">Доп. наценка, %</label>
           <input
             id="ceilings-extra-markup"
@@ -205,9 +202,7 @@ export function CeilingsSpecificationEditor({
             onChange={(e) => onChange({ ...spec, extraMarkupPercent: e.target.value })}
           />
         </div>
-        <div
-          className={`${fieldClassName} ${cdProduct.doorsSpecificationDiscountField} ${cdProduct.ceilingsSpecificationCompactField}`}
-        >
+        <div className={`${fieldClassName} ${PACKAGE_TAB_FIELD} ${PACKAGE_TAB_FIELD_PERCENT}`}>
           <label htmlFor="ceilings-discount">Скидка, %</label>
           <input
             id="ceilings-discount"
@@ -374,17 +369,15 @@ export function CeilingsSpecificationEditor({
       </div>
 
       <div className={cdProduct.doorsSpecificationActionsRow}>
-        <button
+        <AdminTableIconButton
           data-admin-mutation
-          type="button"
-          className={`${cdWorkspace.secondaryBtn} ${attachStyles.estimateAttachedRemoveBtn} ${cdProduct.doorsSpecificationAddBtn}`}
           aria-label="Добавить потолок"
           title="Добавить потолок"
           disabled={readOnly}
           onClick={addCeiling}
         >
-          <PlusIcon className={cdProduct.doorsSpecificationAddBtnIcon} aria-hidden />
-        </button>
+          <PlusIcon aria-hidden />
+        </AdminTableIconButton>
         <p className={cdProduct.doorsSpecificationSectionTotal}>Потолков: {spec.ceilings.length}</p>
       </div>
     </div>
@@ -514,15 +507,14 @@ function FabricCascadeRow({
       <span className={cdProduct.ceilingsSpecificationLineTotal}>
         {lineTotalLabel(fabric.qtyM2, fabric.unitPrice)}
       </span>
-      <button
-        type="button"
-        className={`${cdWorkspace.secondaryBtn} ${attachStyles.estimateAttachedRemoveBtn}`}
+      <AdminTableIconButton
         aria-label="Удалить полотно"
+        title="Удалить"
         disabled={readOnly || !canRemove}
         onClick={onRemove}
       >
-        ×
-      </button>
+        <DetachEstimateIcon />
+      </AdminTableIconButton>
     </div>
   );
 }
@@ -586,15 +578,14 @@ function TapeLineRow({
       <span className={cdProduct.ceilingsSpecificationLineTotal}>
         {lineTotalLabel(tape.qtyM, tape.unitPrice)}
       </span>
-      <button
-        type="button"
-        className={`${cdWorkspace.secondaryBtn} ${attachStyles.estimateAttachedRemoveBtn}`}
+      <AdminTableIconButton
         aria-label="Удалить ленту"
+        title="Удалить"
         disabled={readOnly}
         onClick={onRemove}
       >
-        ×
-      </button>
+        <DetachEstimateIcon />
+      </AdminTableIconButton>
     </div>
   );
 }
@@ -698,15 +689,14 @@ function NamedLinesBlock({
             <span className={cdProduct.ceilingsSpecificationLineTotal}>
               {lineTotalLabel(line.qty, line.unitPrice)}
             </span>
-            <button
-              type="button"
-              className={`${cdWorkspace.secondaryBtn} ${attachStyles.estimateAttachedRemoveBtn}`}
+            <AdminTableIconButton
               aria-label="Удалить строку"
+              title="Удалить"
               disabled={readOnly}
               onClick={() => onChange(lines.filter((l) => l.id !== line.id))}
             >
-              ×
-            </button>
+              <DetachEstimateIcon />
+            </AdminTableIconButton>
           </div>
         )
       )}
@@ -772,15 +762,14 @@ function ManualLineRow({
       <span className={cdProduct.ceilingsSpecificationLineTotal}>
         {lineTotalLabel(line.qty, line.unitPrice)}
       </span>
-      <button
-        type="button"
-        className={`${cdWorkspace.secondaryBtn} ${attachStyles.estimateAttachedRemoveBtn}`}
+      <AdminTableIconButton
         aria-label="Удалить строку"
+        title="Удалить"
         disabled={readOnly}
         onClick={onRemove}
       >
-        ×
-      </button>
+        <DetachEstimateIcon />
+      </AdminTableIconButton>
     </div>
   );
 }

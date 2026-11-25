@@ -1,12 +1,24 @@
 'use client';
 
+import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
+
 import cdEstimateTab from '../../../../styles/estimate-tab.module.css';
 import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
 import cdProduct from '../../../../styles/product-package.module.css';
 import { formatWindowsAddendumMoney } from '../../../families/product-like/addendum/addendumSpecification';
+import {
+  PACKAGE_TAB_BTN,
+  PACKAGE_TAB_BTN_PRIMARY,
+  PACKAGE_TAB_BTN_SECONDARY,
+  PACKAGE_TAB_CAPTION,
+  PACKAGE_TAB_FIELD,
+  PACKAGE_TAB_FIELD_HINT,
+  PACKAGE_TAB_FIELD_WIDE,
+} from '../../ui/packageTabClassNames';
 import attachStyles from '../estimateTab/PackageEstimateAttach.module.css';
+import { DetachEstimateIcon } from '../shared/DetachEstimateIcon';
 import type { PackageAddendumEstimateBlockProps } from './PackageAddendumEstimateBlockProps';
-import { ADDENDUM_FIELD, ADDENDUM_TAB_HINT } from './packageAddendumEstimateBlockStyles';
+import { ADDENDUM_FIELD } from './packageAddendumEstimateBlockStyles';
 
 type PackageAddendumAdditionalWorksSectionProps = Pick<
   PackageAddendumEstimateBlockProps,
@@ -63,7 +75,9 @@ export function PackageAddendumAdditionalWorksSection({
       <div className={`${attachStyles.estimatePickAndAttachedRow} ${cdEstimateTab.fieldSpanAll}`}>
         <div className={attachStyles.estimatePickColumn}>
           <div className={attachStyles.estimateSelectsRow}>
-            <div className={`${ADDENDUM_FIELD} ${cdEstimateTab.fieldSpanAll}`}>
+            <div
+              className={`${ADDENDUM_FIELD} ${cdEstimateTab.fieldSpanAll} ${PACKAGE_TAB_FIELD} ${PACKAGE_TAB_FIELD_WIDE}`}
+            >
               <label htmlFor={`addendum_${slotOrdinal}_preset`}>
                 Расчёт для дополнительных работ
               </label>
@@ -92,7 +106,7 @@ export function PackageAddendumAdditionalWorksSection({
             <div className={attachStyles.estimateAttachActionsRow}>
               <button
                 type="button"
-                className={`${cdWorkspace.primaryBtn} ${attachStyles.estimateAttachPrimaryBtn}`}
+                className={`${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_PRIMARY}`}
                 disabled={readOnly || !presetToAttach}
                 onClick={() => {
                   onAttachPreset();
@@ -103,7 +117,7 @@ export function PackageAddendumAdditionalWorksSection({
               {slot.status === 'SIGNED' && canUnmarkSigned ? (
                 <button
                   type="button"
-                  className={cdWorkspace.secondaryBtn}
+                  className={`${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_SECONDARY}`}
                   onClick={onUnmarkSigned}
                   title="Отменить статус «Д/с подписано» (доступно 5 секунд)"
                 >
@@ -118,7 +132,7 @@ export function PackageAddendumAdditionalWorksSection({
               {slot.status === 'PAID' ? (
                 <button
                   type="button"
-                  className={cdWorkspace.secondaryBtn}
+                  className={`${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_SECONDARY}`}
                   onClick={onUnmarkPaid}
                   disabled={!canUnmarkPaid}
                   title={
@@ -132,14 +146,16 @@ export function PackageAddendumAdditionalWorksSection({
               ) : null}
             </div>
             {addendumAttachablePresets.length === 0 && contractEstimateObjectLabel ? (
-              <p className={ADDENDUM_TAB_HINT}>
+              <p className={PACKAGE_TAB_FIELD_HINT}>
                 Нет свободных расчётов этого объекта для раздела дополнительных работ.
               </p>
             ) : null}
           </div>
         </div>
         <aside className={attachStyles.estimateAttachedColumn}>
-          <div className={attachStyles.estimateAttachedColumnTitle}>{additionalSectionTitle}</div>
+          <div className={`${attachStyles.estimateAttachedColumnTitle} ${PACKAGE_TAB_CAPTION}`}>
+            {additionalSectionTitle}
+          </div>
           {(slot.selectedPresetIds?.length ?? 0) > 0 ? (
             <div className={attachStyles.estimateAttachedPresetList}>
               {(slot.selectedPresetIds ?? []).map((presetId) => {
@@ -177,16 +193,14 @@ export function PackageAddendumAdditionalWorksSection({
                         {usageCount > 0 ? ` · ещё в пакетах: ${usageCount}` : null}
                       </span>
                     </div>
-                    <button
-                      type="button"
-                      className={`${cdWorkspace.secondaryBtn} ${attachStyles.estimateAttachedRemoveBtn}`}
+                    <AdminTableIconButton
                       aria-label="Убрать расчёт из Д/с"
                       title="Убрать"
                       disabled={readOnly}
                       onClick={() => onRemovePreset(presetId)}
                     >
-                      ×
-                    </button>
+                      <DetachEstimateIcon />
+                    </AdminTableIconButton>
                   </div>
                 );
               })}
@@ -205,7 +219,7 @@ export function PackageAddendumAdditionalWorksSection({
       !(slot.selectedPresetIds ?? []).every(
         (id) => (estimateUsageById.get(id)?.length ?? 0) === 0
       ) ? (
-        <p className={`${ADDENDUM_TAB_HINT} ${attachStyles.estimateTabHintFullWidth}`}>
+        <p className={`${PACKAGE_TAB_FIELD_HINT} ${attachStyles.estimateTabHintFullWidth}`}>
           Часть расчётов уже прикреплена в других пакетах:{' '}
           {[
             ...new Set(

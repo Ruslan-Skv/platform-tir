@@ -1,22 +1,33 @@
 'use client';
 
-import { PlusIcon } from '@heroicons/react/24/outline';
+import { ArrowUpTrayIcon, PlusIcon } from '@heroicons/react/24/outline';
 
 import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { uploadWindowsSpecificationFile } from '@/shared/api/admin-contract-document-packages';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
+import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 
 import cdDataTab from '../../../styles/data-tab.module.css';
-import cdWorkspace from '../../../styles/estimates-workspace.module.css';
 import cdHubModals from '../../../styles/hub-modals.module.css';
 import cdProduct from '../../../styles/product-package.module.css';
-import attachStyles from '../../platform/editor/estimateTab/PackageEstimateAttach.module.css';
+import { DetachEstimateIcon } from '../../platform/editor/shared/DetachEstimateIcon';
 import {
   PackageLockNotice,
   packageLockNoticeMessage,
 } from '../../platform/editor/shared/packageLockNoticeUi';
-import { PACKAGE_TAB_TITLE } from '../../platform/ui/packageTabClassNames';
+import {
+  PACKAGE_TAB_BTN,
+  PACKAGE_TAB_BTN_SECONDARY,
+  PACKAGE_TAB_CARD,
+  PACKAGE_TAB_FIELD,
+  PACKAGE_TAB_FIELD_HINT,
+  PACKAGE_TAB_FIELD_PERCENT,
+  PACKAGE_TAB_HEAD,
+  PACKAGE_TAB_HINT,
+  PACKAGE_TAB_SUBTITLE,
+  PACKAGE_TAB_TITLE,
+} from '../../platform/ui/packageTabClassNames';
 import styles from './FurnitureSpecificationTabContent.module.css';
 import type {
   FurnitureManufactureDocs,
@@ -66,19 +77,24 @@ function FileAttachBlock({
   return (
     <div className={styles.fileBlock}>
       <div className={styles.fileHeader}>
-        <h4 className={styles.subTitle}>{label}</h4>
+        <h4 className={PACKAGE_TAB_SUBTITLE}>{label}</h4>
         {!disabled ? (
           <div className={styles.fileActions}>
             <button
               type="button"
-              className={cdWorkspace.secondaryBtn}
+              className={`${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_SECONDARY}`}
               disabled={uploading}
               onClick={() => inputRef.current?.click()}
             >
+              <ArrowUpTrayIcon aria-hidden />
               {uploading ? 'Загрузка…' : fileUrl ? 'Заменить файл' : 'Прикрепить файл'}
             </button>
             {fileUrl ? (
-              <button type="button" className={cdWorkspace.secondaryBtn} onClick={onClear}>
+              <button
+                type="button"
+                className={`${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_SECONDARY}`}
+                onClick={onClear}
+              >
                 Удалить
               </button>
             ) : null}
@@ -166,20 +182,23 @@ export function FurnitureSpecificationTabContent({
   };
 
   return (
-    <div className={`${cdDataTab.blockData} ${cdProduct.blockData} ${styles.wrap}`}>
-      {disabled ? (
-        <PackageLockNotice>{packageLockNoticeMessage('specification')}</PackageLockNotice>
-      ) : null}
-
+    <div
+      className={`${cdDataTab.blockData} ${cdProduct.blockData} ${PACKAGE_TAB_CARD} ${styles.wrap}`}
+    >
       <section className={styles.section}>
-        <h3 className={PACKAGE_TAB_TITLE}>
-          Спецификация изготовления
-          {contractNumberLabel ? ` · ${contractNumberLabel}` : ''}
-        </h3>
-        <p className={styles.hint}>
-          Позиции мебели: наименование, цвет, габариты (Ш×В×Г), количество и цена. Итог учитывается
-          в стоимости договора на изготовление.
-        </p>
+        <div className={PACKAGE_TAB_HEAD}>
+          <h3 className={PACKAGE_TAB_TITLE}>
+            Спецификация изготовления
+            {contractNumberLabel ? ` · ${contractNumberLabel}` : ''}
+          </h3>
+          {disabled ? (
+            <PackageLockNotice>{packageLockNoticeMessage('specification')}</PackageLockNotice>
+          ) : null}
+          <p className={PACKAGE_TAB_HINT}>
+            Позиции мебели: наименование, цвет, габариты (Ш×В×Г), количество и цена. Итог
+            учитывается в стоимости договора на изготовление.
+          </p>
+        </div>
         <div className={cdProduct.windowsAddendumSpecTableWrap}>
           <table className={`${cdProduct.windowsAddendumSpecTable} ${styles.specTable}`}>
             <thead>
@@ -284,16 +303,16 @@ export function FurnitureSpecificationTabContent({
                   </td>
                   {!disabled ? (
                     <td>
-                      <button
-                        type="button"
-                        className={cdWorkspace.secondaryBtn}
+                      <AdminTableIconButton
+                        aria-label="Удалить строку"
+                        title="Удалить"
                         onClick={() =>
                           setLines(docs.specificationLines.filter((row) => row.id !== line.id))
                         }
                         disabled={docs.specificationLines.length <= 1}
                       >
-                        ×
-                      </button>
+                        <DetachEstimateIcon />
+                      </AdminTableIconButton>
                     </td>
                   ) : null}
                 </tr>
@@ -304,10 +323,10 @@ export function FurnitureSpecificationTabContent({
         {!disabled ? (
           <button
             type="button"
-            className={`${cdWorkspace.secondaryBtn} ${attachStyles.estimateAttachedRemoveBtn} ${cdProduct.windowsAddendumSpecAddBtn}`}
+            className={`${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_SECONDARY}`}
             onClick={() => setLines([...docs.specificationLines, newFurnitureSpecificationLine()])}
           >
-            <PlusIcon className={cdProduct.windowsAddendumSpecAddBtnIcon} aria-hidden />
+            <PlusIcon aria-hidden />
             Добавить позицию
           </button>
         ) : null}
@@ -338,8 +357,10 @@ export function FurnitureSpecificationTabContent({
       </section>
 
       <section className={styles.section}>
-        <h3 className={PACKAGE_TAB_TITLE}>Таблица материалов</h3>
-        <p className={styles.hint}>Внутренняя таблица для заказа материалов (Excel «Табл.»).</p>
+        <h3 className={PACKAGE_TAB_SUBTITLE}>Таблица материалов</h3>
+        <p className={PACKAGE_TAB_FIELD_HINT}>
+          Внутренняя таблица для заказа материалов (Excel «Табл.»).
+        </p>
         <div className={cdProduct.windowsAddendumSpecTableWrap}>
           <table className={`${cdProduct.windowsAddendumSpecTable} ${styles.specTable}`}>
             <thead>
@@ -440,16 +461,16 @@ export function FurnitureSpecificationTabContent({
                   </td>
                   {!disabled ? (
                     <td>
-                      <button
-                        type="button"
-                        className={cdWorkspace.secondaryBtn}
+                      <AdminTableIconButton
+                        aria-label="Удалить строку"
+                        title="Удалить"
                         onClick={() =>
                           setMaterials(docs.materialsLines.filter((row) => row.id !== line.id))
                         }
                         disabled={docs.materialsLines.length <= 1}
                       >
-                        ×
-                      </button>
+                        <DetachEstimateIcon />
+                      </AdminTableIconButton>
                     </td>
                   ) : null}
                 </tr>
@@ -460,25 +481,27 @@ export function FurnitureSpecificationTabContent({
         {!disabled ? (
           <button
             type="button"
-            className={`${cdWorkspace.secondaryBtn} ${cdProduct.windowsAddendumSpecAddBtn}`}
+            className={`${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_SECONDARY}`}
             onClick={() => setMaterials([...docs.materialsLines, newFurnitureMaterialLine()])}
           >
-            <PlusIcon className={cdProduct.windowsAddendumSpecAddBtnIcon} aria-hidden />
+            <PlusIcon aria-hidden />
             Добавить материал
           </button>
         ) : null}
       </section>
 
-      <div className={cdHubModals.field}>
-        <label htmlFor="furniture_spec_discount">Скидка на спецификацию, %</label>
-        <input
-          id="furniture_spec_discount"
-          value={docs.discountPercent}
-          disabled={disabled}
-          inputMode="decimal"
-          onChange={(e) => patchDocs({ discountPercent: e.target.value })}
-          placeholder="0"
-        />
+      <div className={styles.section}>
+        <div className={`${cdHubModals.field} ${PACKAGE_TAB_FIELD} ${PACKAGE_TAB_FIELD_PERCENT}`}>
+          <label htmlFor="furniture_spec_discount">Скидка на спецификацию, %</label>
+          <input
+            id="furniture_spec_discount"
+            value={docs.discountPercent}
+            disabled={disabled}
+            inputMode="decimal"
+            onChange={(e) => patchDocs({ discountPercent: e.target.value })}
+            placeholder="0"
+          />
+        </div>
       </div>
     </div>
   );

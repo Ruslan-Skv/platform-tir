@@ -3,8 +3,12 @@
 import Link from 'next/link';
 
 import cdHub from '../../../../styles/contracts-list-hub.module.css';
-import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
-import cdProduct from '../../../../styles/product-package.module.css';
+import {
+  PACKAGE_TAB_BTN,
+  PACKAGE_TAB_BTN_SECONDARY,
+  PACKAGE_TAB_FIELD,
+  PACKAGE_TAB_FIELD_HINT,
+} from '../../../platform/ui/packageTabClassNames';
 import { DoorsSpecificationCartImportModals } from './DoorsSpecificationCartImportModals';
 import type { DoorsSpecificationLine } from './doorsSpecification';
 import { useDoorsSpecificationCartImport } from './useDoorsSpecificationCartImport';
@@ -34,16 +38,16 @@ export function DoorsSpecificationCartImportButton({
 
   return (
     <>
-      <div className={cdProduct.doorsSpecificationImportRow}>
+      <div className={PACKAGE_TAB_FIELD}>
         <button
           type="button"
-          className={`${cdWorkspace.secondaryBtn} ${cdProduct.doorsSpecificationImportBtn}`}
+          className={`${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_SECONDARY}`}
           disabled={disabled || importBusy}
           onClick={() => void importFromCart(lines, onLinesChange)}
         >
           {loading ? 'Загрузка…' : 'Загрузить из корзины'}
         </button>
-        <p className={cdProduct.doorsSpecificationImportHint}>
+        <p className={PACKAGE_TAB_FIELD_HINT}>
           Сначала добавьте товары в{' '}
           <Link
             className={cdHub.link}

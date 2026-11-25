@@ -5,32 +5,19 @@ import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
 import { EditIcon } from '@/shared/ui/icons/EditIcon';
 
 import cdEstimateTab from '../../../../styles/estimate-tab.module.css';
-import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
 import { getEffectiveEstimateAdditionalMarkupPercent } from '../../estimates/applyEstimatePresetIds';
+import {
+  PACKAGE_TAB_BTN,
+  PACKAGE_TAB_BTN_PRIMARY,
+  PACKAGE_TAB_BTN_SECONDARY,
+  PACKAGE_TAB_CAPTION,
+  PACKAGE_TAB_FIELD,
+  PACKAGE_TAB_FIELD_HINT,
+  PACKAGE_TAB_FIELD_WIDE,
+} from '../../ui/packageTabClassNames';
+import { DetachEstimateIcon } from '../shared/DetachEstimateIcon';
 import attachStyles from './PackageEstimateAttach.module.css';
 import type { PackageEstimateTabProps } from './PackageEstimateTab';
-import { ESTIMATE_HINT, ESTIMATE_TAB_HINT } from './packageEstimateTabStyles';
-
-/** «Открепить расчёт»: крестик в том же stroke-стиле, что иконки действий списка расчётов. */
-function DetachEstimateIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={14}
-      height={14}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M18 6 6 18" />
-      <path d="m6 6 12 12" />
-    </svg>
-  );
-}
 
 export type PackageEstimateAttachPanelProps = Pick<
   PackageEstimateTabProps,
@@ -101,7 +88,9 @@ export function PackageEstimateAttachPanel({
       >
         <div className={attachStyles.estimatePickColumn}>
           <div className={attachStyles.estimateSelectsRow}>
-            <div className={`${cdEstimateTab.field} ${attachStyles.estimateAttachWindowsField}`}>
+            <div
+              className={`${cdEstimateTab.field} ${attachStyles.estimateAttachWindowsField} ${PACKAGE_TAB_FIELD} ${PACKAGE_TAB_FIELD_WIDE}`}
+            >
               <label htmlFor="estimate_group_select">Объект</label>
               <select
                 id="estimate_group_select"
@@ -131,7 +120,9 @@ export function PackageEstimateAttachPanel({
                 ))}
               </select>
             </div>
-            <div className={`${cdEstimateTab.field} ${attachStyles.estimateAttachWindowsField}`}>
+            <div
+              className={`${cdEstimateTab.field} ${attachStyles.estimateAttachWindowsField} ${PACKAGE_TAB_FIELD} ${PACKAGE_TAB_FIELD_WIDE}`}
+            >
               <label htmlFor="estimate_select">Расчёт</label>
               <select
                 id="estimate_select"
@@ -163,7 +154,7 @@ export function PackageEstimateAttachPanel({
             <div className={attachStyles.estimateAttachActionsRow}>
               <button
                 type="button"
-                className={`${cdWorkspace.primaryBtn} ${attachStyles.estimateAttachPrimaryBtn}`}
+                className={`${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_PRIMARY}`}
                 disabled={signedDocsLocked || !estimatePresetToAttach}
                 title={
                   signedDocsLocked
@@ -183,7 +174,7 @@ export function PackageEstimateAttachPanel({
               </button>
               <button
                 type="button"
-                className={cdWorkspace.secondaryBtn}
+                className={`${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_SECONDARY}`}
                 disabled={Boolean(estimateCreate.createBlockedReason)}
                 title={
                   estimateCreate.createBlockedReason ??
@@ -195,7 +186,7 @@ export function PackageEstimateAttachPanel({
               </button>
             </div>
             {attachableEstimatePresets.length === 0 ? (
-              <p className={ESTIMATE_TAB_HINT}>
+              <p className={PACKAGE_TAB_FIELD_HINT}>
                 {isProductDirectionPackage && !linkedCrmCustomerId?.trim()
                   ? 'Выберите заказчика на вкладке «Данные».'
                   : attachBlockedByDirectionMismatch
@@ -207,7 +198,7 @@ export function PackageEstimateAttachPanel({
                         : 'Нет свободных расчётов для прикрепления — можно создать новый кнопкой «+ Создать расчёт».'}
               </p>
             ) : (
-              <p className={ESTIMATE_HINT} style={{ marginTop: 0 }}>
+              <p className={PACKAGE_TAB_FIELD_HINT}>
                 Сначала объект, затем расчёт → «Прикрепить». Нельзя смешивать расчёты разных
                 объектов. Справа — порядок{' '}
                 {isProductDirectionPackage ? 'в счёте-заказе' : 'в смете'} (перетаскивание) и
@@ -217,7 +208,9 @@ export function PackageEstimateAttachPanel({
           </div>
         </div>
         <aside className={attachStyles.estimateAttachedColumn}>
-          <div className={attachStyles.estimateAttachedColumnTitle}>Прикреплённые</div>
+          <div className={`${attachStyles.estimateAttachedColumnTitle} ${PACKAGE_TAB_CAPTION}`}>
+            Прикреплённые
+          </div>
           {(form.estimate.selectedPresetIds?.length ?? 0) > 0 ? (
             <div className={attachStyles.estimateAttachedPresetList}>
               {(form.estimate.selectedPresetIds ?? []).map((presetId) => {
@@ -313,7 +306,6 @@ export function PackageEstimateAttachPanel({
                       ) : null}
                     </div>
                     <AdminTableIconButton
-                      className={attachStyles.estimateAttachedRemoveBtn}
                       aria-label={`Редактировать расчёт «${preset?.title ?? presetId}»`}
                       title={editTitle}
                       disabled={signedDocsLocked || Boolean(editBlockReason)}
@@ -328,7 +320,6 @@ export function PackageEstimateAttachPanel({
                       /* Расчёт «только в договоре»: открепление оставило бы его «нигде» —
                          удаляем целиком (из пакета и в корзину каталога расчётов). */
                       <AdminTableIconButton
-                        className={attachStyles.estimateAttachedRemoveBtn}
                         aria-label={`Удалить расчёт «${preset.title}»`}
                         title="Удалить расчёт: он создан для этого договора и хранится только в нём — уйдёт в корзину раздела «Расчёты» (восстановить можно оттуда в течение 30 дней)"
                         disabled={signedDocsLocked}
@@ -338,7 +329,6 @@ export function PackageEstimateAttachPanel({
                       </AdminTableIconButton>
                     ) : (
                       <AdminTableIconButton
-                        className={attachStyles.estimateAttachedRemoveBtn}
                         aria-label="Открепить расчёт"
                         title="Открепить расчёт (сам расчёт останется в разделе «Расчёты»)"
                         disabled={signedDocsLocked}
@@ -361,7 +351,7 @@ export function PackageEstimateAttachPanel({
         (id) => (estimateUsageById.get(id)?.length ?? 0) === 0
       ) ? (
         <p
-          className={`${ESTIMATE_TAB_HINT} ${attachStyles.estimateTabHintFullWidth} ${attachStyles.estimateAttachWindowsTypography}`}
+          className={`${PACKAGE_TAB_FIELD_HINT} ${attachStyles.estimateTabHintFullWidth} ${attachStyles.estimateAttachWindowsTypography}`}
         >
           Часть расчётов уже прикреплена в других пакетах:{' '}
           {[

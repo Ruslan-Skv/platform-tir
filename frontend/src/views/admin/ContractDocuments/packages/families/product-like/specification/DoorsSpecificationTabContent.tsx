@@ -15,6 +15,8 @@ import {
 } from '../../../platform/editor/shared/packageLockNoticeUi';
 import {
   PACKAGE_TAB_CARD,
+  PACKAGE_TAB_FIELD,
+  PACKAGE_TAB_FIELD_PERCENT,
   PACKAGE_TAB_HINT,
   PACKAGE_TAB_TITLE,
 } from '../../../platform/ui/packageTabClassNames';
@@ -85,7 +87,7 @@ export function DoorsSpecificationTabContent({
           </p>
           <div className={`${SPEC_SECTION_FIELDS} ${cdProduct.doorsSpecificationFieldsRow}`}>
             <div
-              className={`${SPEC_FIELD} ${cdHubModals.windowsSpecAmountField} ${cdProduct.doorsSpecificationDiscountField}`}
+              className={`${SPEC_FIELD} ${cdHubModals.windowsSpecAmountField} ${cdProduct.doorsSpecificationDiscountField} ${PACKAGE_TAB_FIELD} ${PACKAGE_TAB_FIELD_PERCENT}`}
             >
               <label htmlFor="doors-specification-discount">Скидка по спецификации, %</label>
               <input

@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 import cdHub from '../../../../styles/contracts-list-hub.module.css';
-import cdChrome from '../../../../styles/editor-chrome.module.css';
 import cdEstimateTab from '../../../../styles/estimate-tab.module.css';
 import cdProduct from '../../../../styles/product-package.module.css';
 import {
@@ -17,12 +16,19 @@ import {
 import { contractDiscountHint } from '../../form/packageContractDiscount';
 import {
   PACKAGE_TAB_CARD,
+  PACKAGE_TAB_FIELD,
+  PACKAGE_TAB_FIELD_DISCOUNT,
+  PACKAGE_TAB_FIELD_HINT,
   PACKAGE_TAB_HINT,
+  PACKAGE_TAB_SEGMENTED,
+  PACKAGE_TAB_SEGMENTED_BTN,
+  PACKAGE_TAB_SEGMENTED_CAPTION,
+  PACKAGE_TAB_SEGMENTED_GROUP,
   PACKAGE_TAB_TITLE,
+  PACKAGE_TAB_TOOLBAR_ROW,
 } from '../../ui/packageTabClassNames';
 import { PackageDiscountControls, PackageDiscountHint } from '../shared/PackageDiscountControls';
 import { PackageLockNotice, packageLockNoticeMessage } from '../shared/packageLockNoticeUi';
-import attachStyles from './PackageEstimateAttach.module.css';
 import { PackageEstimateAttachPanel } from './PackageEstimateAttachPanel';
 import { PackageEstimateCreateModal } from './PackageEstimateCreateModal';
 import { PackageEstimateMergedSheet } from './PackageEstimateMergedSheet';
@@ -31,12 +37,10 @@ import {
   ESTIMATE_BLOCK,
   ESTIMATE_DATA_COMPACT,
   ESTIMATE_FORM_GRID,
-  ESTIMATE_HINT,
   ESTIMATE_SECTION_CARD,
   ESTIMATE_SECTION_FIELDS,
   ESTIMATE_SECTION_HEADER,
   ESTIMATE_TAB_COMPACT,
-  ESTIMATE_TAB_HINT,
 } from './packageEstimateTabStyles';
 
 export function PackageEstimateTabView(props: PackageEstimateTabProps) {
@@ -86,7 +90,7 @@ export function PackageEstimateTabView(props: PackageEstimateTabProps) {
               : 'Объект выбирается только здесь: все расчёты основной сметы и доп. соглашений должны относиться к одному объекту. После первого прикреплённого расчёта объект фиксируется автоматически.'}
           </div>
           {isProductDirectionPackage && !linkedCrmCustomerId?.trim() && !signedDocsLocked ? (
-            <p className={ESTIMATE_TAB_HINT} role="status">
+            <p className={PACKAGE_TAB_FIELD_HINT} role="status">
               Сначала выберите заказчика в блоке «Поиск заказчика в базе» на вкладке «Данные» —
               тогда появятся его расчёты для прикрепления.
             </p>
@@ -94,8 +98,10 @@ export function PackageEstimateTabView(props: PackageEstimateTabProps) {
           <div className={ESTIMATE_SECTION_FIELDS}>
             <PackageEstimateAttachPanel {...props} />
             {(props.form.estimate.snapshot?.rooms?.length ?? 0) > 0 ? (
-              <div className={`${cdEstimateTab.fieldSpanAll} ${attachStyles.estimateDiscountRow}`}>
-                <div className={`${cdEstimateTab.field} ${cdEstimateTab.estimateDiscountField}`}>
+              <div className={`${cdEstimateTab.fieldSpanAll} ${PACKAGE_TAB_TOOLBAR_ROW}`}>
+                <div
+                  className={`${cdEstimateTab.field} ${PACKAGE_TAB_FIELD} ${PACKAGE_TAB_FIELD_DISCOUNT}`}
+                >
                   <label htmlFor="estimate_discount_value">
                     {props.isProductDirectionPackage
                       ? 'Скидка на работы (счёт-заказ)'
@@ -114,45 +120,38 @@ export function PackageEstimateTabView(props: PackageEstimateTabProps) {
                   <PackageDiscountHint>{contractDiscountHint(props.form)}</PackageDiscountHint>
                 </div>
                 <div
-                  className={attachStyles.estimateGroupModeSwitch}
+                  className={PACKAGE_TAB_SEGMENTED_GROUP}
                   role="group"
                   aria-label="Вариант отображения сметы"
                 >
-                  <button
-                    type="button"
-                    className={
-                      groupMode === 'byRooms'
-                        ? `${cdChrome.tab} ${cdChrome.tabActive}`
-                        : cdChrome.tab
-                    }
-                    aria-pressed={groupMode === 'byRooms'}
-                    disabled={signedDocsLocked}
-                    title={groupModeLockTitle}
-                    onClick={() => selectGroupMode('byRooms')}
-                  >
-                    Первично по помещениям
-                  </button>
-                  <button
-                    type="button"
-                    className={
-                      groupMode === 'byCategories'
-                        ? `${cdChrome.tab} ${cdChrome.tabActive}`
-                        : cdChrome.tab
-                    }
-                    aria-pressed={groupMode === 'byCategories'}
-                    disabled={signedDocsLocked}
-                    title={groupModeLockTitle}
-                    onClick={() => selectGroupMode('byCategories')}
-                  >
-                    Первично по категориям
-                  </button>
+                  <span className={PACKAGE_TAB_SEGMENTED_CAPTION}>Вариант отображения сметы</span>
+                  <div className={PACKAGE_TAB_SEGMENTED}>
+                    <button
+                      type="button"
+                      className={PACKAGE_TAB_SEGMENTED_BTN}
+                      aria-pressed={groupMode === 'byRooms'}
+                      disabled={signedDocsLocked}
+                      title={groupModeLockTitle}
+                      onClick={() => selectGroupMode('byRooms')}
+                    >
+                      Первично по помещениям
+                    </button>
+                    <button
+                      type="button"
+                      className={PACKAGE_TAB_SEGMENTED_BTN}
+                      aria-pressed={groupMode === 'byCategories'}
+                      disabled={signedDocsLocked}
+                      title={groupModeLockTitle}
+                      onClick={() => selectGroupMode('byCategories')}
+                    >
+                      Первично по категориям
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : null}
             <PackageEstimateMergedSheet {...props} groupMode={groupMode} />
-            <p
-              className={`${ESTIMATE_HINT} ${cdEstimateTab.fieldSpanAll} ${attachStyles.estimateTabHintFullWidth}`}
-            >
+            <p className={`${PACKAGE_TAB_FIELD_HINT} ${cdEstimateTab.fieldSpanAll}`}>
               Небольшой расчёт можно создать прямо здесь — кнопка «+ Создать расчёт» (он сразу
               прикрепится к этому договору). Создание и редактирование любых расчётов — в разделе{' '}
               <Link className={cdHub.link} href="/admin/contract-documents/estimates">

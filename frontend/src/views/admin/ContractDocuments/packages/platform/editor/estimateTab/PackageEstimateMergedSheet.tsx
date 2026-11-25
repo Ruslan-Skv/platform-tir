@@ -14,6 +14,7 @@ import {
   formatDiscountPercentShort,
   resolveContractDiscount,
 } from '../../form/packageContractDiscount';
+import { PACKAGE_TAB_A4, PACKAGE_TAB_SUBTITLE } from '../../ui/packageTabClassNames';
 import attachStyles from './PackageEstimateAttach.module.css';
 import type { PackageEstimateTabProps } from './PackageEstimateTab';
 import { PackageEstimateSignaturesBlock, formatPackageMoneyValue } from './estimateTabUi';
@@ -85,8 +86,10 @@ export function PackageEstimateMergedSheet({
     <div
       className={`${cdEstimateTab.field} ${cdEstimateTab.fieldSpanAll} ${attachStyles.estimateSheetField} ${attachStyles.estimateAttachWindowsTypography}`}
     >
-      <label>Содержимое объединённой сметы</label>
-      <div className={`${cdDocPreview.estimateA4Wrap} ${cdEstimateTab.estimateA4Wrap}`}>
+      <div className={PACKAGE_TAB_SUBTITLE}>Содержимое объединённой сметы</div>
+      <div
+        className={`${cdDocPreview.estimateA4Wrap} ${cdEstimateTab.estimateA4Wrap} ${PACKAGE_TAB_A4}`}
+      >
         <article
           ref={estimatePrintSheetRef}
           className={cdDocPreview.estimateA4Sheet}

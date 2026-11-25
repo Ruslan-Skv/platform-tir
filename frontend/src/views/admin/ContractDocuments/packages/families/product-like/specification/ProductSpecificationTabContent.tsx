@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowDownTrayIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { ArrowDownTrayIcon, ArrowUpTrayIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -13,7 +13,6 @@ import cdHub from '../../../../styles/contracts-list-hub.module.css';
 import cdDataTab from '../../../../styles/data-tab.module.css';
 import cdDocPreview from '../../../../styles/documents-preview.module.css';
 import cdEstimateTab from '../../../../styles/estimate-tab.module.css';
-import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
 import cdHubModals from '../../../../styles/hub-modals.module.css';
 import cdProduct from '../../../../styles/product-package.module.css';
 import cdTemplates from '../../../../styles/templates-library.module.css';
@@ -30,7 +29,13 @@ import {
 import { PACKAGE_SPECIFICATION_VERSIONS_MAX } from '../../../platform/form/normalize';
 import type { ProductSpecificationFileVersion } from '../../../platform/form/types';
 import {
+  PACKAGE_TAB_BTN,
+  PACKAGE_TAB_BTN_SECONDARY,
+  PACKAGE_TAB_CAPTION,
   PACKAGE_TAB_CARD,
+  PACKAGE_TAB_FIELD,
+  PACKAGE_TAB_FIELD_HINT,
+  PACKAGE_TAB_FIELD_MONEY,
   PACKAGE_TAB_HINT,
   PACKAGE_TAB_TITLE,
 } from '../../../platform/ui/packageTabClassNames';
@@ -207,9 +212,7 @@ export function ProductSpecificationTabContent({
             <div
               className={`${cdHubModals.windowsSpecMainRow} ${cdEstimateTab.fieldSpanAll} ${cdHubModals.windowsSpecWindowsTypography}`}
             >
-              <div
-                className={`${SPEC_FIELD} ${cdHubModals.windowsSpecAmountField} ${cdProduct.windowsSpecificationAmountField}`}
-              >
+              <div className={`${SPEC_FIELD} ${PACKAGE_TAB_FIELD} ${PACKAGE_TAB_FIELD_MONEY}`}>
                 <label htmlFor="windows-specification-amount">Стоимость спецификации, руб.</label>
                 <input
                   id="windows-specification-amount"
@@ -223,15 +226,12 @@ export function ProductSpecificationTabContent({
               </div>
               <div className={`${SPEC_FIELD} ${cdHubModals.windowsSpecFileField}`}>
                 <span
-                  className={`${cdHubModals.windowsSpecFieldCaption} ${cdProduct.windowsSpecFieldCaption}`}
+                  className={`${cdHubModals.windowsSpecFieldCaption} ${cdProduct.windowsSpecFieldCaption} ${PACKAGE_TAB_CAPTION}`}
                   id="windows-specification-file-caption"
                 >
                   Файл спецификации
                 </span>
-                <div
-                  className={cdHubModals.windowsSpecFileControlRow}
-                  aria-labelledby="windows-specification-file-caption"
-                >
+                <div aria-labelledby="windows-specification-file-caption">
                   <input
                     ref={fileInputRef}
                     id="windows-specification-file"
@@ -242,24 +242,25 @@ export function ProductSpecificationTabContent({
                   />
                   <label
                     htmlFor="windows-specification-file"
-                    className={`${cdWorkspace.secondaryBtn} ${cdHubModals.windowsSpecFilePickBtn}`}
+                    className={`${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_SECONDARY} ${cdHubModals.windowsSpecFilePickBtn}`}
                     data-disabled={!canUploadMoreVersions || uploading ? '' : undefined}
                   >
+                    <ArrowUpTrayIcon aria-hidden />
                     {uploading
                       ? 'Загрузка…'
                       : versions.length
                         ? 'Загрузить новую версию'
                         : 'Выбрать файл'}
                   </label>
-                  {!versions.length ? (
-                    <p
-                      className={`${cdHubModals.windowsSpecFileHint} ${cdProduct.windowsSpecFileHint}`}
-                    >
-                      Допустимы распространённые форматы документов, чертежей и изображений (до 50
-                      МБ). Исполняемые файлы (.exe, .bat и т.п.) загружать нельзя.
-                    </p>
-                  ) : null}
                 </div>
+                {!versions.length ? (
+                  <p
+                    className={`${PACKAGE_TAB_FIELD_HINT} ${cdHubModals.windowsSpecFileMeta} ${cdProduct.windowsSpecFileMeta}`}
+                  >
+                    Допустимы распространённые форматы документов, чертежей и изображений (до 50
+                    МБ). Исполняемые файлы (.exe, .bat и т.п.) загружать нельзя.
+                  </p>
+                ) : null}
                 {versions.length ? (
                   <div>
                     {versions.map((entry) => (

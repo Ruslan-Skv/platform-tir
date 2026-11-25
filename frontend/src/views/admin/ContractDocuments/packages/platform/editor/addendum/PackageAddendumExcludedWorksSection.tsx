@@ -1,12 +1,22 @@
 'use client';
 
+import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
+
 import cdEstimateTab from '../../../../styles/estimate-tab.module.css';
-import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
 import cdProduct from '../../../../styles/product-package.module.css';
 import { formatWindowsAddendumMoney } from '../../../families/product-like/addendum/addendumSpecification';
+import {
+  PACKAGE_TAB_BTN,
+  PACKAGE_TAB_BTN_PRIMARY,
+  PACKAGE_TAB_CAPTION,
+  PACKAGE_TAB_FIELD,
+  PACKAGE_TAB_FIELD_HINT,
+  PACKAGE_TAB_FIELD_WIDE,
+} from '../../ui/packageTabClassNames';
 import attachStyles from '../estimateTab/PackageEstimateAttach.module.css';
+import { DetachEstimateIcon } from '../shared/DetachEstimateIcon';
 import type { PackageAddendumEstimateBlockProps } from './PackageAddendumEstimateBlockProps';
-import { ADDENDUM_FIELD, ADDENDUM_TAB_HINT } from './packageAddendumEstimateBlockStyles';
+import { ADDENDUM_FIELD } from './packageAddendumEstimateBlockStyles';
 
 type PackageAddendumExcludedWorksSectionProps = Pick<
   PackageAddendumEstimateBlockProps,
@@ -54,7 +64,9 @@ export function PackageAddendumExcludedWorksSection({
     <div className={`${attachStyles.estimatePickAndAttachedRow} ${cdEstimateTab.fieldSpanAll}`}>
       <div className={attachStyles.estimatePickColumn}>
         <div className={attachStyles.estimateSelectsRow}>
-          <div className={`${ADDENDUM_FIELD} ${cdEstimateTab.fieldSpanAll}`}>
+          <div
+            className={`${ADDENDUM_FIELD} ${cdEstimateTab.fieldSpanAll} ${PACKAGE_TAB_FIELD} ${PACKAGE_TAB_FIELD_WIDE}`}
+          >
             <label htmlFor={`addendum_${slotOrdinal}_excluded_preset`}>
               Расчёт для непроводимых работ
             </label>
@@ -83,7 +95,7 @@ export function PackageAddendumExcludedWorksSection({
           <div className={attachStyles.estimateAttachActionsRow}>
             <button
               type="button"
-              className={`${cdWorkspace.primaryBtn} ${attachStyles.estimateAttachPrimaryBtn}`}
+              className={`${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_PRIMARY}`}
               disabled={readOnly || !excludedPresetToAttach}
               onClick={onAttachExcludedPreset}
             >
@@ -91,14 +103,16 @@ export function PackageAddendumExcludedWorksSection({
             </button>
           </div>
           {addendumExcludedAttachablePresets.length === 0 && contractEstimateObjectLabel ? (
-            <p className={ADDENDUM_TAB_HINT}>
+            <p className={PACKAGE_TAB_FIELD_HINT}>
               Нет свободных расчётов этого объекта для раздела непроводимых работ.
             </p>
           ) : null}
         </div>
       </div>
       <aside className={attachStyles.estimateAttachedColumn}>
-        <div className={attachStyles.estimateAttachedColumnTitle}>{excludedSectionTitle}</div>
+        <div className={`${attachStyles.estimateAttachedColumnTitle} ${PACKAGE_TAB_CAPTION}`}>
+          {excludedSectionTitle}
+        </div>
         {(slot.excludedSelectedPresetIds?.length ?? 0) > 0 ? (
           <div className={attachStyles.estimateAttachedPresetList}>
             {(slot.excludedSelectedPresetIds ?? []).map((presetId) => {
@@ -134,16 +148,14 @@ export function PackageAddendumExcludedWorksSection({
                       {usageCount > 0 ? ` · ещё в пакетах: ${usageCount}` : null}
                     </span>
                   </div>
-                  <button
-                    type="button"
-                    className={`${cdWorkspace.secondaryBtn} ${attachStyles.estimateAttachedRemoveBtn}`}
+                  <AdminTableIconButton
                     aria-label="Убрать расчёт из раздела непроводимых работ"
                     title="Убрать"
                     disabled={readOnly}
                     onClick={() => onRemoveExcludedPreset(presetId)}
                   >
-                    ×
-                  </button>
+                    <DetachEstimateIcon />
+                  </AdminTableIconButton>
                 </div>
               );
             })}

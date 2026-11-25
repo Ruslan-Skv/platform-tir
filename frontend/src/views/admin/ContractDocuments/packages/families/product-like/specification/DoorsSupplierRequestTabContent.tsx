@@ -4,15 +4,18 @@ import { useState } from 'react';
 
 import cdDataTab from '../../../../styles/data-tab.module.css';
 import cdDocPreview from '../../../../styles/documents-preview.module.css';
-import cdChrome from '../../../../styles/editor-chrome.module.css';
 import cdEstimateTab from '../../../../styles/estimate-tab.module.css';
-import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
 import cdHubModals from '../../../../styles/hub-modals.module.css';
 import cdProduct from '../../../../styles/product-package.module.css';
 import cdTemplates from '../../../../styles/templates-library.module.css';
 import {
+  PACKAGE_TAB_BTN,
+  PACKAGE_TAB_BTN_PRIMARY,
+  PACKAGE_TAB_BTN_SECONDARY,
   PACKAGE_TAB_CARD,
   PACKAGE_TAB_HINT,
+  PACKAGE_TAB_SEGMENTED,
+  PACKAGE_TAB_SEGMENTED_BTN,
   PACKAGE_TAB_TITLE,
 } from '../../../platform/ui/packageTabClassNames';
 import { DoorsSpecificationLinesEditor } from './DoorsSpecificationLinesEditor';
@@ -234,12 +237,16 @@ export function DoorsSupplierRequestTabContent({
               <button
                 data-admin-mutation
                 type="button"
-                className={cdWorkspace.primaryBtn}
+                className={`${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_PRIMARY}`}
                 onClick={saveEditing}
               >
                 Сохранить
               </button>
-              <button type="button" className={cdWorkspace.secondaryBtn} onClick={cancelEditing}>
+              <button
+                type="button"
+                className={`${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_SECONDARY}`}
+                onClick={cancelEditing}
+              >
                 Отмена
               </button>
             </div>
@@ -279,7 +286,7 @@ export function DoorsSupplierRequestTabContent({
         <button
           data-admin-mutation
           type="button"
-          className={cdWorkspace.secondaryBtn}
+          className={`${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_SECONDARY}`}
           onClick={startEditing}
           disabled={!canEdit}
           title={
@@ -293,7 +300,7 @@ export function DoorsSupplierRequestTabContent({
         {activeGroup ? (
           <button
             type="button"
-            className={cdProduct.supplierRequestWordBtn}
+            className={`${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_SECONDARY}`}
             onClick={() =>
               downloadSupplierRequest({
                 group: activeGroup,
@@ -335,14 +342,13 @@ export function DoorsSupplierRequestTabContent({
             </p>
           ) : null}
           {groups.length > 1 ? (
-            <div className={cdChrome.tabBar} style={{ marginBottom: 12 }}>
+            <div className={PACKAGE_TAB_SEGMENTED} style={{ marginBottom: 12 }}>
               {groups.map((group) => (
                 <button
                   key={group.key}
                   type="button"
-                  className={`${cdChrome.tab} ${
-                    activeGroup?.key === group.key ? cdChrome.tabActive : ''
-                  }`}
+                  className={PACKAGE_TAB_SEGMENTED_BTN}
+                  aria-pressed={activeGroup?.key === group.key}
                   onClick={() => setActiveGroupKey(group.key)}
                 >
                   {group.supplierName || 'Без поставщика'}

@@ -5,10 +5,15 @@ import { PlusIcon } from '@heroicons/react/24/outline';
 import { useMemo } from 'react';
 
 import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
+import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 
-import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
 import cdProduct from '../../../../styles/product-package.module.css';
-import attachStyles from '../../../platform/editor/estimateTab/PackageEstimateAttach.module.css';
+import { DetachEstimateIcon } from '../../../platform/editor/shared/DetachEstimateIcon';
+import {
+  PACKAGE_TAB_BTN,
+  PACKAGE_TAB_BTN_ICON,
+  PACKAGE_TAB_BTN_SECONDARY,
+} from '../../../platform/ui/packageTabClassNames';
 import {
   type DoorsSpecificationLine,
   formatDoorsSpecificationLineTotal,
@@ -187,17 +192,15 @@ export function DoorsSpecificationLinesEditor({
                   />
                 </td>
                 <td className={cdProduct.doorsSpecificationActionsCell}>
-                  <button
+                  <AdminTableIconButton
                     data-admin-mutation
-                    type="button"
-                    className={`${cdWorkspace.secondaryBtn} ${attachStyles.estimateAttachedRemoveBtn}`}
                     aria-label="Удалить строку"
                     title="Удалить"
                     disabled={readOnly || lines.length <= 1}
                     onClick={() => removeLine(line.id)}
                   >
-                    ×
-                  </button>
+                    <DetachEstimateIcon />
+                  </AdminTableIconButton>
                 </td>
               </tr>
             ))}
@@ -208,13 +211,13 @@ export function DoorsSpecificationLinesEditor({
         <button
           data-admin-mutation
           type="button"
-          className={`${cdWorkspace.secondaryBtn} ${attachStyles.estimateAttachedRemoveBtn} ${cdProduct.doorsSpecificationAddBtn}`}
+          className={`${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_SECONDARY} ${PACKAGE_TAB_BTN_ICON}`}
           aria-label="Добавить позицию"
           title="Добавить позицию"
           disabled={readOnly}
           onClick={addLine}
         >
-          <PlusIcon className={cdProduct.doorsSpecificationAddBtnIcon} aria-hidden />
+          <PlusIcon aria-hidden />
         </button>
         <p className={cdProduct.doorsSpecificationSectionTotal}>
           {totalLabel}: {formatDoorsSpecificationMoney(sectionTotal)} руб.

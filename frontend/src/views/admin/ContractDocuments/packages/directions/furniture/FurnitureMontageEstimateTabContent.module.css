@@ -1,14 +1,41 @@
+/* Вкладка «Счёт-заказ монтажа» пакета «Мебель». Карточка, заголовок и кнопки —
+   набор шапки вкладки (packageTab* в editor-chrome); здесь — только раскладка. */
 .wrap {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 8px 0 16px;
 }
 
-.hint {
-  margin: 0;
-  font-size: 13px;
-  color: #64748b;
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-md);
+}
+
+/* Отбивка между разделами карточки. */
+.section + .section {
+  margin-top: var(--admin-space-2xl);
+}
+
+/* Кнопка в колонке не растягивается на всю ширину. */
+.section > button {
+  align-self: flex-start;
+}
+
+/* Таблица позиций: компактный шрифт, как в остальных спецификациях. Двойной класс
+   перебивает font-size: inherit таблицы из product-package при любом порядке стилей. */
+.table.table {
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
+}
+
+.table.table th {
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+}
+
+/* Колонка действий («×») — узкая: иначе делит лишнюю ширину с остальными. */
+.table.table th:last-child {
+  width: 3rem;
 }
 
 .table input {
@@ -25,6 +52,7 @@
 
 .total {
   margin: 0;
+  font-size: var(--admin-font-size-sm);
   font-weight: 600;
   text-align: right;
 }

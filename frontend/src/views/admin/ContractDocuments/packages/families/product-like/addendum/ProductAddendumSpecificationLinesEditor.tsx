@@ -4,9 +4,17 @@ import { PlusIcon } from '@heroicons/react/24/outline';
 
 import { useMemo } from 'react';
 
-import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
+import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
+
 import cdProduct from '../../../../styles/product-package.module.css';
-import attachStyles from '../../../platform/editor/estimateTab/PackageEstimateAttach.module.css';
+import { DetachEstimateIcon } from '../../../platform/editor/shared/DetachEstimateIcon';
+import {
+  PACKAGE_TAB_BTN,
+  PACKAGE_TAB_BTN_ICON,
+  PACKAGE_TAB_BTN_SECONDARY,
+  PACKAGE_TAB_FIELD_HINT,
+  PACKAGE_TAB_SUBTITLE,
+} from '../../../platform/ui/packageTabClassNames';
 import {
   type ProductAddendumSectionTotalMode,
   type ProductAddendumSpecificationLine,
@@ -15,7 +23,6 @@ import {
   newProductAddendumSpecificationLine,
   resolveProductAddendumLineAmount,
 } from './addendumSpecification';
-import { PRODUCT_ADDENDUM_HINT } from './addendumTabClassNames';
 
 type Props = {
   title: string;
@@ -64,8 +71,10 @@ export function ProductAddendumSpecificationLinesEditor({
 
   return (
     <div className={cdProduct.windowsAddendumSpecSubsection}>
-      <h4 className={cdProduct.windowsAddendumSubsectionHeading}>{title}</h4>
-      {hint ? <p className={PRODUCT_ADDENDUM_HINT}>{hint}</p> : null}
+      <h4 className={`${cdProduct.windowsAddendumSubsectionHeading} ${PACKAGE_TAB_SUBTITLE}`}>
+        {title}
+      </h4>
+      {hint ? <p className={PACKAGE_TAB_FIELD_HINT}>{hint}</p> : null}
       <div className={cdProduct.windowsAddendumSpecTableWrap}>
         <table className={cdProduct.windowsAddendumSpecTable}>
           <colgroup>
@@ -144,17 +153,15 @@ export function ProductAddendumSpecificationLinesEditor({
                   />
                 </td>
                 <td className={cdProduct.windowsAddendumSpecActionsCell}>
-                  <button
+                  <AdminTableIconButton
                     data-admin-mutation
-                    type="button"
-                    className={`${cdWorkspace.secondaryBtn} ${attachStyles.estimateAttachedRemoveBtn}`}
                     aria-label="Удалить строку"
                     title="Удалить"
                     disabled={readOnly || lines.length <= 1}
                     onClick={() => removeLine(line.id)}
                   >
-                    ×
-                  </button>
+                    <DetachEstimateIcon />
+                  </AdminTableIconButton>
                 </td>
               </tr>
             ))}
@@ -165,13 +172,13 @@ export function ProductAddendumSpecificationLinesEditor({
         <button
           data-admin-mutation
           type="button"
-          className={`${cdWorkspace.secondaryBtn} ${attachStyles.estimateAttachedRemoveBtn} ${cdProduct.windowsAddendumSpecAddBtn}`}
+          className={`${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_SECONDARY} ${PACKAGE_TAB_BTN_ICON}`}
           aria-label="Добавить изделие"
           title="Добавить изделие"
           disabled={readOnly}
           onClick={addLine}
         >
-          <PlusIcon className={cdProduct.windowsAddendumSpecAddBtnIcon} aria-hidden />
+          <PlusIcon aria-hidden />
         </button>
         <p className={cdProduct.windowsAddendumSpecSectionTotal}>
           {totalMode === 'decrease' ? 'Итого по разделу (уменьшение)' : 'Итого по разделу'}:{' '}

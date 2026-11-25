@@ -1,7 +1,18 @@
 'use client';
 
-import cdChrome from '../../../../styles/editor-chrome.module.css';
-import { PACKAGE_TAB_CARD, PACKAGE_TAB_TITLE } from '../../ui/packageTabClassNames';
+import {
+  PACKAGE_TAB_CARD,
+  PACKAGE_TAB_FIELD,
+  PACKAGE_TAB_FIELD_DATE,
+  PACKAGE_TAB_FIELD_DAYS,
+  PACKAGE_TAB_FIELD_DISCOUNT_WIDE,
+  PACKAGE_TAB_FIELD_HINT,
+  PACKAGE_TAB_FIELD_ROW,
+  PACKAGE_TAB_HINT_STACK,
+  PACKAGE_TAB_INPUT_SUFFIX,
+  PACKAGE_TAB_INPUT_WRAP,
+  PACKAGE_TAB_TITLE,
+} from '../../ui/packageTabClassNames';
 import {
   PackageAddendumSlotDiscountControls,
   PackageDiscountHint,
@@ -15,12 +26,10 @@ import {
   ADDENDUM_DATA_COMPACT,
   ADDENDUM_FIELD,
   ADDENDUM_FORM_GRID,
-  ADDENDUM_HINT,
   ADDENDUM_SECTION_CARD,
   ADDENDUM_SECTION_FIELDS,
   ADDENDUM_SECTION_HEADER,
   ADDENDUM_TAB_COMPACT,
-  ADDENDUM_TAB_HINT,
 } from './packageAddendumEstimateBlockStyles';
 
 export function PackageAddendumEstimateBlockView({
@@ -50,22 +59,22 @@ export function PackageAddendumEstimateBlockView({
   const estimateBody = (
     <>
       {!isWindowsPackage && !accountOrderOnly ? (
-        <>
-          <p className={ADDENDUM_HINT}>
+        <div className={PACKAGE_TAB_HINT_STACK}>
+          <p className={PACKAGE_TAB_FIELD_HINT}>
             Объект задаётся только на вкладке «Смета». Здесь доступны свободные расчёты того же
             объекта, что и у договорной сметы.
           </p>
           {contractEstimateObjectLabel ? (
-            <p className={ADDENDUM_TAB_HINT}>
+            <p className={PACKAGE_TAB_FIELD_HINT}>
               Объект по смете договора: <strong>{contractEstimateObjectLabel}</strong>
             </p>
           ) : (
-            <p className={ADDENDUM_TAB_HINT}>
+            <p className={PACKAGE_TAB_FIELD_HINT}>
               Сначала на вкладке «Смета» выберите объект и прикрепите расчёты к договору — иначе
               нельзя определить объект для Д/с.
             </p>
           )}
-        </>
+        </div>
       ) : null}
       <div className={ADDENDUM_SECTION_FIELDS}>
         <PackageAddendumAdditionalWorksSection
@@ -98,8 +107,8 @@ export function PackageAddendumEstimateBlockView({
             <h3 className={PACKAGE_TAB_TITLE}>Дополнительное соглашение №{slotOrdinal}</h3>
           </div>
           {signedLockNotice}
-          <div className={cdChrome.packageAddendumMetaInlineRow}>
-            <div className={`${ADDENDUM_FIELD} ${cdChrome.packageAddendumDateFieldRow}`}>
+          <div className={PACKAGE_TAB_FIELD_ROW}>
+            <div className={`${ADDENDUM_FIELD} ${PACKAGE_TAB_FIELD} ${PACKAGE_TAB_FIELD_DATE}`}>
               <label htmlFor={`repair_addendum_date_${slotOrdinal}`}>
                 Дата доп. соглашения (в шапке слева)
               </label>
@@ -113,26 +122,31 @@ export function PackageAddendumEstimateBlockView({
                 disabled={readOnly}
               />
             </div>
-            <div
-              className={`${ADDENDUM_FIELD} ${cdChrome.packageAddendumWorkPeriodIncreaseFieldRow}`}
-            >
+            <div className={`${ADDENDUM_FIELD} ${PACKAGE_TAB_FIELD} ${PACKAGE_TAB_FIELD_DAYS}`}>
               <label htmlFor={`repair_addendum_work_period_increase_${slotOrdinal}`}>
                 Увеличение срока по договору
               </label>
-              <input
-                id={`repair_addendum_work_period_increase_${slotOrdinal}`}
-                type="number"
-                inputMode="numeric"
-                value={workPeriodIncreaseDays}
-                onChange={(e) => onWorkPeriodIncreaseDaysChange(e.target.value)}
-                placeholder="дн."
-                autoComplete="off"
-                disabled={readOnly}
-                min={0}
-                step={1}
-              />
+              <span className={PACKAGE_TAB_INPUT_WRAP}>
+                <input
+                  id={`repair_addendum_work_period_increase_${slotOrdinal}`}
+                  type="number"
+                  inputMode="numeric"
+                  value={workPeriodIncreaseDays}
+                  onChange={(e) => onWorkPeriodIncreaseDaysChange(e.target.value)}
+                  placeholder="0"
+                  autoComplete="off"
+                  disabled={readOnly}
+                  min={0}
+                  step={1}
+                />
+                <span className={PACKAGE_TAB_INPUT_SUFFIX} aria-hidden>
+                  дн.
+                </span>
+              </span>
             </div>
-            <div className={`${ADDENDUM_FIELD} ${cdChrome.packageAddendumDiscountFieldRow}`}>
+            <div
+              className={`${ADDENDUM_FIELD} ${PACKAGE_TAB_FIELD} ${PACKAGE_TAB_FIELD_DISCOUNT_WIDE}`}
+            >
               <label htmlFor={`repair_addendum_discount_${slotOrdinal}_mode`}>Скидка по Д/с</label>
               <PackageAddendumSlotDiscountControls
                 idPrefix={`repair_addendum_discount_${slotOrdinal}`}

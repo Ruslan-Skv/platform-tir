@@ -7,6 +7,7 @@ import {
   PACKAGE_DATA_COMPACT,
   PACKAGE_FORM_GRID,
   PACKAGE_SECTION_CARD,
+  PACKAGE_TAB_A4,
   PACKAGE_TAB_CARD,
   PACKAGE_TAB_COMPACT,
   PACKAGE_TAB_HINT,
@@ -66,7 +67,7 @@ export function PackageFinalEstimateTab({
             скидка только в итогах ниже; по позициям со скидкой см. «Заказ-наряды» → «Итог.
             заказ-наряд».
           </p>
-          <div className={PACKAGE_A4_WRAP}>
+          <div className={`${PACKAGE_A4_WRAP} ${PACKAGE_TAB_A4}`}>
             <article
               className={cdDocPreview.estimateA4Sheet}
               data-print-target="final-estimate-sheet"

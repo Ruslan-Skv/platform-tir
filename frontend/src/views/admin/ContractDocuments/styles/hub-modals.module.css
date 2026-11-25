@@ -140,16 +140,6 @@
   line-height: var(--admin-line-height-sm) !important;
 }
 
-.windowsSpecFileControlRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--admin-space-xs) var(--admin-space-sm);
-  min-height: calc(
-    2 * var(--admin-space-xs) + var(--admin-font-size-xs) * var(--admin-line-height-sm)
-  );
-}
-
 .windowsSpecFilePickBtn {
   margin: 0;
   flex-shrink: 0;
@@ -161,18 +151,6 @@
   opacity: 0.55;
   pointer-events: none;
   cursor: not-allowed;
-}
-
-.windowsSpecFileHint {
-  flex: 1 1 10rem;
-  min-width: 0;
-  margin: 0;
-  line-height: 1.35;
-  color: var(--admin-text-muted);
-}
-
-.estimateTabCompact:not(.windowsContractTabTypography) .windowsSpecFileHint {
-  font-size: var(--admin-font-size-2xs);
 }
 
 .windowsSpecFileRemoveBtn {
