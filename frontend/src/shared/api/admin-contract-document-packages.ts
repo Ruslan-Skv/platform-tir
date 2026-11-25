@@ -1385,6 +1385,69 @@ export async function putContractDocumentWindowsSettings(body: {
   return res.json();
 }
 
+export type DoorsContractSettings = {
+  kind: 'DOORS';
+  /** Id поставщиков, доступных в колонке «Поставщик» спецификации договоров «Двери». */
+  specificationSupplierIds: string[];
+  updatedAt: string | null;
+};
+
+/** Поставщик справочника для выбора в настройках (весь список — только супер-админ). */
+export type DoorsSupplierOption = {
+  id: string;
+  /** Коммерческое название, иначе юридическое — как в разделе «Поставщики». */
+  title: string;
+  legalName: string;
+  /** false — неактивен: в спецификации не показывается, пока его не включат обратно. */
+  isActive: boolean;
+};
+
+export async function getContractDocumentDoorsSettings(): Promise<DoorsContractSettings> {
+  const res = await apiFetch(`${getApiBaseUrl()}/admin/contract-document-packages/doors-settings`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить настройки договоров «Двери»');
+  return res.json();
+}
+
+export async function putContractDocumentDoorsSettings(body: {
+  specificationSupplierIds: string[];
+}): Promise<DoorsContractSettings> {
+  const res = await apiFetch(`${getApiBaseUrl()}/admin/contract-document-packages/doors-settings`, {
+    method: 'PUT',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(await readAdminContractPackagesError(res));
+  return res.json();
+}
+
+/** Весь справочник поставщиков (кроме корзины) для выбора в настройках — только супер-админ. */
+export async function getContractDocumentDoorsSupplierOptions(): Promise<DoorsSupplierOption[]> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/doors-settings/supplier-options`,
+    { headers: getAdminAuthHeaders(), cache: 'no-store' }
+  );
+  if (!res.ok) throw new Error('Не удалось загрузить поставщиков');
+  return ((await res.json()) as { data: DoorsSupplierOption[] }).data;
+}
+
+/**
+ * Поставщики колонки «Поставщик» спецификации «Дверей» — только выбранные
+ * супер-админом в «Настройках договоров». Доступ по правам на договоры:
+ * доступ к разделу «Поставщики» для этого не нужен.
+ */
+export async function getContractDocumentDoorsSpecificationSuppliers(): Promise<
+  { id: string; title: string }[]
+> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/doors-settings/specification-suppliers`,
+    { headers: getAdminAuthHeaders(), cache: 'no-store' }
+  );
+  if (!res.ok) throw new Error('Не удалось загрузить поставщиков');
+  return ((await res.json()) as { data: { id: string; title: string }[] }).data;
+}
+
 export type WindowsWorkOrderMarkupSettings = {
   kind?: ContractDocumentPackageKind;
   windowsWorkOrderMarkupPercent: number;

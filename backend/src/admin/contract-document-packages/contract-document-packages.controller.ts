@@ -58,6 +58,7 @@ import {
   SetWorkPeriodSettingsByKindDto,
 } from './dto/settings/set-work-period-settings-by-kind.dto';
 import { SetRepairWorkOrderSettingsDto } from './dto/settings/set-repair-work-order-settings.dto';
+import { SetDoorsContractSettingsDto } from './dto/settings/set-doors-settings.dto';
 import { SetWindowsWorkOrderMarkupDto } from './dto/settings/set-windows-work-order-markup.dto';
 import { SetWorkOrderMarkupByKindDto } from './dto/settings/set-work-order-markup-by-kind.dto';
 import { SetWindowsContractSettingsDto } from './dto/settings/set-windows-settings.dto';
@@ -751,6 +752,36 @@ export class ContractDocumentPackagesController {
   @Roles('SUPER_ADMIN')
   applyWindowsWorkPeriodToAll(@Body() dto: ApplyRepairWorkPeriodToAllDto) {
     return this.service.applyWindowsWorkPeriodToAllPackages(dto);
+  }
+
+  /** Настройки договоров «Двери»: список поставщиков спецификации. */
+  @Get('doors-settings')
+  getDoorsSettings() {
+    return this.service.getDoorsSettings();
+  }
+
+  /** Список поставщиков спецификации «Дверей» — только супер-админ. */
+  @Put('doors-settings')
+  @Roles('SUPER_ADMIN')
+  setDoorsSettings(@Body() dto: SetDoorsContractSettingsDto, @Req() req: RequestWithUser) {
+    return this.service.setDoorsSettings(dto, req.user?.id);
+  }
+
+  /** Весь справочник поставщиков для выбора — только супер-админ. */
+  @Get('doors-settings/supplier-options')
+  @Roles('SUPER_ADMIN')
+  listDoorsSupplierOptions() {
+    return this.service.listDoorsSupplierOptions();
+  }
+
+  /**
+   * Поставщики для колонки «Поставщик» спецификации «Дверей» — всем, у кого есть
+   * доступ к договорам. Отдаёт только список, выбранный супер-админом, поэтому
+   * не зависит от доступа сотрудника к разделу «Поставщики».
+   */
+  @Get('doors-settings/specification-suppliers')
+  listDoorsSpecificationSuppliers() {
+    return this.service.listDoorsSpecificationSuppliers();
   }
 
   @Get('work-order-markup-settings')

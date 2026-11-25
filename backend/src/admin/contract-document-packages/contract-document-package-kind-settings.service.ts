@@ -7,6 +7,7 @@ import {
   SetRepairContractSettingsDto,
 } from './dto/settings/set-repair-settings.dto';
 import { SetRepairWorkOrderSettingsDto } from './dto/settings/set-repair-work-order-settings.dto';
+import { SetDoorsContractSettingsDto } from './dto/settings/set-doors-settings.dto';
 import { SetWindowsWorkOrderMarkupDto } from './dto/settings/set-windows-work-order-markup.dto';
 import {
   DEFAULT_REPAIR_CONTRACT_WORK_PERIOD_DAYS,
@@ -38,6 +39,37 @@ export async function resolveRepairWorkStartMinPayPct(prisma: PrismaService): Pr
   } catch {
     return PACKAGE_WORK_START_MIN_CONTRACT_PAY_PCT;
   }
+}
+
+type DoorsSupplierRecord = {
+  id: string;
+  legalName: string;
+  commercialName: string | null;
+  isActive: boolean;
+};
+
+/** Реквизиты поставщика, которые нужны для списка спецификации (без карточки целиком). */
+const DOORS_SUPPLIER_SELECT = {
+  id: true,
+  legalName: true,
+  commercialName: true,
+  isActive: true,
+} satisfies Prisma.SupplierSelect;
+
+/** Название поставщика как в разделе «Поставщики»: коммерческое, иначе юридическое. */
+function doorsSupplierTitle(supplier: DoorsSupplierRecord): string {
+  return supplier.commercialName?.trim() || supplier.legalName;
+}
+
+/** По названию, как в разделе «Поставщики». */
+function sortDoorsSuppliers(suppliers: DoorsSupplierRecord[]): DoorsSupplierRecord[] {
+  return suppliers
+    .slice()
+    .sort(
+      (a, b) =>
+        doorsSupplierTitle(a).localeCompare(doorsSupplierTitle(b), 'ru') ||
+        a.legalName.localeCompare(b.legalName, 'ru'),
+    );
 }
 
 @Injectable()
@@ -426,5 +458,99 @@ export class ContractDocumentPackageKindSettingsService {
       taxPercent: row.repairWorkOrderTaxPercent,
       updatedAt: row.updatedAt.toISOString(),
     };
+  }
+
+  // ---------- Поставщики спецификации «Дверей» ----------
+
+  /**
+   * Поставщики колонки «Поставщик» спецификации «Дверей» — для выпадающего списка
+   * в договоре. Только выбранные супер-админом, действующие и не в корзине,
+   * поэтому доступ к списку не зависит от раздела «Поставщики».
+   */
+  async listDoorsSpecificationSuppliers() {
+    const row = await this.prisma.contractDocumentRepairSettings.findUnique({
+      where: { kind: ContractDocumentPackageKind.DOORS },
+      select: { doorsSpecificationSupplierIds: true },
+    });
+    const suppliers = await this.findDoorsSuppliers({
+      id: { in: row?.doorsSpecificationSupplierIds ?? [] },
+      isActive: true,
+    });
+    return {
+      data: suppliers.map((supplier) => ({ id: supplier.id, title: doorsSupplierTitle(supplier) })),
+    };
+  }
+
+  /** Весь справочник поставщиков (кроме корзины) — для выбора в «Настройках договоров». */
+  async listDoorsSupplierOptions() {
+    const suppliers = await this.findDoorsSuppliers({});
+    return {
+      data: suppliers.map((supplier) => ({
+        id: supplier.id,
+        title: doorsSupplierTitle(supplier),
+        legalName: supplier.legalName,
+        isActive: supplier.isActive,
+      })),
+    };
+  }
+
+  async getDoorsSettings() {
+    const row = await this.prisma.contractDocumentRepairSettings.findUnique({
+      where: { kind: ContractDocumentPackageKind.DOORS },
+      select: { doorsSpecificationSupplierIds: true, updatedAt: true },
+    });
+    return {
+      kind: ContractDocumentPackageKind.DOORS,
+      specificationSupplierIds: await this.filterExistingSupplierIds(
+        row?.doorsSpecificationSupplierIds ?? [],
+      ),
+      updatedAt: row?.updatedAt?.toISOString() ?? null,
+    };
+  }
+
+  async setDoorsSettings(dto: SetDoorsContractSettingsDto, updatedById?: string) {
+    const kind = ContractDocumentPackageKind.DOORS;
+    const specificationSupplierIds = await this.filterExistingSupplierIds(
+      dto.specificationSupplierIds,
+    );
+    const row = await this.prisma.contractDocumentRepairSettings.upsert({
+      where: { kind },
+      create: {
+        kind,
+        defaultWorkPeriodDays: this.fallbackWorkPeriodDays(kind),
+        doorsSpecificationSupplierIds: specificationSupplierIds,
+        updatedById: updatedById ?? null,
+      },
+      update: {
+        doorsSpecificationSupplierIds: specificationSupplierIds,
+        updatedById: updatedById ?? null,
+      },
+      select: { doorsSpecificationSupplierIds: true, updatedAt: true },
+    });
+    return {
+      kind,
+      specificationSupplierIds: row.doorsSpecificationSupplierIds,
+      updatedAt: row.updatedAt.toISOString(),
+    };
+  }
+
+  /** Поставщики вне корзины; сортировка — по названию, как в разделе «Поставщики». */
+  private async findDoorsSuppliers(
+    where: Prisma.SupplierWhereInput,
+  ): Promise<DoorsSupplierRecord[]> {
+    const suppliers = await this.prisma.supplier.findMany({
+      where: { ...where, deletedAt: null },
+      select: DOORS_SUPPLIER_SELECT,
+    });
+    return sortDoorsSuppliers(suppliers);
+  }
+
+  /** Оставляет id поставщиков, которые есть в справочнике (не в корзине), без повторов. */
+  private async filterExistingSupplierIds(ids: string[]): Promise<string[]> {
+    if (ids.length === 0) return [];
+    const existing = new Set(
+      (await this.findDoorsSuppliers({ id: { in: ids } })).map((supplier) => supplier.id),
+    );
+    return ids.filter((id, index) => existing.has(id) && ids.indexOf(id) === index);
   }
 }

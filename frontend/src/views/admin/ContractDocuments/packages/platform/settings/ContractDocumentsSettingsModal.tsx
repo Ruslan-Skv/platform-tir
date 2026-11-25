@@ -2,6 +2,7 @@
 
 import { Modal } from '@/shared/ui/Modal';
 import { ExecutorProfilesPanel } from '@/views/admin/ContractDocuments/packages/pages/requisites/ExecutorProfilesPanel';
+import { DoorsSuppliersSettingsPanel } from '@/views/admin/ContractDocuments/packages/pages/settings/DoorsSuppliersSettingsPanel';
 import { MarkupSettingsPanel } from '@/views/admin/ContractDocuments/packages/pages/settings/MarkupSettingsPanel';
 import { NumberingSettingsPanel } from '@/views/admin/ContractDocuments/packages/pages/settings/NumberingSettingsPanel';
 import { PackageWorkPeriodSettingsPanel } from '@/views/admin/ContractDocuments/packages/pages/settings/PackageWorkPeriodSettingsPanel';
@@ -20,7 +21,8 @@ export type ContractDocumentsSettingsTabId =
   | 'markups'
   | 'numbering'
   | 'executors'
-  | 'signatories';
+  | 'signatories'
+  | 'doorsSuppliers';
 
 const SETTINGS_TABS: { id: ContractDocumentsSettingsTabId; label: string }[] = [
   { id: 'workStart', label: 'Акт начала работ' },
@@ -29,11 +31,13 @@ const SETTINGS_TABS: { id: ContractDocumentsSettingsTabId; label: string }[] = [
   { id: 'numbering', label: 'Нумерация' },
   { id: 'executors', label: 'Исполнители' },
   { id: 'signatories', label: 'Менеджеры' },
+  { id: 'doorsSuppliers', label: 'Поставщики дверей' },
 ];
 
 /**
  * Модалка «Настройки договоров» (только супер-админ): порог оплаты Акта начала
- * работ и настройки, перенесённые из подразделов «Оформления договоров».
+ * работ, поставщики спецификации «Дверей» и настройки, перенесённые из подразделов
+ * «Оформления договоров».
  * Состояние вкладки управляется снаружи (кнопкой) — чтобы открыть нужную вкладку
  * из других мест страницы, см. openContractDocumentsSettings().
  */
@@ -84,6 +88,7 @@ export function ContractDocumentsSettingsModal({
           {tab === 'numbering' ? <NumberingSettingsPanel /> : null}
           {tab === 'executors' ? <ExecutorProfilesPanel /> : null}
           {tab === 'signatories' ? <SignatoriesPanel /> : null}
+          {tab === 'doorsSuppliers' ? <DoorsSuppliersSettingsPanel /> : null}
         </div>
       </div>
     </Modal>

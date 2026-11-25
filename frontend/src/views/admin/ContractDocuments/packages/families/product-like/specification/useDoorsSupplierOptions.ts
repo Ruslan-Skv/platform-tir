@@ -2,12 +2,18 @@
 
 import { useEffect, useState } from 'react';
 
-import { fetchAdminCatalogSuppliersForSelect } from '@/shared/api/admin-component-catalog';
-import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
+import {
+  type ContractDocumentPackageKind,
+  getContractDocumentDoorsSpecificationSuppliers,
+} from '@/shared/api/admin-contract-document-packages';
 
 export type DoorsSupplierOption = { id: string; title: string };
 
-/** Справочник «Поставщики» для колонки выбора поставщика позиции (только «Двери»). */
+/**
+ * Поставщики колонки выбора поставщика позиции (только «Двери») — список, который
+ * задал супер-админ в «Настройках договоров». Доступен любому сотруднику с доступом
+ * к договорам, независимо от доступа к разделу «Поставщики».
+ */
 export function useDoorsSupplierOptions(
   packageKind: ContractDocumentPackageKind
 ): DoorsSupplierOption[] | undefined {
@@ -17,12 +23,10 @@ export function useDoorsSupplierOptions(
   useEffect(() => {
     if (packageKind !== 'DOORS') return;
     let cancelled = false;
-    fetchAdminCatalogSuppliersForSelect()
+    getContractDocumentDoorsSpecificationSuppliers()
       .then((suppliers) => {
         if (cancelled) return;
-        setSupplierOptions(
-          suppliers.map((s) => ({ id: s.id, title: s.commercialName?.trim() || s.legalName }))
-        );
+        setSupplierOptions(suppliers);
       })
       .catch(() => {
         if (!cancelled) setSupplierOptions([]);

@@ -42,6 +42,28 @@ describe('resolveAdminApiRouteResource', () => {
   });
 });
 
+describe('matchAdminApiResourceRule поставщики спецификации «Дверей»', () => {
+  const base = '/api/v1/admin/contract-document-packages/doors-settings';
+
+  it('список для спецификации доступен по правам на договоры, а не на раздел «Поставщики»', () => {
+    expect(matchAdminApiResourceRule('GET', `${base}/specification-suppliers`)).toEqual({
+      resourceId: 'admin.contract-documents.repair',
+      level: AdminResourcePermissionLevel.VIEW,
+    });
+    expect(matchAdminApiResourceRule('GET', base)).toEqual({
+      resourceId: 'admin.contract-documents.repair',
+      level: AdminResourcePermissionLevel.VIEW,
+    });
+  });
+
+  it('изменение списка — мутация договоров', () => {
+    expect(matchAdminApiResourceRule('PUT', base)).toEqual({
+      resourceId: 'admin.contract-documents.repair',
+      level: AdminResourcePermissionLevel.EDIT,
+    });
+  });
+});
+
 describe('matchAdminApiResourceRule crm-directions shared reads', () => {
   it('skips resource check for shared CRM direction lookups', () => {
     expect(matchAdminApiResourceRule('GET', '/api/v1/admin/crm-directions')).toBeNull();

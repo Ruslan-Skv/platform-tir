@@ -4869,6 +4869,8 @@ model ContractDocumentRepairSettings {
   ceilingsWorkOrderCornerPrice  Int?
   /// Минимальная оплата для Акта начала работ по ремонту, %; null — не задана, берётся 70%.
   repairWorkStartMinPayPercent  Int?
+  /// Поставщики колонки «Поставщик» в Спецификации договоров «Двери» (id из справочника поставщиков); задаёт супер-админ в «Настройках договоров».
+  doorsSpecificationSupplierIds String[]                    @default([])
   updatedById                   String?
   updatedAt                     DateTime                    @updatedAt
 

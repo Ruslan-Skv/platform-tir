@@ -13,6 +13,7 @@ import {
   SetRepairContractSettingsDto,
 } from './dto/settings/set-repair-settings.dto';
 import { SetRepairWorkOrderSettingsDto } from './dto/settings/set-repair-work-order-settings.dto';
+import { SetDoorsContractSettingsDto } from './dto/settings/set-doors-settings.dto';
 import { SetWindowsWorkOrderMarkupDto } from './dto/settings/set-windows-work-order-markup.dto';
 import { SetWindowsContractSettingsDto } from './dto/settings/set-windows-settings.dto';
 import { ContractDocumentPackageGlobalLibraryService } from './contract-document-package-global-library.service';
@@ -274,6 +275,22 @@ export class ContractDocumentPackagesService {
 
   setRepairWorkOrderSettings(dto: SetRepairWorkOrderSettingsDto, updatedById?: string) {
     return this.kindSettings.setRepairWorkOrderSettings(dto, updatedById);
+  }
+
+  listDoorsSpecificationSuppliers() {
+    return this.kindSettings.listDoorsSpecificationSuppliers();
+  }
+
+  listDoorsSupplierOptions() {
+    return this.kindSettings.listDoorsSupplierOptions();
+  }
+
+  getDoorsSettings() {
+    return this.kindSettings.getDoorsSettings();
+  }
+
+  setDoorsSettings(dto: SetDoorsContractSettingsDto, updatedById?: string) {
+    return this.kindSettings.setDoorsSettings(dto, updatedById);
   }
 
   getCeilingsPriceList() {
