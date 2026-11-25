@@ -805,33 +805,13 @@
   margin-bottom: var(--admin-space-sm);
 }
 
-.editorHeaderTitleRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--admin-space-md);
-  margin-top: var(--admin-space-md);
-  margin-bottom: var(--admin-space-xs);
-}
-
-.editorHeaderTitleCluster {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--admin-space-sm);
-  min-width: 0;
-  flex-wrap: wrap;
-}
-
 .title {
   margin: 0;
 }
 
-.editorHeaderTitleRow .title {
-  margin: 0;
-}
-
+/* Дата «от …» рядом с номером в заголовке редактора договора: мельче и светлее номера. */
 .packageHeaderContractSignedDate {
-  font-size: var(--admin-font-size-xl);
+  font-size: 0.8em;
   font-weight: 500;
   color: var(--admin-text-muted);
   white-space: nowrap;
@@ -1098,38 +1078,6 @@
   gap: var(--admin-space-md);
 }
 
-.blockHeader {
-  background: var(--admin-accent-soft);
-  border: 1px solid var(--admin-accent-soft-strong);
-  border-radius: var(--admin-radius-lg);
-  padding: var(--admin-space-md) var(--admin-space-9);
-}
-
-.headerActions {
-  display: flex;
-  flex-direction: column;
-  gap: var(--admin-space-sm);
-  align-items: flex-end;
-}
-
-.packageEditorDraftTitleRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--admin-space-sm);
-  align-self: stretch;
-  justify-content: flex-end;
-}
-
-.packageEditorDraftTitleRow .draftTitleInput {
-  flex: 1 1 240px;
-  min-width: 240px;
-}
-
-.packageEditorDraftTitleRow > button {
-  flex-shrink: 0;
-}
-
 /* --- dark theme --- */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListSearchInput:focus,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListSelect:focus,
@@ -1202,11 +1150,6 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListStatusBadgeRefused {
   background: var(--admin-overlay-color-031);
   color: var(--admin-danger-border-strong);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .blockHeader {
-  background: var(--admin-overlay-color-014);
-  border-color: var(--admin-accent-soft-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListSearchInput::placeholder {
@@ -1765,8 +1708,9 @@
   background: var(--admin-overlay-color-136, rgb(37 99 235 / 0.14));
 }
 
-/* Кнопка «ЭП»: золотой фон, если у договора есть подписанные через ЭП документы.
-   Двойной класс перебивает фон .button из AdminTableIconButton при любом порядке стилей. */
+/* Кнопка «ЭП» (в строках списков и в шапке редактора договора): золотой фон, если у договора
+   есть подписанные через ЭП документы. Двойной класс перебивает фон .button
+   из AdminTableIconButton / AdminToolbarIconButton при любом порядке стилей. */
 .epSignedGold.epSignedGold {
   background: #e7b93c;
   border-color: #c29a2a;
@@ -1787,37 +1731,6 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
   .epSignedGold.epSignedGold:hover:not(:disabled) {
-  background: #d9a72e;
-  border-color: #a87f18;
-  color: #241a00;
-}
-
-/* Кнопка «ЭП» в шапке редактора договора: золотой фон, если есть подписанные
-   через ЭП документы (тот же признак, что epSignedGold выше в списках).
-   Тройной класс перебивает фон .secondaryBtn, цвет .estimatesPageRefreshIconBtn
-   (двойные классы) при любом порядке стилей в бандле — как у тонировки
-   «Заказ-наряды» в work-order-distribution.module.css. */
-.editorEpSignedGold.editorEpSignedGold.editorEpSignedGold {
-  background: #e7b93c;
-  border-color: #c29a2a;
-  color: #4a3a05;
-}
-
-.editorEpSignedGold.editorEpSignedGold.editorEpSignedGold:hover:not(:disabled) {
-  background: #dba92e;
-  border-color: #ad8f22;
-  color: #4a3a05;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .editorEpSignedGold.editorEpSignedGold.editorEpSignedGold {
-  background: #c9971d;
-  border-color: #8a6713;
-  color: #241a00;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .editorEpSignedGold.editorEpSignedGold.editorEpSignedGold:hover:not(:disabled) {
   background: #d9a72e;
   border-color: #a87f18;
   color: #241a00;

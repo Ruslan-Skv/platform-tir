@@ -10,7 +10,6 @@ import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 
 import cdHub from '../../../styles/contracts-list-hub.module.css';
 import cdDataTab from '../../../styles/data-tab.module.css';
-import cdDocPreview from '../../../styles/documents-preview.module.css';
 import cdEstimateTab from '../../../styles/estimate-tab.module.css';
 import cdWorkspace from '../../../styles/estimates-workspace.module.css';
 import cdHubModals from '../../../styles/hub-modals.module.css';
@@ -22,16 +21,18 @@ import {
 } from '../../platform/editor/shared/packageFileMeta';
 import { PACKAGE_WINDOWS_ADDITIONAL_FILES_MAX } from '../../platform/form/normalize';
 import type { PackageFormData } from '../../platform/form/packageForm';
+import {
+  PACKAGE_TAB_CARD,
+  PACKAGE_TAB_HINT,
+  PACKAGE_TAB_TITLE,
+} from '../../platform/ui/packageTabClassNames';
 
 const FILES_TAB_COMPACT = `${cdEstimateTab.estimateTabCompact} ${cdProduct.estimateTabCompact} ${cdHubModals.estimateTabCompact}`;
 const FILES_BLOCK = `${cdDataTab.blockData} ${cdProduct.blockData}`;
 const FILES_DATA_COMPACT = `${cdEstimateTab.dataCompact} ${cdDataTab.dataCompact} ${cdHubModals.dataCompact}`;
 const FILES_FORM_GRID = `${cdDataTab.formGrid} ${cdProduct.formGrid}`;
-const FILES_SECTION_CARD = `${cdTemplates.sectionCard} ${cdEstimateTab.sectionCard}`;
+const FILES_SECTION_CARD = `${cdTemplates.sectionCard} ${cdEstimateTab.sectionCard} ${PACKAGE_TAB_CARD}`;
 const FILES_SECTION_FIELDS = `${cdTemplates.sectionFields} ${cdEstimateTab.sectionFields}`;
-const FILES_SECTION_TITLE = cdEstimateTab.sectionTitle;
-const FILES_SECTION_TITLE_MAIN = `${cdTemplates.estimateSectionTitle} ${cdEstimateTab.estimateSectionTitle}`;
-const FILES_HINT = `${cdDocPreview.hint} ${cdTemplates.hint}`;
 const FILES_FIELD = `${cdHubModals.field} ${cdDataTab.field} ${cdEstimateTab.field}`;
 const FILES_ROOT = `${FILES_BLOCK} ${FILES_DATA_COMPACT} ${FILES_TAB_COMPACT} ${cdProduct.windowsContractTabTypography}`;
 
@@ -116,8 +117,8 @@ export function PackageWindowsFilesTab({
     <div className={FILES_ROOT}>
       <div className={FILES_FORM_GRID}>
         <div className={`${FILES_SECTION_CARD} ${cdProduct.windowsContractFormSection}`}>
-          <h3 className={`${FILES_SECTION_TITLE} ${FILES_SECTION_TITLE_MAIN}`}>Файлы</h3>
-          <p className={FILES_HINT} style={{ marginTop: 0 }}>
+          <h3 className={PACKAGE_TAB_TITLE}>Файлы</h3>
+          <p className={PACKAGE_TAB_HINT} style={{ marginTop: 0 }}>
             Прикрепите коммерческое предложение и другие файлы по договору (jpg, rtf, pdf, Office,
             архивы, DWG и др. — до 50 МБ). Файлы хранятся в исходном виде, просмотр содержимого не
             выполняется — скачивайте файл по иконке. Исполняемые файлы (.exe, .bat и т.п.) загружать

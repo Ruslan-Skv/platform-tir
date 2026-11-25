@@ -10,6 +10,11 @@ import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
 import cdHubModals from '../../../../styles/hub-modals.module.css';
 import cdProduct from '../../../../styles/product-package.module.css';
 import cdTemplates from '../../../../styles/templates-library.module.css';
+import {
+  PACKAGE_TAB_CARD,
+  PACKAGE_TAB_HINT,
+  PACKAGE_TAB_TITLE,
+} from '../../../platform/ui/packageTabClassNames';
 import { DoorsSpecificationLinesEditor } from './DoorsSpecificationLinesEditor';
 import {
   type DoorsSpecificationLine,
@@ -25,10 +30,7 @@ const REQUEST_TAB_COMPACT = `${cdEstimateTab.estimateTabCompact} ${cdProduct.est
 const REQUEST_BLOCK = `${cdDataTab.blockData} ${cdProduct.blockData}`;
 const REQUEST_DATA_COMPACT = `${cdEstimateTab.dataCompact} ${cdDataTab.dataCompact} ${cdHubModals.dataCompact}`;
 const REQUEST_FORM_GRID = `${cdDataTab.formGrid} ${cdProduct.formGrid}`;
-const REQUEST_SECTION_CARD = `${cdTemplates.sectionCard} ${cdEstimateTab.sectionCard}`;
-const REQUEST_SECTION_TITLE = cdEstimateTab.sectionTitle;
-const REQUEST_SECTION_TITLE_MAIN = `${cdTemplates.estimateSectionTitle} ${cdEstimateTab.estimateSectionTitle}`;
-const REQUEST_HINT = `${cdDocPreview.hint} ${cdTemplates.hint}`;
+const REQUEST_SECTION_CARD = `${cdTemplates.sectionCard} ${cdEstimateTab.sectionCard} ${PACKAGE_TAB_CARD}`;
 const REQUEST_A4_WRAP = `${cdDocPreview.estimateA4Wrap} ${cdEstimateTab.estimateA4Wrap}`;
 const REQUEST_ROOT = `${REQUEST_BLOCK} ${REQUEST_DATA_COMPACT} ${REQUEST_TAB_COMPACT} ${cdProduct.windowsContractTabTypography}`;
 
@@ -214,10 +216,8 @@ export function DoorsSupplierRequestTabContent({
       <div className={REQUEST_ROOT}>
         <div className={REQUEST_FORM_GRID}>
           <div className={`${REQUEST_SECTION_CARD} ${cdProduct.windowsContractFormSection}`}>
-            <h3 className={`${REQUEST_SECTION_TITLE} ${REQUEST_SECTION_TITLE_MAIN}`}>
-              Правка заявки
-            </h3>
-            <p className={REQUEST_HINT} style={{ marginTop: 0 }}>
+            <h3 className={PACKAGE_TAB_TITLE}>Правка заявки</h3>
+            <p className={PACKAGE_TAB_HINT} style={{ marginTop: 0 }}>
               Заявка предзаполнена позициями Спецификации. Измените количество, добавьте или удалите
               товары — исходная Спецификация остаётся неизменной: после «Сохранить» разница
               автоматически оформится доп. соглашением к договору.

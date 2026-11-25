@@ -4,6 +4,26 @@
   border-color: color-mix(in srgb, var(--admin-warning-border-soft) 50%, white);
 }
 
+/* Вкладки документов («Смета», «Д/с», «Спецификация», «Файлы»…) — без жёлтой подложки:
+   их шапка сама белая карточка (packageTabCard в editor-chrome). Подложку сохраняет
+   только «Данные» (packageDataTabDense). */
+.packageDocumentEditorPage .blockData.dataCompact:not(.packageDataTabDense) {
+  padding: 0;
+  background: transparent;
+  border-color: transparent;
+}
+
+.packageDocumentEditorPage .blockData.dataCompact:not(.packageDataTabDense) > .formGrid {
+  row-gap: var(--admin-space-md);
+}
+
+/* Вкладки направления «Мебель» (без dataCompact): подложка тоже снимается,
+   остаётся их собственный паддинг co-located .wrap. */
+.packageDocumentEditorPage .blockData:not(.packageDataTabDense):not(.dataCompact) {
+  background: transparent;
+  border-color: transparent;
+}
+
 .packageDocumentEditorPage .packageLockNotice,
 .packageDocumentEditorPage .estimateLockNotice,
 .packageDocumentEditorPage .contractLockNotice,
@@ -136,13 +156,9 @@
   border-top: 1px solid var(--admin-border);
 }
 
-.packageEditorHubPrimaryBtn {
-  align-items: center;
-  display: inline-flex;
-  gap: var(--admin-space-sm);
-}
-
-/* Синий акцент hub-кнопок (в монолите давал estimatesPageRefreshIconBtn). */
+/* Hub-кнопки шапки редактора договора («Оплаты и этапы», «Счета», «Заказ-наряды», «Анкеты») —
+   на AdminToolbarIconButton: синий акцент иконки и подписи. Двойной класс перебивает
+   цвет .button при любом порядке стилей в бандле. */
 .packageEditorHubPrimaryBtn.packageEditorHubPrimaryBtn {
   color: var(--admin-info);
 }
@@ -151,10 +167,13 @@
   color: var(--admin-info-strong, var(--admin-info));
 }
 
+/* Подпись и бейдж идут после иконки внутри общей обёртки кнопки — отбиты отступом слева. */
 .packageEditorHubBtnLabel {
+  margin-left: var(--admin-space-sm);
   font-size: var(--admin-fs-sm, 0.8125rem);
   font-weight: 600;
   color: inherit;
+  white-space: nowrap;
 }
 
 .packageEditorHubPendingBadge {
@@ -167,16 +186,9 @@
   font-weight: 700;
   justify-content: center;
   line-height: 1;
+  margin-left: var(--admin-space-sm);
   min-width: 1.125rem;
   padding: 2px 5px;
-}
-
-.packageTabAddendumUnsigned:not(.tabActive) {
-  border-color: rgb(245 158 11 / 45%);
-}
-
-.packageTabAddendumUnsigned.tabActive {
-  box-shadow: inset 0 -2px 0 rgb(245 158 11 / 70%);
 }
 
 .packageTabAddendumSignBadge {

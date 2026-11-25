@@ -9,7 +9,9 @@ import {
   quickEstimateCategoryHasLines,
   quickEstimateEditBlockReason,
   quickEstimateResultingGroupKey,
+  resolveQuickEstimateCalcName,
   resolveQuickEstimateObjectAddress,
+  resolveQuickEstimateRoomDraft,
   validateQuickEstimateInput,
 } from './packageEstimateQuickCreate';
 
@@ -90,6 +92,66 @@ describe('buildQuickEstimateDraft', () => {
     ]);
     expect(draft.customItems['est-custom:1']).toEqual({ name: 'Подъём', unit: 'час', price: 500 });
     expect(draft.customItemsNoMarkup).toBe(true);
+  });
+
+  it('имя блока — помещение расчёта, с пробелами по краям — обрезается', () => {
+    const draft = JSON.parse(
+      buildQuickEstimateDraft(category('okna', { calcName: '  Лоджия  ', lines: [] }))
+    );
+    expect(draft.calcs[0].name).toBe('Лоджия');
+  });
+});
+
+describe('поле «Помещение» модалки', () => {
+  describe('resolveQuickEstimateRoomDraft — значение поля при открытии правки', () => {
+    it('общее имя категорий — в поле', () => {
+      expect(resolveQuickEstimateRoomDraft({ steny: 'Работы', elektrika: 'Работы' })).toBe(
+        'Работы'
+      );
+      expect(resolveQuickEstimateRoomDraft({ steny: ' Лоджия ' })).toBe('Лоджия');
+    });
+
+    it('в категориях разные помещения или имён нет — поле пустое', () => {
+      expect(resolveQuickEstimateRoomDraft({ steny: 'Кухня', elektrika: 'Ванная' })).toBe('');
+      expect(resolveQuickEstimateRoomDraft({})).toBe('');
+    });
+  });
+
+  describe('resolveQuickEstimateCalcName — имя блока категории при сохранении', () => {
+    it('при создании: помещение поля — в расчёт, пустое поле — заглушка «Работы»', () => {
+      const create = (roomDraft: string) =>
+        resolveQuickEstimateCalcName({ roomDraft, baselineRoom: '' });
+      expect(create(' Кухня ')).toBe('Кухня');
+      expect(create('')).toBeUndefined();
+    });
+
+    it('при правке: изменённое поле задаёт помещение, без изменений — текущее имя', () => {
+      const edit = (roomDraft: string, currentName: string) =>
+        resolveQuickEstimateCalcName({ roomDraft, baselineRoom: 'Работы', currentName });
+      expect(edit('Лоджия', 'Работы')).toBe('Лоджия');
+      expect(edit('Работы', 'Работы')).toBe('Работы');
+    });
+
+    it('очищенное поле в правке возвращает заглушку «Работы»', () => {
+      expect(
+        resolveQuickEstimateCalcName({ roomDraft: '', baselineRoom: 'Кухня', currentName: 'Кухня' })
+      ).toBeUndefined();
+    });
+
+    it('разные помещения по категориям: пока поле не заполнено, имена не меняются', () => {
+      const calcName = (currentName: string) =>
+        resolveQuickEstimateCalcName({ roomDraft: '', baselineRoom: '', currentName });
+      expect(calcName('Кухня')).toBe('Кухня');
+      expect(calcName('Ванная')).toBe('Ванная');
+      // Заполнили поле — оно задаёт помещение всем категориям.
+      expect(
+        resolveQuickEstimateCalcName({
+          roomDraft: 'Санузел',
+          baselineRoom: '',
+          currentName: 'Кухня',
+        })
+      ).toBe('Санузел');
+    });
   });
 });
 
@@ -252,6 +314,45 @@ describe('buildQuickEstimatePreset', () => {
     expect(preset.snapshot?.rooms[1]?.lines[0]?.name).toBe('Розетка');
     const draft = JSON.parse(preset.calculatorDraft) as { __adminMultiCategory?: unknown };
     expect(draft.__adminMultiCategory).toBeDefined();
+  });
+
+  it('помещение из поля «Помещение» — имя помещения снимка во всех категориях', async () => {
+    const base = {
+      title: 'Лоджия',
+      crmCustomerId: 'crm_1',
+      customerName: 'Иванов Иван',
+      objectAddress: 'Москва, ул. Ленина, 1',
+      direction: 'REPAIR' as const,
+    };
+    const categories = [
+      category('steny', {
+        name: 'Стены',
+        calcName: 'Лоджия',
+        lines: [{ itemId: 'est-custom:a', quantity: 1 }],
+        customItems: { 'est-custom:a': { name: 'Шпаклёвка', unit: 'м²', price: 130 } },
+      }),
+      category('elektrika', {
+        name: 'Электрика',
+        calcName: 'Лоджия',
+        lines: [{ itemId: 'est-custom:b', quantity: 2 }],
+        customItems: { 'est-custom:b': { name: 'Розетка', unit: 'шт', price: 400 } },
+      }),
+    ];
+
+    const preset = await buildQuickEstimatePreset({ ...base, categories });
+
+    // В смете (счёт-заказе) помещение — из поля, в обеих категориях.
+    expect(preset.snapshot?.rooms.map((room) => room.name)).toEqual(['Лоджия', 'Лоджия']);
+    for (const draftRaw of Object.values(preset.calculatorDraftByCategory ?? {})) {
+      expect(JSON.parse(draftRaw).calcs[0].name).toBe('Лоджия');
+    }
+
+    // Поле оставили пустым — заглушка «Работы».
+    const withoutRoom = await buildQuickEstimatePreset({
+      ...base,
+      categories: categories.map(({ calcName: _room, ...rest }) => rest),
+    });
+    expect(withoutRoom.snapshot?.rooms.map((room) => room.name)).toEqual(['Работы', 'Работы']);
   });
 
   it('бросает ошибку без категорий с позициями', async () => {

@@ -252,7 +252,7 @@ function estimateRoomSectionHtml(roomSection: EstimateRoomSection): string {
     .map(
       (block, blockIndex) => `<section class="estimateA4Room">
     <div class="estimateA4RoomHeader estimateA4SecondaryRoomHeader">
-      <span>${blockIndex + 1}. Категория работ: ${escapeHtml(block.categoryName)}</span>
+      <span>${blockIndex + 1}. ${escapeHtml(block.categoryName)}</span>
       <strong>${formatMoney(block.room.total)} руб.</strong>
     </div>
     ${estimateRoomLinesTableHtml(block.room)}

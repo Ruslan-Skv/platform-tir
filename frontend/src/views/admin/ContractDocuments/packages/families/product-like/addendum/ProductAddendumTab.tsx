@@ -10,6 +10,7 @@ import {
   packageLockNoticeMessage,
 } from '../../../platform/editor/shared/packageLockNoticeUi';
 import type { PackageAddendumSlotEstimateBlock } from '../../../platform/form/packageForm';
+import { PACKAGE_TAB_CARD, PACKAGE_TAB_TITLE } from '../../../platform/ui/packageTabClassNames';
 import { ProductAddendumGrandTotalsSummary } from './ProductAddendumGrandTotalsSummary';
 import { ProductAddendumSpecificationLinesEditor } from './ProductAddendumSpecificationLinesEditor';
 import {
@@ -22,8 +23,6 @@ import {
   PRODUCT_ADDENDUM_ROOT,
   PRODUCT_ADDENDUM_SECTION_CARD,
   PRODUCT_ADDENDUM_SECTION_HEADER,
-  PRODUCT_ADDENDUM_SECTION_TITLE,
-  PRODUCT_ADDENDUM_SECTION_TITLE_MAIN,
 } from './addendumTabClassNames';
 
 type Props = {
@@ -68,13 +67,9 @@ export function ProductAddendumTab({
   return (
     <div className={PRODUCT_ADDENDUM_ROOT}>
       <div className={PRODUCT_ADDENDUM_FORM_GRID}>
-        <div className={PRODUCT_ADDENDUM_SECTION_CARD}>
+        <div className={`${PRODUCT_ADDENDUM_SECTION_CARD} ${PACKAGE_TAB_CARD}`}>
           <div className={PRODUCT_ADDENDUM_SECTION_HEADER}>
-            <h3
-              className={`${PRODUCT_ADDENDUM_SECTION_TITLE} ${PRODUCT_ADDENDUM_SECTION_TITLE_MAIN}`}
-            >
-              Дополнительное соглашение №{slotOrdinal}
-            </h3>
+            <h3 className={PACKAGE_TAB_TITLE}>Дополнительное соглашение №{slotOrdinal}</h3>
           </div>
           {signedLockNotice}
           <div className={cdChrome.packageAddendumMetaInlineRow}>

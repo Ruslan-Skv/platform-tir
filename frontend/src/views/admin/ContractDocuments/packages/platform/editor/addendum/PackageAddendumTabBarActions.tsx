@@ -1,9 +1,7 @@
 'use client';
 
 import { todayContractDateDdMmYyyy } from '../../../../core/contractDateFormat';
-import cdBase from '../../../../styles/base.module.css';
 import cdChrome from '../../../../styles/editor-chrome.module.css';
-import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
 import type { PackageFormData } from '../../form/packageForm';
 import { isPackageAddendumSlotRemovable } from '../../form/packageForm';
 import type { PackageDocumentTabId } from '../../tabs/packageDocumentTabs';
@@ -29,7 +27,7 @@ export function PackageAddendumTabBarActions({
 }: PackageAddendumTabBarActionsProps) {
   return (
     <div
-      className={cdChrome.packageTabBarAddendumActions}
+      className={cdChrome.packageEditorTabActions}
       role="group"
       aria-label="Добавить или убрать вкладку доп. соглашения"
     >
@@ -38,7 +36,7 @@ export function PackageAddendumTabBarActions({
           <button
             data-admin-mutation
             type="button"
-            className={`${cdWorkspace.secondaryBtn} ${cdChrome.packageAddAddendumTabBtn} ${cdBase.packageAddAddendumTabBtn}`}
+            className={cdChrome.packageEditorTabAction}
             disabled={addDisabled}
             aria-disabled={addDisabled}
             aria-label={`Добавить вкладку Д/с №${form.addendumSlotCount + 1}`}
@@ -78,7 +76,7 @@ export function PackageAddendumTabBarActions({
         >
           <button
             type="button"
-            className={`${cdWorkspace.secondaryBtn} ${cdChrome.packageAddAddendumTabBtn} ${cdBase.packageAddAddendumTabBtn}`}
+            className={cdChrome.packageEditorTabAction}
             disabled={
               !isPackageAddendumSlotRemovable(form.addendumSlots[form.addendumSlotCount - 1])
             }

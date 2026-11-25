@@ -8,7 +8,6 @@ import { uploadWindowsSpecificationFile } from '@/shared/api/admin-contract-docu
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 
 import cdDataTab from '../../../styles/data-tab.module.css';
-import cdEstimateTab from '../../../styles/estimate-tab.module.css';
 import cdWorkspace from '../../../styles/estimates-workspace.module.css';
 import cdHubModals from '../../../styles/hub-modals.module.css';
 import cdProduct from '../../../styles/product-package.module.css';
@@ -17,6 +16,7 @@ import {
   PackageLockNotice,
   packageLockNoticeMessage,
 } from '../../platform/editor/shared/packageLockNoticeUi';
+import { PACKAGE_TAB_TITLE } from '../../platform/ui/packageTabClassNames';
 import styles from './FurnitureSpecificationTabContent.module.css';
 import type {
   FurnitureManufactureDocs,
@@ -172,7 +172,7 @@ export function FurnitureSpecificationTabContent({
       ) : null}
 
       <section className={styles.section}>
-        <h3 className={cdEstimateTab.sectionTitle}>
+        <h3 className={PACKAGE_TAB_TITLE}>
           Спецификация изготовления
           {contractNumberLabel ? ` · ${contractNumberLabel}` : ''}
         </h3>
@@ -338,7 +338,7 @@ export function FurnitureSpecificationTabContent({
       </section>
 
       <section className={styles.section}>
-        <h3 className={cdEstimateTab.sectionTitle}>Таблица материалов</h3>
+        <h3 className={PACKAGE_TAB_TITLE}>Таблица материалов</h3>
         <p className={styles.hint}>Внутренняя таблица для заказа материалов (Excel «Табл.»).</p>
         <div className={cdProduct.windowsAddendumSpecTableWrap}>
           <table className={`${cdProduct.windowsAddendumSpecTable} ${styles.specTable}`}>

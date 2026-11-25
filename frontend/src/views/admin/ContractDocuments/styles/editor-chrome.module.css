@@ -15,23 +15,6 @@
   margin-left: 0;
 }
 
-.packageEditorHeaderLeft {
-  min-width: 0;
-}
-
-.packageEditorHeaderLeft .backLink {
-  display: inline-block;
-  font-size: var(--admin-font-size-sm);
-  margin: 0;
-  line-height: 1.2;
-  color: var(--admin-text-muted);
-  text-decoration: none;
-}
-
-.packageEditorHeaderLeft .backLink:hover {
-  color: var(--admin-info);
-}
-
 .packageEditorHeaderCenterSlot {
   flex: 1 1 8rem;
   display: flex;
@@ -122,6 +105,28 @@
   align-items: center;
   justify-content: flex-end;
   gap: var(--admin-space-sm);
+}
+
+/* Ряд действий шапки редактора договора (общий паттерн новых разделов, contractsListPage).
+   Кнопок много: не влезая рядом с заголовком, ряд переносится своей строкой и остаётся справа. */
+.packageEditorHeaderActions {
+  margin-left: auto;
+}
+
+/* Кнопки-иконки шапки редактора (поделиться, «ЭП», журнал, обновление, печать) — одна группа. */
+.packageEditorHeaderIconActions {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--admin-space-xs);
+}
+
+@media (max-width: 900px) {
+  /* Как в шапках списков: на телефоне действия переносятся под заголовок и выравниваются влево. */
+  .packageEditorHeaderActions {
+    width: 100%;
+    justify-content: flex-start;
+  }
 }
 
 /* Как «+ Новый объект» на /estimates, без margin-left: auto из панели фильтров */
@@ -244,27 +249,6 @@
   color: rgba(243, 244, 246, 0.88);
 }
 
-.estimatesPageRefreshIconBtn {
-  flex-shrink: 0;
-  padding: var(--admin-space-md);
-  min-width: 40px;
-  min-height: 40px;
-  border-radius: var(--admin-radius-md);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--admin-info);
-}
-
-/* Повышенная специфичность: secondaryBtn из другого CSS-модуля иначе перебивает цвет. */
-.estimatesPageRefreshIconBtn.estimatesPageRefreshIconBtn {
-  color: var(--admin-info);
-}
-
-.estimatesPageRefreshIconBtn.estimatesPageRefreshIconBtn:hover:not(:disabled) {
-  color: var(--admin-info-strong, var(--admin-info));
-}
-
 .estimatesPageArchiveIconBtn {
   color: var(--admin-text-secondary);
 }
@@ -291,6 +275,14 @@
 
 .backLink:hover {
   color: var(--admin-info);
+}
+
+/* «← К списку договоров» над шапкой редактора — как «← Настройки» над шапками страниц настроек. */
+.packageEditorBackLink {
+  display: inline-block;
+  margin-bottom: var(--admin-space-2xs);
+  font-size: var(--admin-font-size-sm);
+  line-height: var(--admin-line-height-sm);
 }
 
 .tabBar {
@@ -356,24 +348,103 @@
   margin-bottom: var(--admin-space-xs);
 }
 
-.packageTabList {
+/* ── Панель вкладок редактора договора: по образцу раздела «Расчёты» ──
+   Вкладки-«ярлычки» лежат на разделителе шапки (border-bottom шапки новых разделов).
+   Классы отдельные: .tab / .tabBar / .blockTabs общие с модалками хабов и настройками. */
+
+.packageEditorHeaderTop {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: var(--admin-space-xs);
-  flex: 1 1 auto;
+  gap: var(--admin-space-md);
+  align-items: flex-start;
+  width: 100%;
   min-width: 0;
-  margin-bottom: 0;
-  padding-bottom: 0;
-  border-bottom: none;
 }
 
-.packageTabBarAddendumActions {
+.packageEditorTabStrip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--admin-space-xs);
+  width: 100%;
+  min-width: 0;
+  /* Вплотную к строке заголовка; нижняя грань вкладок совпадает с разделителем шапки
+     (её padding-bottom + border-bottom), поэтому панель заходит на него на 1px. */
+  margin-top: calc(var(--admin-space-xs) - var(--admin-space-md));
+  margin-bottom: calc(-1 * var(--admin-space-md) - 1px);
+}
+
+.packageEditorTabList {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--admin-space-xs);
+  /* Всё место левее «+ Д/с» / «− Д/с»: не помещаясь, переносятся сами вкладки. */
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.packageEditorTab {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md) var(--admin-radius-md) 0 0;
+  background: var(--admin-surface);
+  color: var(--admin-sidebar-text);
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-xs);
+  white-space: nowrap;
+  cursor: grab;
+  user-select: none;
+}
+
+.packageEditorTab:hover:not(:disabled) {
+  background: var(--admin-surface-soft);
+}
+
+.packageEditorTab:active {
+  cursor: grabbing;
+}
+
+.packageEditorTab:disabled {
+  cursor: not-allowed;
+}
+
+.packageEditorTab:disabled:not(.packageEditorTabActive) {
+  opacity: 0.55;
+}
+
+.packageEditorTabActive {
+  background: var(--admin-info-bg-soft);
+  border-color: var(--admin-info-border-soft);
+  color: var(--admin-info-strong);
+  font-weight: 600;
+}
+
+/* Неподписанное Д/с: янтарная рамка; у активного — янтарная линия снизу и бейдж «Подписать». */
+.packageEditorTab.packageEditorTabUnsigned {
+  border-color: rgb(245 158 11 / 45%);
+}
+
+.packageEditorTab.packageEditorTabUnsigned.packageEditorTabActive {
+  border-color: var(--admin-info-border-soft);
+  box-shadow: inset 0 -2px 0 rgb(245 158 11 / 70%);
+}
+
+/* «Итог. смета» — у правого края, перед «+ Д/с» / «− Д/с». */
+.packageEditorTabSummary {
+  margin-left: auto;
+}
+
+.packageEditorTabActions {
   display: inline-flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-end;
   gap: var(--admin-space-xs);
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .packageTabBarCompact .tab {
@@ -421,18 +492,6 @@
   background: var(--admin-info-bg-soft);
 }
 
-.packageTabBarRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
-  gap: var(--admin-space-md);
-}
-
-.packageTabBarRow > .tabBar {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
 .packageAddAddendumTabBtnWrap {
   display: inline-flex;
   flex-shrink: 0;
@@ -443,13 +502,60 @@
   cursor: not-allowed;
 }
 
-.packageTabBarCompact .packageAddAddendumTabBtn {
+/* «+ Д/с» / «− Д/с» — той же высоты, что вкладки, и тоже стоят на разделителе шапки. */
+.packageEditorTabAction {
+  display: inline-flex;
+  align-items: center;
   flex-shrink: 0;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md) var(--admin-radius-md) 0 0;
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
   font-size: var(--admin-font-size-xs);
   line-height: var(--admin-line-height-xs);
-  padding: var(--admin-space-xs) var(--admin-space-sm);
+  font-weight: 500;
   white-space: nowrap;
-  min-height: 0;
+  cursor: pointer;
+}
+
+.packageEditorTabAction:hover:not(:disabled) {
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-primary);
+}
+
+.packageEditorTabAction:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Шапка вкладки документа («Смета», «Д/с», «Спецификация», «Файлы»…) ──
+   Белая карточка с отступами — как карточки новых разделов; жёлтая подложка самой
+   вкладки снимается в data-tab.module.css. Тройной класс перебивает компактные
+   отступы .estimateTabCompact .sectionCard и типографику товарных вкладок
+   (.windowsContractFormSection :where(h1…h5)) при любом порядке стилей в бандле. */
+.packageTabCard.packageTabCard.packageTabCard {
+  padding: var(--admin-space-md) var(--admin-space-xl);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+}
+
+.packageTabCardTitle.packageTabCardTitle.packageTabCardTitle {
+  margin: 0 0 var(--admin-space-2xs);
+  padding: 0;
+  border: 0;
+  font-size: var(--admin-font-size-md);
+  font-weight: 600;
+  line-height: var(--admin-line-height-md);
+  color: var(--admin-text-primary);
+}
+
+.packageTabCardHint {
+  margin: 0 0 var(--admin-space-md);
+  font-size: var(--admin-font-size-sm);
+  line-height: var(--admin-line-height-base);
+  color: var(--admin-text-muted);
 }
 
 .packageAddendumDateFieldRow {

@@ -17,6 +17,11 @@ import {
   PackageLockNotice,
   packageLockNoticeMessage,
 } from '../../../platform/editor/shared/packageLockNoticeUi';
+import {
+  PACKAGE_TAB_CARD,
+  PACKAGE_TAB_HINT,
+  PACKAGE_TAB_TITLE,
+} from '../../../platform/ui/packageTabClassNames';
 import { CeilingsSpecificationEditor } from './CeilingsSpecificationEditor';
 import { CeilingsSpecificationPreviewSheet } from './CeilingsSpecificationPreviewSheet';
 import type { CeilingsSpecification } from './ceilingsSpecification';
@@ -25,10 +30,7 @@ const SPEC_TAB_COMPACT = `${cdEstimateTab.estimateTabCompact} ${cdProduct.estima
 const SPEC_BLOCK = `${cdDataTab.blockData} ${cdProduct.blockData}`;
 const SPEC_DATA_COMPACT = `${cdEstimateTab.dataCompact} ${cdDataTab.dataCompact} ${cdHubModals.dataCompact}`;
 const SPEC_FORM_GRID = `${cdDataTab.formGrid} ${cdProduct.formGrid}`;
-const SPEC_SECTION_CARD = `${cdTemplates.sectionCard} ${cdEstimateTab.sectionCard}`;
-const SPEC_SECTION_TITLE = cdEstimateTab.sectionTitle;
-const SPEC_SECTION_TITLE_MAIN = `${cdTemplates.estimateSectionTitle} ${cdEstimateTab.estimateSectionTitle}`;
-const SPEC_HINT = `${cdDocPreview.hint} ${cdTemplates.hint}`;
+const SPEC_SECTION_CARD = `${cdTemplates.sectionCard} ${cdEstimateTab.sectionCard} ${PACKAGE_TAB_CARD}`;
 const SPEC_FIELD = `${cdHubModals.field} ${cdDataTab.field} ${cdEstimateTab.field}`;
 const SPEC_A4_WRAP = `${cdDocPreview.estimateA4Wrap} ${cdEstimateTab.estimateA4Wrap}`;
 const SPEC_ROOT = `${SPEC_BLOCK} ${SPEC_DATA_COMPACT} ${SPEC_TAB_COMPACT} ${cdProduct.windowsContractTabTypography}`;
@@ -82,15 +84,15 @@ export function CeilingsSpecificationTabContent({
     <div className={SPEC_ROOT}>
       <div className={SPEC_FORM_GRID}>
         <div className={`${SPEC_SECTION_CARD} ${cdProduct.windowsContractFormSection}`}>
+          <h3 className={PACKAGE_TAB_TITLE}>Спецификация</h3>
           {disabled ? (
             <PackageLockNotice>{packageLockNoticeMessage('specification')}</PackageLockNotice>
           ) : null}
-          <h3 className={`${SPEC_SECTION_TITLE} ${SPEC_SECTION_TITLE_MAIN}`}>Спецификация</h3>
-          <p className={SPEC_HINT} style={{ marginTop: 0 }}>
+          <p className={PACKAGE_TAB_HINT} style={{ marginTop: 0 }}>
             Заполните потолки объекта: полотно, ленту, багет и комплектующие из прайса. Монтаж
             оформляется на вкладке «Счёт-заказ». Полотно №1 — самое большое.
           </p>
-          {priceLoading ? <p className={SPEC_HINT}>Загрузка прайса…</p> : null}
+          {priceLoading ? <p className={PACKAGE_TAB_HINT}>Загрузка прайса…</p> : null}
           <CeilingsSpecificationEditor
             spec={spec}
             priceItems={priceItems}

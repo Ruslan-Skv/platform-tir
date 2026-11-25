@@ -15,6 +15,11 @@ import {
   subscribePackageEstimatePreviewGroupMode,
 } from '../../estimates/estimatePreviewGrouping';
 import { contractDiscountHint } from '../../form/packageContractDiscount';
+import {
+  PACKAGE_TAB_CARD,
+  PACKAGE_TAB_HINT,
+  PACKAGE_TAB_TITLE,
+} from '../../ui/packageTabClassNames';
 import { PackageDiscountControls, PackageDiscountHint } from '../shared/PackageDiscountControls';
 import { PackageLockNotice, packageLockNoticeMessage } from '../shared/packageLockNoticeUi';
 import attachStyles from './PackageEstimateAttach.module.css';
@@ -30,8 +35,6 @@ import {
   ESTIMATE_SECTION_CARD,
   ESTIMATE_SECTION_FIELDS,
   ESTIMATE_SECTION_HEADER,
-  ESTIMATE_SECTION_TITLE,
-  ESTIMATE_SECTION_TITLE_MAIN,
   ESTIMATE_TAB_COMPACT,
   ESTIMATE_TAB_HINT,
 } from './packageEstimateTabStyles';
@@ -61,7 +64,14 @@ export function PackageEstimateTabView(props: PackageEstimateTabProps) {
       className={`${ESTIMATE_BLOCK} ${ESTIMATE_DATA_COMPACT} ${ESTIMATE_TAB_COMPACT} ${cdProduct.windowsContractTabTypography} ${cdProduct.windowsContractEstimateTab}`}
     >
       <div className={ESTIMATE_FORM_GRID}>
-        <div className={`${ESTIMATE_SECTION_CARD} ${cdProduct.windowsContractFormSection}`}>
+        <div
+          className={`${ESTIMATE_SECTION_CARD} ${PACKAGE_TAB_CARD} ${cdProduct.windowsContractFormSection}`}
+        >
+          <div className={ESTIMATE_SECTION_HEADER}>
+            <h3 className={PACKAGE_TAB_TITLE}>
+              {isProductDirectionPackage ? 'Счёт-заказ' : 'Смета'}
+            </h3>
+          </div>
           {signedDocsLocked ? (
             <PackageLockNotice>
               {packageLockNoticeMessage('estimate', {
@@ -69,16 +79,12 @@ export function PackageEstimateTabView(props: PackageEstimateTabProps) {
               })}
             </PackageLockNotice>
           ) : null}
-          <div className={ESTIMATE_SECTION_HEADER}>
-            <h3 className={`${ESTIMATE_SECTION_TITLE} ${ESTIMATE_SECTION_TITLE_MAIN}`}>
-              {isProductDirectionPackage ? 'Счёт-заказ' : 'Смета'}
-            </h3>
-          </div>
-          <p className={ESTIMATE_HINT} style={{ marginTop: 0 }}>
+          {/* div, а не p: правила компактной типографики товарных вкладок задают 12px именно для p. */}
+          <div className={PACKAGE_TAB_HINT}>
             {isProductDirectionPackage
               ? 'Прикрепляются расчёты заказчика из раздела «Расчёты» (тот же, что выбран в блоке «Данные»). Объект выбирается здесь: все расчёты счёта-заказа должны относиться к одному объекту. После первого прикрепления объект фиксируется.'
               : 'Объект выбирается только здесь: все расчёты основной сметы и доп. соглашений должны относиться к одному объекту. После первого прикреплённого расчёта объект фиксируется автоматически.'}
-          </p>
+          </div>
           {isProductDirectionPackage && !linkedCrmCustomerId?.trim() && !signedDocsLocked ? (
             <p className={ESTIMATE_TAB_HINT} role="status">
               Сначала выберите заказчика в блоке «Поиск заказчика в базе» на вкладке «Данные» —

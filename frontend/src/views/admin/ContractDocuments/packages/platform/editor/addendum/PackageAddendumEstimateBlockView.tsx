@@ -1,6 +1,7 @@
 'use client';
 
 import cdChrome from '../../../../styles/editor-chrome.module.css';
+import { PACKAGE_TAB_CARD, PACKAGE_TAB_TITLE } from '../../ui/packageTabClassNames';
 import {
   PackageAddendumSlotDiscountControls,
   PackageDiscountHint,
@@ -18,8 +19,6 @@ import {
   ADDENDUM_SECTION_CARD,
   ADDENDUM_SECTION_FIELDS,
   ADDENDUM_SECTION_HEADER,
-  ADDENDUM_SECTION_TITLE,
-  ADDENDUM_SECTION_TITLE_MAIN,
   ADDENDUM_TAB_COMPACT,
   ADDENDUM_TAB_HINT,
 } from './packageAddendumEstimateBlockStyles';
@@ -94,11 +93,9 @@ export function PackageAddendumEstimateBlockView({
   return (
     <div className={`${ADDENDUM_BLOCK} ${ADDENDUM_DATA_COMPACT} ${ADDENDUM_TAB_COMPACT}`}>
       <div className={ADDENDUM_FORM_GRID}>
-        <div className={ADDENDUM_SECTION_CARD}>
+        <div className={`${ADDENDUM_SECTION_CARD} ${PACKAGE_TAB_CARD}`}>
           <div className={ADDENDUM_SECTION_HEADER}>
-            <h3 className={`${ADDENDUM_SECTION_TITLE} ${ADDENDUM_SECTION_TITLE_MAIN}`}>
-              Дополнительное соглашение №{slotOrdinal}
-            </h3>
+            <h3 className={PACKAGE_TAB_TITLE}>Дополнительное соглашение №{slotOrdinal}</h3>
           </div>
           {signedLockNotice}
           <div className={cdChrome.packageAddendumMetaInlineRow}>

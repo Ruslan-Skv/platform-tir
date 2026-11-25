@@ -1,5 +1,7 @@
 ﻿'use client';
 
+import type { ReactNode } from 'react';
+
 import Link from 'next/link';
 
 import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
@@ -11,7 +13,6 @@ import type { PackageDocumentTabId } from '@/views/admin/ContractDocuments/packa
 
 import cdHub from '../../../../styles/contracts-list-hub.module.css';
 import cdChrome from '../../../../styles/editor-chrome.module.css';
-import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
 import { packageKindUiLabel } from '../../../config';
 import { PackageDocumentEditorHeaderActions } from './PackageDocumentEditorHeaderActions';
 import { PackageDocumentEditorRulesInfoTip } from './PackageDocumentEditorRulesInfoTip';
@@ -38,42 +39,57 @@ export type PackageDocumentEditorHeaderProps = {
   onOpenRemoteSigning: () => void;
   onRefreshFromServer: () => void;
   onPrint: () => void;
+  /** Панель вкладок редактора — нижняя строка шапки на её разделителе. */
+  children?: ReactNode;
 };
 
-export function PackageDocumentEditorHeader(props: PackageDocumentEditorHeaderProps) {
+export function PackageDocumentEditorHeader({
+  children,
+  ...props
+}: PackageDocumentEditorHeaderProps) {
   const { packageKind, headerContractNumberLabel, headerContractConcludedDateLabel } = props;
 
   return (
-    <div className={`${cdHub.editorHeader} ${cdHub.blockHeader}`}>
-      <div className={cdChrome.packageEditorHeaderLeft}>
-        <Link className={cdChrome.backLink} href={ADMIN_CONTRACT_DOCUMENTS_CONTRACTS_HREF}>
-          ← К списку договоров ({packageKindUiLabel(packageKind)})
-        </Link>
-        <div className={cdHub.editorHeaderTitleRow}>
-          <div className={cdHub.editorHeaderTitleCluster}>
-            <h1
-              className={cdWorkspace.title}
-              aria-label={
-                headerContractConcludedDateLabel
-                  ? `Договор ${headerContractNumberLabel} от ${headerContractConcludedDateLabel}`
-                  : 'Пакет документов'
-              }
-            >
-              {headerContractNumberLabel}
-              {headerContractConcludedDateLabel ? (
-                <span
-                  className={cdHub.packageHeaderContractSignedDate}
-                  title="Дата присвоения статуса «Договор подписан»"
-                >
-                  {` от ${headerContractConcludedDateLabel}`}
-                </span>
-              ) : null}
-            </h1>
-            <PackageDocumentEditorRulesInfoTip />
+    <>
+      <Link
+        className={`${cdChrome.backLink} ${cdChrome.packageEditorBackLink}`}
+        href={ADMIN_CONTRACT_DOCUMENTS_CONTRACTS_HREF}
+      >
+        ← К списку договоров ({packageKindUiLabel(packageKind)})
+      </Link>
+      <div className={cdHub.editorHeader}>
+        <div className={cdChrome.packageEditorHeaderTop}>
+          <div className={cdHub.contractsListHeaderLeft}>
+            <div className={cdHub.contractsHeaderTitleRow}>
+              <div className={cdHub.contractsHeaderTitleCluster}>
+                <div className={cdHub.contractsListHeaderTitleGroup}>
+                  <h1
+                    className={cdHub.title}
+                    aria-label={
+                      headerContractConcludedDateLabel
+                        ? `Договор ${headerContractNumberLabel} от ${headerContractConcludedDateLabel}`
+                        : 'Пакет документов'
+                    }
+                  >
+                    {headerContractNumberLabel}
+                    {headerContractConcludedDateLabel ? (
+                      <span
+                        className={cdHub.packageHeaderContractSignedDate}
+                        title="Дата присвоения статуса «Договор подписан»"
+                      >
+                        {` от ${headerContractConcludedDateLabel}`}
+                      </span>
+                    ) : null}
+                  </h1>
+                  <PackageDocumentEditorRulesInfoTip />
+                </div>
+              </div>
+            </div>
           </div>
+          <PackageDocumentEditorHeaderActions {...props} />
         </div>
+        {children}
       </div>
-      <PackageDocumentEditorHeaderActions {...props} />
-    </div>
+    </>
   );
 }

@@ -78,33 +78,6 @@
   background: var(--admin-info-bg-soft);
 }
 
-/* «+ Д/с» / «− Д/с» на мятной панели: success-текст, не .secondaryBtn (светлый hover) */
-
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .packageTabBarCompact.blockTabs
-  .packageAddAddendumTabBtn {
-  background: rgb(6 95 70 / 0.1);
-  border-color: var(--admin-success-text);
-  color: var(--admin-success-text-strong);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .packageTabBarCompact.blockTabs
-  .packageAddAddendumTabBtn:hover:not(:disabled) {
-  background: rgb(6 95 70 / 0.2);
-  border-color: var(--admin-success-deep);
-  color: var(--admin-success-text-strong);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .packageTabBarCompact.blockTabs
-  .packageAddAddendumTabBtn:disabled {
-  background: rgb(6 95 70 / 0.05);
-  border-color: rgb(6 95 70 / 0.35);
-  color: rgb(6 95 70 / 0.55);
-  opacity: 1;
-}
-
 /* Базовый dark-слой для всех вкладок Contract Documents */
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])

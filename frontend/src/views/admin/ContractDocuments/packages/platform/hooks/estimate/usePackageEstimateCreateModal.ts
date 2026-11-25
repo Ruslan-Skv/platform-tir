@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { useQueries } from '@tanstack/react-query';
 
@@ -36,7 +36,9 @@ import {
   quickEstimateDraftsByCategory,
   quickEstimateEditBlockReason,
   quickEstimateResultingGroupKey,
+  resolveQuickEstimateCalcName,
   resolveQuickEstimateObjectAddress,
+  resolveQuickEstimateRoomDraft,
   validateQuickEstimateInput,
 } from '../../estimates/packageEstimateQuickCreate';
 import { buildPackageCustomerTemplateFields } from '../../form/customerTemplateFields';
@@ -103,6 +105,8 @@ export type QuickEstimateFormStateKeyInput = {
   title: string;
   /** Наценка, % (undefined — «наценка объекта»). */
   markup?: number;
+  /** Поле «Помещение». */
+  room?: string;
   slugs: string[];
   linesBySlug: Record<string, Array<{ itemId: string; quantity: number }>>;
   customItemsBySlug: Record<string, EstimateCalculatorDraftCustomItems>;
@@ -138,6 +142,7 @@ export function quickEstimateFormStateKey(input: QuickEstimateFormStateKeyInput)
   return JSON.stringify({
     title: input.title.trim(),
     markup: input.markup ?? null,
+    room: input.room?.trim() ?? '',
     slugs: input.slugs,
     lines: sortedLines,
     custom: sortedCustom,
@@ -191,6 +196,8 @@ export function usePackageEstimateCreateModal({
   /** Правка существующего расчёта (иначе — создание нового). */
   const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
   const [titleDraft, setTitleDraft] = useState('');
+  /** Поле «Помещение»: помещение расчёта в смете/счёт-заказе (одно на все категории). */
+  const [roomDraft, setRoomDraft] = useState('');
   const [selectedSlugs, setSelectedSlugs] = useState<string[]>([]);
   const [markupRaw, setMarkupRaw] = useState('');
   /** Количество по позиции: qtyBySlug[slug][itemId] — строки ввода (каталог и est-custom:*). */
@@ -202,8 +209,13 @@ export function usePackageEstimateCreateModal({
     Record<string, QuickEstimateCustomDraft>
   >({});
   const [customNoMarkupBySlug, setCustomNoMarkupBySlug] = useState<Record<string, boolean>>({});
-  /** Имя блока позиций категории (сохраняется при правке: «Работы», «Помещение 1», …). */
+  /**
+   * Текущие имена блоков позиций категорий — помещение в смете («Работы», «Помещение 1», …).
+   * Поле «Помещение» заменяет их, только если его изменили.
+   */
   const [calcNameBySlug, setCalcNameBySlug] = useState<Record<string, string>>({});
+  /** Поле «Помещение» на момент открытия модалки (при создании — пусто). */
+  const editBaselineRoomRef = useRef('');
   /** Ошибка формы «Дополнительные виды работ» по категории. */
   const [customErrorBySlug, setCustomErrorBySlug] = useState<Record<string, string | null>>({});
   const [error, setError] = useState<string | null>(null);
@@ -248,6 +260,8 @@ export function usePackageEstimateCreateModal({
   const resetForm = useCallback(() => {
     setEditingPresetId(null);
     setTitleDraft('');
+    setRoomDraft('');
+    editBaselineRoomRef.current = '';
     setSelectedSlugs([]);
     setMarkupRaw('');
     setQtyBySlug({});
@@ -306,6 +320,8 @@ export function usePackageEstimateCreateModal({
         nextCalcNames[slug] = parsed.calcName;
       }
       /** Точка отсчёта: с этим ключом сравнивается текущее состояние («Сохранить» без правок неактивна). */
+      const nextRoomDraft = resolveQuickEstimateRoomDraft(nextCalcNames);
+      editBaselineRoomRef.current = nextRoomDraft;
       setEditBaselineKey(
         quickEstimateFormStateKey({
           title: preset.title,
@@ -313,6 +329,7 @@ export function usePackageEstimateCreateModal({
             typeof preset.additionalMarkupPercent === 'number'
               ? preset.additionalMarkupPercent
               : undefined,
+          room: nextRoomDraft,
           slugs: nextSlugs,
           linesBySlug: baselineLines,
           customItemsBySlug: nextCustom,
@@ -321,6 +338,7 @@ export function usePackageEstimateCreateModal({
       );
       setEditingPresetId(preset.id);
       setTitleDraft(preset.title);
+      setRoomDraft(nextRoomDraft);
       setSelectedSlugs(Object.keys(drafts));
       setMarkupRaw(
         typeof preset.additionalMarkupPercent === 'number'
@@ -436,6 +454,7 @@ export function usePackageEstimateCreateModal({
       quickEstimateFormStateKey({
         title: titleDraft,
         markup: parsedMarkup,
+        room: roomDraft,
         slugs: selectedSlugs,
         linesBySlug: Object.fromEntries(selectedSlugs.map((s) => [s, buildCategoryLines(s)])),
         customItemsBySlug,
@@ -446,6 +465,7 @@ export function usePackageEstimateCreateModal({
     editBaselineKey,
     markupRaw,
     titleDraft,
+    roomDraft,
     selectedSlugs,
     buildCategoryLines,
     customItemsBySlug,
@@ -542,10 +562,15 @@ export function usePackageEstimateCreateModal({
       return;
     }
 
+    const baselineRoom = editBaselineRoomRef.current;
     const categoryInputs: QuickEstimateCategoryInput[] = selectedSlugs.map((slug) => ({
       slug,
       name: categories.find((c) => c.slug === slug)?.name ?? slug,
-      calcName: calcNameBySlug[slug],
+      calcName: resolveQuickEstimateCalcName({
+        roomDraft,
+        baselineRoom,
+        currentName: calcNameBySlug[slug],
+      }),
       lines: buildCategoryLines(slug),
       customItems: customItemsBySlug[slug] ?? {},
       customItemsNoMarkup: customNoMarkupBySlug[slug] ?? false,
@@ -630,6 +655,7 @@ export function usePackageEstimateCreateModal({
     selectedSlugs,
     categories,
     calcNameBySlug,
+    roomDraft,
     buildCategoryLines,
     customItemsBySlug,
     customNoMarkupBySlug,
@@ -673,6 +699,8 @@ export function usePackageEstimateCreateModal({
     close,
     titleDraft,
     setTitleDraft,
+    roomDraft,
+    setRoomDraft,
     categories,
     categoriesLoading: catalog.isLoading,
     selectedSlugs,

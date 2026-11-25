@@ -5,13 +5,13 @@ import { PlusIcon } from '@heroicons/react/24/outline';
 import { useCallback, useMemo } from 'react';
 
 import cdDataTab from '../../../styles/data-tab.module.css';
-import cdEstimateTab from '../../../styles/estimate-tab.module.css';
 import cdWorkspace from '../../../styles/estimates-workspace.module.css';
 import cdProduct from '../../../styles/product-package.module.css';
 import {
   PackageLockNotice,
   packageLockNoticeMessage,
 } from '../../platform/editor/shared/packageLockNoticeUi';
+import { PACKAGE_TAB_TITLE } from '../../platform/ui/packageTabClassNames';
 import styles from './FurnitureWorkOrderTabContent.module.css';
 import type {
   FurnitureMontageDocs,
@@ -85,7 +85,7 @@ export function FurnitureWorkOrderTabContent({
           {packageLockNoticeMessage('estimate', { productDirection: true })}
         </PackageLockNotice>
       ) : null}
-      <h3 className={cdEstimateTab.sectionTitle}>Заказ-наряд</h3>
+      <h3 className={PACKAGE_TAB_TITLE}>Заказ-наряд</h3>
       <p className={styles.hint}>
         К договорам № {manufactureContractNumber || '—м'} и {montageContractNumber || '—с'}. Блок
         монтажа синхронизирован со счёт-заказом.

@@ -175,7 +175,7 @@ export function EstimateWorkspacePreviewModal({
                             className={`${cdDocPreview.estimateA4RoomHeader} ${cdDocPreview.estimateA4SecondaryRoomHeader}`}
                           >
                             <span>
-                              {blockIndex + 1}. Категория работ: {block.categoryName}
+                              {blockIndex + 1}. {block.categoryName}
                             </span>
                             <strong>{formatMoneyWholeGrouped(block.room.total)} руб.</strong>
                           </div>

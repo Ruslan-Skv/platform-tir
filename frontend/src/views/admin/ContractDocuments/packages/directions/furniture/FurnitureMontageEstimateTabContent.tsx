@@ -5,13 +5,13 @@ import { PlusIcon } from '@heroicons/react/24/outline';
 import { useCallback, useMemo } from 'react';
 
 import cdDataTab from '../../../styles/data-tab.module.css';
-import cdEstimateTab from '../../../styles/estimate-tab.module.css';
 import cdWorkspace from '../../../styles/estimates-workspace.module.css';
 import cdProduct from '../../../styles/product-package.module.css';
 import {
   PackageLockNotice,
   packageLockNoticeMessage,
 } from '../../platform/editor/shared/packageLockNoticeUi';
+import { PACKAGE_TAB_TITLE } from '../../platform/ui/packageTabClassNames';
 import styles from './FurnitureMontageEstimateTabContent.module.css';
 import type { FurnitureMontageDocs, FurnitureMontageLine } from './furnitureMontageDocs';
 import {
@@ -62,7 +62,7 @@ export function FurnitureMontageEstimateTabContent({
           {packageLockNoticeMessage('estimate', { productDirection: true })}
         </PackageLockNotice>
       ) : null}
-      <h3 className={cdEstimateTab.sectionTitle}>
+      <h3 className={PACKAGE_TAB_TITLE}>
         Счёт-заказ монтажа
         {contractNumberLabel ? ` · ${contractNumberLabel}` : ''}
       </h3>

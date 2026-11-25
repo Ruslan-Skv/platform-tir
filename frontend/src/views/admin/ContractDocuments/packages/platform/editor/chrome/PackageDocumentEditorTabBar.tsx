@@ -63,7 +63,7 @@ export function PackageDocumentEditorTabBar({
 
   return (
     <div
-      className={cdChrome.packageTabList}
+      className={cdChrome.packageEditorTabList}
       role="tablist"
       aria-label="Разделы пакета. Перетащите вкладку, чтобы изменить порядок."
     >
@@ -100,12 +100,10 @@ export function PackageDocumentEditorTabBar({
                       ? `${packageEditorTabLabel(packageKind, id)} — только просмотр (договор подписан)`
                       : `${packageEditorTabLabel(packageKind, id)} — перетащите для смены порядка`
             }
-            className={`${cdChrome.tab} ${activeTab === id ? cdChrome.tabActive : ''} ${
-              isUnsignedAddendumTab ? cdDataTab.packageTabAddendumUnsigned : ''
-            } ${
-              id === 'finalEstimate' && !isProductLike
-                ? `${cdChrome.summaryTab} ${cdChrome.summaryTabFirst} ${cdChrome.summaryTabLast}`
-                : ''
+            className={`${cdChrome.packageEditorTab} ${
+              activeTab === id ? cdChrome.packageEditorTabActive : ''
+            } ${isUnsignedAddendumTab ? cdChrome.packageEditorTabUnsigned : ''} ${
+              id === 'finalEstimate' && !isProductLike ? cdChrome.packageEditorTabSummary : ''
             }`}
             onClick={() => onTabActivate(id)}
             onDragStart={(e) => onTabDragStart(id, e)}

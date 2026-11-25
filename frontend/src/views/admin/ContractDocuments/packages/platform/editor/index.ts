@@ -64,6 +64,10 @@ export {
   PackageDocumentEditorChrome,
   type PackageDocumentEditorChromeProps,
 } from './chrome/PackageDocumentEditorChrome';
+export {
+  PackageDocumentEditorTabStrip,
+  type PackageDocumentEditorTabStripProps,
+} from './chrome/PackageDocumentEditorTabStrip';
 export { executePackageDocumentPrint } from './chrome/executePackageDocumentPrint';
 export {
   buildFinalEstimateSummary,

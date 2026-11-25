@@ -1,5 +1,6 @@
 import cdDataTab from '../../../styles/data-tab.module.css';
 import cdDocPreview from '../../../styles/documents-preview.module.css';
+import cdChrome from '../../../styles/editor-chrome.module.css';
 import cdEstimateTab from '../../../styles/estimate-tab.module.css';
 import cdHubModals from '../../../styles/hub-modals.module.css';
 import cdProduct from '../../../styles/product-package.module.css';
@@ -23,6 +24,11 @@ export const PACKAGE_FIELD = `${cdDataTab.field} ${cdEstimateTab.field}`;
 export const PACKAGE_FIELD_WITH_HUB = `${cdHubModals.field} ${cdDataTab.field} ${cdEstimateTab.field}`;
 export const PACKAGE_HINT = `${cdDocPreview.hint} ${cdTemplates.hint}`;
 export const PACKAGE_A4_WRAP = `${cdDocPreview.estimateA4Wrap} ${cdEstimateTab.estimateA4Wrap}`;
+
+/** Шапка вкладки документа («Смета», «Д/с», «Спецификация», «Файлы»…): карточка, заголовок и описание. */
+export const PACKAGE_TAB_CARD = cdChrome.packageTabCard;
+export const PACKAGE_TAB_TITLE = cdChrome.packageTabCardTitle;
+export const PACKAGE_TAB_HINT = cdChrome.packageTabCardHint;
 
 export const PACKAGE_SPEC_ROOT = `${PACKAGE_BLOCK} ${PACKAGE_DATA_COMPACT_WITH_HUB} ${PACKAGE_TAB_COMPACT_WITH_HUB} ${cdProduct.windowsContractTabTypography}`;
 export const PACKAGE_ADDENDUM_ROOT = `${PACKAGE_BLOCK} ${PACKAGE_DATA_COMPACT} ${PACKAGE_TAB_COMPACT} ${cdProduct.windowsContractTabTypography} ${cdProduct.windowsAddendumTab}`;

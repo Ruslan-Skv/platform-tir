@@ -22,14 +22,17 @@ import {
 } from './estimateCustomWorkItems';
 import { normalizeAddressMatchKey } from './estimateObjectGroupSync';
 
-/** Название блока позиций в снимке сметы (аналог «Помещение 1» в воркспейсе). */
+/**
+ * Название блока позиций в снимке сметы (аналог «Помещение 1» в воркспейсе) — помещение
+ * расчёта. Записывается, когда поле «Помещение» модалки пусто.
+ */
 export const QUICK_ESTIMATE_CALC_NAME = 'Работы';
 
 /** Работы одной категории небольшого расчёта: позиции каталога + кастомные (`est-custom:*`). */
 export type QuickEstimateCategoryInput = {
   slug: string;
   name: string;
-  /** Имя блока позиций (сохраняется имя исходного помещения при правке существующего расчёта). */
+  /** Имя блока позиций = помещение в смете/счёт-заказе (поле «Помещение» модалки). */
   calcName?: string;
   lines: Array<{ itemId: string; quantity: number }>;
   customItems: EstimateCalculatorDraftCustomItems;
@@ -130,6 +133,34 @@ export function validateQuickEstimateInput(params: {
     };
   }
   return null;
+}
+
+/**
+ * Поле «Помещение» при открытии правки: общее имя блоков позиций категорий.
+ * В категориях разные помещения — пусто: одно поле не заменит их все.
+ */
+export function resolveQuickEstimateRoomDraft(calcNameBySlug: Record<string, string>): string {
+  const names = Object.values(calcNameBySlug)
+    .map((name) => name.trim())
+    .filter(Boolean);
+  const first = names[0];
+  return first !== undefined && names.every((name) => name === first) ? first : '';
+}
+
+/**
+ * Имя блока позиций категории (= помещение в смете/счёт-заказе) при сохранении:
+ * изменённое поле «Помещение» задаёт помещение всем категориям расчёта, без изменений
+ * категория сохраняет своё имя. Очищенное поле — заглушка `QUICK_ESTIMATE_CALC_NAME`.
+ */
+export function resolveQuickEstimateCalcName(params: {
+  roomDraft: string;
+  /** Поле «Помещение» на момент открытия модалки (при создании — пусто). */
+  baselineRoom: string;
+  /** Текущее имя блока категории (при создании нет). */
+  currentName?: string;
+}): string | undefined {
+  const room = params.roomDraft.trim();
+  return room === params.baselineRoom.trim() ? params.currentName : room || undefined;
 }
 
 /** Черновик калькулятора формата v1 с одним блоком позиций. */

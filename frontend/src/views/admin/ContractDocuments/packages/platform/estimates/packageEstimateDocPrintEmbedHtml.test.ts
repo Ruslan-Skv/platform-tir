@@ -113,7 +113,9 @@ describe('buildEstimateDocPrintEmbedHtml: вариант отображения'
     const html = buildEstimateDocPrintEmbedHtml(embedOptions('byRooms'));
     expect(html).toContain('Помещение: <strong>Гостиная</strong>');
     expect(html).toContain('Категорий: 3');
-    expect(html).toContain('1. Категория работ: Работы по полам');
+    // Вторичный уровень (категории) — номер и название категории, как помещения в режиме по категориям.
+    expect(html).toContain('<span>1. Работы по полам</span>');
+    expect(html).not.toContain('Категория работ');
     expect(html).toContain('Итоги по помещениям');
     expect(html).not.toContain('Итоги по категориям');
     // Вторичный уровень (категории) — без жирного.

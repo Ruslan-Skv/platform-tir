@@ -41,6 +41,8 @@ export function PackageEstimateCreateModal({
     isDirty,
     titleDraft,
     setTitleDraft,
+    roomDraft,
+    setRoomDraft,
     categories,
     categoriesLoading,
     selectedSlugs,
@@ -139,7 +141,7 @@ export function PackageEstimateCreateModal({
             : 'Небольшой расчёт: создаётся здесь и сразу прикрепляется к этому договору. Заказчик, адрес объекта и направление — из договора. Для больших смет и связанных экземпляров используйте раздел «Расчёты».'}
         </p>
 
-        <div data-modal-form-grid>
+        <div data-modal-form-grid className={styles.topFieldsGrid}>
           <div data-modal-form-group>
             <label htmlFor="quick_estimate_title">Название расчёта *</label>
             <input
@@ -148,6 +150,17 @@ export function PackageEstimateCreateModal({
               value={titleDraft}
               placeholder="Например: ЖК Парк, кв. 54"
               onChange={(e) => setTitleDraft(e.target.value)}
+            />
+          </div>
+          <div data-modal-form-group>
+            <label htmlFor="quick_estimate_room">Помещение</label>
+            <input
+              id="quick_estimate_room"
+              type="text"
+              value={roomDraft}
+              placeholder="Например: Кухня"
+              title="Помещение в смете (счёт-заказе) для всех работ расчёта. Оставьте пустым — будет «Работы»"
+              onChange={(e) => setRoomDraft(e.target.value)}
             />
           </div>
           <div data-modal-form-group>

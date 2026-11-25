@@ -29,6 +29,11 @@ import {
 } from '../../../platform/editor/shared/packageLockNoticeUi';
 import { PACKAGE_SPECIFICATION_VERSIONS_MAX } from '../../../platform/form/normalize';
 import type { ProductSpecificationFileVersion } from '../../../platform/form/types';
+import {
+  PACKAGE_TAB_CARD,
+  PACKAGE_TAB_HINT,
+  PACKAGE_TAB_TITLE,
+} from '../../../platform/ui/packageTabClassNames';
 import { productSpecificationCopy } from './productSpecificationCopy';
 import { convertRtfSpecificationToPdf } from './rtfFileToPdf';
 import { rtfToHtml } from './rtfToHtml';
@@ -37,11 +42,8 @@ const SPEC_TAB_COMPACT = `${cdEstimateTab.estimateTabCompact} ${cdProduct.estima
 const SPEC_BLOCK = `${cdDataTab.blockData} ${cdProduct.blockData}`;
 const SPEC_DATA_COMPACT = `${cdEstimateTab.dataCompact} ${cdDataTab.dataCompact} ${cdHubModals.dataCompact}`;
 const SPEC_FORM_GRID = `${cdDataTab.formGrid} ${cdProduct.formGrid}`;
-const SPEC_SECTION_CARD = `${cdTemplates.sectionCard} ${cdEstimateTab.sectionCard}`;
+const SPEC_SECTION_CARD = `${cdTemplates.sectionCard} ${cdEstimateTab.sectionCard} ${PACKAGE_TAB_CARD}`;
 const SPEC_SECTION_FIELDS = `${cdTemplates.sectionFields} ${cdEstimateTab.sectionFields}`;
-const SPEC_SECTION_TITLE = cdEstimateTab.sectionTitle;
-const SPEC_SECTION_TITLE_MAIN = `${cdTemplates.estimateSectionTitle} ${cdEstimateTab.estimateSectionTitle}`;
-const SPEC_HINT = `${cdDocPreview.hint} ${cdTemplates.hint}`;
 const SPEC_FIELD = `${cdHubModals.field} ${cdDataTab.field} ${cdEstimateTab.field}`;
 const SPEC_A4_WRAP = `${cdDocPreview.estimateA4Wrap} ${cdEstimateTab.estimateA4Wrap}`;
 const SPEC_ROOT = `${SPEC_BLOCK} ${SPEC_DATA_COMPACT} ${SPEC_TAB_COMPACT} ${cdProduct.windowsContractTabTypography}`;
@@ -185,19 +187,19 @@ export function ProductSpecificationTabContent({
     <div className={SPEC_ROOT}>
       <div className={SPEC_FORM_GRID}>
         <div className={`${SPEC_SECTION_CARD} ${cdProduct.windowsContractFormSection}`}>
+          <h3 className={PACKAGE_TAB_TITLE}>Спецификация</h3>
           {disabled ? (
             <PackageLockNotice>
               {packageLockNoticeMessage('specification', { versionsAllowed: contractConcluded })}
             </PackageLockNotice>
           ) : null}
-          <h3 className={`${SPEC_SECTION_TITLE} ${SPEC_SECTION_TITLE_MAIN}`}>Спецификация</h3>
-          <p className={SPEC_HINT} style={{ marginTop: 0 }}>
+          <p className={PACKAGE_TAB_HINT} style={{ marginTop: 0 }}>
             Спецификация ПВХ-изделий готовится в отдельной программе. Укажите итоговую стоимость и
             прикрепите файл с эскизом и расчётом (PDF, RTF, Office, изображения, архивы, DWG и др.).
             RTF-файлы загружаются в исходном виде. После подписания договора обновлённый файл
             прикрепляйте новой версией — всего до 5 версий.
           </p>
-          <p className={SPEC_HINT}>
+          <p className={PACKAGE_TAB_HINT}>
             Печать спецификации не производите на платформе ТИР. Печать Спецификации производите из
             исходного файла.
           </p>

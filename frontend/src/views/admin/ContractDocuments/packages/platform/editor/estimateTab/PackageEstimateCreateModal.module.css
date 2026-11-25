@@ -1,3 +1,15 @@
+/* Верхние поля: название, помещение, наценка — в один ряд (базовая сетка модалки — две колонки).
+   Атрибут добавляет специфичность, чтобы перебить сетку [data-modal-form-grid] из Modal. */
+.topFieldsGrid:global([data-modal-form-grid]) {
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) 7rem;
+}
+
+@media (max-width: 768px) {
+  .topFieldsGrid:global([data-modal-form-grid]) {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Блок «Категории работ» — сворачиваемая панель, как «Настройки списка» договоров. */
 .categoriesPanel {
   background: var(--admin-surface, #ffffff);

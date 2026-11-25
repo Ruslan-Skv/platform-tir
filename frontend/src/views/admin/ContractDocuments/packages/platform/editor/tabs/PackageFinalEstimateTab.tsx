@@ -6,11 +6,11 @@ import {
   PACKAGE_BLOCK,
   PACKAGE_DATA_COMPACT,
   PACKAGE_FORM_GRID,
-  PACKAGE_HINT,
   PACKAGE_SECTION_CARD,
-  PACKAGE_SECTION_TITLE,
-  PACKAGE_SECTION_TITLE_MAIN,
+  PACKAGE_TAB_CARD,
   PACKAGE_TAB_COMPACT,
+  PACKAGE_TAB_HINT,
+  PACKAGE_TAB_TITLE,
 } from '../../ui/packageTabClassNames';
 import attachStyles from '../estimateTab/PackageEstimateAttach.module.css';
 import { formatPackageMoneyValue } from '../estimateTab/estimateTabUi';
@@ -57,11 +57,9 @@ export function PackageFinalEstimateTab({
   return (
     <div className={`${PACKAGE_BLOCK} ${PACKAGE_DATA_COMPACT} ${PACKAGE_TAB_COMPACT}`}>
       <div className={PACKAGE_FORM_GRID}>
-        <div className={PACKAGE_SECTION_CARD}>
-          <h3 className={`${PACKAGE_SECTION_TITLE} ${PACKAGE_SECTION_TITLE_MAIN}`}>
-            Итоговая смета
-          </h3>
-          <p className={PACKAGE_HINT} style={{ marginTop: 0 }}>
+        <div className={`${PACKAGE_SECTION_CARD} ${PACKAGE_TAB_CARD}`}>
+          <h3 className={PACKAGE_TAB_TITLE}>Итоговая смета</h3>
+          <p className={PACKAGE_TAB_HINT} style={{ marginTop: 0 }}>
             Итог формируется из основной сметы и всех доп. соглашений. Одинаковые работы в одном
             помещении суммируются, а работы из блока «Непроводимые ремонтно-отделочные работы»
             вычитаются по количеству и сумме. В строках таблицы — суммы без скидки по договору;

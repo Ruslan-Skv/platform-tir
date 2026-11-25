@@ -8,6 +8,7 @@ import type {
 } from '@/shared/api/admin-contract-document-packages';
 
 import cdBase from '../../../../styles/base.module.css';
+import cdHub from '../../../../styles/contracts-list-hub.module.css';
 import cdDataTab from '../../../../styles/data-tab.module.css';
 import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
 import {
@@ -15,6 +16,7 @@ import {
   PackageDocumentEditorHeader,
   PackageDocumentEditorModals,
   PackageDocumentEditorTabContent,
+  PackageDocumentEditorTabStrip,
 } from '../../editor';
 import type { PackageDocumentEditorModalsProps } from '../../editor/chrome/PackageDocumentEditorModals';
 import type { PackageDocumentEditorTabContentProps } from '../../editor/chrome/PackageDocumentEditorTabContent';
@@ -111,7 +113,7 @@ export function PackageDocumentEditorMainView({
   return (
     <PackageWorkOrderHubProvider value={workOrderHubContextValue}>
       <div
-        className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdBase.packageDocumentEditorPage} ${cdDataTab.packageDocumentEditorPage} ${cdWorkspace.packageDocumentEditorPage}`}
+        className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdHub.contractsListPage} ${cdBase.packageDocumentEditorPage} ${cdDataTab.packageDocumentEditorPage} ${cdWorkspace.packageDocumentEditorPage}`}
       >
         <PackageDocumentEditorHeader
           packageKind={packageKind}
@@ -134,28 +136,32 @@ export function PackageDocumentEditorMainView({
           onOpenRemoteSigning={onOpenRemoteSigning}
           onRefreshFromServer={onRefreshFromServer}
           onPrint={onPrint}
-        />
+        >
+          <PackageDocumentEditorTabStrip
+            packageKind={packageKind}
+            tabs={orderedVisibleTabs}
+            activeTab={activeTab}
+            signedDocsLocked={signedDocsLocked}
+            contractConcluded={packageFlowStatus === 'CONTRACT_CONCLUDED'}
+            unsignedAddendumOrdinals={unsignedAddendumOrdinals}
+            signedAddendumOrdinals={signedAddendumOrdinals}
+            form={form}
+            addendumTabAddDisabled={addendumTabAddDisabled}
+            addendumTabAddTitle={addendumTabAddTitle}
+            setForm={setForm}
+            setActiveTab={setActiveTab}
+            touchPackageData={touchPackageData}
+            onTabActivate={onTabActivate}
+            onTabDragStart={onTabDragStart}
+            onTabDragOver={onTabDragOver}
+            onTabDrop={onTabDrop}
+          />
+        </PackageDocumentEditorHeader>
         <PackageDocumentEditorChrome
           packageFlowStatus={packageFlowStatus}
           refusalReason={form.contractRefusalReason}
           error={error}
           excelMessage={excelMessage}
-          packageKind={packageKind}
-          tabs={orderedVisibleTabs}
-          activeTab={activeTab}
-          signedDocsLocked={signedDocsLocked}
-          unsignedAddendumOrdinals={unsignedAddendumOrdinals}
-          signedAddendumOrdinals={signedAddendumOrdinals}
-          form={form}
-          addendumTabAddDisabled={addendumTabAddDisabled}
-          addendumTabAddTitle={addendumTabAddTitle}
-          setForm={setForm}
-          setActiveTab={setActiveTab}
-          touchPackageData={touchPackageData}
-          onTabActivate={onTabActivate}
-          onTabDragStart={onTabDragStart}
-          onTabDragOver={onTabDragOver}
-          onTabDrop={onTabDrop}
         />
         <PackageDocumentEditorTabContent {...tabContentProps} onNavigateToTab={setActiveTab} />
         <PackageDocumentEditorModals {...editorModalsProps} />
