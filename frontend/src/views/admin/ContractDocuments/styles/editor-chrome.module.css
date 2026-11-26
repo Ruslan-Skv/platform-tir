@@ -634,6 +634,8 @@
 .packageTabCard.packageTabCard.packageTabCard
   .packageTabField.packageTabField
   > :is(label, span):not(.packageTabInputWrap) {
+  /* margin: 0 — в модалках у label есть нижний отступ (Modal .content label). */
+  margin: 0;
   font-size: var(--admin-font-size-xs);
   font-weight: 600;
   line-height: var(--admin-line-height-sm);
@@ -665,10 +667,35 @@
   outline: none;
 }
 
-/* Заблокированное поле (договор подписан) остаётся полем, а не серым пятном. */
+/* Многострочное поле того же набора: та же рамка, радиус и шрифт; высота — по строкам. */
+.packageTabCard.packageTabCard.packageTabCard .packageTabField.packageTabField textarea {
+  box-sizing: border-box;
+  min-height: var(--package-tab-textarea-min-h, 3.25rem);
+  margin: 0;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-sm);
+  font-family: inherit;
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
+  color: var(--admin-text-primary);
+  background: var(--admin-surface);
+  resize: vertical;
+}
+
 .packageTabCard.packageTabCard.packageTabCard
   .packageTabField.packageTabField
-  :is(input, select):disabled {
+  textarea:where(:not(:disabled):not([readonly])):focus {
+  border-color: var(--admin-focus-ring, #3b82f6);
+  box-shadow: 0 0 0 1px var(--admin-focus-ring, #3b82f6);
+  outline: none;
+}
+
+/* Поле только для чтения (договор подписан, значение подставлено из карточки или расчёта)
+   остаётся полем, а не серым пятном: текст читается, менять нельзя. */
+.packageTabCard.packageTabCard.packageTabCard
+  .packageTabField.packageTabField
+  :is(input, select, textarea):is(:disabled, [readonly]) {
   background: var(--admin-surface-muted);
   border-color: var(--admin-border);
   color: var(--admin-text-secondary);
@@ -705,6 +732,16 @@
   .packageTabFieldWide.packageTabFieldWide
   > :is(input, select) {
   width: 100%;
+}
+
+/* Поле на всю ширину своей колонки — без верхнего предела ширины (в отличие от
+   packageTabFieldWide): для сеток и панелей, где ширину задаёт раскладка. */
+.packageTabCard.packageTabCard.packageTabCard
+  .packageTabFieldFill.packageTabFieldFill
+  > :is(input, select, textarea) {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 /* Поле «кол-во дней»: единица — суффикс внутри поля, а не плейсхолдер. */
@@ -867,6 +904,33 @@
   color: var(--admin-text-primary);
 }
 
+/* Опасное действие («Снять бронь», «Отменить»): белая кнопка с красным текстом и рамкой. */
+.packageTabBtnDanger.packageTabBtnDanger {
+  background: var(--admin-surface);
+  border-color: var(--admin-danger-border-strong);
+  color: var(--admin-error-text);
+}
+
+.packageTabBtnDanger.packageTabBtnDanger:hover:not(:disabled) {
+  background: var(--admin-error-bg);
+  border-color: var(--admin-error-text);
+  color: var(--admin-error-text);
+}
+
+/* --- dark theme --- */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .packageTabBtnDanger.packageTabBtnDanger {
+  background: var(--admin-surface);
+  border-color: var(--admin-danger-border-strong);
+  color: rgb(252 165 165);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .packageTabBtnDanger.packageTabBtnDanger:hover:not(:disabled) {
+  background: rgb(127 29 29 / 0.35);
+  border-color: rgb(252 165 165);
+  color: rgb(252 165 165);
+}
+
 /* ── Строка «поле слева, переключатель справа» ── */
 .packageTabCard.packageTabCard.packageTabCard .packageTabToolbarRow.packageTabToolbarRow {
   display: flex;
@@ -935,9 +999,103 @@
   cursor: not-allowed;
 }
 
+/* ── Корневой блок панели в модалках хабов («Заказ-наряды», «Анкеты»): тот же .blockData,
+   что у вкладок редактора, но без жёлтой подложки. На странице редактора её снимает правило
+   из data-tab.module.css (селектор .packageDocumentEditorPage), в модалке такого предка нет.
+   Четыре класса: с запасом перебивают тёмную подложку .interactiveFinalEstimateTab.blockData (0,2,0)
+   при любом порядке стилей в бандле. ── */
+.packageTabBlockFlat.packageTabBlockFlat.packageTabBlockFlat.packageTabBlockFlat {
+  padding: 0;
+  background: transparent;
+  border-color: transparent;
+}
+
+/* ── Белая панель на карточке вкладки: вложенный блок (раздел формы, бланк, список, таблица).
+   На приглушённой карточке белые панели читаются так же, как белые поля. ── */
+.packageTabPanel.packageTabPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+  box-sizing: border-box;
+  min-width: 0;
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+}
+
+/* Ряд шапки (панели или карточки): заголовок слева, действия справа; по центру вертикали. */
+.packageTabHeadRow.packageTabHeadRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-xs) var(--admin-space-md);
+  min-width: 0;
+}
+
+.packageTabHeadRow.packageTabHeadRow > * {
+  margin: 0;
+}
+
+/* Действия ряда шапки: справа одной группой. */
+.packageTabHeadRowActions {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--admin-space-xs);
+  margin-left: auto;
+}
+
+/* Заголовок раздела внутри панели («Договор и объект», «Выдать аванс»). */
+.packageTabPanelTitle.packageTabPanelTitle {
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  line-height: var(--admin-line-height-sm);
+  color: var(--admin-text-primary);
+  /* В модалках h4 набирается капсом с разрядкой (Modal .content h4) — здесь обычный. */
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* ── Строка-флажок «[✓] подпись»: чек-листы анкет, переключатели панелей. ── */
+.packageTabCheckRow.packageTabCheckRow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-space-xs);
+  box-sizing: border-box;
+  min-height: var(--package-tab-control-h, 28px);
+  margin: 0;
+  padding: 0;
+  font-size: var(--admin-font-size-xs);
+  font-weight: 500;
+  line-height: var(--admin-line-height-sm);
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+}
+
+.packageTabCheckRow.packageTabCheckRow > input[type='checkbox'] {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--admin-info);
+  cursor: inherit;
+}
+
+.packageTabCheckRow.packageTabCheckRow:has(> input:disabled) {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* --- dark theme --- */
 :where(html[data-theme='dark'], [data-app-theme='dark'])
   .packageTabCard.packageTabCard.packageTabCard.packageTabCard.packageTabCard {
+  border-color: var(--admin-border-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .packageTabPanel.packageTabPanel {
   border-color: var(--admin-border-strong);
 }
 

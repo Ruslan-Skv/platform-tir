@@ -4,6 +4,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { type Measurement, getMeasurements } from '@/shared/api/admin-crm';
 
+import {
+  PACKAGE_TAB_BTN,
+  PACKAGE_TAB_BTN_DANGER,
+  PACKAGE_TAB_BTN_PRIMARY,
+} from '../../ui/packageTabClassNames';
 import link from './PackageMeasurementLinkSection.module.css';
 
 function formatMeasurementDate(iso: string | null): string {
@@ -106,10 +111,11 @@ export function PackageMeasurementLinkSection({
     return <p className={link.errorText}>{loadError}</p>;
   }
 
-  const cardClassName =
-    placement === 'data'
-      ? `${link.measurementLinkCard} ${link.measurementLinkCardData}`
-      : link.measurementLinkCard;
+  // На вкладке «Данные» блок лежит на карточке вкладки: белая панель и кнопки набора пакетов.
+  const onDataTab = placement === 'data';
+  const cardClassName = onDataTab
+    ? `${link.measurementLinkCard} ${link.measurementLinkCardData}`
+    : link.measurementLinkCard;
 
   if (linkedMeasurementId) {
     const customerMismatch =
@@ -166,7 +172,11 @@ export function PackageMeasurementLinkSection({
         ) : null}
         <div className={link.measurementLinkActions}>
           <a
-            className={link.measurementLinkOpen}
+            className={
+              onDataTab
+                ? `${link.measurementLinkOpen} ${link.measurementLinkOpenData}`
+                : link.measurementLinkOpen
+            }
             href="/admin/measurements"
             target="_blank"
             rel="noopener noreferrer"
@@ -175,8 +185,10 @@ export function PackageMeasurementLinkSection({
           </a>
           <button
             type="button"
-            data-modal-btn="secondary"
-            className={link.removeButton}
+            data-modal-btn={onDataTab ? undefined : 'secondary'}
+            className={
+              onDataTab ? `${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_DANGER}` : link.removeButton
+            }
             onClick={onUnlink}
           >
             Отвязать замер
@@ -230,8 +242,8 @@ export function PackageMeasurementLinkSection({
         </select>
         <button
           type="button"
-          data-modal-btn="primary"
-          className={link.linkButton}
+          data-modal-btn={onDataTab ? undefined : 'primary'}
+          className={onDataTab ? `${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_PRIMARY}` : link.linkButton}
           disabled={!selectedId}
           onClick={() => {
             if (selectedId) onLink(selectedId);

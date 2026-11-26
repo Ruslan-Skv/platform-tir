@@ -3,6 +3,7 @@
 import cdBase from '../../../../styles/base.module.css';
 import cdDataTab from '../../../../styles/data-tab.module.css';
 import cdProduct from '../../../../styles/product-package.module.css';
+import { HUB_SECTION_HINT } from '../hubModal/packageHubModalStyles';
 import { PackageContractPaymentsConductFormSection } from './PackageContractPaymentsConductFormSection';
 import { PackageContractPaymentsHubSummarySection } from './PackageContractPaymentsHubSummarySection';
 import { PackageContractPaymentsJournalSection } from './PackageContractPaymentsJournalSection';
@@ -70,7 +71,7 @@ export function PackageContractPaymentsTabView({
       } ${isHubPartLayout ? cdBase.paymentsTabHubPart : ''}`}
     >
       {activeManagerSubstitutions.length > 0 ? (
-        <p className={cdProduct.hint} style={{ marginBottom: 10 }}>
+        <p className={HUB_SECTION_HINT}>
           {activeManagerSubstitutions
             .map((s) =>
               s.status === 'active'

@@ -32,26 +32,40 @@
 - `packages/platform/hub/hubModal/PackageHubModal.module.css`
 - `packages/platform/hub/workOrders/PackageWorkOrdersHubModal.module.css`
 - `packages/platform/hub/events/PackageEventsJournalModal.module.css`
+- `packages/platform/hub/questionnaires/PackageQuestionnairesHubPanels.module.css`
 - `packages/platform/editor/estimateTab/PackageEstimateAttach.module.css`
 
-При рефакторинге новые секции получают co-located CSS, если стили локальны. Массовый перенос из `styles/` не делаем — только по мере касания файлов.
+При рефакторинге новые секции получают co-located CSS, если стили локальны. Массовый перенос из `styles/` не делаем — только по мере касания файлов. Если правка делает правила в partial мёртвыми (класс больше не используется ни в одном ts/tsx) — удаляем их в том же изменении.
+
+## Набор вкладок и модалок хабов (editor-chrome)
+
+Вкладки редактора («Данные», «Смета», «Д/с»…) и модалки хабов («Заказ-наряды», «Анкеты», «Оплаты и Управление договором») собираются из одного набора — классов `packageTab*` в `editor-chrome.module.css`, импортируемых через константы `PACKAGE_TAB_*` из `packages/platform/ui/packageTabClassNames.ts`:
+
+- корень — `PACKAGE_BLOCK` + `PACKAGE_DATA_COMPACT`; у вкладок редактора подложку `.blockData` снимает правило из `data-tab.module.css`, в модалках её снимает `PACKAGE_TAB_BLOCK_FLAT` (там нет `.packageDocumentEditorPage`);
+- `PACKAGE_TAB_CARD` — приглушённая карточка с заголовком `PACKAGE_TAB_TITLE` и описанием `PACKAGE_TAB_HINT`;
+- `PACKAGE_TAB_PANEL` — белая панель раздела на карточке с рядом шапки `PACKAGE_TAB_HEAD_ROW` и заголовком `PACKAGE_TAB_PANEL_TITLE`;
+- поля — `PACKAGE_TAB_FIELD` (28px) + `PACKAGE_TAB_FIELD_FILL` (на ширину колонки), размеры — `PACKAGE_TAB_FIELD_DATE/DAYS/PERCENT/MONEY/WIDE`;
+- кнопки — `PACKAGE_TAB_BTN` + `PACKAGE_TAB_BTN_PRIMARY/SECONDARY/DANGER`, иконная — `PACKAGE_TAB_BTN_ICON`;
+- переключатели — `PACKAGE_TAB_SEGMENTED*`, флажок-строка — `PACKAGE_TAB_CHECK_ROW`.
+
+Свои кнопки, поля и «пилюли» в этих зонах не заводим: не хватает варианта — добавляем в набор. Склейки для зоны — в файле `*Styles.ts` рядом с ней.
 
 ## Shared partials (каталог)
 
-| Файл                              | Зона UI                                             |
-| --------------------------------- | --------------------------------------------------- |
-| `base.module.css`                 | `.page`, общие переменные, print                    |
-| `contracts-list-hub.module.css`   | Хаб, списки договоров, settings layout, справочники |
-| `estimates-list.module.css`       | Список расчётов                                     |
-| `estimates-workspace.module.css`  | Рабочая область расчётов                            |
-| `editor-chrome.module.css`        | Шапка редактора, tab bar, кнопки                    |
-| `data-tab.module.css`             | Вкладка «Данные»                                    |
-| `estimate-tab.module.css`         | Вкладка сметы                                       |
-| `templates-library.module.css`    | Библиотека шаблонов                                 |
-| `documents-preview.module.css`    | Превью и печать документов                          |
-| `product-package.module.css`      | PRODUCT_LIKE: окна, двери, …                        |
-| `hub-modals.module.css`           | Общие паттерны hub-модалок                          |
-| `interactive-estimate.module.css` | Интерактивная смета                                 |
+| Файл                              | Зона UI                                                                                                  |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `base.module.css`                 | `.page`, общие переменные, print                                                                         |
+| `contracts-list-hub.module.css`   | Хаб, списки договоров, settings layout, справочники                                                      |
+| `estimates-list.module.css`       | Список расчётов                                                                                          |
+| `estimates-workspace.module.css`  | Рабочая область расчётов                                                                                 |
+| `editor-chrome.module.css`        | Шапка редактора, tab bar, кнопки, набор вкладок и модалок хабов (`packageTab*`)                          |
+| `data-tab.module.css`             | Страница редактора (подложки `.blockData`, уведомления-замки), компактные поля вкладок, hub-кнопки шапки |
+| `estimate-tab.module.css`         | Вкладка сметы                                                                                            |
+| `templates-library.module.css`    | Библиотека шаблонов                                                                                      |
+| `documents-preview.module.css`    | Превью и печать документов                                                                               |
+| `product-package.module.css`      | PRODUCT_LIKE: окна, двери, …                                                                             |
+| `hub-modals.module.css`           | Общие паттерны hub-модалок                                                                               |
+| `interactive-estimate.module.css` | Интерактивная смета                                                                                      |
 
 Тёмная тема — в тех же partial-файлах: `:where(html[data-theme='dark']) { ... }`.
 
@@ -99,6 +113,10 @@ import styles from './PackageDataTab.module.css';
 Когда один UI-паттерн собирается из нескольких partials, классы склеивают в `*ClassNames.ts` рядом с фичей, а не дублируют в каждом компоненте:
 
 - `packages/platform/ui/packageTabClassNames.ts`
+- `packages/platform/editor/dataTab/packageDataTabStyles.ts`
+- `packages/platform/hub/hubModal/packageHubModalStyles.ts`
+- `packages/platform/hub/workOrders/packageWorkOrdersHubPanelStyles.ts`
+- `packages/platform/hub/questionnaires/managerQuestionnairePanelStyles.ts`
 - `packages/families/product-like/addendum/addendumTabClassNames.ts`
 
 ```ts

@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 
 import { Modal } from '@/shared/ui/Modal';
 
+import cdHubModals from '../../../../styles/hub-modals.module.css';
 import { ESTIMATE_CUSTOM_WORK_UNITS } from '../../estimates/estimateCustomWorkItems';
 import type { PackageEstimateCreateModalModel } from '../../hooks/estimate/usePackageEstimateCreateModal';
 import styles from './PackageEstimateCreateModal.module.css';
@@ -134,7 +135,7 @@ export function PackageEstimateCreateModal({
       alignTop
       showCloseButton
     >
-      <div data-modal-form data-modal-density="compact">
+      <div className={cdHubModals.neutralFormShell} data-modal-form data-modal-density="compact">
         <p data-modal-form-hint style={{ marginTop: 0 }}>
           {isEditing
             ? 'Изменения сохраняются в этот расчёт и сразу пересчитывают смету и суммы этого договора. Заказчик, адрес объекта и направление — из договора.'

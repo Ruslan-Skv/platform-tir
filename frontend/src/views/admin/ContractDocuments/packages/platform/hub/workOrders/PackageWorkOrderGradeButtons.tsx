@@ -1,6 +1,7 @@
 'use client';
 
 import cdDataTab from '../../../../styles/data-tab.module.css';
+import { PACKAGE_TAB_SEGMENTED, PACKAGE_TAB_SEGMENTED_BTN } from '../../ui/packageTabClassNames';
 
 export type PackageWorkOrderGradePercent = 0 | 5 | 10;
 
@@ -10,15 +11,15 @@ const GRADE_OPTIONS: Array<{ value: PackageWorkOrderGradePercent; label: string 
   { value: 10, label: '6 разряд' },
 ];
 
-function gradeButtonClassName(
+/** Тон активного сегмента: 4-й разряд — синий (активный сегмент по умолчанию), 5-й — янтарный, 6-й — красный. */
+function gradeToneClassName(
   value: PackageWorkOrderGradePercent,
   selected: PackageWorkOrderGradePercent
 ): string {
-  const base = cdDataTab.packageWorkOrderGradeBtn;
-  if (value !== selected) return base;
-  if (value === 0) return `${base} ${cdDataTab.packageWorkOrderGradeBtnActive4}`;
-  if (value === 5) return `${base} ${cdDataTab.packageWorkOrderGradeBtnActive5}`;
-  return `${base} ${cdDataTab.packageWorkOrderGradeBtnActive6}`;
+  if (value !== selected || value === 0) return '';
+  return value === 5
+    ? cdDataTab.packageWorkOrderGradeToneWarning
+    : cdDataTab.packageWorkOrderGradeToneDanger;
 }
 
 export type PackageWorkOrderGradeButtonsProps = {
@@ -31,20 +32,20 @@ export function PackageWorkOrderGradeButtons({
   onChange,
 }: PackageWorkOrderGradeButtonsProps) {
   return (
-    <div className={cdDataTab.packageWorkOrderGradeField}>
-      <div className={cdDataTab.packageWorkOrderGradeBar} role="group" aria-label="Разряд мастера">
-        {GRADE_OPTIONS.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            className={gradeButtonClassName(option.value, value)}
-            aria-pressed={value === option.value}
-            onClick={() => onChange(option.value)}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
+    <div className={PACKAGE_TAB_SEGMENTED} role="group" aria-label="Разряд мастера">
+      {GRADE_OPTIONS.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          className={[PACKAGE_TAB_SEGMENTED_BTN, gradeToneClassName(option.value, value)]
+            .filter(Boolean)
+            .join(' ')}
+          aria-pressed={value === option.value}
+          onClick={() => onChange(option.value)}
+        >
+          {option.label}
+        </button>
+      ))}
     </div>
   );
 }

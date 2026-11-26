@@ -1,56 +1,31 @@
+/* Co-located: блок нумерации договора на вкладке «Данные» («Офис | Замерщик | Номер»). */
+
 .wrap {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  min-width: 0;
-  grid-column: 1 / -1;
-}
-
-/*
- * Строка «Офис | Замерщик | Номер» — именно 3 колонки, без переноса «Номер дог.».
- * Специфичность выше `.contractInlineRow` (2 колонки): порядок CSS-модулей в бандле
- * различается между dev- и prod-сборками Next.js, равная специфичность приводила
- * к переносу номера на вторую строку в проде.
- */
-.wrap .numberingRow {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  column-gap: var(--admin-space-md);
-  align-items: start;
-}
-
-.wrap :global(.field) select,
-.wrap :global(.field) input {
-  width: 100%;
-  max-width: 100%;
+  gap: var(--admin-space-xs);
   min-width: 0;
 }
 
-.customNumberInput {
-  margin-top: 6px;
-}
-
+/* Подсказка нумерации: «Выберите карточку менеджера», ошибка резерва. */
 .hintMuted,
 .hintError {
   display: flex;
   align-items: baseline;
-  gap: 0.65rem;
+  gap: var(--admin-space-sm);
   min-width: 0;
   max-width: 100%;
-  padding: 0.35rem 0.55rem;
-  border-radius: 0.4rem;
-  font-size: 0.78rem;
-  line-height: 1.35;
+  margin: 0;
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
 }
 
 .hintMuted {
-  color: var(--admin-text-muted, #64748b);
-  background: var(--admin-surface-muted, #f8fafc);
+  color: var(--admin-text-muted);
 }
 
 .hintError {
-  color: #92400e;
-  background: #fffbeb;
-  border: 1px solid #fde68a;
+  color: var(--admin-error-text);
 }
 
 .hintText {
@@ -61,27 +36,51 @@
   white-space: nowrap;
 }
 
+/* Ссылка «Настроить» (нумерация — только супер-админу). */
 .hintLink {
   flex: 0 0 auto;
-  color: #b45309;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--admin-info);
+  font: inherit;
   text-decoration: underline;
   text-underline-offset: 2px;
   white-space: nowrap;
+  cursor: pointer;
 }
 
 .hintLink:hover {
-  color: #92400e;
+  color: var(--admin-info-strong);
+}
+
+/* Свой номер: поле под селектом номера. */
+.customNumberInput {
+  margin-top: var(--admin-space-xs);
 }
 
 @media (max-width: 720px) {
-  .wrap .numberingRow {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
   .hintText {
-    white-space: normal;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
+    white-space: normal;
     -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
+}
+
+/* --- dark theme --- */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .hintMuted {
+  color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .hintError {
+  color: rgb(252 165 165);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .hintLink {
+  color: var(--admin-info-light);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .hintLink:hover {
+  color: var(--admin-info-bright);
 }

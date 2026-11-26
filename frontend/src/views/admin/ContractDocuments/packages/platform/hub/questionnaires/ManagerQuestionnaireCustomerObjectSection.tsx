@@ -1,14 +1,8 @@
 'use client';
 
-import cdEstimateTab from '../../../../styles/estimate-tab.module.css';
-import {
-  PACKAGE_FIELD,
-  PACKAGE_HINT,
-  PACKAGE_SECTION_CARD,
-  PACKAGE_SECTION_FIELDS,
-  PACKAGE_SECTION_TITLE,
-} from '../../ui/packageTabClassNames';
 import type { PackageManagerQuestionnaire1TabProps } from './PackageManagerQuestionnaire1Tab';
+import styles from './PackageQuestionnairesHubPanels.module.css';
+import { Q_FIELD, Q_PANEL, Q_PANEL_HEAD, Q_PANEL_TITLE } from './managerQuestionnairePanelStyles';
 
 export type ManagerQuestionnaireCustomerObjectSectionProps = Pick<
   PackageManagerQuestionnaire1TabProps,
@@ -23,37 +17,44 @@ export function ManagerQuestionnaireCustomerObjectSection({
   const { customer: c, object: o } = form;
 
   return (
-    <div className={`${PACKAGE_SECTION_CARD} ${cdEstimateTab.fieldSpanAll}`}>
-      <h4 className={PACKAGE_SECTION_TITLE}>1) Контактные данные и объект</h4>
-      <div className={PACKAGE_SECTION_FIELDS}>
-        <div className={`${PACKAGE_FIELD} ${cdEstimateTab.fieldSpanAll}`}>
-          <p className={PACKAGE_HINT} style={{ margin: '0 0 8px' }}>
-            <strong>Из карточки пакета:</strong> {c.fullName || '—'} · {c.phone || '—'} ·{' '}
-            {c.email || '—'}
-          </p>
-          <p className={PACKAGE_HINT} style={{ margin: '0 0 8px' }}>
-            <strong>Адрес:</strong> {c.address || '—'}
-          </p>
-          <p className={PACKAGE_HINT} style={{ margin: '0 0 8px' }}>
-            <strong>Объект:</strong> {o.objectAddress || '—'}
+    <div className={Q_PANEL}>
+      <div className={Q_PANEL_HEAD}>
+        <h4 className={Q_PANEL_TITLE}>1) Контактные данные и объект</h4>
+      </div>
+      <dl className={styles.summaryList}>
+        <div>
+          <dt>Из карточки пакета:</dt>
+          <dd>
+            {c.fullName || '—'} · {c.phone || '—'} · {c.email || '—'}
+          </dd>
+        </div>
+        <div>
+          <dt>Адрес:</dt>
+          <dd>{c.address || '—'}</dd>
+        </div>
+        <div>
+          <dt>Объект:</dt>
+          <dd>
+            {o.objectAddress || '—'}
             {o.objectFloor ? `, эт. ${o.objectFloor}` : ''}
-          </p>
-          <p className={PACKAGE_HINT} style={{ margin: '0 0 8px' }}>
-            <strong>Описание работ (карточка):</strong> {o.objectDescription || '—'}
-          </p>
+          </dd>
         </div>
-        <div className={`${PACKAGE_FIELD} ${cdEstimateTab.fieldSpanAll}`}>
-          <label htmlFor="mq1_contact_notes">
-            Дополнительно по контакту / объекту (со слов клиента)
-          </label>
-          <textarea
-            id="mq1_contact_notes"
-            rows={4}
-            value={q.contactNotesFromCall}
-            onChange={(e) => onPatch({ contactNotesFromCall: e.target.value })}
-            placeholder="Например: удобное время звонка, второй номер, особенности подъезда…"
-          />
+        <div>
+          <dt>Описание работ (карточка):</dt>
+          <dd>{o.objectDescription || '—'}</dd>
         </div>
+      </dl>
+      <div className={Q_FIELD}>
+        <label htmlFor="mq1_contact_notes">
+          Дополнительно по контакту / объекту (со слов клиента)
+        </label>
+        <textarea
+          id="mq1_contact_notes"
+          rows={4}
+          value={q.contactNotesFromCall}
+          onChange={(e) => onPatch({ contactNotesFromCall: e.target.value })}
+          placeholder="Например: удобное время звонка, второй номер, особенности подъезда…"
+        />
       </div>
     </div>
   );

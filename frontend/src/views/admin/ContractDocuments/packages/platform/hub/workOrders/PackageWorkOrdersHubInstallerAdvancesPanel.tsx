@@ -6,21 +6,30 @@ import { useAuth } from '@/features/auth/context/AuthContext';
 import { type ContractDocumentPackageInstallerAdvancePaymentMethod } from '@/shared/api/admin-contract-document-packages';
 import { formatInstallerAdvancePaymentMethod } from '@/shared/constants/installerAdvancePaymentMethod';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
-import measurementBlankStyles from '@/views/admin/CRM/Measurements/form/MeasurementFormPage.module.css';
 
 import cdBase from '../../../../styles/base.module.css';
-import cdProduct from '../../../../styles/product-package.module.css';
-import cdTemplates from '../../../../styles/templates-library.module.css';
+import {
+  PACKAGE_TAB_BTN,
+  PACKAGE_TAB_BTN_DANGER,
+  PACKAGE_TAB_BTN_PRIMARY,
+  PACKAGE_TAB_BTN_SECONDARY,
+  PACKAGE_TAB_CARD,
+  PACKAGE_TAB_FIELD_HINT,
+  PACKAGE_TAB_HEAD,
+  PACKAGE_TAB_HEAD_ROW,
+  PACKAGE_TAB_HINT,
+  PACKAGE_TAB_PANEL,
+  PACKAGE_TAB_PANEL_TITLE,
+  PACKAGE_TAB_TITLE,
+} from '../../ui/packageTabClassNames';
 import { formatDateRu, formatMoneyRub } from '../payments/packageContractPaymentsFormat';
 import { PackageInstallerAdvancesEditModal } from './PackageInstallerAdvancesEditModal';
 import { usePackageWorkOrderHub } from './PackageWorkOrderHubContext';
 import hubStyles from './PackageWorkOrdersHubModal.module.css';
 import {
+  WO_FIELD,
   WO_FORM_GRID,
-  WO_HINT,
   WO_SECTION_CARD,
-  WO_SECTION_TITLE,
-  WO_SECTION_TITLE_MAIN,
   woPanelRootClass,
 } from './packageWorkOrdersHubPanelStyles';
 import { usePackageInstallerAdvances } from './usePackageInstallerAdvances';
@@ -197,225 +206,199 @@ export function PackageWorkOrdersHubInstallerAdvancesPanel() {
   return (
     <div className={woPanelRootClass(isWindowsPackage)}>
       {error ? (
-        <p data-modal-form-error style={{ margin: '0 0 10px' }}>
+        <p className={hubStyles.panelError} role="alert">
           {error}
         </p>
       ) : null}
       <div className={WO_FORM_GRID}>
-        <div className={WO_SECTION_CARD}>
-          <h3 className={`${WO_SECTION_TITLE} ${WO_SECTION_TITLE_MAIN}`}>
-            Авансы мастерам по договору
-          </h3>
-          <p className={WO_HINT} style={{ marginTop: 0 }}>
-            Начислено — итог заказ-наряда мастера по этому договору. З/п может выдаваться частями:
-            фиксируйте каждую выдачу аванса — остаток посчитается автоматически.
-          </p>
-
-          {summaryRows.length === 0 ? (
-            <p className={cdProduct.hint}>
-              Мастера ещё не привязаны к договору. Добавьте их на вкладке «Интерактивная итоговая
-              смета» и назначьте позиции работ.
-            </p>
-          ) : (
-            <div className={cdBase.paymentsTableWrap}>
-              <table className={cdBase.paymentsTable}>
-                <thead>
-                  <tr>
-                    <th>Мастер</th>
-                    <th>Начислено (заказ-наряд)</th>
-                    <th>Выдано авансов</th>
-                    <th>Остаток к выплате</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {summaryRows.map((row) => {
-                    const balance = row.accrued == null ? null : row.accrued - row.paidTotal;
-                    return (
-                      <tr key={row.installerId}>
-                        <td>
-                          {row.name}
-                          {row.grade ? ` (${formatInstallerGradeShort(row.grade)})` : ''}
-                        </td>
-                        <td>
-                          {row.accrued == null ? (
-                            '—'
-                          ) : (
-                            <>
-                              {formatMoneyRub(row.accrued)}
-                              <span className={cdProduct.hint}> · позиций: {row.lineCount}</span>
-                            </>
-                          )}
-                        </td>
-                        <td>
-                          {row.paidCount === 0 ? (
-                            '—'
-                          ) : (
-                            <>
-                              {formatMoneyRub(row.paidTotal)}
-                              <span className={cdProduct.hint}> · выплат: {row.paidCount}</span>
-                            </>
-                          )}
-                        </td>
-                        <td>
-                          {balance == null ? '—' : formatMoneyRub(balance)}
-                          {balance != null && balance < 0 ? ' (переплата)' : ''}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  <tr>
-                    <td>
-                      <strong>Итого</strong>
-                    </td>
-                    <td>
-                      {totalAccrued == null ? '—' : <strong>{formatMoneyRub(totalAccrued)}</strong>}
-                    </td>
-                    <td>
-                      <strong>{formatMoneyRub(advances.totalPaid)}</strong>
-                    </td>
-                    <td>
-                      {totalAccrued == null ? (
-                        '—'
-                      ) : (
-                        <strong>{formatMoneyRub(totalAccrued - advances.totalPaid)}</strong>
-                      )}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+        <div className={`${WO_SECTION_CARD} ${PACKAGE_TAB_CARD}`}>
+          <div className={PACKAGE_TAB_HEAD}>
+            <h3 className={PACKAGE_TAB_TITLE}>Авансы мастерам по договору</h3>
+            {/* div, а не p: правила компактной типографики товарных вкладок задают 12px именно для p. */}
+            <div className={PACKAGE_TAB_HINT}>
+              Начислено — итог заказ-наряда мастера по этому договору. З/п может выдаваться частями:
+              фиксируйте каждую выдачу аванса — остаток посчитается автоматически.
             </div>
-          )}
-        </div>
+          </div>
 
-        <div className={`${cdTemplates.sectionCard} ${cdBase.paymentsTableCard}`}>
-          <h3 className={cdBase.sectionTitle}>Выдать аванс</h3>
-          {!canManageAdvances ? (
-            <p className={cdProduct.hint}>
-              Выдавать авансы может только супер-админ. Остальным доступен просмотр журнала и
-              итогов.
-            </p>
-          ) : installerOptions.length === 0 ? (
-            <p className={cdProduct.hint}>
-              Нет мастеров для выдачи аванса — сначала привяжите мастеров к договору.
-            </p>
-          ) : (
-            <div
-              className={`${measurementBlankStyles.blankSheet} ${cdBase.paymentsHubConductBlank} ${hubStyles.advancesFormSheet}`}
-            >
-              <div className={hubStyles.advancesFormRow}>
-                <div className={cdBase.paymentsHubConductField}>
-                  <label
-                    className={`${measurementBlankStyles.label} ${cdBase.paymentsHubConductLabel}`}
-                    htmlFor="advance_form_installer"
-                  >
-                    Мастер
-                  </label>
-                  <select
-                    id="advance_form_installer"
-                    className={`${measurementBlankStyles.select} ${cdBase.paymentsHubConductControl}`}
-                    value={installerId}
-                    disabled={advances.creating}
-                    onChange={(e) => setInstallerId(e.target.value)}
-                  >
-                    <option value="">Выберите мастера…</option>
-                    {installerOptions.map((opt) => (
-                      <option key={opt.installerId} value={opt.installerId}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className={cdBase.paymentsHubConductField}>
-                  <label
-                    className={`${measurementBlankStyles.label} ${cdBase.paymentsHubConductLabel}`}
-                    htmlFor="advance_form_date"
-                  >
-                    Дата выдачи
-                  </label>
-                  <input
-                    id="advance_form_date"
-                    type="date"
-                    className={`${measurementBlankStyles.input} ${cdBase.paymentsHubConductControl}`}
-                    value={paidAt}
-                    disabled={advances.creating}
-                    onChange={(e) => setPaidAt(e.target.value)}
-                  />
-                </div>
-                <div className={cdBase.paymentsHubConductField}>
-                  <label
-                    className={`${measurementBlankStyles.label} ${cdBase.paymentsHubConductLabel}`}
-                    htmlFor="advance_form_amount"
-                  >
-                    Сумма, ₽
-                  </label>
-                  <input
-                    id="advance_form_amount"
-                    inputMode="decimal"
-                    className={`${measurementBlankStyles.input} ${cdBase.paymentsHubConductControl}`}
-                    value={amount}
-                    disabled={advances.creating}
-                    placeholder="Напр. 15000"
-                    autoComplete="off"
-                    onChange={(e) => setAmount(e.target.value)}
-                  />
-                  {amount.trim() !== '' && !amountValid ? (
-                    <p className={cdBase.paymentsEditModalFieldError}>Укажите число больше нуля</p>
-                  ) : null}
-                </div>
-                <div className={cdBase.paymentsHubConductField}>
-                  <label
-                    className={`${measurementBlankStyles.label} ${cdBase.paymentsHubConductLabel}`}
-                    htmlFor="advance_form_payment_method"
-                  >
-                    Способ оплаты
-                  </label>
-                  <select
-                    id="advance_form_payment_method"
-                    className={`${measurementBlankStyles.select} ${cdBase.paymentsHubConductControl}`}
-                    value={paymentMethod}
-                    disabled={advances.creating}
-                    onChange={(e) =>
-                      setPaymentMethod(
-                        e.target.value as ContractDocumentPackageInstallerAdvancePaymentMethod
-                      )
-                    }
-                  >
-                    <option value="CASH">Наличные</option>
-                    <option value="BANK">Банк</option>
-                  </select>
-                </div>
+          <div className={PACKAGE_TAB_PANEL}>
+            {summaryRows.length === 0 ? (
+              <p className={PACKAGE_TAB_FIELD_HINT}>
+                Мастера ещё не привязаны к договору. Добавьте их на вкладке «Интерактивная итоговая
+                смета» и назначьте позиции работ.
+              </p>
+            ) : (
+              <div className={`${cdBase.paymentsTableWrap} ${hubStyles.panelTableWrap}`}>
+                <table className={cdBase.paymentsTable}>
+                  <thead>
+                    <tr>
+                      <th>Мастер</th>
+                      <th>Начислено (заказ-наряд)</th>
+                      <th>Выдано авансов</th>
+                      <th>Остаток к выплате</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {summaryRows.map((row) => {
+                      const balance = row.accrued == null ? null : row.accrued - row.paidTotal;
+                      return (
+                        <tr key={row.installerId}>
+                          <td>
+                            {row.name}
+                            {row.grade ? ` (${formatInstallerGradeShort(row.grade)})` : ''}
+                          </td>
+                          <td>
+                            {row.accrued == null ? (
+                              '—'
+                            ) : (
+                              <>
+                                {formatMoneyRub(row.accrued)}
+                                <span className={hubStyles.tableCellMeta}>
+                                  {' '}
+                                  · позиций: {row.lineCount}
+                                </span>
+                              </>
+                            )}
+                          </td>
+                          <td>
+                            {row.paidCount === 0 ? (
+                              '—'
+                            ) : (
+                              <>
+                                {formatMoneyRub(row.paidTotal)}
+                                <span className={hubStyles.tableCellMeta}>
+                                  {' '}
+                                  · выплат: {row.paidCount}
+                                </span>
+                              </>
+                            )}
+                          </td>
+                          <td>
+                            {balance == null ? '—' : formatMoneyRub(balance)}
+                            {balance != null && balance < 0 ? ' (переплата)' : ''}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    <tr>
+                      <td>
+                        <strong>Итого</strong>
+                      </td>
+                      <td>
+                        {totalAccrued == null ? (
+                          '—'
+                        ) : (
+                          <strong>{formatMoneyRub(totalAccrued)}</strong>
+                        )}
+                      </td>
+                      <td>
+                        <strong>{formatMoneyRub(advances.totalPaid)}</strong>
+                      </td>
+                      <td>
+                        {totalAccrued == null ? (
+                          '—'
+                        ) : (
+                          <strong>{formatMoneyRub(totalAccrued - advances.totalPaid)}</strong>
+                        )}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-              <div className={hubStyles.advancesFormActions}>
-                <div
-                  className={`${cdBase.paymentsHubConductField} ${hubStyles.advancesFormNoteField}`}
-                >
-                  <label
-                    className={`${measurementBlankStyles.label} ${cdBase.paymentsHubConductLabel}`}
-                    htmlFor="advance_form_note"
-                  >
-                    Комментарий
-                  </label>
-                  <input
-                    id="advance_form_note"
-                    type="text"
-                    className={`${measurementBlankStyles.input} ${cdBase.paymentsHubConductControl}`}
-                    value={note}
-                    disabled={advances.creating}
-                    placeholder="Напр. Аванс за электрику"
-                    onChange={(e) => setNote(e.target.value)}
-                  />
+            )}
+          </div>
+
+          <div className={PACKAGE_TAB_PANEL}>
+            <div className={PACKAGE_TAB_HEAD_ROW}>
+              <h3 className={PACKAGE_TAB_PANEL_TITLE}>Выдать аванс</h3>
+            </div>
+            {!canManageAdvances ? (
+              <p className={PACKAGE_TAB_FIELD_HINT}>
+                Выдавать авансы может только супер-админ. Остальным доступен просмотр журнала и
+                итогов.
+              </p>
+            ) : installerOptions.length === 0 ? (
+              <p className={PACKAGE_TAB_FIELD_HINT}>
+                Нет мастеров для выдачи аванса — сначала привяжите мастеров к договору.
+              </p>
+            ) : (
+              <div className={hubStyles.advancesFormSheet}>
+                <div className={hubStyles.advancesFormRow}>
+                  <div className={`${WO_FIELD}`}>
+                    <label htmlFor="advance_form_installer">Мастер</label>
+                    <select
+                      id="advance_form_installer"
+                      value={installerId}
+                      disabled={advances.creating}
+                      onChange={(e) => setInstallerId(e.target.value)}
+                    >
+                      <option value="">Выберите мастера…</option>
+                      {installerOptions.map((opt) => (
+                        <option key={opt.installerId} value={opt.installerId}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className={`${WO_FIELD}`}>
+                    <label htmlFor="advance_form_date">Дата выдачи</label>
+                    <input
+                      id="advance_form_date"
+                      type="date"
+                      value={paidAt}
+                      disabled={advances.creating}
+                      onChange={(e) => setPaidAt(e.target.value)}
+                    />
+                  </div>
+                  <div className={`${WO_FIELD}`}>
+                    <label htmlFor="advance_form_amount">Сумма, ₽</label>
+                    <input
+                      id="advance_form_amount"
+                      inputMode="decimal"
+                      value={amount}
+                      disabled={advances.creating}
+                      placeholder="Напр. 15000"
+                      autoComplete="off"
+                      onChange={(e) => setAmount(e.target.value)}
+                    />
+                    {amount.trim() !== '' && !amountValid ? (
+                      <p className={hubStyles.fieldError}>Укажите число больше нуля</p>
+                    ) : null}
+                  </div>
+                  <div className={`${WO_FIELD}`}>
+                    <label htmlFor="advance_form_payment_method">Способ оплаты</label>
+                    <select
+                      id="advance_form_payment_method"
+                      value={paymentMethod}
+                      disabled={advances.creating}
+                      onChange={(e) =>
+                        setPaymentMethod(
+                          e.target.value as ContractDocumentPackageInstallerAdvancePaymentMethod
+                        )
+                      }
+                    >
+                      <option value="CASH">Наличные</option>
+                      <option value="BANK">Банк</option>
+                    </select>
+                  </div>
                 </div>
-                <div className={cdBase.paymentsFormHubSubmitField}>
-                  <label
-                    className={`${measurementBlankStyles.label} ${cdBase.paymentsHubConductLabel} ${cdBase.paymentsFormHubSubmitSpacer}`}
-                    aria-hidden="true"
-                  >
-                    &nbsp;
-                  </label>
+                <div className={hubStyles.advancesFormActions}>
+                  <div className={`${WO_FIELD} ${hubStyles.advancesFormNoteField}`}>
+                    <label htmlFor="advance_form_note">Комментарий</label>
+                    <input
+                      id="advance_form_note"
+                      type="text"
+                      value={note}
+                      disabled={advances.creating}
+                      placeholder="Напр. Аванс за электрику"
+                      onChange={(e) => setNote(e.target.value)}
+                    />
+                  </div>
+                  {/* Кнопка — по низу ряда, на одной линии с полями (та же высота 28px). */}
                   <button
                     data-admin-mutation
                     type="button"
-                    className={cdBase.paymentsHubConductBtn}
+                    className={`${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_PRIMARY} ${hubStyles.advancesFormSubmit}`}
                     disabled={advances.creating || !formComplete}
                     onClick={() => void handleCreate()}
                   >
@@ -423,84 +406,84 @@ export function PackageWorkOrdersHubInstallerAdvancesPanel() {
                   </button>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
 
-        <div
-          className={`${cdTemplates.sectionCard} ${cdBase.paymentsTableCard} ${cdBase.paymentsBlockAccentJournal}`}
-        >
-          <h3 className={cdBase.sectionTitle}>Журнал авансов</h3>
-          {advances.loading ? (
-            <p className={cdProduct.hint}>Загрузка…</p>
-          ) : advances.rows.length === 0 ? (
-            <p className={cdProduct.hint}>
-              Записей пока нет. Выдайте первый аванс в форме выше — зарплата мастера может
-              выдаваться частями.
-            </p>
-          ) : (
-            <div className={cdBase.paymentsTableWrap}>
-              <table className={cdBase.paymentsTable}>
-                <thead>
-                  <tr>
-                    <th>Дата</th>
-                    <th>Мастер</th>
-                    <th>Сумма</th>
-                    <th>Способ оплаты</th>
-                    <th>Комментарий</th>
-                    <th>Кто выдал</th>
-                    {canManageAdvances ? <th>Действия</th> : null}
-                  </tr>
-                </thead>
-                <tbody>
-                  {advances.rows.map((r) => {
-                    const rowDeleting = advances.deletingId === r.id;
-                    const rowSaving = advances.updatingId === r.id;
-                    return (
-                      <tr key={r.id}>
-                        <td>{formatDateRu(r.paidAt)}</td>
-                        <td>{r.installerName ?? '—'}</td>
-                        <td>{formatMoneyRub(Number.parseFloat(r.amount))}</td>
-                        <td>{formatInstallerAdvancePaymentMethod(r.paymentMethod)}</td>
-                        <td className={cdBase.paymentsTableBasisCell}>{r.note?.trim() || '—'}</td>
-                        <td className={cdBase.paymentsTableUserCell}>
-                          {r.createdBy
-                            ? [r.createdBy.firstName, r.createdBy.lastName]
-                                .filter(Boolean)
-                                .join(' ') || r.createdBy.email
-                            : '—'}
-                        </td>
-                        {canManageAdvances ? (
-                          <td className={cdBase.paymentsTableActionsCell}>
-                            <button
-                              data-admin-mutation
-                              type="button"
-                              className={cdBase.paymentsEditBtn}
-                              disabled={rowActionBusy}
-                              title="Изменить запись аванса (только супер-админ)"
-                              onClick={() => setEditingAdvanceId(r.id)}
-                            >
-                              {rowSaving ? 'Сохранение…' : 'Изменить'}
-                            </button>
-                            <button
-                              data-admin-mutation
-                              type="button"
-                              className={cdBase.paymentsCancelBtn}
-                              disabled={rowActionBusy}
-                              title="Удалить запись аванса (только супер-админ)"
-                              onClick={() => setPendingDeleteId(r.id)}
-                            >
-                              {rowDeleting ? 'Удаление…' : 'Удалить'}
-                            </button>
-                          </td>
-                        ) : null}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+          <div className={PACKAGE_TAB_PANEL}>
+            <div className={PACKAGE_TAB_HEAD_ROW}>
+              <h3 className={PACKAGE_TAB_PANEL_TITLE}>Журнал авансов</h3>
             </div>
-          )}
+            {advances.loading ? (
+              <p className={PACKAGE_TAB_FIELD_HINT}>Загрузка…</p>
+            ) : advances.rows.length === 0 ? (
+              <p className={PACKAGE_TAB_FIELD_HINT}>
+                Записей пока нет. Выдайте первый аванс в форме выше — зарплата мастера может
+                выдаваться частями.
+              </p>
+            ) : (
+              <div className={`${cdBase.paymentsTableWrap} ${hubStyles.panelTableWrap}`}>
+                <table className={cdBase.paymentsTable}>
+                  <thead>
+                    <tr>
+                      <th>Дата</th>
+                      <th>Мастер</th>
+                      <th>Сумма</th>
+                      <th>Способ оплаты</th>
+                      <th>Комментарий</th>
+                      <th>Кто выдал</th>
+                      {canManageAdvances ? <th>Действия</th> : null}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {advances.rows.map((r) => {
+                      const rowDeleting = advances.deletingId === r.id;
+                      const rowSaving = advances.updatingId === r.id;
+                      return (
+                        <tr key={r.id}>
+                          <td>{formatDateRu(r.paidAt)}</td>
+                          <td>{r.installerName ?? '—'}</td>
+                          <td>{formatMoneyRub(Number.parseFloat(r.amount))}</td>
+                          <td>{formatInstallerAdvancePaymentMethod(r.paymentMethod)}</td>
+                          <td className={cdBase.paymentsTableBasisCell}>{r.note?.trim() || '—'}</td>
+                          <td className={cdBase.paymentsTableUserCell}>
+                            {r.createdBy
+                              ? [r.createdBy.firstName, r.createdBy.lastName]
+                                  .filter(Boolean)
+                                  .join(' ') || r.createdBy.email
+                              : '—'}
+                          </td>
+                          {canManageAdvances ? (
+                            <td className={cdBase.paymentsTableActionsCell}>
+                              <button
+                                data-admin-mutation
+                                type="button"
+                                className={`${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_SECONDARY}`}
+                                disabled={rowActionBusy}
+                                title="Изменить запись аванса (только супер-админ)"
+                                onClick={() => setEditingAdvanceId(r.id)}
+                              >
+                                {rowSaving ? 'Сохранение…' : 'Изменить'}
+                              </button>
+                              <button
+                                data-admin-mutation
+                                type="button"
+                                className={`${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_DANGER}`}
+                                disabled={rowActionBusy}
+                                title="Удалить запись аванса (только супер-админ)"
+                                onClick={() => setPendingDeleteId(r.id)}
+                              >
+                                {rowDeleting ? 'Удаление…' : 'Удалить'}
+                              </button>
+                            </td>
+                          ) : null}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

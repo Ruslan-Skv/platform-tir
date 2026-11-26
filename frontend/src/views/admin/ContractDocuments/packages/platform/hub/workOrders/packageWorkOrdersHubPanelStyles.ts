@@ -1,27 +1,36 @@
 import cdBase from '../../../../styles/base.module.css';
-import cdDataTab from '../../../../styles/data-tab.module.css';
-import cdDocPreview from '../../../../styles/documents-preview.module.css';
+import cdChrome from '../../../../styles/editor-chrome.module.css';
 import cdEstimateTab from '../../../../styles/estimate-tab.module.css';
 import cdEstimatesList from '../../../../styles/estimates-list.module.css';
 import cdInteractiveEstimate from '../../../../styles/interactive-estimate.module.css';
 import cdProduct from '../../../../styles/product-package.module.css';
-import cdTemplates from '../../../../styles/templates-library.module.css';
+import {
+  PACKAGE_A4_WRAP,
+  PACKAGE_BLOCK,
+  PACKAGE_DATA_COMPACT,
+  PACKAGE_FORM_GRID,
+  PACKAGE_SECTION_CARD,
+  PACKAGE_TAB_BLOCK_FLAT,
+  PACKAGE_TAB_FIELD,
+  PACKAGE_TAB_FIELD_FILL,
+} from '../../ui/packageTabClassNames';
 
 export const WO_TAB_COMPACT = `${cdEstimateTab.estimateTabCompact} ${cdProduct.estimateTabCompact}`;
-export const WO_BLOCK = `${cdDataTab.blockData} ${cdProduct.blockData}`;
-export const WO_DATA_COMPACT = `${cdEstimateTab.dataCompact} ${cdDataTab.dataCompact}`;
-export const WO_FORM_GRID = `${cdDataTab.formGrid} ${cdProduct.formGrid}`;
-export const WO_SECTION_CARD = `${cdTemplates.sectionCard} ${cdEstimateTab.sectionCard}`;
-export const WO_SECTION_TITLE = cdEstimateTab.sectionTitle;
-export const WO_SECTION_TITLE_MAIN = `${cdTemplates.estimateSectionTitle} ${cdEstimateTab.estimateSectionTitle}`;
-export const WO_HINT = `${cdDocPreview.hint} ${cdTemplates.hint}`;
-export const WO_A4_WRAP = `${cdDocPreview.estimateA4Wrap} ${cdEstimateTab.estimateA4Wrap}`;
+/** Поле панели: как на вкладках пакета, на всю ширину своей колонки. */
+export const WO_FIELD = `${cdEstimateTab.field} ${PACKAGE_TAB_FIELD} ${PACKAGE_TAB_FIELD_FILL}`;
+export const WO_FORM_GRID = PACKAGE_FORM_GRID;
+export const WO_SECTION_CARD = PACKAGE_SECTION_CARD;
+export const WO_A4_WRAP = PACKAGE_A4_WRAP;
 export const WO_INTERACTIVE_TAB = `${cdInteractiveEstimate.interactiveFinalEstimateTab} ${cdBase.interactiveFinalEstimateTab}`;
 
+/** Панель вкладок-«ярлычков» внутри панели модалки — как тулбар в шапке модалки. */
+export const WO_SUB_TAB_BAR = `${cdChrome.tabBar} ${cdChrome.blockTabs} ${cdChrome.packageTabBarCompact} ${cdBase.blockTabs} ${cdBase.packageTabBarCompact}`;
+
+/** Корень панели: без жёлтой подложки .blockData — содержимое лежит на карточке вкладки. */
 export function woPanelRootClass(isWindowsPackage: boolean, extra = ''): string {
   const windowsTypography = isWindowsPackage ? ` ${cdProduct.windowsContractTabTypography}` : '';
   const extraClass = extra ? ` ${extra}` : '';
-  return `${WO_BLOCK} ${WO_DATA_COMPACT} ${WO_TAB_COMPACT}${windowsTypography}${extraClass}`;
+  return `${PACKAGE_BLOCK} ${PACKAGE_DATA_COMPACT} ${WO_TAB_COMPACT}${windowsTypography} ${PACKAGE_TAB_BLOCK_FLAT}${extraClass}`;
 }
 
 export function interactiveEstimateRowClassName(

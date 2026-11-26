@@ -11,10 +11,10 @@ import {
 } from '@/shared/api/admin-contract-document-packages';
 import { type CrmUser, type Office, getCrmUsers, getOffices } from '@/shared/api/admin-crm';
 
-import cdDataTab from '../../../../styles/data-tab.module.css';
 import type { PackageFormData } from '../../form/packageForm';
 import { openContractDocumentsSettings } from '../../settings/ContractDocumentsSettingsButton';
 import styles from './PackageContractNumberField.module.css';
+import dataTabStyles from './PackageDataTab.module.css';
 import { DATA_AUTO_FILLED, DATA_FIELD } from './packageDataTabStyles';
 
 const CUSTOM_VALUE = '__custom__';
@@ -187,8 +187,8 @@ export function PackageContractNumberField({
 
   return (
     <div className={styles.wrap}>
-      <div className={`${cdDataTab.contractInlineRow} ${styles.numberingRow}`}>
-        <div className={`${DATA_FIELD} ${cdDataTab.contractInlineField}`}>
+      <div className={dataTabStyles.dataFieldRow}>
+        <div className={`${DATA_FIELD}`}>
           <label htmlFor="contract_office">Офис закл.</label>
           <select
             id="contract_office"
@@ -206,7 +206,7 @@ export function PackageContractNumberField({
             ))}
           </select>
         </div>
-        <div className={`${DATA_FIELD} ${cdDataTab.contractInlineField}`}>
+        <div className={`${DATA_FIELD}`}>
           <label htmlFor="contract_surveyor">Замерщик</label>
           <select
             id="contract_surveyor"
@@ -224,7 +224,7 @@ export function PackageContractNumberField({
           </select>
         </div>
         {omitNumberField ? null : (
-          <div className={`${DATA_FIELD} ${cdDataTab.contractInlineField}`}>
+          <div className={`${DATA_FIELD}`}>
             <label htmlFor="cn">Номер дог.</label>
             {locked ? (
               <input

@@ -141,13 +141,6 @@
   grid-column: 1 / -1;
 }
 
-.customerEmailInRow {
-  flex: 0 1 18rem;
-  margin: 0;
-  max-width: 22rem;
-  min-width: 12rem;
-}
-
 /* Блок «Телефоны»: справа от e-mail; поля и кнопки в одну линию с переносом */
 .customerPhonesBlock {
   flex: 1 1 16rem;
@@ -291,27 +284,7 @@
 }
 
 @media (max-width: 980px) {
-  .dataTopRow {
-    grid-template-columns: 1fr;
-  }
-
-  .contractInlineRow {
-    grid-template-columns: 1fr;
-  }
-
   .paymentsTab .paymentsContractMoneyRow {
-    grid-template-columns: 1fr;
-  }
-
-  .contractSumAndWordsRow {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr);
-  }
-
-  .contractHeaderMetaRow {
-    grid-template-columns: 1fr;
-  }
-
-  .contractObjectAddressRow {
     grid-template-columns: 1fr;
   }
 }
@@ -394,18 +367,20 @@
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--admin-success) 35%, transparent);
 }
 
-.contractCompactBlock .packageContractObjectFieldEdited:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--admin-success) 45%, transparent);
+/* Подсветка «изменено» задана с !important и перекрывает кольцо фокуса набора вкладок —
+   фокус обозначаем обводкой. */
+.packageContractObjectFieldEdited:focus-visible {
+  outline: 2px solid var(--admin-success);
+  outline-offset: 1px;
 }
 
-/* Перебивает .packageDataTabDense .field input/select { background: surface } */
-.packageDataTabDense .contractCompactBlock .field input.packageContractObjectFieldEdited,
-.packageDataTabDense .contractCompactBlock .field select.packageContractObjectFieldEdited,
-.packageDataTabDense .contractCompactBlock .field textarea.packageContractObjectFieldEdited {
-  background: var(--admin-success-bg-soft) !important;
-  border-color: var(--admin-success) !important;
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--admin-success) 35%, transparent);
+/* --- dark theme --- */
+/* Тёмная тема: «изменённое» поле — тёмно-зелёная подложка со светлым текстом. */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .packageContractObjectFieldEdited {
+  background: rgb(6 95 70 / 0.45) !important;
+  border-color: var(--admin-success-light) !important;
+  color: var(--admin-text-primary) !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--admin-success-light) 40%, transparent);
 }
 
 .sectionTitle {

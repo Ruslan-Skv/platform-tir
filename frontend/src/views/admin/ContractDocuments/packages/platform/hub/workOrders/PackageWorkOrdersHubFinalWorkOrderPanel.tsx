@@ -6,7 +6,16 @@ import { useState } from 'react';
 
 import cdDocPreview from '../../../../styles/documents-preview.module.css';
 import cdChrome from '../../../../styles/editor-chrome.module.css';
-import cdEstimatesList from '../../../../styles/estimates-list.module.css';
+import {
+  PACKAGE_TAB_A4,
+  PACKAGE_TAB_BTN,
+  PACKAGE_TAB_BTN_SECONDARY,
+  PACKAGE_TAB_CARD,
+  PACKAGE_TAB_HEAD,
+  PACKAGE_TAB_HINT,
+  PACKAGE_TAB_TITLE,
+  PACKAGE_TAB_TOOLBAR_ROW,
+} from '../../ui/packageTabClassNames';
 import { downloadPackageWorkOrderHubTabPdf } from '../../workOrders/packageWorkOrderHubPrint';
 import { buildWorkOrderInstallationMetaLines } from '../../workOrders/workOrderInstallationMeta';
 import { PackageWorkOrderGradeButtons } from './PackageWorkOrderGradeButtons';
@@ -15,10 +24,8 @@ import hubStyles from './PackageWorkOrdersHubModal.module.css';
 import {
   WO_A4_WRAP,
   WO_FORM_GRID,
-  WO_HINT,
   WO_SECTION_CARD,
-  WO_SECTION_TITLE,
-  WO_SECTION_TITLE_MAIN,
+  WO_SUB_TAB_BAR,
   woPanelRootClass,
 } from './packageWorkOrdersHubPanelStyles';
 
@@ -64,31 +71,31 @@ export function PackageWorkOrdersHubFinalWorkOrderPanel() {
 
   return (
     <div className={woPanelRootClass(isWindowsPackage)}>
-      {!isWindowsPackage ? (
-        <div
-          className={`${WO_FORM_GRID} ${cdEstimatesList.workOrderParamsBar}`}
-          style={{ gap: '2px 6px', display: 'flex', alignItems: 'flex-end', flexWrap: 'wrap' }}
-        >
-          <PackageWorkOrderGradeButtons
-            value={form.workOrder.gradeIncreasePercent}
-            onChange={(gradeIncreasePercent) =>
-              updateWorkOrder('gradeIncreasePercent', gradeIncreasePercent)
-            }
-          />
-        </div>
-      ) : null}
       <div className={WO_FORM_GRID}>
-        <div className={WO_SECTION_CARD}>
-          <h3 className={`${WO_SECTION_TITLE} ${WO_SECTION_TITLE_MAIN}`}>Итоговый заказ-наряд</h3>
-          <p className={WO_HINT} style={{ marginTop: 0 }}>
-            {isWindowsPackage
-              ? 'Формируется из счёт-заказа и доп. соглашений с учётом назначенных мастеров.'
-              : 'Формируется из итоговой сметы: включает все проводимые работы по основной смете и доп. соглашениям, с вычетом работ из блока «Непроводимые ремонтно-отделочные работы».'}
-          </p>
-          <div className={hubStyles.finalDocTabRow}>
-            <div className={`${cdChrome.tabBar} ${hubStyles.finalDocTabBar}`}>
+        <div className={`${WO_SECTION_CARD} ${PACKAGE_TAB_CARD}`}>
+          <div className={PACKAGE_TAB_HEAD}>
+            <h3 className={PACKAGE_TAB_TITLE}>Итоговый заказ-наряд</h3>
+            {/* div, а не p: правила компактной типографики товарных вкладок задают 12px именно для p. */}
+            <div className={PACKAGE_TAB_HINT}>
+              {isWindowsPackage
+                ? 'Формируется из счёт-заказа и доп. соглашений с учётом назначенных мастеров.'
+                : 'Формируется из итоговой сметы: включает все проводимые работы по основной смете и доп. соглашениям, с вычетом работ из блока «Непроводимые ремонтно-отделочные работы».'}
+            </div>
+          </div>
+          <div className={PACKAGE_TAB_TOOLBAR_ROW}>
+            {!isWindowsPackage ? (
+              <PackageWorkOrderGradeButtons
+                value={form.workOrder.gradeIncreasePercent}
+                onChange={(gradeIncreasePercent) =>
+                  updateWorkOrder('gradeIncreasePercent', gradeIncreasePercent)
+                }
+              />
+            ) : null}
+            <div className={`${WO_SUB_TAB_BAR} ${hubStyles.finalDocTabBar}`} role="tablist">
               <button
                 type="button"
+                role="tab"
+                aria-selected={activeFinalWorkOrderDocId === 'common'}
                 className={`${cdChrome.tab} ${activeFinalWorkOrderDocId === 'common' ? cdChrome.tabActive : ''}`}
                 onClick={() => setActiveFinalWorkOrderDocId('common')}
               >
@@ -98,6 +105,8 @@ export function PackageWorkOrdersHubFinalWorkOrderPanel() {
                 <button
                   key={doc.installer.id}
                   type="button"
+                  role="tab"
+                  aria-selected={activeFinalWorkOrderDocId === doc.installer.id}
                   className={`${cdChrome.tab} ${
                     activeFinalWorkOrderDocId === doc.installer.id ? cdChrome.tabActive : ''
                   }`}
@@ -110,7 +119,7 @@ export function PackageWorkOrdersHubFinalWorkOrderPanel() {
             </div>
             <button
               type="button"
-              className={hubStyles.finalDocDownloadBtn}
+              className={`${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_SECONDARY}`}
               onClick={() => void downloadActivePdf()}
               disabled={pdfBusy}
               title="Скачать PDF открытого заказ-наряда (общего или выбранного мастера)"
@@ -120,11 +129,11 @@ export function PackageWorkOrdersHubFinalWorkOrderPanel() {
             </button>
           </div>
           {pdfError ? (
-            <p data-modal-form-error style={{ margin: '0 0 10px' }}>
+            <p className={hubStyles.panelError} role="alert">
               {pdfError}
             </p>
           ) : null}
-          <div className={WO_A4_WRAP}>
+          <div className={`${WO_A4_WRAP} ${PACKAGE_TAB_A4}`}>
             <article className={cdDocPreview.estimateA4Sheet} data-print-target="work-order-sheet">
               <div className={cdDocPreview.estimateA4Meta} style={{ marginBottom: 10 }}>
                 <p style={{ margin: '0 0 3px' }}>

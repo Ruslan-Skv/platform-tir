@@ -4,6 +4,7 @@ import { uploadPackagePaymentProofPhoto } from '@/shared/api/admin-contract-docu
 import { Modal } from '@/shared/ui/Modal';
 import crmFormStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
 
+import cdHubModals from '../../../../styles/hub-modals.module.css';
 import { PackageAttachedPhotosTab } from '../../editor/attachedPhotosTab/PackageAttachedPhotosTab';
 import { PACKAGE_PAYMENT_PROOF_PHOTOS_MAX } from '../../form';
 import type { PackageHubModalModel } from './usePackageHubModal';
@@ -25,7 +26,7 @@ export function PackageHubPaymentProofsModal({
       showCloseButton
       compactOnMobile
     >
-      <div data-modal-form data-modal-density="compact">
+      <div className={cdHubModals.neutralFormShell} data-modal-form data-modal-density="compact">
         <PackageAttachedPhotosTab
           packageId={packageId}
           inputId="package-payment-proof-photo-input"

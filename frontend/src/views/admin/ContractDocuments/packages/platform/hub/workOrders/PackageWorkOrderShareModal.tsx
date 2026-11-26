@@ -11,6 +11,7 @@ import {
   buildMessengerShareUrl,
 } from '@/views/admin/CRM/InstallationSchedules/shared/installationScheduleShare';
 
+import cdHubModals from '../../../../styles/hub-modals.module.css';
 import { canShareWorkOrderPdfFile } from '../../workOrders/buildWorkOrderPdfForInstallationSchedule';
 import {
   type PackageWorkOrderHubSharePayload,
@@ -138,7 +139,11 @@ export function PackageWorkOrderShareModal({ isOpen, onClose, panelTab, hubCtx }
       compactOnMobile
       alignTop
     >
-      <div className={panelStyles.formShell} data-modal-form data-modal-density="compact">
+      <div
+        className={`${panelStyles.formShell} ${cdHubModals.neutralFormShell}`}
+        data-modal-form
+        data-modal-density="compact"
+      >
         <p data-modal-form-hint className={hubStyles.shareHintDesktop} style={{ marginTop: 0 }}>
           {payloadMeta?.installerLabel
             ? `Отправляется заказ-наряд мастера «${payloadMeta.installerLabel}» (не общий).`

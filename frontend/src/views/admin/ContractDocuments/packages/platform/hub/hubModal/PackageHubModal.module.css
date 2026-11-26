@@ -1,4 +1,7 @@
-/* Дополнение к .titleWithEdit из CrmCustomerDetailModal.module.css */
+/* Co-located: модалка «Оплаты и Управление договором».
+   Каркас — карточка вкладки с белыми панелями (набор editor-chrome, см. packageHubStyles.ts);
+   здесь — заголовок модалки, тайм-лайн этапов и раскладка формы «Провести оплату». */
+
 .modalTitleRow {
   min-width: 0;
 }
@@ -11,30 +14,35 @@
   white-space: nowrap;
 }
 
+/* Кнопка в заголовке модалки («Журнал оплат», «Чеки») — вторичная кнопка набора вкладок:
+   белая, 28px, без синей заливки-«пилюли». */
 .modalTitleTextBtn {
-  align-items: center;
-  background: #dbeafe;
-  border: 1px solid #93c5fd;
-  border-radius: var(--admin-radius-sm, 6px);
-  color: #1d4ed8;
-  cursor: pointer;
   display: inline-flex;
-  font-size: var(--admin-fs-xs, 0.75rem);
-  font-weight: 500;
+  align-items: center;
+  justify-content: center;
   height: 1.75rem;
-  line-height: 1;
-  padding: 0 0.5rem;
-  vertical-align: middle;
+  padding: 0 var(--admin-space-md, 8px);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  line-height: var(--admin-line-height-sm);
   white-space: nowrap;
+  cursor: pointer;
+  vertical-align: middle;
 }
 
-.modalTitleTextBtn:hover {
-  background: #bfdbfe;
+.modalTitleTextBtn:hover:not(:disabled) {
+  background: var(--admin-surface-muted);
+  border-color: var(--admin-text-muted);
+  color: var(--admin-text-primary);
 }
 
 .modalTitleTextBtn:disabled {
   cursor: default;
-  opacity: 0.5;
+  opacity: 0.55;
 }
 
 .modalContractNumberPlaceholder {
@@ -49,7 +57,7 @@
 .hubFormShell {
   display: flex;
   flex-direction: column;
-  gap: var(--admin-space-xl, 12px);
+  gap: var(--admin-space-xl);
   min-height: min(72vh, 40rem);
   position: relative;
 }
@@ -62,185 +70,121 @@
   left: 50%;
   margin: 0;
   position: absolute;
-  top: var(--admin-space-3xl, 20px);
+  top: var(--admin-space-3xl);
   transform: translateX(-50%);
   z-index: 1;
 }
 
-.hubModalSection {
-  background: var(--admin-surface, #ffffff);
-  border: 1px solid var(--admin-border, #e5e7eb);
-  border-radius: var(--admin-radius-lg, 10px);
-  box-shadow: 0 1px 2px rgb(15 23 42 / 6%);
-  margin: 0;
-  padding: var(--admin-space-lg, 10px) var(--admin-space-xl, 12px);
+/* Карточка модалки: панели этапов, сводки и оплаты — столбиком с равной отбивкой. */
+.hubCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-md);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .hubModalSection {
-  background: var(--admin-surface-muted, #111827);
-  border-color: var(--admin-border-strong, #374151);
-  box-shadow: 0 1px 3px rgb(0 0 0 / 25%);
+/* Форма «Провести оплату»: дата | основание | способ | принял оплату | сумма. */
+.conductFormRow {
+  display: grid;
+  grid-template-columns:
+    minmax(7.25rem, 8.25rem)
+    minmax(0, 1fr)
+    minmax(6.75rem, 8rem)
+    minmax(8.5rem, 10rem)
+    minmax(5.25rem, 6.5rem);
+  gap: var(--admin-space-sm) var(--admin-space-md);
+  align-items: start;
 }
 
-.hubModalSection :global(.linkedSectionTitle) {
-  margin-top: 0;
+/* Кнопки формы и подсказка — строкой ниже полей, во всю ширину; кнопки прижаты вправо. */
+.conductFormRow > .conductFormActions,
+.conductFormRow > p {
+  grid-column: 1 / -1;
 }
 
-.pipelineIntro {
-  color: var(--admin-text-muted, #6b7280);
-  font-size: var(--admin-fs-sm, 0.8125rem);
-  line-height: 1.45;
-  margin: 0 0 var(--admin-space-md, 8px);
+.conductFormActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--admin-space-xs);
 }
 
-.windowsDeadlinePanel {
-  background: var(--admin-surface-muted, #f9fafb);
-  border: 1px solid var(--admin-border, #e5e7eb);
-  border-radius: var(--admin-radius-md, 8px);
-  margin: 0 0 var(--admin-space-md, 8px);
-  padding: var(--admin-space-md, 8px) var(--admin-space-lg, 10px);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .windowsDeadlinePanel {
-  background: rgb(17 24 39 / 60%);
-  border-color: var(--admin-border-strong, #374151);
-}
-
-.windowsDeadlineTitle {
-  color: var(--admin-text-strong, #111827);
-  font-size: var(--admin-fs-sm, 0.8125rem);
+/* «Оплата проведена» / «Возврат проведён» — справа от заголовка блока. */
+.conductDoneMsg {
+  font-size: var(--admin-font-size-xs);
   font-weight: 600;
-  margin: 0 0 var(--admin-space-sm, 6px);
+  line-height: var(--admin-line-height-sm);
+  color: var(--admin-success-text-strong);
 }
 
-.windowsDeadlineGrid {
-  display: grid;
-  gap: var(--admin-space-xs, 4px);
-  margin: 0;
+/* «Провести оплату» (ссылка на этапе «Оплаты») прокручивает модалку к этой панели. */
+.conductPanel {
+  scroll-margin-top: var(--admin-space-md);
 }
 
-.windowsDeadlineRow {
-  display: grid;
-  gap: 2px var(--admin-space-md, 8px);
-  grid-template-columns: minmax(8.5rem, 11rem) 1fr;
-}
-
-.windowsDeadlineRow dt {
-  color: var(--admin-text-muted, #6b7280);
-  font-size: var(--admin-fs-sm, 0.8125rem);
-  font-weight: 500;
-  margin: 0;
-}
-
-.windowsDeadlineRow dd {
-  color: var(--admin-text, #374151);
-  font-size: var(--admin-fs-sm, 0.8125rem);
-  margin: 0;
-}
-
-.windowsDeadlineDateValue {
-  color: var(--admin-text-strong, #111827);
-  font-size: var(--admin-fs-base, 0.875rem);
-  font-weight: 700;
-}
-
-.windowsDeadlinePending {
-  color: var(--admin-text-muted, #6b7280);
-  font-size: var(--admin-fs-sm, 0.8125rem);
-  line-height: 1.45;
-  margin: 0;
-}
-
-.pipelinePanel :global([data-modal-btn='secondary']),
-.pipelinePanel :global([data-modal-btn='primary']) {
-  min-height: 1.75rem !important;
-  padding-bottom: 2px !important;
-  padding-top: 2px !important;
+/* Таблица в панели: без верхнего отступа обёртки (отбивку задаёт панель). */
+.panelTableWrap.panelTableWrap {
+  margin-top: 0;
 }
 
 /* ——— Timeline ——— */
 .pipelineTimeline {
   display: flex;
   flex-direction: column;
-  gap: var(--admin-space-md, 8px);
+  gap: var(--admin-space-md);
 }
 
-.pipelineSectionHead {
-  align-items: center;
-  display: flex;
-  flex-wrap: nowrap;
-  gap: var(--admin-space-md, 8px);
-  justify-content: space-between;
-  margin-bottom: var(--admin-space-xs, 4px);
+/* «Срок по договору (расчёт)» — приглушённый блок внутри панели этапов. */
+.windowsDeadlinePanel {
+  background: var(--admin-surface-muted);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  margin: 0 0 var(--admin-space-md);
+  padding: var(--admin-space-md) var(--admin-space-lg);
 }
 
-.pipelineSectionHead :global(.linkedSectionTitle) {
-  flex: 1 1 auto;
-  margin: 0;
-  min-width: 0;
-}
-
-.pipelineRefusalHeadBtn {
-  align-items: center;
-  background: linear-gradient(
-    180deg,
-    var(--admin-error-bg-soft, #fee2e2) 0%,
-    var(--admin-danger-bg, #fef2f2) 100%
-  );
-  border: 1px solid var(--admin-danger-border-strong, #fca5a5);
-  border-radius: var(--admin-radius-md, 8px);
-  box-shadow: 0 1px 3px rgb(220 38 38 / 0.14);
-  box-sizing: border-box;
-  color: var(--admin-error-text-strong, #991b1b);
-  cursor: pointer;
-  display: inline-flex;
-  flex-shrink: 0;
-  font-size: var(--admin-font-size-sm, 0.8125rem);
+.windowsDeadlineTitle {
+  color: var(--admin-text-primary);
+  font-size: var(--admin-font-size-sm);
   font-weight: 600;
-  justify-content: center;
-  line-height: 1.25;
-  margin-left: auto;
-  min-height: 1.75rem;
-  padding: var(--admin-space-xs, 4px) var(--admin-space-lg, 10px);
-  white-space: nowrap;
+  margin: 0 0 var(--admin-space-xs);
 }
 
-.pipelineRefusalHeadBtn:hover:not(:disabled) {
-  background: linear-gradient(
-    180deg,
-    var(--admin-danger-bg, #fef2f2) 0%,
-    var(--admin-error-bg-soft, #fee2e2) 100%
-  );
-  border-color: var(--admin-error-strong, #dc2626);
-  color: var(--admin-error-text, #b91c1c);
+.windowsDeadlineGrid {
+  display: grid;
+  gap: var(--admin-space-xs);
+  margin: 0;
 }
 
-.pipelineRefusalHeadBtn:focus-visible {
-  outline: 2px solid var(--admin-error-strong, #dc2626);
-  outline-offset: 2px;
+.windowsDeadlineRow {
+  display: grid;
+  gap: 2px var(--admin-space-md);
+  grid-template-columns: minmax(8.5rem, 11rem) 1fr;
 }
 
-.pipelineRefusalHeadBtn:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
+.windowsDeadlineRow dt {
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 500;
+  margin: 0;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .pipelineRefusalHeadBtn {
-  background: linear-gradient(180deg, rgb(127 29 29 / 0.5) 0%, rgb(69 10 10 / 0.38) 100%);
-  border-color: var(--admin-danger-border-strong, #fca5a5);
-  box-shadow: 0 1px 4px rgb(0 0 0 / 0.28);
-  color: #fca5a5;
+.windowsDeadlineRow dd {
+  color: var(--admin-text-secondary);
+  font-size: var(--admin-font-size-xs);
+  margin: 0;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .pipelineRefusalHeadBtn:hover:not(:disabled) {
-  background: linear-gradient(180deg, rgb(153 27 27 / 0.58) 0%, rgb(127 29 29 / 0.48) 100%);
-  border-color: #f87171;
-  color: #fecaca;
+.windowsDeadlineDateValue {
+  color: var(--admin-text-primary);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 700;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .pipelineRefusalHeadBtn:focus-visible {
-  outline-color: #f87171;
+.windowsDeadlinePending {
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-xs);
+  line-height: 1.45;
+  margin: 0;
 }
 
 .pipelineStepsList {
@@ -254,9 +198,13 @@
 
 .pipelineStepItem {
   display: grid;
-  gap: var(--admin-space-md, 8px);
+  gap: var(--admin-space-md);
   grid-template-columns: 1.5rem 1fr;
-  padding-bottom: var(--admin-space-lg, 10px);
+  padding-bottom: var(--admin-space-md);
+}
+
+.pipelineStepItem:last-child {
+  padding-bottom: 0;
 }
 
 .pipelineStepRail {
@@ -268,7 +216,7 @@
 }
 
 .pipelineStepMarker {
-  background: var(--admin-border, #d1d5db);
+  background: var(--admin-border-strong);
   border-radius: 50%;
   flex-shrink: 0;
   height: 0.75rem;
@@ -277,7 +225,7 @@
 }
 
 .pipelineStepConnector {
-  background: var(--admin-border, #e5e7eb);
+  background: var(--admin-border);
   flex: 1;
   margin-left: 0.34rem;
   margin-top: 4px;
@@ -286,11 +234,11 @@
 }
 
 .pipelineStepCompleted .pipelineStepMarker {
-  background: var(--admin-success, #16a34a);
+  background: var(--admin-success);
 }
 
 .pipelineStepCurrent .pipelineStepMarker {
-  background: var(--admin-primary, #2563eb);
+  background: var(--admin-info);
   box-shadow: 0 0 0 3px rgb(37 99 235 / 20%);
 }
 
@@ -302,46 +250,51 @@
   align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--admin-space-sm, 6px);
+  gap: var(--admin-space-sm);
 }
 
 .pipelineStepTitle {
-  font-size: var(--admin-fs-md, 0.875rem);
+  font-size: var(--admin-font-size-sm);
   font-weight: 600;
+  line-height: var(--admin-line-height-sm);
+  color: var(--admin-text-primary);
 }
 
+/* Бейдж «Текущий этап» — как активная вкладка пакета. */
 .pipelineStepCurrentBadge {
-  background: rgb(37 99 235 / 12%);
-  border-radius: 999px;
-  color: var(--admin-primary, #2563eb);
-  font-size: 0.6875rem;
+  background: var(--admin-info-bg-soft);
+  border-radius: var(--admin-radius-pill);
+  color: var(--admin-info-strong);
+  font-size: var(--admin-font-size-2xs);
   font-weight: 600;
-  padding: 2px 8px;
+  line-height: var(--admin-line-height-sm);
+  padding: 2px var(--admin-space-sm);
 }
 
 .pipelineStepDetail {
-  color: var(--admin-text-muted, #6b7280);
-  font-size: var(--admin-fs-sm, 0.8125rem);
-  line-height: 1.4;
-  margin: 4px 0 0;
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
+  margin: 2px 0 0;
 }
 
 .pipelineStepActions,
 .pipelineStepActionsSecondary {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--admin-space-sm, 6px);
-  margin-top: var(--admin-space-md, 8px);
+  gap: var(--admin-space-xs);
+  margin-top: var(--admin-space-sm);
 }
 
 .pipelineRevertBlock {
-  margin-top: var(--admin-space-sm, 6px);
+  margin-top: var(--admin-space-sm);
 }
 
 .pipelineRevertHint {
-  color: var(--admin-text-muted, #6b7280);
-  font-size: 0.75rem;
-  margin: 0 0 4px;
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
+  margin: 0 0 var(--admin-space-xs);
 }
 
 /* Спиннер рядом с таймером отмены подписания (30 с) — показывает, что отсчёт идёт. */
@@ -366,37 +319,39 @@
 
 .pipelineRefusalPanel {
   border: 1px solid rgb(220 38 38 / 35%);
-  border-radius: var(--admin-radius-md, 8px);
-  padding: var(--admin-space-md, 8px) var(--admin-space-lg, 10px);
+  border-radius: var(--admin-radius-md);
+  padding: var(--admin-space-md) var(--admin-space-lg);
 }
 
 .pipelineRefusalPanel .pipelineStepTitle {
-  color: var(--admin-danger, #b91c1c);
+  color: var(--admin-error-text);
 }
 
 .pipelinePaymentsBadges {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--admin-space-sm, 6px);
-  margin-top: var(--admin-space-sm, 6px);
+  gap: var(--admin-space-xs);
+  margin-top: var(--admin-space-sm);
 }
 
+/* Бейджи оплат этапа: доля оплаченного по договору и Д/с. */
 .pipelinePayBadge {
-  border-radius: 999px;
-  font-size: 0.75rem;
+  border-radius: var(--admin-radius-pill);
+  font-size: var(--admin-font-size-2xs);
   font-weight: 600;
-  padding: 3px 10px;
+  line-height: var(--admin-line-height-sm);
+  padding: 2px var(--admin-space-sm);
   white-space: nowrap;
 }
 
 .pipelinePayBadgeMuted {
-  background: var(--admin-surface-muted, #f3f4f6);
-  color: var(--admin-text-muted, #6b7280);
+  background: var(--admin-surface-muted);
+  color: var(--admin-text-muted);
 }
 
 .pipelinePayBadgeYellow {
-  background: #fef9c3;
-  color: #854d0e;
+  background: var(--admin-warning-bg);
+  color: var(--admin-warning-text);
 }
 
 .pipelinePayBadgeLime {
@@ -405,25 +360,27 @@
 }
 
 .pipelinePayBadgeGreen {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--admin-success-bg);
+  color: var(--admin-success-text-strong);
 }
 
 .pipelineAddendumGrid {
   display: grid;
-  gap: var(--admin-space-md, 8px);
+  gap: var(--admin-space-sm);
   grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
-  margin-top: var(--admin-space-sm, 6px);
+  margin-top: var(--admin-space-sm);
 }
 
+/* Карточка Д/с на этапе «Оплаты»: приглушённый блок на белой панели. */
 .pipelineAddendumCard {
-  background: var(--admin-surface-muted, #f9fafb);
-  border: 1px solid var(--admin-border, #e5e7eb);
-  border-radius: var(--admin-radius-md, 8px);
+  background: var(--admin-surface-muted);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
   display: flex;
   flex-direction: column;
-  gap: var(--admin-space-xs, 4px);
-  padding: var(--admin-space-sm, 6px) var(--admin-space-md, 8px);
+  align-items: flex-start;
+  gap: var(--admin-space-xs);
+  padding: var(--admin-space-sm) var(--admin-space-md);
 }
 
 .pipelineAddendumCardSigned {
@@ -435,17 +392,28 @@
   box-shadow: 0 0 0 1px rgb(245 158 11 / 15%);
 }
 
+/* Длинные подписи («Отменить подписание Д/с») в узкой карточке переносятся,
+   кнопка — во всю ширину карточки. */
+.pipelineAddendumCard.pipelineAddendumCard > button {
+  width: 100%;
+  white-space: normal;
+}
+
 .pipelineStepHint {
-  color: var(--admin-text-muted, #6b7280);
-  font-size: 0.75rem;
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-xs);
   line-height: 1.4;
-  margin: var(--admin-space-sm, 6px) 0 0;
+  margin: var(--admin-space-sm) 0 0;
 }
 
 .pipelineJournalBtn {
   align-items: center;
   display: inline-flex;
-  gap: 6px;
+  gap: var(--admin-space-xs);
+}
+
+.pipelineJournalBtn > svg {
+  flex-shrink: 0;
 }
 
 .pipelineConductLinkBtn {
@@ -453,41 +421,25 @@
   background: none;
   border: none;
   box-shadow: none;
-  color: var(--admin-link, var(--admin-info, #2563eb));
+  color: var(--admin-link, var(--admin-info));
   cursor: pointer;
-  font-size: var(--admin-font-size-sm, 0.8125rem);
+  font-size: var(--admin-font-size-xs);
   font-weight: 600;
-  line-height: 1.35;
-  min-height: unset;
-  padding: 0;
+  line-height: var(--admin-line-height-sm);
+  min-height: var(--package-tab-control-h, 28px);
+  padding: 0 var(--admin-space-xs);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
 .pipelineConductLinkBtn:hover {
-  color: var(--admin-info-strong, #1d4ed8);
+  color: var(--admin-info-strong);
 }
 
 .pipelineConductLinkBtn:focus-visible {
   border-radius: 2px;
-  outline: 2px solid var(--admin-info, #2563eb);
+  outline: 2px solid var(--admin-info);
   outline-offset: 2px;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .pipelineConductLinkBtn {
-  color: var(--admin-info-light, #60a5fa);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .pipelineConductLinkBtn:hover {
-  color: var(--admin-info-bright, #93c5fd);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .pipelineConductLinkBtn:focus-visible {
-  outline-color: var(--admin-info-light, #60a5fa);
-}
-
-.conductPanel {
-  scroll-margin-top: var(--admin-space-md, 8px);
 }
 
 .pipelineAddendumCardHead {
@@ -498,46 +450,16 @@
 }
 
 .pipelineAddendumCardTitle {
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   font-weight: 600;
+  line-height: var(--admin-line-height-sm);
 }
 
 .pipelineAddendumCardStatus {
-  color: var(--admin-text-muted, #6b7280);
-  font-size: 0.75rem;
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
   margin: 0;
-}
-
-.summaryPanel :global(.blockData.paymentsTab),
-.conductPanel :global(.blockData.paymentsTab) {
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  max-width: none;
-  padding: 0;
-}
-
-.summaryPanel :global(.paymentsHubCompactCard) {
-  border: none;
-  margin-bottom: 0;
-  padding: 0;
-}
-
-.summaryPanel :global(.paymentsHubBlockTitle),
-.conductPanel :global(.paymentsHubBlockTitle) {
-  margin-bottom: var(--admin-space-md, 8px);
-}
-
-.conductPanel :global(.paymentsFormCard),
-.conductPanel :global(.paymentsHubConductFormWrap) {
-  border: none;
-  margin-bottom: 0;
-  overflow: visible;
-  padding: 0;
-}
-
-.conductPanel :global(.paymentsFormHubRowCompact) {
-  max-width: 100%;
 }
 
 .modalPanel {
@@ -547,6 +469,62 @@
 .modalContent {
   min-width: 0;
   min-height: 0;
+}
+
+/* --- dark theme --- */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .modalTitleTextBtn {
+  background: var(--admin-surface);
+  border-color: var(--admin-border-strong);
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .modalTitleTextBtn:hover:not(:disabled) {
+  background: var(--admin-surface-muted);
+  border-color: var(--admin-text-muted);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .windowsDeadlinePanel {
+  background: rgb(17 24 39 / 60%);
+  border-color: var(--admin-border-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .pipelineStepConnector {
+  background: var(--admin-border-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .pipelineStepCurrentBadge {
+  background: rgb(37 99 235 / 22%);
+  color: rgb(147 197 253);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .pipelineAddendumCard {
+  background: rgb(17 24 39 / 60%);
+  border-color: var(--admin-border-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .pipelineRefusalPanel {
+  border-color: rgb(248 113 113 / 40%);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .pipelineRefusalPanel .pipelineStepTitle {
+  color: rgb(252 165 165);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .conductDoneMsg {
+  color: rgb(134 239 172);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .pipelineConductLinkBtn {
+  color: var(--admin-info-light);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .pipelineConductLinkBtn:hover {
+  color: var(--admin-info-bright);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .pipelineConductLinkBtn:focus-visible {
+  outline-color: var(--admin-info-light);
 }
 
 @media (max-width: 900px) {
@@ -562,31 +540,8 @@
   }
 
   .hubFormShell {
-    gap: var(--admin-space-sm, 6px);
+    gap: var(--admin-space-sm);
     min-height: 0;
-  }
-
-  .hubModalSection {
-    padding: var(--admin-space-sm, 6px) var(--admin-space-md, 8px);
-    border-radius: var(--admin-radius-md, 8px);
-  }
-
-  .pipelineSectionHead {
-    flex-wrap: wrap;
-    align-items: stretch;
-    gap: var(--admin-space-xs, 4px);
-  }
-
-  .pipelineRefusalHeadBtn {
-    width: 100%;
-    margin-left: 0;
-    min-height: 2rem;
-    white-space: normal;
-  }
-
-  .pipelineIntro {
-    font-size: var(--admin-font-size-xs, 0.75rem);
-    line-height: 1.35;
   }
 
   .windowsDeadlineRow {
@@ -595,27 +550,27 @@
   }
 
   .windowsDeadlineDateValue {
-    font-size: var(--admin-font-size-sm, 0.8125rem);
+    font-size: var(--admin-font-size-xs);
   }
 
   .pipelineStepItem {
     grid-template-columns: 1.2rem 1fr;
-    gap: var(--admin-space-sm, 6px);
-    padding-bottom: var(--admin-space-md, 8px);
+    gap: var(--admin-space-sm);
+    padding-bottom: var(--admin-space-sm);
   }
 
   .pipelineStepHeader {
-    gap: var(--admin-space-xs, 4px);
+    gap: var(--admin-space-xs);
   }
 
   .pipelineStepTitle {
-    font-size: var(--admin-font-size-sm, 0.8125rem);
+    font-size: var(--admin-font-size-xs);
   }
 
   .pipelineStepDetail,
   .pipelineStepHint,
   .pipelineRevertHint {
-    font-size: var(--admin-font-size-xs, 0.75rem);
+    font-size: var(--admin-font-size-xs);
     line-height: 1.3;
   }
 
@@ -623,7 +578,7 @@
   .pipelineStepActionsSecondary {
     display: grid;
     grid-template-columns: 1fr;
-    gap: var(--admin-space-xs, 4px);
+    gap: var(--admin-space-xs);
   }
 
   .pipelineStepActions :global(button),
@@ -631,8 +586,6 @@
   .pipelineStepActions :global(a),
   .pipelineStepActionsSecondary :global(a) {
     width: 100%;
-    min-height: 2rem;
-    justify-content: center;
   }
 
   .pipelinePaymentsBadges {
@@ -640,36 +593,26 @@
   }
 
   .pipelinePayBadge {
-    font-size: 0.6875rem;
-    padding: 2px 8px;
+    font-size: var(--admin-font-size-2xs);
+    padding: 2px var(--admin-space-sm);
   }
 
   .pipelineAddendumGrid {
     grid-template-columns: 1fr;
-    gap: var(--admin-space-sm, 6px);
+    gap: var(--admin-space-sm);
   }
 
-  .summaryPanel :global(.paymentsHubCompactCard),
-  .conductPanel :global(.paymentsFormCard),
-  .conductPanel :global(.paymentsHubConductFormWrap) {
-    overflow: hidden;
+  .conductFormRow {
+    grid-template-columns: 1fr 1fr;
   }
+}
 
-  .summaryPanel :global(.paymentsHubBlockTitle),
-  .conductPanel :global(.paymentsHubBlockTitle) {
-    margin-bottom: var(--admin-space-sm, 6px);
-    font-size: var(--admin-font-size-sm, 0.8125rem);
-  }
-
-  .summaryPanel :global(.paymentsHubSummaryRow),
-  .conductPanel :global(.paymentsHubSummaryRow) {
+@media (max-width: 720px) {
+  .conductFormRow {
     grid-template-columns: 1fr;
-    gap: 2px;
   }
 
-  .conductPanel :global(.paymentsFormHubRowCompact) {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--admin-space-xs, 4px);
+  .conductFormActions :global(button) {
+    flex: 1 1 auto;
   }
 }

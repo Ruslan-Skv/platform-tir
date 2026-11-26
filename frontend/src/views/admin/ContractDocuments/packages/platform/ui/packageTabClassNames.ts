@@ -51,6 +51,8 @@ export const PACKAGE_TAB_FIELD_PERCENT = cdChrome.packageTabFieldPercent;
 export const PACKAGE_TAB_FIELD_MONEY = cdChrome.packageTabFieldMoney;
 /** Селект или поле на всю ширину своего столбца (не шире 24rem). */
 export const PACKAGE_TAB_FIELD_WIDE = cdChrome.packageTabFieldWide;
+/** Поле (в т.ч. многострочное) на всю ширину колонки без предела — для сеток и панелей. */
+export const PACKAGE_TAB_FIELD_FILL = cdChrome.packageTabFieldFill;
 /** Скидка «[% | руб.] [значение]» — PackageDiscountControls. */
 export const PACKAGE_TAB_FIELD_DISCOUNT = cdChrome.packageTabFieldDiscount;
 /** Скидка Д/с «По договору | Своя, % | Своя, руб.» — PackageAddendumSlotDiscountControls. */
@@ -62,6 +64,8 @@ export const PACKAGE_TAB_INPUT_SUFFIX = cdChrome.packageTabInputSuffix;
 export const PACKAGE_TAB_BTN = cdChrome.packageTabBtn;
 export const PACKAGE_TAB_BTN_PRIMARY = cdChrome.packageTabBtnPrimary;
 export const PACKAGE_TAB_BTN_SECONDARY = cdChrome.packageTabBtnSecondary;
+/** Опасное действие («Снять бронь», «Отменить»): белая кнопка с красным текстом. */
+export const PACKAGE_TAB_BTN_DANGER = cdChrome.packageTabBtnDanger;
 /** Модификатор кнопки: квадратная кнопка-иконка («+»). */
 export const PACKAGE_TAB_BTN_ICON = cdChrome.packageTabBtnIcon;
 /** Строка «поле слева, переключатель справа». */
@@ -73,6 +77,17 @@ export const PACKAGE_TAB_SEGMENTED_CAPTION = cdChrome.packageTabSegmentedCaption
 export const PACKAGE_TAB_SEGMENTED_BTN = cdChrome.packageTabSegmentedBtn;
 /** Лист предпросмотра (A4) внутри карточки — без второй рамки. */
 export const PACKAGE_TAB_A4 = cdChrome.packageTabA4;
+/** Корневой блок панели в модалке хаба: .blockData без жёлтой подложки (в модалке нет .packageDocumentEditorPage). */
+export const PACKAGE_TAB_BLOCK_FLAT = cdChrome.packageTabBlockFlat;
+/** Белая панель на карточке вкладки: вложенный блок (раздел формы, бланк, список, таблица). */
+export const PACKAGE_TAB_PANEL = cdChrome.packageTabPanel;
+/** Заголовок раздела внутри панели. */
+export const PACKAGE_TAB_PANEL_TITLE = cdChrome.packageTabPanelTitle;
+/** Ряд шапки (панели или карточки): заголовок слева, действия справа. */
+export const PACKAGE_TAB_HEAD_ROW = cdChrome.packageTabHeadRow;
+export const PACKAGE_TAB_HEAD_ROW_ACTIONS = cdChrome.packageTabHeadRowActions;
+/** Строка-флажок «[✓] подпись». */
+export const PACKAGE_TAB_CHECK_ROW = cdChrome.packageTabCheckRow;
 
 export const PACKAGE_SPEC_ROOT = `${PACKAGE_BLOCK} ${PACKAGE_DATA_COMPACT_WITH_HUB} ${PACKAGE_TAB_COMPACT_WITH_HUB} ${cdProduct.windowsContractTabTypography}`;
 export const PACKAGE_ADDENDUM_ROOT = `${PACKAGE_BLOCK} ${PACKAGE_DATA_COMPACT} ${PACKAGE_TAB_COMPACT} ${cdProduct.windowsContractTabTypography} ${cdProduct.windowsAddendumTab}`;

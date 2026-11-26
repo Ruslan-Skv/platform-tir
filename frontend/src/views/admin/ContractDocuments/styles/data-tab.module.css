@@ -1,25 +1,19 @@
-/* Страница договора: все жёлтые подложки на 50% светлее (как вкладка «Данные») */
-.packageDocumentEditorPage .blockData {
-  background: color-mix(in srgb, var(--admin-warning-bg) 50%, white);
-  border-color: color-mix(in srgb, var(--admin-warning-border-soft) 50%, white);
-}
-
-/* Вкладки документов («Смета», «Д/с», «Спецификация», «Файлы»…) — без жёлтой подложки:
-   их шапка сама белая карточка (packageTabCard в editor-chrome). Подложку сохраняет
-   только «Данные» (packageDataTabDense). */
-.packageDocumentEditorPage .blockData.dataCompact:not(.packageDataTabDense) {
+/* Страница договора: вкладки пакета («Данные», «Смета», «Д/с», «Спецификация», «Файлы»…) —
+   без жёлтой подложки .blockData: содержимое каждой вкладки лежит на своей карточке
+   (packageTabCard в editor-chrome), разделы — белыми панелями на ней. */
+.packageDocumentEditorPage .blockData.dataCompact {
   padding: 0;
   background: transparent;
   border-color: transparent;
 }
 
-.packageDocumentEditorPage .blockData.dataCompact:not(.packageDataTabDense) > .formGrid {
+.packageDocumentEditorPage .blockData.dataCompact > .formGrid {
   row-gap: var(--admin-space-md);
 }
 
 /* Вкладки направления «Мебель» (без dataCompact): подложка тоже снимается,
    остаётся их собственный паддинг co-located .wrap. */
-.packageDocumentEditorPage .blockData:not(.packageDataTabDense):not(.dataCompact) {
+.packageDocumentEditorPage .blockData:not(.dataCompact) {
   background: transparent;
   border-color: transparent;
 }
@@ -39,93 +33,35 @@
   border-color: color-mix(in srgb, var(--admin-warning) 50%, white);
 }
 
-.packageDocumentEditorPage .paymentsTab .paymentsBlockAccentSummary {
-  background: color-mix(in srgb, var(--admin-warning-bg) 50%, white);
-  border-left-color: color-mix(in srgb, var(--admin-warning-strong) 50%, white);
-}
-
 .packageDocumentEditorPage .packageFlowPayPctOrbYellow {
   background: color-mix(in srgb, #fef9c3 50%, white);
   border-color: color-mix(in srgb, #eab308 50%, white);
 }
 
-.packageWorkOrderGradeField {
-  min-width: 280px;
+/* Разряд мастера («Заказ-наряды»): сегментный переключатель из набора вкладок (PACKAGE_TAB_SEGMENTED).
+   Активный сегмент 4-го разряда — синий (как у переключателя по умолчанию), 5-го — янтарный, 6-го — красный.
+   Тройной класс + атрибут перебивают активное состояние сегмента (0,3,0) при любом порядке стилей. */
+.packageWorkOrderGradeToneWarning.packageWorkOrderGradeToneWarning.packageWorkOrderGradeToneWarning[aria-pressed='true'] {
+  background: var(--admin-warning-bg);
+  color: var(--admin-warning-text);
 }
 
-.packageWorkOrderGradeBar {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: stretch;
-  gap: 4px;
-  padding: 4px;
-  background: var(--admin-surface-soft, #f3f4f6);
-  border: 1px solid var(--admin-border, #d1d5db);
-  border-radius: var(--admin-radius-md, 8px);
-  box-shadow: inset 0 1px 2px rgb(17 24 39 / 0.04);
+.packageWorkOrderGradeToneDanger.packageWorkOrderGradeToneDanger.packageWorkOrderGradeToneDanger[aria-pressed='true'] {
+  background: var(--admin-error-bg);
+  color: var(--admin-error-text);
 }
 
-.packageWorkOrderGradeBtn {
-  appearance: none;
-  background: var(--admin-surface, #fff);
-  border: 1px solid var(--admin-border, #d1d5db);
-  border-radius: 6px;
-  color: var(--admin-text-secondary, #4b5563);
-  cursor: pointer;
-  font-size: 0.8rem;
-  font-weight: 600;
-  line-height: 1.25;
-  padding: 7px 16px;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    box-shadow 0.15s ease,
-    color 0.15s ease,
-    transform 0.1s ease;
+/* --- dark theme --- */
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .packageWorkOrderGradeToneWarning.packageWorkOrderGradeToneWarning.packageWorkOrderGradeToneWarning[aria-pressed='true'] {
+  background: rgb(245 158 11 / 0.22);
+  color: rgb(253 230 138);
 }
 
-.packageWorkOrderGradeBtn:hover {
-  background: var(--admin-info-bg-soft, #eff6ff);
-  border-color: var(--admin-info-border-soft, #bfdbfe);
-  color: var(--admin-info-strong, #1d4ed8);
-}
-
-.packageWorkOrderGradeBtn:focus {
-  outline: none;
-}
-
-.packageWorkOrderGradeBtn:focus-visible {
-  box-shadow: 0 0 0 2px var(--admin-info-border-soft, #bfdbfe);
-}
-
-.packageWorkOrderGradeBtnActive4 {
-  background: var(--admin-info-bg-soft, #eff6ff) !important;
-  border-color: var(--admin-info-strong, #2563eb) !important;
-  box-shadow:
-    0 0 0 2px color-mix(in srgb, var(--admin-info-strong, #2563eb) 28%, transparent),
-    0 1px 2px rgb(37 99 235 / 0.12) !important;
-  color: var(--admin-info-strong, #1d4ed8) !important;
-  font-weight: 700;
-}
-
-.packageWorkOrderGradeBtnActive5 {
-  background: var(--admin-warning-bg, #fef3c7) !important;
-  border-color: var(--admin-warning-strong, #d97706) !important;
-  box-shadow:
-    0 0 0 2px color-mix(in srgb, var(--admin-warning-strong, #d97706) 32%, transparent),
-    0 1px 2px rgb(217 119 6 / 0.14) !important;
-  color: var(--admin-warning-text, #92400e) !important;
-  font-weight: 700;
-}
-
-.packageWorkOrderGradeBtnActive6 {
-  background: var(--admin-danger-bg, #fef2f2) !important;
-  border-color: var(--admin-danger-border-strong, #dc2626) !important;
-  box-shadow:
-    0 0 0 2px color-mix(in srgb, var(--admin-danger-border-strong, #dc2626) 32%, transparent),
-    0 1px 2px rgb(220 38 38 / 0.14) !important;
-  color: var(--admin-danger-text, #991b1b) !important;
-  font-weight: 700;
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .packageWorkOrderGradeToneDanger.packageWorkOrderGradeToneDanger.packageWorkOrderGradeToneDanger[aria-pressed='true'] {
+  background: rgb(248 113 113 / 0.2);
+  color: rgb(252 165 165);
 }
 
 .packageDocumentEditorPage .paymentsKvOverpay {
@@ -228,122 +164,10 @@
   color: var(--admin-primary-hover, #1d4ed8);
 }
 
+/* Компактные вкладки пакетов (PACKAGE_DATA_COMPACT): сетка, заголовки и поля чуть плотнее.
+   Поля набора вкладок (PACKAGE_TAB_FIELD) перебивают эти правила своей специфичностью. */
 .dataCompact .formGrid {
   gap: 8px 10px;
-}
-
-.dataTopRow {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr);
-  gap: var(--admin-space-lg);
-  align-items: start;
-}
-
-.dataTopBlock {
-  display: grid;
-  gap: var(--admin-space-md);
-  align-content: start;
-}
-
-.contractCompactBlock {
-  width: 100%;
-  max-width: min(520px, 100%);
-  justify-self: start;
-  gap: var(--admin-space-sm);
-}
-
-.contractCompactBlock .field {
-  gap: var(--admin-space-2xs);
-}
-
-.contractCompactBlock .field label {
-  font-size: var(--admin-font-size-xs);
-}
-
-.contractCompactBlock .field input,
-.contractCompactBlock .field select,
-.contractCompactBlock .field textarea {
-  box-sizing: border-box;
-  color: var(--admin-text-primary);
-  background: var(--admin-surface);
-  border: 1px solid color-mix(in srgb, var(--admin-border, #e2e8f0) 60%, transparent);
-  border-radius: var(--admin-radius-md);
-}
-
-.contractCompactBlock .field input {
-  width: 50%;
-  min-width: 150px;
-  padding: var(--admin-space-xs) var(--admin-space-sm);
-  font-size: var(--admin-font-size-xs);
-  line-height: var(--admin-line-height-sm);
-}
-
-.contractInlineRow {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--admin-space-md);
-}
-
-/* Дата | срок | скидка — после выноса номера в отдельный блок нумерации */
-.contractHeaderMetaRow {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  column-gap: var(--admin-space-md);
-  align-items: start;
-}
-
-/* Базовое правило .contractCompactBlock .field input задаёт min-width: 150px — в узких колонках
-   это ломает сетку; здесь явно сбрасываем, чтобы инпуты ужимались внутри ячеек */
-.contractCompactBlock .contractHeaderMetaRow .field input {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-}
-
-/* Описание работ + Примечание — в одной строке, равной ширины */
-.contractObjectDescDiscountRow {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  column-gap: var(--admin-space-xl);
-  align-items: start;
-}
-
-.contractCompactBlock .contractObjectDescDiscountRow .field textarea {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  min-height: 3.25rem;
-  resize: vertical;
-}
-
-/* Исполнитель и менеджер (из справочников) — одна строка в «Договор и объект» */
-.contractProfilesRow {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  column-gap: var(--admin-space-xl);
-}
-
-.contractCompactBlock .contractProfilesRow .field select {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  padding: var(--admin-space-xs) var(--admin-space-sm);
-  font-size: var(--admin-font-size-xs);
-}
-
-.contractDiscountFieldCell {
-  min-width: 0;
-}
-
-.contractDiscountLabelRow {
-  display: flex;
-  align-items: center;
-  gap: var(--admin-space-xs);
-  flex-wrap: wrap;
-  min-width: 0;
-}
-
-.repairCustomerSearchWrapLocked,
-.packageCustomerSearchSlotLocked {
-  opacity: 0.96;
 }
 
 .packageCustomerSearchSlot {
@@ -356,59 +180,6 @@
 .packageCustomerSearchSlot > article {
   height: 100%;
   min-height: min-content;
-}
-
-/* Адрес объекта | этаж — под реквизитами договора */
-.contractObjectAddressRow {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 120px);
-  column-gap: var(--admin-space-xl);
-}
-
-.contractCompactBlock .contractObjectAddressRow .field input {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-}
-
-.packageDataTabDense .contractCompactBlock .contractObjectDescDiscountRow .field textarea {
-  min-height: 2.75rem;
-  resize: vertical;
-}
-
-/* Пара «цифры | пропись»: пропись шире (~2.5× первой колонки), одна строка */
-.contractSumAndWordsRow {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 2.5fr);
-}
-
-.contractCompactBlock .contractSumAndWordsRow .field input {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-}
-
-.contractInlineField {
-  min-width: 0;
-}
-
-.contractInlineField input {
-  width: 100%;
-  min-width: 0;
-}
-
-/* «Основание»: на всю ширину блока договора (≈ вдвине шире одной колонки сетки 1fr 1fr) */
-.contractPaymentBasisRow {
-  grid-template-columns: 1fr;
-}
-
-.contractCompactBlock .contractPaymentBasisField input {
-  width: 100%;
-  max-width: 100%;
-}
-
-.dataTopBlock .sectionTitle {
-  grid-column: auto;
-  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-2xs);
-  padding-top: 0;
 }
 
 .dataCompact .sectionTitle {
@@ -442,150 +213,6 @@
   min-height: 58px;
 }
 
-/* Заказчик: банковские реквизиты — по высоте как у input в том же блоке */
-.dataCompact .sectionCustomer .customerBankDetailsField.field textarea {
-  min-height: calc(
-    2 * var(--admin-space-sm) + var(--admin-font-size-sm) * var(--admin-line-height-sm)
-  );
-  max-height: 8rem;
-  resize: vertical;
-}
-
-/* Вкладка «Данные» договора ремонта: плотнее отступы и сетка */
-.packageDataTabDense {
-  padding: var(--admin-space-sm) var(--admin-space-md);
-}
-
-.packageDataTabDense .formGrid {
-  gap: 6px 8px;
-}
-
-.packageDataTabDense .dataTopRow {
-  gap: var(--admin-space-md);
-  row-gap: var(--admin-space-sm);
-  align-items: stretch;
-}
-
-.packageDataTabDense .dataTopBlock {
-  display: flex;
-  flex-direction: column;
-  gap: var(--admin-space-sm);
-  min-height: 0;
-}
-
-/* «Договор и объект» — тянется по высоте; «Поиск заказчика» — компактный, по содержимому */
-.packageDataTabDense .dataTopBlock > .sectionCard {
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
-.packageDataTabDense .dataTopBlock > .packageCustomerSearchSlot {
-  flex: 0 0 auto;
-}
-
-/* «Договор и объект»: на широкой колонке форма на всю ширину карточки; отступы как у блока поиска */
-.packageDataTabDense .dataTopBlock > .sectionCard {
-  padding: var(--admin-space-xs) var(--admin-space-sm);
-}
-
-.packageDataTabDense .dataTopBlock .contractCompactBlock {
-  max-width: 100%;
-}
-
-.packageDataTabDense .dataTopBlockCustomerCol {
-  gap: var(--admin-space-xs);
-  min-height: 100%;
-}
-
-/* Панель поиска компактная (по содержимому); ниже — связь с замером и поля стоимости */
-.packageDataTabDense .dataTopBlockCustomerCol .packageCustomerSearchSlot {
-  flex: 0 0 auto;
-}
-
-.packageDataTabDense .dataTopBlockCustomerCol .packageCustomerSearchSlot > article {
-  height: auto;
-  min-height: min-content;
-}
-
-.packageDataTabDense .dataTopBlock:first-child > .sectionCard {
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
-.packageDataTabDense .packageDataContractAmountField {
-  flex: 0 0 auto;
-  max-width: 12.5rem;
-  margin-bottom: 0;
-}
-
-.packageDataTabDense .packageDataContractAmountField input {
-  width: 100%;
-  max-width: 12.5rem;
-}
-
-.packageDataTabDense .windowsContractCostStack {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 4px 8px;
-  width: 100%;
-  flex: 0 0 auto;
-}
-
-.packageDataTabDense .windowsContractCostStack .field {
-  margin-bottom: 0;
-  min-width: 0;
-}
-
-.packageDataTabDense .windowsContractCostStack .field input {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-}
-
-.packageDataTabDense .dataTopRow > .dataTopBlock:nth-child(2) .packageCustomerSearchSlot {
-  min-height: 0;
-}
-
-.packageDataTabDense .sectionCard {
-  padding: var(--admin-space-sm) var(--admin-space-md);
-  border-radius: var(--admin-radius-md);
-}
-
-/* Карточки «Данные»: layout как .blankSheet; фон — в конце файла (перебивает .sectionCard) */
-.packageDataTabDense .sectionCard.packageDataBlankSheet {
-  display: flex;
-  flex-direction: column;
-  gap: var(--admin-space-sm);
-  box-sizing: border-box;
-}
-
-.packageDataTabDense .sectionCard .sectionTitle {
-  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xs);
-}
-
-.packageDataTabDense .sectionTitle {
-  margin: 4px 0 2px;
-  padding-top: 2px;
-  font-size: var(--admin-font-size-sm);
-}
-
-.packageDataTabDense .sectionCustomerHeader {
-  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xs);
-}
-
-.packageDataTabDense .sectionCustomerHeader .sectionTitle {
-  margin: 0;
-  padding-top: 2px;
-  font-size: var(--admin-font-size-sm);
-}
-
-/* Кнопка CRM в шапке «Заказчик»: создание (accent), сохранение (primary), «в базе» (secondary) */
-.packageDataTabDense .sectionCustomerHeader .packageCustomerCreateCrmBtn {
-  border-radius: var(--admin-radius-sm);
-  font-size: var(--admin-font-size-xs);
-  padding: var(--admin-space-xs) var(--admin-space-md);
-}
-
 .repairCustomerCrmSyncedBtn {
   max-width: min(100%, 26rem);
   overflow: hidden;
@@ -593,188 +220,7 @@
   white-space: nowrap;
 }
 
-.packageDataTabDense .sectionFields {
-  display: grid;
-  gap: 6px 8px;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-}
-
-.packageDataTabDense .field {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.packageDataTabDense .field input,
-.packageDataTabDense .field select,
-.packageDataTabDense .field textarea {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
-  padding: var(--admin-space-xs) var(--admin-space-sm);
-  font-size: var(--admin-font-size-xs);
-  line-height: var(--admin-line-height-sm);
-  color: var(--admin-text-primary);
-  background: var(--admin-surface);
-  border: 1px solid color-mix(in srgb, var(--admin-border, #e2e8f0) 60%, transparent);
-  border-radius: var(--admin-radius-md);
-}
-
-/* Поля вкладки «Данные»: плейсхолдеры заметно прозрачнее основного текста. */
-.packageDataTabDense .field input::placeholder,
-.packageDataTabDense .field textarea::placeholder,
-.contractCompactBlock .field input::placeholder,
-.contractCompactBlock .field textarea::placeholder {
-  color: var(--admin-text-primary, #0f172a);
-  opacity: 0.35;
-}
-
-/* Фокус полей вкладки «Данные» — синяя рамка с кольцом, как в форме «Спецификации». */
-.packageDataTabDense .field input:not([readonly]):not(:disabled):focus,
-.packageDataTabDense .field select:not(:disabled):focus,
-.packageDataTabDense .field textarea:not([readonly]):not(:disabled):focus,
-.contractCompactBlock .field input:not([readonly]):not(:disabled):focus,
-.contractCompactBlock .field select:not(:disabled):focus,
-.contractCompactBlock .field textarea:not([readonly]):not(:disabled):focus {
-  border-color: var(--admin-focus-ring, #3b82f6);
-  box-shadow: 0 0 0 1px var(--admin-focus-ring, #3b82f6);
-  outline: none;
-}
-
-/* Нередактируемые vs редактируемые поля на вкладке «Данные» */
-.packageDataTabDense .field input[readonly],
-.packageDataTabDense .field textarea[readonly],
-.packageDataTabDense .field select:disabled {
-  background: var(--admin-surface-soft);
-  border-color: color-mix(in srgb, var(--admin-border, #e2e8f0) 45%, transparent);
-  cursor: default;
-}
-
-/* Автоподстановка / нередактируемая стоимость и срок — как .autoFilledInput, не серый readonly */
-.packageDocumentEditorPage .packageDataTabDense .field input.autoFilledInput,
-.packageDocumentEditorPage .packageDataTabDense .field input.autoFilledInput[readonly],
-.packageDocumentEditorPage .packageDataTabDense .field input.autoFilledInput:disabled {
-  background: color-mix(in srgb, var(--admin-warning-bg) 50%, white);
-  border-color: color-mix(in srgb, var(--admin-warning) 50%, white);
-  cursor: default;
-}
-
-.packageDataTabDense
-  .field
-  input:not([readonly]):not(:disabled):not([type='hidden']):not([type='radio']),
-.packageDataTabDense .field select:not(:disabled),
-.packageDataTabDense .field textarea:not([readonly]):not(:disabled) {
-  background: var(--admin-surface);
-}
-
-.packageDataTabDense .field textarea {
-  min-height: 48px;
-}
-
-.packageDataTabDense .customerBankDetailsField.field textarea {
-  min-height: calc(
-    2 * var(--admin-space-xs) + var(--admin-font-size-sm) * var(--admin-line-height-sm)
-  );
-}
-
-/* Телефоны заказчика: кнопки вне модалки — те же secondary, компактный размер как у полей */
-.packageDataTabDense .customerEmailPhonesRow {
-  gap: var(--admin-space-sm) var(--admin-space-md);
-}
-
-.packageDataTabDense .customerEmailPhonesRow .secondaryBtn {
-  padding: var(--admin-space-xs) var(--admin-space-md);
-  font-size: var(--admin-font-size-xs);
-  border-radius: var(--admin-radius-sm);
-  white-space: nowrap;
-}
-
-.packageDataTabDense .contractHeaderMetaRow {
-  column-gap: var(--admin-space-md);
-}
-
-.packageDataTabDense .contractObjectAddressRow {
-  column-gap: var(--admin-space-md);
-}
-
-.packageDataTabDense .crmCompactBox {
-  padding: var(--admin-space-xs) var(--admin-space-sm);
-}
-
-.packageDataTabDense .packageCustomerSearchModeRow {
-  gap: var(--admin-space-xs);
-  margin-bottom: var(--admin-space-5xl);
-}
-
-.packageDataTabDense .packageCustomerSearchFlGrid,
-.packageDataTabDense .packageCustomerSearchUlGrid {
-  gap: var(--admin-space-xs);
-}
-
-.packageDataTabDense .crmCompactField .primaryBtn,
-.packageDataTabDense .crmCompactField .secondaryBtn {
-  padding: var(--admin-space-xs) var(--admin-space-md);
-  font-size: var(--admin-font-size-xs);
-}
-
-.packageDataTabDense .crmCompactField .packageCustomerSearchCrmBtn {
-  padding: var(--admin-space-sm) var(--admin-space-lg);
-  font-size: var(--admin-font-size-sm);
-  font-weight: 700;
-}
-
-.packageDataTabDense .crmResultBtn {
-  padding: var(--admin-space-xs) var(--admin-space-sm);
-}
-
 /* --- dark theme --- */
-:where(html[data-theme='dark'], [data-app-theme='dark']) .packageDataTabDense .hint {
-  color: rgba(243, 244, 246, 0.9);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .packageDataTabDense .hint code {
-  color: var(--admin-text-primary);
-  background: rgb(0 0 0 / 0.22);
-  border-radius: var(--admin-radius-sm);
-  padding: 0.1em 0.35em;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .packageDataTabDense .crmCompactBox,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .contractCompactBlock {
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-sidebar-text);
-  border-radius: var(--admin-radius-lg);
-  padding: var(--admin-space-md);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .contractCompactBlock .sectionTitle {
-  color: var(--admin-text-primary);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .contractCompactBlock .field label {
-  color: var(--admin-text-primary);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .contractCompactBlock .field input,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .contractCompactBlock .field select,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .contractCompactBlock .field textarea {
-  background: var(--admin-surface-soft);
-  border-color: var(--admin-sidebar-text);
-  color: var(--admin-text-primary);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .contractCompactBlock input[readonly],
-:where(html[data-theme='dark'], [data-app-theme='dark']) .contractCompactBlock textarea[readonly],
-:where(html[data-theme='dark'], [data-app-theme='dark']) .contractCompactBlock select[readonly] {
-  background: var(--admin-surface-soft) !important;
-  color: var(--admin-text-primary) !important;
-  -webkit-text-fill-color: var(--admin-text-primary) !important;
-  opacity: 1 !important;
-  appearance: none;
-  -webkit-appearance: none;
-}
-
 :where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsBlockAccentContract {
   background: color-mix(in srgb, var(--admin-bg-page) 89%, rgb(59 130 246) 11%);
   border-left-color: rgb(96 165 250 / 0.42);
@@ -785,19 +231,9 @@
   border-left-color: rgb(52 211 153 / 0.38);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsBlockAccentSummary {
-  background: color-mix(in srgb, var(--admin-bg-page) 88%, rgb(245 158 11) 12%);
-  border-left-color: rgb(251 191 36 / 0.4);
-}
-
 :where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsBlockAccentForm {
   background: color-mix(in srgb, var(--admin-bg-page) 90%, rgb(var(--color-accent-rgb)) 10%);
   border-left-color: var(--admin-accent-border);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsBlockAccentJournal {
-  background: color-mix(in srgb, var(--admin-bg-page) 93%, rgb(148 163 184) 7%);
-  border-left-color: var(--admin-border-strong);
 }
 
 /* Тёмная тема: контраст текста и таблицы на вкладке «Оплаты» */

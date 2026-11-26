@@ -19,6 +19,7 @@ import { packageExecutorProfilesKind } from '@/views/admin/ContractDocuments/pac
 import { normalizeExecutorRequisiteProfile } from '@/views/admin/ContractDocuments/packages/platform/form/executorBankFields';
 import hubStyles from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/PackageWorkOrdersHubModal.module.css';
 import type { PackageDocumentTabId } from '@/views/admin/ContractDocuments/packages/platform/tabs/packageDocumentTabs';
+import cdHubModals from '@/views/admin/ContractDocuments/styles/hub-modals.module.css';
 
 import { buildDocumentPdfBlob } from '../../../core/printDocument';
 import { convertRtfSpecificationToPdf } from '../../families/product-like/specification/rtfFileToPdf';
@@ -328,7 +329,11 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
       compactOnMobile
       alignTop
     >
-      <div className={panelStyles.formShell} data-modal-form data-modal-density="compact">
+      <div
+        className={`${panelStyles.formShell} ${cdHubModals.neutralFormShell}`}
+        data-modal-form
+        data-modal-density="compact"
+      >
         {!created ? (
           <>
             <p data-modal-form-hint style={{ marginTop: 0 }}>

@@ -7,9 +7,69 @@
   margin: 0 0 var(--admin-space-lg, 24px);
 }
 
-/* Вариант для вкладки «Данные»: без нижнего отступа (колонка задаёт gap) */
+/* Вариант для вкладки «Данные»: белая панель набора вкладок пакета (editor-chrome) на карточке
+   вкладки, без нижнего отступа (отбивку задаёт колонка); подписи и поля — как у соседних полей. */
 .measurementLinkCardData {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
   margin-bottom: 0;
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  border-color: var(--admin-border);
+  background: var(--admin-surface);
+}
+
+.measurementLinkCardData .measurementLinkTitle {
+  margin: 0;
+  font-size: var(--admin-font-size-sm);
+  line-height: var(--admin-line-height-sm);
+}
+
+.measurementLinkCardData .measurementLinkList {
+  gap: var(--admin-space-xs) var(--admin-space-md);
+  margin: 0;
+}
+
+.measurementLinkCardData .measurementLinkList dt,
+.measurementLinkCardData .measurementLinkList dd {
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
+}
+
+.measurementLinkCardData .sectionHint {
+  margin: 0;
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
+}
+
+.measurementLinkCardData .measurementLinkActions {
+  gap: var(--admin-space-md);
+  margin-top: 0;
+}
+
+.measurementLinkCardData .measurementLinkPickerRow {
+  gap: var(--admin-space-sm);
+}
+
+.measurementLinkCardData .measurementLinkSelect {
+  flex: 1 1 12rem;
+  height: var(--package-tab-control-h, 28px);
+  padding: 0 var(--admin-space-md);
+  border-color: var(--admin-border-strong);
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
+}
+
+.measurementLinkCardData .measurementLinkSelect:disabled {
+  background: var(--admin-surface-muted);
+  border-color: var(--admin-border);
+  color: var(--admin-text-secondary);
+  cursor: default;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .measurementLinkCardData {
+  border-color: var(--admin-border-strong);
 }
 
 .measurementLinkTitle {
@@ -61,6 +121,15 @@
 
 .measurementLinkOpen:hover {
   text-decoration: none;
+}
+
+/* Ссылка «Открыть в “Замерах”» на вкладке «Данные» — в строку с кнопкой набора. */
+.measurementLinkOpenData {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--package-tab-control-h, 28px);
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
 }
 
 .measurementLinkPickerRow {

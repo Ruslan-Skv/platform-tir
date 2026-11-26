@@ -9,6 +9,7 @@ import { formatCrmPhoneInput } from '@/views/admin/CRM/Customers/shared/crmCusto
 import type { MessengerShareChannel } from '@/views/admin/CRM/InstallationSchedules/shared/installationScheduleShare';
 import hubStyles from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/PackageWorkOrdersHubModal.module.css';
 import type { PackageDocumentTabId } from '@/views/admin/ContractDocuments/packages/platform/tabs/packageDocumentTabs';
+import cdHubModals from '@/views/admin/ContractDocuments/styles/hub-modals.module.css';
 
 import styles from './PackageCustomerDocumentsShareModal.module.css';
 import {
@@ -207,7 +208,7 @@ export function PackageCustomerDocumentsShareModal({
       alignTop
     >
       <div
-        className={`${panelStyles.formShell} ${styles.shareModalBody}`}
+        className={`${panelStyles.formShell} ${cdHubModals.neutralFormShell} ${styles.shareModalBody}`}
         data-modal-form
         data-modal-density="compact"
       >

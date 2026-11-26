@@ -3,11 +3,11 @@
 import type { PackageDataTabProps } from './PackageDataTab';
 import styles from './PackageDataTab.module.css';
 import {
-  DATA_BLANK_SHEET,
-  DATA_HINT,
-  DATA_PARTY_FIELD,
-  DATA_SECTION_CARD,
-  DATA_SECTION_FIELDS,
+  DATA_FIELD,
+  DATA_SECTION,
+  DATA_SECTION_ACTIONS,
+  DATA_SECTION_HEAD,
+  DATA_SECTION_HINT,
   DATA_SECTION_TITLE,
 } from './packageDataTabStyles';
 import {
@@ -35,15 +35,15 @@ export function PackageDataManagerPartySection({
   setManagerDataSectionExpanded,
 }: PackageDataManagerPartySectionProps) {
   return (
-    <div className={`${DATA_SECTION_CARD} ${DATA_BLANK_SHEET} ${styles.packageDataPartySection}`}>
-      <div className={styles.packageDataPartySectionHeader}>
-        <div className={styles.packageDataPartySectionTitleRow}>
+    <div className={DATA_SECTION}>
+      <div className={DATA_SECTION_HEAD}>
+        <div className={styles.sectionTitleCluster}>
           <h3 className={DATA_SECTION_TITLE}>Менеджер</h3>
           {signedDocsLocked ? (
             <PackageDataSectionLockInline title="Договор подписан: блок «Менеджер» только для просмотра" />
           ) : null}
         </div>
-        <div className={styles.packageDataPartySectionHeaderActions}>
+        <div className={DATA_SECTION_ACTIONS}>
           <span
             className={styles.packageDataPartySectionCompletion}
             title="Процент заполненности блока"
@@ -70,47 +70,42 @@ export function PackageDataManagerPartySection({
       ) : null}
       {managerDataSectionExpanded ? (
         <>
-          <p className={`${DATA_HINT} ${styles.packageDataPartySectionIntroHint}`}>
+          <p className={DATA_SECTION_HINT}>
             Данные подставляются из карточки, выбранной в блоке «Договор и объект». Редактировать
             здесь нельзя.
           </p>
-          <div id="repair-data-manager-section-body" className={DATA_SECTION_FIELDS}>
+          <p className={DATA_SECTION_HINT}>
             {form.executor.signatoryCrmUserId ? (
-              <p
-                className={`${DATA_HINT} ${styles.packageDataPartySectionFieldHint}`}
-                style={{ gridColumn: '1 / -1' }}
-              >
+              <>
                 Ответственный менеджер пакета связан с CRM-пользователем{' '}
-                <code style={{ fontSize: '0.9em' }}>{form.executor.signatoryCrmUserId}</code>. При
-                смене карточки менеджера в блоке «Договор и объект» ответственность по договору
-                передаётся этому сотруднику.
-              </p>
+                <code>{form.executor.signatoryCrmUserId}</code>. При смене карточки менеджера в
+                блоке «Договор и объект» ответственность по договору передаётся этому сотруднику.
+              </>
             ) : (
-              <p
-                className={`${DATA_HINT} ${styles.packageDataPartySectionFieldHint}`}
-                style={{ gridColumn: '1 / -1' }}
-              >
+              <>
                 Выберите карточку менеджера в блоке «Договор и объект», чтобы закрепить
                 ответственного за пакет (очередь «Мои» в списке договоров).
-              </p>
+              </>
             )}
-            <div className={DATA_PARTY_FIELD}>
+          </p>
+          <div id="repair-data-manager-section-body" className={styles.partyFields}>
+            <div className={DATA_FIELD}>
               <label htmlFor="e_directorNom">Менеджер (именит. падеж)</label>
               <input id="e_directorNom" readOnly value={form.executor.directorNameNominative} />
             </div>
-            <div className={DATA_PARTY_FIELD}>
+            <div className={DATA_FIELD}>
               <label htmlFor="e_directorGen">Менеджер (родит. падеж)</label>
               <input id="e_directorGen" readOnly value={form.executor.directorNameGenitive} />
             </div>
-            <div className={DATA_PARTY_FIELD}>
+            <div className={DATA_FIELD}>
               <label htmlFor="e_basis">Действует на основании</label>
               <input id="e_basis" readOnly value={form.executor.basis} />
             </div>
-            <div className={DATA_PARTY_FIELD}>
+            <div className={DATA_FIELD}>
               <label htmlFor="e_sales_office">Офис продаж</label>
               <input id="e_sales_office" readOnly value={form.executor.salesOffice} />
             </div>
-            <div className={DATA_PARTY_FIELD}>
+            <div className={DATA_FIELD}>
               <label htmlFor="e_office_phone">Телефон офиса</label>
               <input id="e_office_phone" readOnly value={form.executor.officePhone} />
             </div>

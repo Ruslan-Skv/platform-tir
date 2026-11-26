@@ -1,6 +1,5 @@
 'use client';
 
-import { PACKAGE_FORM_GRID } from '../../ui/packageTabClassNames';
 import { ManagerQuestionnaireClientNeedsSection } from './ManagerQuestionnaireClientNeedsSection';
 import { ManagerQuestionnaireCrossSellSection } from './ManagerQuestionnaireCrossSellSection';
 import { ManagerQuestionnaireCustomerObjectSection } from './ManagerQuestionnaireCustomerObjectSection';
@@ -11,6 +10,7 @@ import { ManagerQuestionnaireTrafficSection } from './ManagerQuestionnaireTraffi
 import { ManagerQuestionnaireWhyChosenSection } from './ManagerQuestionnaireWhyChosenSection';
 import type { PackageManagerQuestionnaire1TabProps } from './PackageManagerQuestionnaire1Tab';
 
+/** Содержимое анкеты: шапка и разделы-панели. Карточку и сетку задаёт место вставки. */
 export function PackageManagerQuestionnaire1TabView({
   form,
   onPatch,
@@ -20,7 +20,7 @@ export function PackageManagerQuestionnaire1TabView({
   syncSourceLabel,
 }: PackageManagerQuestionnaire1TabProps) {
   return (
-    <div className={PACKAGE_FORM_GRID}>
+    <>
       <ManagerQuestionnaireIntroSection syncSourceLabel={syncSourceLabel} />
       <ManagerQuestionnaireCustomerObjectSection form={form} onPatch={onPatch} />
       <ManagerQuestionnaireOrderInfoSection form={form} onPatch={onPatch} />
@@ -41,6 +41,6 @@ export function PackageManagerQuestionnaire1TabView({
         onPatch={onPatch}
         onToggleClientNeed={onToggleClientNeed}
       />
-    </div>
+    </>
   );
 }

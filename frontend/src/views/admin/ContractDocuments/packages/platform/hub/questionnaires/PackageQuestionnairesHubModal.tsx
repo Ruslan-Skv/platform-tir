@@ -7,7 +7,6 @@ import { useMemo } from 'react';
 import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
 import { Modal } from '@/shared/ui/Modal';
 
-import cdBase from '../../../../styles/base.module.css';
 import cdChrome from '../../../../styles/editor-chrome.module.css';
 import cdProduct from '../../../../styles/product-package.module.css';
 import type {
@@ -19,6 +18,7 @@ import { buildManagerQuestionnaire1PrintHtml } from '../../questionnaires/manage
 import { printPackageQuestionnaireHubTab } from '../../questionnaires/packageQuestionnaireHubPrint';
 import { buildPostWorkQuestionnaire2PrintHtml } from '../../questionnaires/postWorkQuestionnaire2Print';
 import hubStyles from '../workOrders/PackageWorkOrdersHubModal.module.css';
+import { WO_SUB_TAB_BAR } from '../workOrders/packageWorkOrdersHubPanelStyles';
 import { PackageQuestionnairesHubPanels } from './PackageQuestionnairesHubPanels';
 import {
   PACKAGE_QUESTIONNAIRE_HUB_TAB_IDS,
@@ -78,15 +78,6 @@ export function PackageQuestionnairesHubModal({
         <button
           type="button"
           className={hubStyles.headerIconBtn}
-          title="Печать"
-          aria-label="Печать"
-          onClick={() => printPackageQuestionnaireHubTab(panelTab, form, { packageKind })}
-        >
-          <PrinterIcon className={hubStyles.headerIcon} aria-hidden />
-        </button>
-        <button
-          type="button"
-          className={hubStyles.headerIconBtn}
           onClick={onClose}
           aria-label="Закрыть модальное окно"
         >
@@ -104,40 +95,56 @@ export function PackageQuestionnairesHubModal({
       titleClassName={hubStyles.modalTitle}
       size="lg"
       showCloseButton={false}
+      compactOnMobile
+      alignTop
+      className={hubStyles.modalPanel}
+      contentClassName={hubStyles.modalContent}
     >
       <div className={hubStyles.modalBody} data-repair-questionnaires-hub-modal>
-        <div
-          className={`${cdChrome.tabBar} ${cdChrome.blockTabs} ${cdChrome.packageTabBarCompact} ${cdBase.blockTabs} ${cdBase.packageTabBarCompact} ${hubStyles.hubTabBar}`}
-          role="tablist"
-        >
-          {PACKAGE_QUESTIONNAIRE_HUB_TAB_IDS.map((id) => (
+        <div className={hubStyles.hubToolbar}>
+          <div className={`${WO_SUB_TAB_BAR} ${hubStyles.hubTabBar}`} role="tablist">
+            {PACKAGE_QUESTIONNAIRE_HUB_TAB_IDS.map((id) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={panelTab === id}
+                title={packageQuestionnaireHubTabLabel(id, false)}
+                className={`${cdChrome.tab} ${panelTab === id ? `${cdChrome.tabActive} ${hubStyles.hubTabActive}` : ''}`}
+                onClick={() => onPanelTabChange(id)}
+              >
+                <span className={cdProduct.packageTabLabelInner}>
+                  <span>{packageQuestionnaireHubTabLabel(id)}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+          <div className={hubStyles.hubToolbarActions}>
             <button
-              key={id}
               type="button"
-              role="tab"
-              aria-selected={panelTab === id}
-              title={packageQuestionnaireHubTabLabel(id, false)}
-              className={`${cdChrome.tab} ${panelTab === id ? `${cdChrome.tabActive} ${hubStyles.hubTabActive}` : ''}`}
-              onClick={() => onPanelTabChange(id)}
+              className={hubStyles.headerIconBtn}
+              title="Печать"
+              aria-label="Печать"
+              onClick={() => printPackageQuestionnaireHubTab(panelTab, form, { packageKind })}
             >
-              <span className={cdProduct.packageTabLabelInner}>
-                <span>{packageQuestionnaireHubTabLabel(id)}</span>
-              </span>
+              <PrinterIcon className={hubStyles.headerIcon} aria-hidden />
             </button>
-          ))}
+          </div>
         </div>
-        <PackageQuestionnairesHubPanels
-          panelTab={panelTab}
-          form={form}
-          previewHtml={previewHtml}
-          packageKind={packageKind}
-          linkedCrmCustomerId={linkedCrmCustomerId}
-          onPatchManagerQuestionnaire1={onPatchManagerQuestionnaire1}
-          onToggleManagerQuestionnaire1Traffic={onToggleManagerQuestionnaire1Traffic}
-          onToggleManagerQuestionnaire1WhyChosen={onToggleManagerQuestionnaire1WhyChosen}
-          onToggleManagerQuestionnaire1Need={onToggleManagerQuestionnaire1Need}
-          onPatchPostWorkQuestionnaire2={onPatchPostWorkQuestionnaire2}
-        />
+        <div className={hubStyles.panelsScroll}>
+          <PackageQuestionnairesHubPanels
+            panelTab={panelTab}
+            form={form}
+            previewHtml={previewHtml}
+            packageKind={packageKind}
+            linkedCrmCustomerId={linkedCrmCustomerId}
+            onPatchManagerQuestionnaire1={onPatchManagerQuestionnaire1}
+            onToggleManagerQuestionnaire1Traffic={onToggleManagerQuestionnaire1Traffic}
+            onToggleManagerQuestionnaire1WhyChosen={onToggleManagerQuestionnaire1WhyChosen}
+            onToggleManagerQuestionnaire1Need={onToggleManagerQuestionnaire1Need}
+            onPatchPostWorkQuestionnaire2={onPatchPostWorkQuestionnaire2}
+          />
+        </div>
       </div>
     </Modal>
   );

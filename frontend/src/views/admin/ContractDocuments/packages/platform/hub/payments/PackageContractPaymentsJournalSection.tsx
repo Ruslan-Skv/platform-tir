@@ -7,11 +7,18 @@ import { type ContractDocumentPackagePaymentPatch } from '@/shared/api/admin-con
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 
 import cdBase from '../../../../styles/base.module.css';
-import cdProduct from '../../../../styles/product-package.module.css';
-import cdTemplates from '../../../../styles/templates-library.module.css';
 import { isFurnitureLikePackageKind } from '../../../config';
 import { furniturePaymentLegDisplayLabel } from '../../../directions/furniture/furniturePaymentLeg';
 import { PACKAGE_PAYMENT_FORM_LABELS } from '../../payments/packagePaymentFormLabels';
+import hubStyles from '../hubModal/PackageHubModal.module.css';
+import {
+  HUB_BTN_DANGER,
+  HUB_BTN_SECONDARY,
+  HUB_FIELD_HINT,
+  HUB_SECTION,
+  HUB_SECTION_HEAD,
+  HUB_SECTION_TITLE,
+} from '../hubModal/packageHubModalStyles';
 import { PackageContractPaymentsEditModal } from './PackageContractPaymentsEditModal';
 import {
   formatDateRu,
@@ -74,20 +81,22 @@ export function PackageContractPaymentsJournalSection({
   };
 
   return (
-    <div
-      className={`${cdTemplates.sectionCard} ${cdBase.paymentsTableCard} ${cdBase.paymentsBlockAccentJournal}`}
-    >
-      {layout !== 'journal' ? <h3 className={cdBase.sectionTitle}>Журнал оплат</h3> : null}
+    <div className={HUB_SECTION}>
+      {layout !== 'journal' ? (
+        <div className={HUB_SECTION_HEAD}>
+          <h3 className={HUB_SECTION_TITLE}>Журнал оплат</h3>
+        </div>
+      ) : null}
       {loading ? (
-        <p className={cdProduct.hint}>Загрузка…</p>
+        <p className={HUB_FIELD_HINT}>Загрузка…</p>
       ) : rows.length === 0 ? (
-        <p className={cdProduct.hint}>
+        <p className={HUB_FIELD_HINT}>
           {layout === 'journal'
             ? 'Записей пока нет.'
             : 'Записей пока нет. Заполните сумму и основание выше и нажмите «Добавить в журнал».'}
         </p>
       ) : (
-        <div className={cdBase.paymentsTableWrap}>
+        <div className={`${cdBase.paymentsTableWrap} ${hubStyles.panelTableWrap}`}>
           <table className={cdBase.paymentsTable}>
             <thead>
               <tr>
@@ -130,7 +139,7 @@ export function PackageContractPaymentsJournalSection({
                         <button
                           data-admin-mutation
                           type="button"
-                          className={cdBase.paymentsEditBtn}
+                          className={HUB_BTN_SECONDARY}
                           disabled={rowActionBusy}
                           title="Изменить проведённую оплату (только супер-админ)"
                           onClick={() => setEditingPaymentId(r.id)}
@@ -140,7 +149,7 @@ export function PackageContractPaymentsJournalSection({
                         <button
                           data-admin-mutation
                           type="button"
-                          className={cdBase.paymentsCancelBtn}
+                          className={HUB_BTN_DANGER}
                           disabled={rowActionBusy}
                           title="Отменить оплату (только супер-админ)"
                           onClick={() => setPendingCancelId(r.id)}

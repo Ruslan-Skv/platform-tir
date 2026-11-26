@@ -78,69 +78,6 @@
   background: var(--admin-info-bg-soft);
 }
 
-/* Базовый dark-слой для всех вкладок Contract Documents */
-
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .packageDataTabDense
-  .dataTopRow
-  > .dataTopBlock:nth-child(2)
-  .repairCustomerSearchWrap,
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .packageDataTabDense
-  .dataTopRow
-  > .dataTopBlock:nth-child(2)
-  .packageCustomerSearchSlot {
-  background: color-mix(in srgb, var(--admin-bg-page) 89%, rgb(16 185 129) 11%);
-  border-color: rgb(52 211 153 / 0.32);
-}
-
-/* Контраст текста на затемнённых карточках вкладки «Данные» */
-
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .packageDataTabDense
-  .sectionCard
-  .sectionTitle,
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .packageDataTabDense
-  .crmCompactBox
-  .sectionTitle {
-  color: var(--admin-text-primary);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .packageDataTabDense
-  .sectionCard
-  .field
-  label,
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .packageDataTabDense
-  .crmCompactBox
-  .field
-  label {
-  color: var(--admin-text-primary);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .packageDataTabDense .crmCompactBox p {
-  color: rgba(243, 244, 246, 0.92);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .packageDataTabDense
-  .field
-  input[readonly],
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .packageDataTabDense
-  .field
-  textarea[readonly],
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .packageDataTabDense
-  .field
-  select:disabled {
-  background: rgb(17 24 39 / 0.65);
-  border-color: var(--admin-border-strong);
-  color: var(--admin-text-primary);
-}
-
 :where(html[data-theme='dark'], [data-app-theme='dark'])
   .estimatesAddObjectBtn:hover:not(:disabled),
 :where(html[data-theme='dark'], [data-app-theme='dark'])
@@ -150,40 +87,6 @@
   background: linear-gradient(180deg, var(--admin-info-strong) 0%, var(--admin-info) 100%);
   border-color: var(--admin-info-bright);
   color: var(--admin-text-inverse);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .workOrderParamsBar
-  .managerQuestionnaireNeedRow,
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .workOrderParamsBar
-  .managerQuestionnaireNeedRow
-  span {
-  color: var(--admin-bg-page);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .workOrderParamsBar
-  .packageWorkOrderGradeBar {
-  background: rgb(255 255 255 / 0.08);
-  border-color: var(--admin-border-strong);
-  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.2);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .workOrderParamsBar
-  .packageWorkOrderGradeBtn {
-  background: rgb(255 255 255 / 0.06);
-  border-color: var(--admin-border-strong);
-  color: var(--admin-text-secondary);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .workOrderParamsBar
-  .packageWorkOrderGradeBtn:hover {
-  background: rgb(255 255 255 / 0.12);
-  border-color: var(--admin-accent-soft-strong);
-  color: var(--admin-text-primary);
 }
 
 /* Точечный dark-фикс для вкладок "Акт начала работ" / "Акт приёмки" */
@@ -308,14 +211,6 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
   .packageDocumentEditorPage
-  .paymentsTab
-  .paymentsBlockAccentSummary {
-  background: color-mix(in srgb, var(--admin-bg-page) 94%, rgb(245 158 11) 6%);
-  border-left-color: color-mix(in srgb, rgb(251 191 36 / 0.4) 50%, var(--admin-border));
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .packageDocumentEditorPage
   .packageFlowPayPctOrbYellow {
   background: color-mix(in srgb, rgb(66 32 6 / 0.55) 50%, var(--admin-surface));
   border-color: color-mix(in srgb, #ca8a04 50%, var(--admin-surface));
@@ -368,13 +263,6 @@
   box-shadow:
     0 0 0 2px rgb(20 83 45 / 0.55),
     0 1px 3px rgb(0 0 0 / 0.3);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .interactiveFinalEstimateTab
-  .installerAssignedCountBadgeZero {
-  background: rgb(51 65 85);
-  color: rgba(226, 232, 240, 0.92);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
@@ -484,57 +372,6 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .contractCompactBlock
-  .field
-  input.autoFilledInput {
-  background: var(--admin-surface-soft) !important;
-  border-color: var(--admin-sidebar-text) !important;
-  color: var(--admin-text-primary) !important;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .contractCompactBlock
-  .field
-  input.packageContractObjectFieldEdited,
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .contractCompactBlock
-  .field
-  select.packageContractObjectFieldEdited,
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .contractCompactBlock
-  .field
-  textarea.packageContractObjectFieldEdited,
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .packageDataTabDense
-  .contractCompactBlock
-  .field
-  input.packageContractObjectFieldEdited,
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .packageDataTabDense
-  .contractCompactBlock
-  .field
-  select.packageContractObjectFieldEdited,
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .packageDataTabDense
-  .contractCompactBlock
-  .field
-  textarea.packageContractObjectFieldEdited {
-  background: var(--admin-success-bg-soft) !important;
-  border-color: var(--admin-success) !important;
-  color: var(--admin-text-primary) !important;
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--admin-success) 40%, transparent);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .contractCompactBlock
-  input:-webkit-autofill,
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .contractCompactBlock
-  input:-webkit-autofill:hover,
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .contractCompactBlock
-  input:-webkit-autofill:focus,
-:where(html[data-theme='dark'], [data-app-theme='dark'])
   .crmCompactBox
   input:-webkit-autofill:hover,
 :where(html[data-theme='dark'], [data-app-theme='dark'])
@@ -561,23 +398,9 @@
   padding: 0 !important;
 }
 
-.paymentsHubBlockTitle {
-  margin: 0 0 var(--admin-space-md, 8px);
-}
-
-/* Компактная сводка в модалке «Оплаты и Управление договором» */
-.paymentsHubCompactCard {
-  margin-bottom: 0;
-  padding: var(--admin-space-md) var(--admin-space-lg);
-}
-
 .paymentsHubCompactHint {
   margin: 0 0 var(--admin-space-sm) !important;
   font-size: var(--admin-font-size-xs);
-}
-
-.paymentsHubCompactCard .paymentsTableWrap {
-  margin-top: 0;
 }
 
 .paymentsHubSummaryTable {
@@ -627,19 +450,9 @@
   border-left: 3px solid var(--admin-success-emerald);
 }
 
-.paymentsTab .paymentsBlockAccentSummary {
-  background: var(--admin-warning-bg);
-  border-left: 3px solid var(--admin-warning-strong);
-}
-
 .paymentsTab .paymentsBlockAccentForm {
   background: var(--admin-accent-soft);
   border-left: 3px solid var(--admin-accent-border);
-}
-
-.paymentsTab .paymentsBlockAccentJournal {
-  background: var(--admin-surface-muted);
-  border-left: 3px solid var(--admin-border-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
@@ -879,8 +692,7 @@
 }
 
 .paymentsSummaryCard,
-.paymentsFormCard,
-.paymentsTableCard {
+.paymentsFormCard {
   margin-bottom: 0;
 }
 
@@ -936,31 +748,12 @@
   padding-bottom: 2px;
 }
 
-/* Компактная строка в модалке «Оплаты и Управление договором» — без горизонтального скролла */
-.paymentsHubConductTitleRow {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--admin-space-md);
-}
-
-.paymentsHubConductTitleRow .paymentsHubBlockTitle {
-  margin-bottom: 0;
-}
-
+/* «Оплата проведена» рядом с заголовком блока (модалка «Счета на оплату») */
 .paymentsHubConductDoneMsg {
   color: var(--admin-success, #16a34a);
   font-size: var(--admin-font-size-sm);
   font-weight: 600;
   line-height: 1.25;
-}
-
-/* Обёртка формы «Провести оплату» в модалке — без accent-карточки вкладки оплат */
-.paymentsHubConductFormWrap {
-  background: transparent;
-  border: none;
-  margin: 0;
-  padding: 0;
 }
 
 /* Поля как на бланке замера (MeasurementFormPage .blankSheet + .blankMetaGrid) */
@@ -1338,40 +1131,6 @@
     auto;
 }
 
-/* Модалка «Оплаты и Управление договором»: поля в 5 колонок — дата |
-   основание | способ | принял оплату | сумма. Кнопки — строкой ниже,
-   прижаты к правому краю модалки. */
-.paymentsFormHubRowCompact.paymentsFormHubRowPayment {
-  grid-template-columns:
-    minmax(7.25rem, 8.25rem)
-    minmax(0, 1fr)
-    minmax(6.75rem, 8rem)
-    minmax(8.5rem, 10rem)
-    minmax(5.25rem, 6.5rem);
-  row-gap: var(--admin-space-sm, 6px);
-}
-
-.paymentsFormHubRowCompact.paymentsFormHubRowPayment .paymentsFormHubSubmitField {
-  grid-column: 1 / -1;
-}
-
-.paymentsFormHubRowPayment .paymentsHubConductActions {
-  justify-content: flex-end;
-}
-
-/* Кнопки на своей строке — распорка-лейбл над ними не нужна. */
-.paymentsFormHubRowPayment .paymentsFormHubSubmitSpacer {
-  display: none;
-}
-
-/* На узких экранах — те же две колонки полей, что у остальных компактных строк
-   (селектор с модификатором специфичнее базового мобильного правила). */
-@media (max-width: 720px) {
-  .paymentsFormHubRowCompact.paymentsFormHubRowPayment {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
 .paymentsFormHubRowCompact > .field {
   flex: unset;
   min-width: 0;
@@ -1537,17 +1296,6 @@
   opacity: 0.55;
 }
 
-.paymentsFormHubHint {
-  flex: 1 1 100%;
-  grid-column: 1 / -1;
-  margin: 0 !important;
-  min-width: 0;
-}
-
-.paymentsFormHubRowCompact .paymentsFormHubHint {
-  flex: unset;
-}
-
 .paymentsFormGrid > .field {
   min-width: 0;
 }
@@ -1642,22 +1390,25 @@
   margin-top: var(--admin-space-sm);
 }
 
+/* Журналы оплат и авансов: та же типографика, что у полей и подписей вкладок пакета (12px). */
 .paymentsTable {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--admin-font-size-sm);
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-primary);
 }
 
 .paymentsTable th,
 .paymentsTable td {
   border: 1px solid var(--admin-border);
-  padding: var(--admin-space-sm) var(--admin-space-md);
+  padding: var(--admin-space-xs) var(--admin-space-md);
   text-align: left;
   vertical-align: top;
 }
 
 .paymentsTable th {
-  background: var(--admin-surface-soft);
+  background: var(--admin-surface-muted);
+  color: var(--admin-text-secondary);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -1686,77 +1437,6 @@
 
 .paymentsTableActionsCell button {
   margin-right: var(--admin-space-xs);
-}
-
-/* «Отменить» в журнале оплат — действие только супер-админа, подсвечиваем как опасное. */
-.paymentsCancelBtn {
-  align-items: center;
-  background: var(--admin-surface, #ffffff);
-  border: 1px solid var(--admin-danger, #dc2626);
-  border-radius: var(--admin-radius-md, 8px);
-  box-sizing: border-box;
-  color: var(--admin-danger, #dc2626);
-  cursor: pointer;
-  display: inline-flex;
-  font-size: var(--admin-font-size-xs, 0.8125rem);
-  font-weight: 600;
-  justify-content: center;
-  line-height: var(--admin-line-height-sm, 1.25);
-  min-height: 1.75rem;
-  padding: var(--admin-space-xs, 2px) var(--admin-space-md, 12px);
-  white-space: nowrap;
-}
-
-.paymentsCancelBtn:not(:disabled):hover {
-  background: var(--admin-danger-bg-soft, #fef2f2);
-}
-
-.paymentsCancelBtn:disabled {
-  border-color: var(--admin-border-strong, #d1d5db);
-  color: var(--admin-text-muted, #6b7280);
-  cursor: not-allowed;
-  opacity: 0.65;
-}
-
-/* «Изменить» в журнале оплат — действие только супер-админа, нейтрально-синий аутлайн. */
-.paymentsEditBtn {
-  align-items: center;
-  background: var(--admin-surface, #ffffff);
-  border: 1px solid var(--admin-info, #2563eb);
-  border-radius: var(--admin-radius-md, 8px);
-  box-sizing: border-box;
-  color: var(--admin-info, #2563eb);
-  cursor: pointer;
-  display: inline-flex;
-  font-size: var(--admin-font-size-xs, 0.8125rem);
-  font-weight: 600;
-  justify-content: center;
-  line-height: var(--admin-line-height-sm, 1.25);
-  min-height: 1.75rem;
-  padding: var(--admin-space-xs, 2px) var(--admin-space-md, 12px);
-  white-space: nowrap;
-}
-
-.paymentsEditBtn:not(:disabled):hover {
-  background: var(--admin-info-bg-soft, #eff6ff);
-}
-
-.paymentsEditBtn:disabled {
-  border-color: var(--admin-border-strong, #d1d5db);
-  color: var(--admin-text-muted, #6b7280);
-  cursor: not-allowed;
-  opacity: 0.65;
-}
-
-/* Модалка «Изменить проведённую оплату» */
-.paymentsEditModal .paymentsFormGrid {
-  margin-top: var(--admin-space-sm);
-}
-
-.paymentsEditModalFieldError {
-  color: var(--admin-danger, #dc2626);
-  font-size: var(--admin-font-size-xs, 0.8125rem);
-  margin: var(--admin-space-2xs, 2px) 0 0;
 }
 
 .workScopeSplitModalForm [data-modal-form-hint],
@@ -2344,27 +2024,4 @@
   font-weight: 500;
   background: transparent;
   color: var(--admin-text-muted);
-}
-
-/* Фон карточек «Данные» = .blankSheet замера (только светлая / только тёмная, без !important) */
-html[data-theme='light'] .packageDataTabDense .sectionCard.packageDataBlankSheet {
-  border: 1px solid var(--admin-info-border-soft, #bfdbfe);
-  border-radius: var(--admin-radius-md);
-  background: linear-gradient(
-    180deg,
-    var(--admin-info-bg-soft, #eff6ff) 0%,
-    var(--admin-surface-soft, #f8fafc) 100%
-  );
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .packageDataTabDense
-  .sectionCard.packageDataBlankSheet {
-  border-color: var(--admin-info-light);
-  border-radius: var(--admin-radius-md);
-  background: linear-gradient(
-    180deg,
-    var(--admin-overlay-color-136) 0%,
-    var(--admin-overlay-color-021) 100%
-  );
 }

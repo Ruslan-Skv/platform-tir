@@ -2,16 +2,15 @@
 
 import { Fragment } from 'react';
 
-import crmDetailStyles from '@/views/admin/CRM/Customers/modals/CrmCustomerDetailModal.module.css';
-
 import cdBase from '../../../../styles/base.module.css';
-import cdDataTab from '../../../../styles/data-tab.module.css';
 import cdEstimateTab from '../../../../styles/estimate-tab.module.css';
 import cdProduct from '../../../../styles/product-package.module.css';
 import cdTemplates from '../../../../styles/templates-library.module.css';
 import { isFurnitureLikePackageKind } from '../../../config';
 import { isProductDirectionPackageKind } from '../../../config/productDirectionPackageKind';
 import { resolveContractDiscount } from '../../form/packageContractDiscount';
+import hubStyles from '../hubModal/PackageHubModal.module.css';
+import { HUB_SECTION_HEAD, HUB_SECTION_TITLE } from '../hubModal/packageHubModalStyles';
 import {
   formatContractMoneyFieldRaw,
   formatHubDiscountCell,
@@ -94,171 +93,164 @@ export function PackageContractPaymentsHubSummarySection({
   if (isHubSummaryLayout) {
     return (
       <>
-        <h3 className={`${crmDetailStyles.linkedSectionTitle} ${cdBase.paymentsHubBlockTitle}`}>
-          Сводка по договору
-        </h3>
-        <div
-          className={`${cdTemplates.sectionCard} ${cdBase.paymentsPreFormSummaryCard} ${cdBase.paymentsBlockAccentSummary} ${cdBase.paymentsHubCompactCard}`}
-        >
-          <div className={cdBase.paymentsTableWrap}>
-            <table className={`${cdBase.paymentsTable} ${cdBase.paymentsHubSummaryTable}`}>
-              <thead>
-                <tr>
-                  <th></th>
-                  <th className={cdBase.paymentsHubSummaryNumCol}>Скидка</th>
-                  <th className={cdBase.paymentsHubSummaryNumCol}>Стоимость</th>
-                  <th className={cdBase.paymentsHubSummaryNumCol}>Рекоменд. предопл.</th>
-                  <th className={cdBase.paymentsHubSummaryNumCol}>Оплачено</th>
-                  <th className={cdBase.paymentsHubSummaryNumCol}>Остаток</th>
-                </tr>
-              </thead>
-              <tbody>
-                {isProductDirectionPackageKind(packageKind) && windowsCostBreakdown ? (
-                  <>
-                    <tr>
-                      <td>Изделия (спецификация)</td>
-                      <td className={cdBase.paymentsHubSummaryNumCol}>—</td>
-                      <td className={cdBase.paymentsHubSummaryNumCol}>
-                        {formatMoneyRub(windowsCostBreakdown.productsAmount)}
-                      </td>
-                      <td
-                        className={`${cdBase.paymentsHubSummaryNumCol} ${cdBase.paymentsHubSummaryRecommendedCol}`}
-                      >
-                        {renderHubRecommendedPrepayment(windowsCostBreakdown.productsAmount)}
-                      </td>
-                      <td className={cdBase.paymentsHubSummaryNumCol}>—</td>
-                      <td className={cdBase.paymentsHubSummaryNumCol}>—</td>
-                    </tr>
-                    <tr>
-                      <td>Работы (счёт-заказ)</td>
-                      <td className={cdBase.paymentsHubSummaryNumCol}>
-                        {formatHubDiscountCell(paymentsContractDiscountPct)}
-                      </td>
-                      <td className={cdBase.paymentsHubSummaryNumCol}>
-                        {formatMoneyRub(windowsCostBreakdown.worksAmount)}
-                      </td>
-                      <td
-                        className={`${cdBase.paymentsHubSummaryNumCol} ${cdBase.paymentsHubSummaryRecommendedCol}`}
-                      >
-                        {renderHubRecommendedPrepayment(windowsCostBreakdown.worksAmount)}
-                      </td>
-                      <td className={cdBase.paymentsHubSummaryNumCol}>—</td>
-                      <td className={cdBase.paymentsHubSummaryNumCol}>—</td>
-                    </tr>
-                  </>
-                ) : isFurnitureLikePackageKind(packageKind) &&
-                  (payableBreakdown.furnitureLegs?.length ?? 0) > 0 ? (
-                  payableBreakdown.furnitureLegs!.map((leg) => {
-                    const paidRub = paidAllocations.byFurnitureLeg?.get(leg.legId) ?? 0;
-                    return (
-                      <tr key={`pay_hub_furniture_${leg.legId}`}>
-                        <td>{leg.label}</td>
-                        <td className={cdBase.paymentsHubSummaryNumCol}>—</td>
-                        <td className={cdBase.paymentsHubSummaryNumCol}>
-                          {formatMoneyRub(leg.totalRub)}
-                        </td>
-                        <td
-                          className={`${cdBase.paymentsHubSummaryNumCol} ${cdBase.paymentsHubSummaryRecommendedCol}`}
-                        >
-                          {formatMoneyRub(leg.recommendedPrepaymentRub)}
-                        </td>
-                        <td className={cdBase.paymentsHubSummaryNumCol}>
-                          {loading ? '…' : renderHubPaidValue(paidRub, leg.totalRub)}
-                        </td>
-                        <td className={cdBase.paymentsHubSummaryNumCol}>
-                          {loading ? '…' : renderHubRemainderValue(paidRub, leg.totalRub)}
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
+        <div className={HUB_SECTION_HEAD}>
+          <h3 className={HUB_SECTION_TITLE}>Сводка по договору</h3>
+        </div>
+        <div className={`${cdBase.paymentsTableWrap} ${hubStyles.panelTableWrap}`}>
+          <table className={`${cdBase.paymentsTable} ${cdBase.paymentsHubSummaryTable}`}>
+            <thead>
+              <tr>
+                <th></th>
+                <th className={cdBase.paymentsHubSummaryNumCol}>Скидка</th>
+                <th className={cdBase.paymentsHubSummaryNumCol}>Стоимость</th>
+                <th className={cdBase.paymentsHubSummaryNumCol}>Рекоменд. предопл.</th>
+                <th className={cdBase.paymentsHubSummaryNumCol}>Оплачено</th>
+                <th className={cdBase.paymentsHubSummaryNumCol}>Остаток</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isProductDirectionPackageKind(packageKind) && windowsCostBreakdown ? (
+                <>
                   <tr>
-                    <td>Договор</td>
+                    <td>Изделия (спецификация)</td>
+                    <td className={cdBase.paymentsHubSummaryNumCol}>—</td>
                     <td className={cdBase.paymentsHubSummaryNumCol}>
-                      {formatHubDiscountCellWithAmount(
-                        paymentsContractDiscountPct,
-                        resolveContractDiscount(form).amountRub
-                      )}
-                    </td>
-                    <td className={cdBase.paymentsHubSummaryNumCol}>
-                      {formatContractMoneyFieldRaw(form.contract.totalAmount) ||
-                        formatMoneyRub(payableBreakdown.mainContractRub)}
+                      {formatMoneyRub(windowsCostBreakdown.productsAmount)}
                     </td>
                     <td
                       className={`${cdBase.paymentsHubSummaryNumCol} ${cdBase.paymentsHubSummaryRecommendedCol}`}
                     >
-                      {formatContractMoneyFieldRaw(form.contract.recommendedPrepayment) || '—'}
+                      {renderHubRecommendedPrepayment(windowsCostBreakdown.productsAmount)}
                     </td>
-                    <td className={cdBase.paymentsHubSummaryNumCol}>
-                      {loading
-                        ? '…'
-                        : renderHubPaidValue(coverage.mainCoveredRub, coverage.effectiveMainRub)}
-                    </td>
-                    <td className={cdBase.paymentsHubSummaryNumCol}>
-                      {loading
-                        ? '…'
-                        : renderHubRemainderValue(
-                            coverage.mainCoveredRub,
-                            coverage.effectiveMainRub
-                          )}
-                    </td>
+                    <td className={cdBase.paymentsHubSummaryNumCol}>—</td>
+                    <td className={cdBase.paymentsHubSummaryNumCol}>—</td>
                   </tr>
-                )}
-                {addendumPaymentSummaries
-                  .filter((row) => row.hasData)
-                  .map((row) => {
-                    const cov = coverage.addendums.find((c) => c.slotIndex1 === row.num);
-                    return (
-                      <tr key={`pay_hub_ds_${row.num}`}>
-                        <td>Д/с №{row.num}</td>
-                        <td className={cdBase.paymentsHubSummaryNumCol}>
-                          {formatHubDiscountCellWithAmount(row.discountPct, row.discountAmountRub)}
-                        </td>
-                        <td className={cdBase.paymentsHubSummaryNumCol}>
-                          {row.costStr ? `${row.costStr} ₽` : formatMoneyRub(cov?.totalRub ?? null)}
-                        </td>
-                        <td
-                          className={`${cdBase.paymentsHubSummaryNumCol} ${cdBase.paymentsHubSummaryRecommendedCol}`}
-                        >
-                          {row.rec100 ? `${row.rec100} ₽` : '—'}
-                        </td>
-                        <td className={cdBase.paymentsHubSummaryNumCol}>
-                          {loading
-                            ? '…'
-                            : cov?.reducesContract
-                              ? '—'
-                              : renderHubPaidValue(cov?.coveredRub ?? 0, cov?.payableRub ?? null)}
-                        </td>
-                        <td className={cdBase.paymentsHubSummaryNumCol}>
-                          {loading
-                            ? '…'
-                            : cov?.reducesContract
-                              ? '—'
-                              : renderHubRemainderValue(
-                                  cov?.coveredRub ?? 0,
-                                  cov?.payableRub ?? null
-                                )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                <tr className={cdBase.paymentsHubSummaryFooterRow}>
-                  <td>Итого</td>
-                  <td className={cdBase.paymentsHubSummaryNumCol}>—</td>
+                  <tr>
+                    <td>Работы (счёт-заказ)</td>
+                    <td className={cdBase.paymentsHubSummaryNumCol}>
+                      {formatHubDiscountCell(paymentsContractDiscountPct)}
+                    </td>
+                    <td className={cdBase.paymentsHubSummaryNumCol}>
+                      {formatMoneyRub(windowsCostBreakdown.worksAmount)}
+                    </td>
+                    <td
+                      className={`${cdBase.paymentsHubSummaryNumCol} ${cdBase.paymentsHubSummaryRecommendedCol}`}
+                    >
+                      {renderHubRecommendedPrepayment(windowsCostBreakdown.worksAmount)}
+                    </td>
+                    <td className={cdBase.paymentsHubSummaryNumCol}>—</td>
+                    <td className={cdBase.paymentsHubSummaryNumCol}>—</td>
+                  </tr>
+                </>
+              ) : isFurnitureLikePackageKind(packageKind) &&
+                (payableBreakdown.furnitureLegs?.length ?? 0) > 0 ? (
+                payableBreakdown.furnitureLegs!.map((leg) => {
+                  const paidRub = paidAllocations.byFurnitureLeg?.get(leg.legId) ?? 0;
+                  return (
+                    <tr key={`pay_hub_furniture_${leg.legId}`}>
+                      <td>{leg.label}</td>
+                      <td className={cdBase.paymentsHubSummaryNumCol}>—</td>
+                      <td className={cdBase.paymentsHubSummaryNumCol}>
+                        {formatMoneyRub(leg.totalRub)}
+                      </td>
+                      <td
+                        className={`${cdBase.paymentsHubSummaryNumCol} ${cdBase.paymentsHubSummaryRecommendedCol}`}
+                      >
+                        {formatMoneyRub(leg.recommendedPrepaymentRub)}
+                      </td>
+                      <td className={cdBase.paymentsHubSummaryNumCol}>
+                        {loading ? '…' : renderHubPaidValue(paidRub, leg.totalRub)}
+                      </td>
+                      <td className={cdBase.paymentsHubSummaryNumCol}>
+                        {loading ? '…' : renderHubRemainderValue(paidRub, leg.totalRub)}
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td>Договор</td>
                   <td className={cdBase.paymentsHubSummaryNumCol}>
-                    {formatMoneyRub(payableBreakdown.grandTotalRub)}
+                    {formatHubDiscountCellWithAmount(
+                      paymentsContractDiscountPct,
+                      resolveContractDiscount(form).amountRub
+                    )}
                   </td>
-                  <td className={cdBase.paymentsHubSummaryNumCol}>—</td>
                   <td className={cdBase.paymentsHubSummaryNumCol}>
-                    {loading ? '…' : renderHubPaidValue(journalPaidRub, grandTotalRub)}
+                    {formatContractMoneyFieldRaw(form.contract.totalAmount) ||
+                      formatMoneyRub(payableBreakdown.mainContractRub)}
+                  </td>
+                  <td
+                    className={`${cdBase.paymentsHubSummaryNumCol} ${cdBase.paymentsHubSummaryRecommendedCol}`}
+                  >
+                    {formatContractMoneyFieldRaw(form.contract.recommendedPrepayment) || '—'}
                   </td>
                   <td className={cdBase.paymentsHubSummaryNumCol}>
-                    {loading ? '…' : renderHubRemainderValue(journalPaidRub, grandTotalRub)}
+                    {loading
+                      ? '…'
+                      : renderHubPaidValue(coverage.mainCoveredRub, coverage.effectiveMainRub)}
+                  </td>
+                  <td className={cdBase.paymentsHubSummaryNumCol}>
+                    {loading
+                      ? '…'
+                      : renderHubRemainderValue(coverage.mainCoveredRub, coverage.effectiveMainRub)}
                   </td>
                 </tr>
-              </tbody>
-            </table>
-          </div>
+              )}
+              {addendumPaymentSummaries
+                .filter((row) => row.hasData)
+                .map((row) => {
+                  const cov = coverage.addendums.find((c) => c.slotIndex1 === row.num);
+                  return (
+                    <tr key={`pay_hub_ds_${row.num}`}>
+                      <td>Д/с №{row.num}</td>
+                      <td className={cdBase.paymentsHubSummaryNumCol}>
+                        {formatHubDiscountCellWithAmount(row.discountPct, row.discountAmountRub)}
+                      </td>
+                      <td className={cdBase.paymentsHubSummaryNumCol}>
+                        {row.costStr ? `${row.costStr} ₽` : formatMoneyRub(cov?.totalRub ?? null)}
+                      </td>
+                      <td
+                        className={`${cdBase.paymentsHubSummaryNumCol} ${cdBase.paymentsHubSummaryRecommendedCol}`}
+                      >
+                        {row.rec100 ? `${row.rec100} ₽` : '—'}
+                      </td>
+                      <td className={cdBase.paymentsHubSummaryNumCol}>
+                        {loading
+                          ? '…'
+                          : cov?.reducesContract
+                            ? '—'
+                            : renderHubPaidValue(cov?.coveredRub ?? 0, cov?.payableRub ?? null)}
+                      </td>
+                      <td className={cdBase.paymentsHubSummaryNumCol}>
+                        {loading
+                          ? '…'
+                          : cov?.reducesContract
+                            ? '—'
+                            : renderHubRemainderValue(
+                                cov?.coveredRub ?? 0,
+                                cov?.payableRub ?? null
+                              )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              <tr className={cdBase.paymentsHubSummaryFooterRow}>
+                <td>Итого</td>
+                <td className={cdBase.paymentsHubSummaryNumCol}>—</td>
+                <td className={cdBase.paymentsHubSummaryNumCol}>
+                  {formatMoneyRub(payableBreakdown.grandTotalRub)}
+                </td>
+                <td className={cdBase.paymentsHubSummaryNumCol}>—</td>
+                <td className={cdBase.paymentsHubSummaryNumCol}>
+                  {loading ? '…' : renderHubPaidValue(journalPaidRub, grandTotalRub)}
+                </td>
+                <td className={cdBase.paymentsHubSummaryNumCol}>
+                  {loading ? '…' : renderHubRemainderValue(journalPaidRub, grandTotalRub)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </>
     );
@@ -271,7 +263,7 @@ export function PackageContractPaymentsHubSummarySection({
       >
         <h3 className={cdBase.sectionTitle}>Договор</h3>
         <div className={cdEstimateTab.paymentsContractMoneyRow}>
-          <div className={`${cdBase.field} ${cdDataTab.contractInlineField}`}>
+          <div className={`${cdBase.field}`}>
             <label htmlFor="pay_tab_cta">Стоимость договора</label>
             <input
               id="pay_tab_cta"
@@ -280,7 +272,7 @@ export function PackageContractPaymentsHubSummarySection({
               className={cdEstimateTab.autoFilledInput}
             />
           </div>
-          <div className={`${cdBase.field} ${cdDataTab.contractInlineField}`}>
+          <div className={`${cdBase.field}`}>
             <label htmlFor="pay_tab_crp">Рекомендованная предоплата (70%)</label>
             <input
               id="pay_tab_crp"
@@ -299,7 +291,7 @@ export function PackageContractPaymentsHubSummarySection({
         >
           <h3 className={cdBase.sectionTitle}>Д/с №{row.num}</h3>
           <div className={cdEstimateTab.paymentsContractMoneyRow}>
-            <div className={`${cdBase.field} ${cdDataTab.contractInlineField}`}>
+            <div className={`${cdBase.field}`}>
               <label htmlFor={`pay_tab_ds_cost_${row.num}`}>Стоимость</label>
               <input
                 id={`pay_tab_ds_cost_${row.num}`}
@@ -308,7 +300,7 @@ export function PackageContractPaymentsHubSummarySection({
                 className={cdEstimateTab.autoFilledInput}
               />
             </div>
-            <div className={`${cdBase.field} ${cdDataTab.contractInlineField}`}>
+            <div className={`${cdBase.field}`}>
               <label htmlFor={`pay_tab_ds_rec_${row.num}`}>Рекомендованная оплата (100%)</label>
               <input
                 id={`pay_tab_ds_rec_${row.num}`}

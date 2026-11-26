@@ -1,0 +1,159 @@
+/* Co-located: анкеты в модалках («Анкеты договора», анкета карточки CRM). */
+
+/* Тело модалки анкеты: сообщения и карточка — столбиком с отбивкой. */
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-md);
+}
+
+/* Карточка анкеты: шапка, белые панели разделов и лист предпросмотра — с равной отбивкой. */
+.questionnaireCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-md);
+}
+
+/* Сетка флажков анкеты («Откуда узнали о нас?», «Почему выбрали…», «Что ещё понадобится»). */
+.checksGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: var(--admin-space-xs) var(--admin-space-md);
+}
+
+/* Справка из карточки пакета («Из карточки пакета: …», «Адрес: …»). */
+.summaryList {
+  display: grid;
+  gap: var(--admin-space-2xs);
+  margin: 0;
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface-muted);
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
+}
+
+.summaryList > div {
+  display: flex;
+  gap: var(--admin-space-xs);
+  min-width: 0;
+}
+
+.summaryList dt {
+  flex-shrink: 0;
+  color: var(--admin-text-muted);
+}
+
+.summaryList dd {
+  margin: 0;
+  color: var(--admin-text-primary);
+  overflow-wrap: anywhere;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .summaryList {
+  background: rgb(17 24 39 / 60%);
+  border-color: var(--admin-border-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .summaryList dt {
+  color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .summaryList dd {
+  color: var(--admin-text-primary);
+}
+
+/* Оценки после работ: вопрос слева, шкала справа; между вопросами — тонкий разделитель. */
+.ratingRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-xs) var(--admin-space-lg);
+  padding: var(--admin-space-sm) 0;
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.ratingRow:last-of-type {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.ratingRow:first-of-type {
+  padding-top: 0;
+}
+
+.ratingQuestion {
+  flex: 1 1 16rem;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  line-height: var(--admin-line-height-sm);
+  color: var(--admin-text-secondary);
+}
+
+/* Подзаголовок группы вопросов («4. Оцените пожалуйста работу наших мастеров:»).
+   Разделитель над ним — нижняя линия предыдущего вопроса. */
+.ratingGroupTitle {
+  margin: var(--admin-space-md) 0 0;
+  padding-top: var(--admin-space-md);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  line-height: var(--admin-line-height-sm);
+  color: var(--admin-text-secondary);
+}
+
+.ratingScale {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-xs) var(--admin-space-md);
+}
+
+.ratingOption {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-space-xs);
+  margin: 0;
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ratingOption input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--admin-info);
+  cursor: pointer;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .ratingRow,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .ratingGroupTitle {
+  border-color: var(--admin-border-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .ratingQuestion,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .ratingGroupTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .ratingOption {
+  color: var(--admin-text-secondary);
+}
+
+/* Пара полей «дата | подпись» в одну строку; на узком экране — столбиком. */
+.signFieldsRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--admin-space-sm) var(--admin-space-lg);
+}
+
+@media (max-width: 620px) {
+  .signFieldsRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

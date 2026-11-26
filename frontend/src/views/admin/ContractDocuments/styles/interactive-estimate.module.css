@@ -87,64 +87,6 @@
   color: #fff;
 }
 
-.postWorkQ2Header {
-  text-align: center;
-}
-
-.postWorkQ2Header .sectionTitle {
-  margin-bottom: var(--admin-space-xs, 4px);
-}
-
-.postWorkQ2Header .hint {
-  margin-top: 0;
-  margin-bottom: 0;
-}
-
-.postWorkQ2RatingRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 10px 16px;
-  padding: var(--admin-space-lg) var(--admin-space-0);
-  border-bottom: 1px solid var(--admin-border);
-}
-
-.postWorkQ2RatingRow:last-of-type {
-  border-bottom: none;
-}
-
-.postWorkQ2RatingQuestion {
-  flex: 1 1 220px;
-  min-width: 0;
-  font-size: var(--admin-font-size-md);
-  font-weight: 600;
-  color: var(--admin-text-secondary);
-  margin: 0;
-  line-height: var(--admin-line-height-base);
-}
-
-.postWorkQ2RatingScale {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 12px;
-  flex-shrink: 0;
-}
-
-.postWorkQ2RatingOption {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--admin-space-xs);
-  font-size: var(--admin-font-size-md);
-  color: var(--admin-text-secondary);
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.postWorkQ2RatingOption input {
-  margin: 0;
-}
-
 /* --- dark theme --- */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .interactiveFinalEstimateTab .hint {
   color: rgba(243, 244, 246, 0.9);

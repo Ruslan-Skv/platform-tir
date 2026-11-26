@@ -10,6 +10,12 @@ import {
   defaultPackageFormData,
 } from '@/views/admin/ContractDocuments/packages/platform/form/packageForm';
 import { PackageManagerQuestionnaire1Tab } from '@/views/admin/ContractDocuments/packages/platform/hub/questionnaires/PackageManagerQuestionnaire1Tab';
+import {
+  Q_CARD,
+  Q_FORM_GRID,
+  Q_MODAL_BODY,
+  Q_ROOT,
+} from '@/views/admin/ContractDocuments/packages/platform/hub/questionnaires/managerQuestionnairePanelStyles';
 import { mergePackageFormFromCrmCustomerDetail } from '@/views/admin/ContractDocuments/packages/platform/questionnaires/applyCrmContractToForm';
 import {
   persistManagerQuestionnaire1ToCrmCustomer,
@@ -174,21 +180,36 @@ export function CrmCustomerManagerQuestionnaire1Modal({
       {loading ? <p data-modal-form-hint>Загрузка…</p> : null}
       {error ? <p data-modal-form-error>{error}</p> : null}
       {!loading && !error ? (
-        <div data-modal-form data-modal-density="compact">
-          <p data-modal-form-hint style={{ marginTop: 0 }}>
+        <div className={Q_MODAL_BODY}>
+          <p data-modal-form-hint>
             Общая анкета клиента: изменения сохраняются в карточке CRM и автоматически подставляются
             во все договоры этого заказчика. Поля можно редактировать в любое время.
           </p>
-          {saving ? <p data-modal-form-hint>Сохранение…</p> : null}
-          {saveError ? <p data-modal-form-error>{saveError}</p> : null}
-          <PackageManagerQuestionnaire1Tab
-            form={formForTab}
-            onPatch={onPatch}
-            onToggleTrafficSource={onToggleTrafficSource}
-            onToggleWhyChosen={onToggleWhyChosen}
-            onToggleClientNeed={onToggleClientNeed}
-            syncSourceLabel="crm"
-          />
+          {saving ? (
+            <p data-modal-form-hint role="status">
+              Сохранение…
+            </p>
+          ) : null}
+          {saveError ? (
+            <p data-modal-form-error role="alert">
+              {saveError}
+            </p>
+          ) : null}
+          {/* Та же карточка анкеты, что в модалке «Анкеты договора» пакета документов. */}
+          <div className={Q_ROOT}>
+            <div className={Q_FORM_GRID}>
+              <div className={Q_CARD}>
+                <PackageManagerQuestionnaire1Tab
+                  form={formForTab}
+                  onPatch={onPatch}
+                  onToggleTrafficSource={onToggleTrafficSource}
+                  onToggleWhyChosen={onToggleWhyChosen}
+                  onToggleClientNeed={onToggleClientNeed}
+                  syncSourceLabel="crm"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       ) : null}
     </Modal>

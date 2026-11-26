@@ -4,6 +4,7 @@ import { BanknotesIcon } from '@heroicons/react/24/outline';
 
 import { isProductDirectionPackageKind } from '../../../config/productDirectionPackageKind';
 import hubStyles from '../hubModal/PackageHubModal.module.css';
+import { HUB_BTN_PRIMARY, HUB_BTN_SECONDARY } from '../hubModal/packageHubModalStyles';
 import type { PackageHubState } from '../hubModal/usePackageHub';
 import type {
   PackageContractPipelineModel,
@@ -52,7 +53,7 @@ export function PackagePipelineStepCard({
           <div className={hubStyles.pipelineStepActions}>
             <button
               type="button"
-              data-modal-btn="secondary"
+              className={HUB_BTN_SECONDARY}
               disabled={actionsDisabled}
               title={actionsTitle}
               onClick={() => {
@@ -71,7 +72,7 @@ export function PackagePipelineStepCard({
                 <button
                   data-admin-mutation
                   type="button"
-                  data-modal-btn="primary"
+                  className={HUB_BTN_PRIMARY}
                   disabled={actionsDisabled || needsEstimate}
                   title={
                     needsEstimate
@@ -103,7 +104,7 @@ export function PackagePipelineStepCard({
             <button
               data-admin-mutation
               type="button"
-              data-modal-btn="secondary"
+              className={HUB_BTN_SECONDARY}
               disabled={hub.savingPackageStatus}
               onClick={() => void hub.confirmRevertContractConcluded()}
             >
@@ -149,7 +150,7 @@ export function PackagePipelineStepCard({
                 {card.canSign ? (
                   <button
                     type="button"
-                    data-modal-btn="secondary"
+                    className={HUB_BTN_SECONDARY}
                     disabled={actionsDisabled}
                     title={actionsTitle}
                     onClick={() => void hub.markAddendumSlotSigned(card.slotIndex0)}
@@ -161,7 +162,7 @@ export function PackagePipelineStepCard({
                   <div className={hubStyles.pipelineRevertBlock}>
                     <button
                       type="button"
-                      data-modal-btn="secondary"
+                      className={HUB_BTN_SECONDARY}
                       disabled={hub.savingPackageStatus}
                       onClick={() => void hub.unmarkAddendumSlotSigned(card.slotIndex0)}
                     >
@@ -179,7 +180,7 @@ export function PackagePipelineStepCard({
                 !card.canUnmarkSigned ? (
                   <button
                     type="button"
-                    data-modal-btn="secondary"
+                    className={HUB_BTN_SECONDARY}
                     disabled={actionsDisabled || hub.revertAddendumBusy}
                     title={
                       actionsTitle ??
@@ -235,8 +236,7 @@ export function PackagePipelineStepCard({
               {onOpenPaymentsJournal ? (
                 <button
                   type="button"
-                  data-modal-btn="secondary"
-                  className={hubStyles.pipelineJournalBtn}
+                  className={`${HUB_BTN_SECONDARY} ${hubStyles.pipelineJournalBtn}`}
                   onClick={onOpenPaymentsJournal}
                 >
                   <BanknotesIcon width={18} height={18} aria-hidden />
@@ -296,7 +296,7 @@ export function PackagePipelineStepCard({
           <div className={hubStyles.pipelineStepActions}>
             <button
               type="button"
-              data-modal-btn="primary"
+              className={HUB_BTN_PRIMARY}
               disabled={actionsDisabled || !pipeline.workStartPaymentReady}
               title={
                 !pipeline.workStartPaymentReady
@@ -319,7 +319,7 @@ export function PackagePipelineStepCard({
           <div className={hubStyles.pipelineStepActions}>
             <button
               type="button"
-              data-modal-btn="primary"
+              className={HUB_BTN_PRIMARY}
               disabled={actionsDisabled || !pipeline.allPaymentsComplete}
               title={
                 !pipeline.allPaymentsComplete
@@ -347,7 +347,7 @@ export function PackagePipelineStepCard({
           <div className={hubStyles.pipelineStepActionsSecondary}>
             <button
               type="button"
-              data-modal-btn="secondary"
+              className={HUB_BTN_SECONDARY}
               onClick={() => hub.setActPhotosModalOpen(true)}
             >
               Фото актов

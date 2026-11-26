@@ -6,14 +6,20 @@ import cdDocPreview from '../../../../styles/documents-preview.module.css';
 import cdEstimatesList from '../../../../styles/estimates-list.module.css';
 import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
 import { packageKindUiLabel } from '../../../config';
+import {
+  PACKAGE_TAB_BTN,
+  PACKAGE_TAB_BTN_SECONDARY,
+  PACKAGE_TAB_CARD,
+  PACKAGE_TAB_HEAD_ROW,
+  PACKAGE_TAB_HEAD_ROW_ACTIONS,
+  PACKAGE_TAB_TITLE,
+} from '../../ui/packageTabClassNames';
 import { PackageInteractiveInstallerPicker } from './PackageInteractiveInstallerPicker';
 import { usePackageWorkOrderHub } from './PackageWorkOrderHubContext';
 import {
   WO_FORM_GRID,
   WO_INTERACTIVE_TAB,
   WO_SECTION_CARD,
-  WO_SECTION_TITLE,
-  WO_SECTION_TITLE_MAIN,
   interactiveEstimateRowClassName,
   woPanelRootClass,
 } from './packageWorkOrdersHubPanelStyles';
@@ -68,15 +74,15 @@ export function PackageWorkOrdersHubInteractiveEstimatePanel() {
   return (
     <div className={woPanelRootClass(isWindowsPackage, WO_INTERACTIVE_TAB)}>
       <div className={WO_FORM_GRID}>
-        <div className={WO_SECTION_CARD}>
-          <div className={cdEstimatesList.interactiveEstimateTitleRow}>
-            <h3 className={`${WO_SECTION_TITLE} ${WO_SECTION_TITLE_MAIN}`}>
+        <div className={`${WO_SECTION_CARD} ${PACKAGE_TAB_CARD}`}>
+          <div className={PACKAGE_TAB_HEAD_ROW}>
+            <h3 className={PACKAGE_TAB_TITLE}>
               {isWindowsPackage ? 'Интерактивный счёт-заказ' : 'Интерактивная итоговая смета'}
             </h3>
-            <div className={cdEstimatesList.interactiveEstimateTitleActions}>
+            <div className={PACKAGE_TAB_HEAD_ROW_ACTIONS}>
               <button
                 type="button"
-                className={`${cdWorkspace.secondaryBtn} ${cdEstimatesList.interactiveEstimateAssignBtn}`}
+                className={`${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_SECONDARY}`}
                 disabled={!activeInstallerId || allInteractiveRowKeys.length === 0}
                 onClick={() =>
                   assignInstallerToFinalEstimateRows(allInteractiveRowKeys, activeInstallerId)
@@ -140,7 +146,7 @@ export function PackageWorkOrdersHubInteractiveEstimatePanel() {
                       </p>
                       <button
                         type="button"
-                        className={`${cdWorkspace.secondaryBtn} ${cdEstimatesList.interactiveEstimateAssignBtn}`}
+                        className={`${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_SECONDARY}`}
                         disabled={!activeInstallerId}
                         onClick={() =>
                           assignInstallerToFinalEstimateRows(sectionRowKeys, activeInstallerId)
@@ -166,7 +172,7 @@ export function PackageWorkOrdersHubInteractiveEstimatePanel() {
                       </span>
                       <button
                         type="button"
-                        className={`${cdWorkspace.secondaryBtn} ${cdEstimatesList.interactiveEstimateAssignBtn}`}
+                        className={`${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_SECONDARY}`}
                         disabled={!activeInstallerId}
                         onClick={() =>
                           assignInstallerToFinalEstimateRows(

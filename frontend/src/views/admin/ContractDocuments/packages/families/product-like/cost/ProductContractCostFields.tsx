@@ -1,13 +1,11 @@
 'use client';
 
-import cdBase from '../../../../styles/base.module.css';
-import cdDataTab from '../../../../styles/data-tab.module.css';
-import cdEstimateTab from '../../../../styles/estimate-tab.module.css';
+import {
+  DATA_AUTO_FILLED,
+  DATA_FIELD,
+} from '../../../platform/editor/dataTab/packageDataTabStyles';
 import { formatMoneyWholeGrouped } from '../../../platform/form/moneyWhole';
 import type { ProductContractCostBreakdown } from './productContractCostBreakdown';
-
-const DATA_FIELD = `${cdBase.field} ${cdDataTab.field} ${cdEstimateTab.field}`;
-const DATA_AUTO_FILLED = `${cdBase.autoFilledInput} ${cdDataTab.autoFilledInput} ${cdEstimateTab.autoFilledInput}`;
 
 type ProductContractCostFieldsProps = {
   breakdown: ProductContractCostBreakdown;
@@ -18,9 +16,10 @@ function costFieldValue(amount: number): string {
   return `${Number.isFinite(amount) && amount > 0 ? formatMoneyWholeGrouped(amount) : '0'} руб.`;
 }
 
+/** Поля стоимости пакета изделий: договор, изделия, работы. Раскладку задаёт место вставки. */
 export function ProductContractCostFields({ breakdown }: ProductContractCostFieldsProps) {
   return (
-    <div className={cdDataTab.windowsContractCostStack}>
+    <>
       <div className={DATA_FIELD}>
         <label htmlFor="repair_data_windows_contract_total">Стоимость договора</label>
         <input
@@ -57,6 +56,6 @@ export function ProductContractCostFields({ breakdown }: ProductContractCostFiel
           title="Из вкладки «Счёт-заказ»"
         />
       </div>
-    </div>
+    </>
   );
 }

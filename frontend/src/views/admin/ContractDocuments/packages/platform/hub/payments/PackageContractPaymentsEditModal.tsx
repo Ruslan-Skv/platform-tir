@@ -10,10 +10,7 @@ import {
 import type { MoneyMovementManagerOption } from '@/shared/api/crm/admin-money-movements';
 import { Modal } from '@/shared/ui/Modal';
 
-import cdBase from '../../../../styles/base.module.css';
-import cdEstimateTab from '../../../../styles/estimate-tab.module.css';
-import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
-import cdProduct from '../../../../styles/product-package.module.css';
+import cdHubModals from '../../../../styles/hub-modals.module.css';
 import { PACKAGE_PAYMENT_FORM_LABELS } from '../../payments/packagePaymentFormLabels';
 
 export type PackageContractPaymentsEditModalProps = {
@@ -116,9 +113,10 @@ export function PackageContractPaymentsEditModal({
       title="Изменить проведённую оплату"
       size="md"
       showCloseButton
+      compactOnMobile
     >
-      <div className={cdBase.paymentsEditModal}>
-        <p className={cdProduct.hint}>
+      <div className={cdHubModals.neutralFormShell} data-modal-form data-modal-density="compact">
+        <p data-modal-form-hint style={{ marginTop: 0 }}>
           {isRefund ? 'Запись возврата. ' : ''}
           Менять проведённые оплаты может только супер-админ — для исправления ошибок. После
           сохранения оплаченная сумма и покрытие оснований пересчитаются автоматически.
@@ -126,9 +124,13 @@ export function PackageContractPaymentsEditModal({
             ? ' Сумма возврата хранится положительной, в журнале показывается со знаком минус.'
             : ''}
         </p>
-        {recordedByName ? <p className={cdProduct.hint}>Внёс запись: {recordedByName}</p> : null}
-        <div className={cdBase.paymentsFormGrid}>
-          <div className={cdBase.field}>
+        {recordedByName ? (
+          <p data-modal-form-hint style={{ marginTop: 0 }}>
+            Внёс запись: {recordedByName}
+          </p>
+        ) : null}
+        <div data-modal-form-grid>
+          <div data-modal-form-group>
             <label htmlFor="pay_edit_date">Дата оплаты</label>
             <input
               id="pay_edit_date"
@@ -138,7 +140,7 @@ export function PackageContractPaymentsEditModal({
               onChange={(e) => setDraft((d) => ({ ...d, paymentDate: e.target.value }))}
             />
           </div>
-          <div className={`${cdBase.field} ${cdBase.paymentsAmountField}`}>
+          <div data-modal-form-group>
             <label htmlFor="pay_edit_amount">Сумма, ₽</label>
             <input
               id="pay_edit_amount"
@@ -150,10 +152,12 @@ export function PackageContractPaymentsEditModal({
               onChange={(e) => setDraft((d) => ({ ...d, amount: e.target.value }))}
             />
             {draft.amount.trim() !== '' && !amountValid ? (
-              <p className={cdBase.paymentsEditModalFieldError}>Укажите число больше нуля</p>
+              <p data-modal-form-error role="alert">
+                Укажите число больше нуля
+              </p>
             ) : null}
           </div>
-          <div className={cdBase.field}>
+          <div data-modal-form-group>
             <label htmlFor="pay_edit_form">Способ оплаты</label>
             <select
               id="pay_edit_form"
@@ -174,7 +178,7 @@ export function PackageContractPaymentsEditModal({
             </select>
           </div>
           <div
-            className={cdBase.field}
+            data-modal-form-group
             title="Кто фактически принял деньги от заказчика — по нему считается касса в ДП"
           >
             <label htmlFor="pay_edit_accepted_by">Принял оплату</label>
@@ -191,35 +195,30 @@ export function PackageContractPaymentsEditModal({
               ))}
             </select>
           </div>
-          <div className={`${cdBase.field} ${cdEstimateTab.fieldSpanAll}`}>
-            <label htmlFor="pay_edit_basis">Основание</label>
-            <input
-              id="pay_edit_basis"
-              type="text"
-              value={draft.basis}
-              disabled={saving}
-              placeholder="Напр. Предоплата по договору"
-              onChange={(e) => setDraft((d) => ({ ...d, basis: e.target.value }))}
-            />
-          </div>
         </div>
-        <div className={cdBase.paymentsFormActions}>
+        <div data-modal-form-group>
+          <label htmlFor="pay_edit_basis">Основание</label>
+          <input
+            id="pay_edit_basis"
+            type="text"
+            value={draft.basis}
+            disabled={saving}
+            placeholder="Напр. Предоплата по договору"
+            onChange={(e) => setDraft((d) => ({ ...d, basis: e.target.value }))}
+          />
+        </div>
+        <div data-modal-form-actions>
+          <button type="button" data-modal-btn="secondary" disabled={saving} onClick={onClose}>
+            Отмена
+          </button>
           <button
             data-admin-mutation
             type="button"
-            className={cdWorkspace.primaryBtn}
+            data-modal-btn="primary"
             disabled={saving || !formComplete}
             onClick={handleSave}
           >
             {saving ? 'Сохранение…' : 'Сохранить изменения'}
-          </button>
-          <button
-            type="button"
-            className={cdWorkspace.secondaryBtn}
-            disabled={saving}
-            onClick={onClose}
-          >
-            Отмена
           </button>
         </div>
       </div>

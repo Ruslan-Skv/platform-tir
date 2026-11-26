@@ -2,7 +2,6 @@
 
 import { CrmCustomerSearchPanel } from '@/views/admin/CRM/Customers/modals/CrmCustomerSearchPanel';
 
-import cdDataTab from '../../../../styles/data-tab.module.css';
 import { ProductContractCostFields } from '../../../families/product-like/cost/ProductContractCostFields';
 import { formatContractMoneyFieldRaw } from '../../hub/payments/packageContractPaymentsFormat';
 import { packageCustomerBlockHasContent } from '../../questionnaires/applyCrmContractToForm';
@@ -13,7 +12,7 @@ import {
   CUSTOMER_SEARCH_SLOT,
   DATA_AUTO_FILLED,
   DATA_FIELD,
-  DATA_TOP_BLOCK,
+  DATA_SECTION,
 } from './packageDataTabStyles';
 
 export type PackageDataCustomerSearchColumnProps = Pick<
@@ -30,6 +29,7 @@ export type PackageDataCustomerSearchColumnProps = Pick<
   | 'productContractCostBreakdown'
 >;
 
+/** Колонка заказчика рядом с «Договор и объект»: поиск карточки, связанный замер, стоимость. */
 export function PackageDataCustomerSearchColumn({
   form,
   setForm,
@@ -51,10 +51,10 @@ export function PackageDataCustomerSearchColumn({
   })();
 
   return (
-    <div className={`${DATA_TOP_BLOCK} ${cdDataTab.dataTopBlockCustomerCol}`}>
+    <div className={styles.dataTopBlock}>
       <div
         className={`${CUSTOMER_SEARCH_SLOT} ${
-          signedDocsLocked ? cdDataTab.packageCustomerSearchSlotLocked : ''
+          signedDocsLocked ? styles.customerSearchSlotLocked : ''
         }`}
       >
         <CrmCustomerSearchPanel
@@ -89,20 +89,26 @@ export function PackageDataCustomerSearchColumn({
         }}
       />
       {isProductDirectionPackage && productContractCostBreakdown ? (
-        <ProductContractCostFields breakdown={productContractCostBreakdown} />
+        <div className={DATA_SECTION}>
+          <div className={styles.dataFieldRow}>
+            <ProductContractCostFields breakdown={productContractCostBreakdown} />
+          </div>
+        </div>
       ) : (
-        <div className={`${DATA_FIELD} ${styles.packageDataContractAmountField}`}>
-          <label htmlFor="repair_data_contract_total">Стоимость договора</label>
-          <input
-            id="repair_data_contract_total"
-            type="text"
-            readOnly
-            value={contractTotalDisplay}
-            placeholder="—"
-            autoComplete="off"
-            title="Из вкладки «Смета» (с учётом скидки по договору)"
-            className={DATA_AUTO_FILLED}
-          />
+        <div className={DATA_SECTION}>
+          <div className={DATA_FIELD}>
+            <label htmlFor="repair_data_contract_total">Стоимость договора</label>
+            <input
+              id="repair_data_contract_total"
+              type="text"
+              readOnly
+              value={contractTotalDisplay}
+              placeholder="—"
+              autoComplete="off"
+              title="Из вкладки «Смета» (с учётом скидки по договору)"
+              className={DATA_AUTO_FILLED}
+            />
+          </div>
         </div>
       )}
     </div>

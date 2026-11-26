@@ -1,6 +1,7 @@
 'use client';
 
 import hubStyles from '../hubModal/PackageHubModal.module.css';
+import { HUB_BTN_SECONDARY } from '../hubModal/packageHubModalStyles';
 import type { PackageHubState } from '../hubModal/usePackageHub';
 import type { PackageContractPipelineModel } from './packagePipeline';
 
@@ -26,7 +27,7 @@ export function PackagePipelineRefusalPanel({ hub, pipeline }: PackagePipelineRe
           <button
             data-admin-mutation
             type="button"
-            data-modal-btn="secondary"
+            className={HUB_BTN_SECONDARY}
             disabled={hub.savingPackageStatus}
             onClick={() => hub.setRevertRefusalConfirmOpen(true)}
           >

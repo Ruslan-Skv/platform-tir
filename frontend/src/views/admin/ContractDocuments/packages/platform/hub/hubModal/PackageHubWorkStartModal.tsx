@@ -34,7 +34,7 @@ export function PackageHubWorkStartModal({
       showCloseButton
       compactOnMobile
     >
-      <div data-modal-form data-modal-density="compact">
+      <div className={cdHubModals.neutralFormShell} data-modal-form data-modal-density="compact">
         <p data-modal-form-hint style={{ marginTop: 0 }}>
           {isProductDirectionPackageKind(hub.packageKind)
             ? 'Укажите дату получения предоплаты не менее 70% — с неё начинается отсчёт срока по договору (п. 2.2 и 3.1).'

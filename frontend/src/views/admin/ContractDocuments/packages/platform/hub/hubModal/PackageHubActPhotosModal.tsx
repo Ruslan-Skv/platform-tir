@@ -19,7 +19,7 @@ export function PackageHubActPhotosModal({ hub }: PackageHubActPhotosModalProps)
       showCloseButton
       compactOnMobile
     >
-      <div data-modal-form data-modal-density="compact">
+      <div className={cdHubModals.neutralFormShell} data-modal-form data-modal-density="compact">
         <div className={cdHubModals.packageAttachedActPhotosList}>
           {hub.attachedActPhotos.map((it) => (
             <section key={it.key} className={cdHubModals.packageAttachedActPhotoBlock}>

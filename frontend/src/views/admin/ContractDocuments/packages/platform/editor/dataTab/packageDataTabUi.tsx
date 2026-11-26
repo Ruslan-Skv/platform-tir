@@ -4,8 +4,12 @@ import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 
 import type { CSSProperties } from 'react';
 
-import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
 import cdProduct from '../../../../styles/product-package.module.css';
+import {
+  PACKAGE_TAB_BTN,
+  PACKAGE_TAB_BTN_ICON,
+  PACKAGE_TAB_BTN_SECONDARY,
+} from '../../ui/packageTabClassNames';
 import styles from './PackageDataTab.module.css';
 
 export function PackageTabLockIcon() {
@@ -57,18 +61,14 @@ export function PackageDataPartySectionCollapseButton({
   return (
     <button
       type="button"
-      className={`${cdWorkspace.secondaryBtn} ${styles.packageDataPartySectionCollapseBtn}`}
+      className={`${PACKAGE_TAB_BTN} ${PACKAGE_TAB_BTN_SECONDARY} ${PACKAGE_TAB_BTN_ICON}`}
       aria-expanded={expanded}
       aria-controls={controlsId}
       aria-label={`${actionLabel} блок «${sectionLabel}»`}
       title={actionLabel}
       onClick={onToggle}
     >
-      {expanded ? (
-        <ChevronUpIcon className={styles.packageDataPartySectionCollapseIcon} aria-hidden />
-      ) : (
-        <ChevronDownIcon className={styles.packageDataPartySectionCollapseIcon} aria-hidden />
-      )}
+      {expanded ? <ChevronUpIcon aria-hidden /> : <ChevronDownIcon aria-hidden />}
     </button>
   );
 }

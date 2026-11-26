@@ -30,7 +30,9 @@ export function usePackageContractPaymentsTab({
   const isHubSummaryLayout = layout === 'hub' || layout === 'hub-summary';
   const isHubConductLayout = layout === 'hub' || layout === 'hub-conduct';
   const showConductForm = layout === 'full' || layout === 'hub-conduct' || layout === 'hub';
-  const isHubPartLayout = layout === 'hub-summary' || layout === 'hub-conduct';
+  // Части модалок (сводка, оплата, журнал) лежат на своих карточках — без подложки .blockData.
+  const isHubPartLayout =
+    layout === 'hub-summary' || layout === 'hub-conduct' || layout === 'journal';
 
   const payableBreakdown = useMemo(
     () => computePackagePayableBreakdown(form, packageKind),

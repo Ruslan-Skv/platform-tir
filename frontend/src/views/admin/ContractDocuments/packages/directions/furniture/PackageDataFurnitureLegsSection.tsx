@@ -16,8 +16,14 @@ import type { PackageDataTabProps } from '../../platform/editor/dataTab/PackageD
 import { formatHoldDate, summarizeHolds } from '../../platform/editor/dataTab/contractNumberHoldUi';
 import {
   DATA_AUTO_FILLED,
+  DATA_BTN,
+  DATA_BTN_DANGER,
+  DATA_BTN_SECONDARY,
   DATA_FIELD,
-  DATA_SECTION_CARD,
+  DATA_SECTION,
+  DATA_SECTION_ACTIONS,
+  DATA_SECTION_HEAD,
+  DATA_SECTION_HINT,
   DATA_SECTION_TITLE,
 } from '../../platform/editor/dataTab/packageDataTabStyles';
 import {
@@ -461,50 +467,51 @@ export function PackageDataFurnitureLegsSection({
   const disabledOptionalHint = useMemo(() => 'Включите договор, если он нужен в этом пакете', []);
 
   return (
-    <div className={`${DATA_SECTION_CARD} ${styles.wrap}`}>
-      <h3 className={DATA_SECTION_TITLE}>Договоры пакета «Мебель»</h3>
-      <p className={styles.lead}>
+    <div className={DATA_SECTION}>
+      <div className={DATA_SECTION_HEAD}>
+        <h3 className={DATA_SECTION_TITLE}>Договоры пакета «Мебель»</h3>
+        {!locked && packageId ? (
+          <div className={DATA_SECTION_ACTIONS}>
+            <button
+              type="button"
+              className={`${DATA_BTN} ${DATA_BTN_SECONDARY}`}
+              disabled={reserveBusy || legNumbers.length === 0 || !canReserve}
+              onClick={() => void reserveNumbers()}
+              title={
+                holdInfo
+                  ? `Номера ${holdInfo.numbers.join(', ')} забронированы за этим договором. Бронь снимется автоматически, если договор не будет подписан до ${formatHoldDate(holdInfo.expiresAt)}. Клик — продлить бронь.`
+                  : 'Закрепить номера всех договоров пакета за этим договором на 5 суток'
+              }
+            >
+              {reserveBusy
+                ? 'Бронируем…'
+                : holdInfo
+                  ? `Бронь до ${formatHoldDate(holdInfo.expiresAt)}`
+                  : 'Забронировать номера'}
+            </button>
+            {isSuperAdminRole && holdInfo ? (
+              <button
+                type="button"
+                className={`${DATA_BTN} ${DATA_BTN_DANGER}`}
+                disabled={releaseBusy || reserveBusy}
+                onClick={() => void releaseNumberHolds()}
+                title="Супер-админ: снять брони и освободить номера этого пакета — номера в форме очистятся, и их можно будет забронировать другими договорами"
+              >
+                {releaseBusy ? 'Снимаем…' : 'Снять брони'}
+              </button>
+            ) : null}
+            {reserveError ? (
+              <span className={styles.hintError} title={reserveError}>
+                {reserveError}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+      <p className={DATA_SECTION_HINT}>
         Изготовление оформляется всегда. Монтаж и технику подключайте только при необходимости — у
         каждой ноги свой исполнитель и номер (м / с / т).
       </p>
-
-      {!locked && packageId ? (
-        <div className={styles.reserveRow}>
-          <button
-            type="button"
-            className={styles.reserveBtn}
-            disabled={reserveBusy || legNumbers.length === 0 || !canReserve}
-            onClick={() => void reserveNumbers()}
-            title={
-              holdInfo
-                ? `Номера ${holdInfo.numbers.join(', ')} забронированы за этим договором. Бронь снимется автоматически, если договор не будет подписан до ${formatHoldDate(holdInfo.expiresAt)}. Клик — продлить бронь.`
-                : 'Закрепить номера всех договоров пакета за этим договором на 5 суток'
-            }
-          >
-            {reserveBusy
-              ? 'Бронируем…'
-              : holdInfo
-                ? `Бронь до ${formatHoldDate(holdInfo.expiresAt)}`
-                : 'Забронировать номера'}
-          </button>
-          {isSuperAdminRole && holdInfo ? (
-            <button
-              type="button"
-              className={styles.releaseBtn}
-              disabled={releaseBusy || reserveBusy}
-              onClick={() => void releaseNumberHolds()}
-              title="Супер-админ: снять брони и освободить номера этого пакета — номера в форме очистятся, и их можно будет забронировать другими договорами"
-            >
-              {releaseBusy ? 'Снимаем…' : 'Снять брони'}
-            </button>
-          ) : null}
-          {reserveError ? (
-            <span className={styles.hintError} title={reserveError}>
-              {reserveError}
-            </span>
-          ) : null}
-        </div>
-      ) : null}
 
       <section className={styles.legCard} aria-label={FURNITURE_LEG_LABEL.manufacture}>
         <header className={styles.legHeader}>

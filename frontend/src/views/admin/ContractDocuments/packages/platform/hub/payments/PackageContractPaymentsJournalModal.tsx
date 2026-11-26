@@ -5,6 +5,8 @@ import { Modal } from '@/shared/ui/Modal';
 import crmFormStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
 
 import type { PackageFormData } from '../../form/packageForm';
+import hubStyles from '../hubModal/PackageHubModal.module.css';
+import { HUB_CARD, HUB_FORM_GRID, HUB_ROOT } from '../hubModal/packageHubModalStyles';
 import { PackageContractPaymentsTab } from './PackageContractPaymentsTab';
 
 export type PackageContractPaymentsJournalModalProps = {
@@ -18,6 +20,7 @@ export type PackageContractPaymentsJournalModalProps = {
   onJournalChanged?: () => void;
 };
 
+/** Журнал оплат договора: таблица на карточке модалки (как секции «Оплат и управления»). */
 export function PackageContractPaymentsJournalModal({
   packageId,
   packageKind = 'REPAIR',
@@ -35,17 +38,25 @@ export function PackageContractPaymentsJournalModal({
       title="Журнал оплат"
       size="lg"
       className={crmFormStyles.modalPanel}
+      contentClassName={hubStyles.modalContent}
       showCloseButton
+      compactOnMobile
     >
-      <PackageContractPaymentsTab
-        packageId={packageId}
-        packageKind={packageKind}
-        form={form}
-        layout="journal"
-        onError={onError}
-        onUpdateContract={onUpdateContract}
-        onJournalChanged={onJournalChanged}
-      />
+      <div className={HUB_ROOT}>
+        <div className={HUB_FORM_GRID}>
+          <div className={HUB_CARD}>
+            <PackageContractPaymentsTab
+              packageId={packageId}
+              packageKind={packageKind}
+              form={form}
+              layout="journal"
+              onError={onError}
+              onUpdateContract={onUpdateContract}
+              onJournalChanged={onJournalChanged}
+            />
+          </div>
+        </div>
+      </div>
     </Modal>
   );
 }

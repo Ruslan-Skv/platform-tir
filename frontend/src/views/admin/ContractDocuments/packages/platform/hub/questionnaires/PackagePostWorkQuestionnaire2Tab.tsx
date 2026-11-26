@@ -3,8 +3,6 @@
 import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
 
 import { formatContractDateRuLong } from '../../../../core/contractDateFormat';
-import cdEstimateTab from '../../../../styles/estimate-tab.module.css';
-import cdInteractiveEstimate from '../../../../styles/interactive-estimate.module.css';
 import { isProductDirectionPackageKind } from '../../../config/productDirectionPackageKind';
 import type {
   PackageFormData,
@@ -12,14 +10,16 @@ import type {
   PostWorkSatisfactionRating,
 } from '../../form/packageForm';
 import { POST_WORK_QUESTIONNAIRE2_TRADE_ROWS } from '../../form/packageForm';
+import styles from './PackageQuestionnairesHubPanels.module.css';
 import {
-  PACKAGE_FIELD,
-  PACKAGE_FORM_GRID,
-  PACKAGE_HINT,
-  PACKAGE_SECTION_CARD,
-  PACKAGE_SECTION_FIELDS,
-  PACKAGE_SECTION_TITLE,
-} from '../../ui/packageTabClassNames';
+  Q_FIELD,
+  Q_HEAD,
+  Q_HINT,
+  Q_PANEL,
+  Q_PANEL_HEAD,
+  Q_PANEL_TITLE,
+  Q_TITLE,
+} from './managerQuestionnairePanelStyles';
 
 const SCALE = [5, 4, 3, 2, 1] as const;
 
@@ -43,15 +43,11 @@ function RatingRow({
   onChange: (v: PostWorkSatisfactionRating) => void;
 }) {
   return (
-    <div className={cdInteractiveEstimate.postWorkQ2RatingRow}>
-      <p className={cdInteractiveEstimate.postWorkQ2RatingQuestion}>{label}</p>
-      <div
-        className={cdInteractiveEstimate.postWorkQ2RatingScale}
-        role="radiogroup"
-        aria-label={label}
-      >
+    <div className={styles.ratingRow}>
+      <p className={styles.ratingQuestion}>{label}</p>
+      <div className={styles.ratingScale} role="radiogroup" aria-label={label}>
         {SCALE.map((n) => (
-          <label key={n} className={cdInteractiveEstimate.postWorkQ2RatingOption}>
+          <label key={n} className={styles.ratingOption}>
             <input
               type="radio"
               name={name}
@@ -62,7 +58,7 @@ function RatingRow({
             <span>{n}</span>
           </label>
         ))}
-        <label className={cdInteractiveEstimate.postWorkQ2RatingOption}>
+        <label className={styles.ratingOption}>
           <input
             type="radio"
             name={name}
@@ -77,6 +73,7 @@ function RatingRow({
   );
 }
 
+/** Содержимое анкеты «Оценки после работ»: шапка, оценки, пожелания, дата и подпись. */
 export function PackagePostWorkQuestionnaire2Tab({
   form,
   packageKind,
@@ -87,18 +84,16 @@ export function PackagePostWorkQuestionnaire2Tab({
   const isProductDirectionPackage = isProductDirectionPackageKind(packageKind);
 
   return (
-    <div className={PACKAGE_FORM_GRID}>
-      <div
-        className={`${PACKAGE_SECTION_CARD} ${cdEstimateTab.fieldSpanAll} ${cdInteractiveEstimate.postWorkQ2Header}`}
-      >
-        <h3 className={PACKAGE_SECTION_TITLE}>Анкета (оценки после работ)</h3>
-        <p className={PACKAGE_HINT}>
+    <>
+      <div className={Q_HEAD}>
+        <h3 className={Q_TITLE}>Анкета (оценки после работ)</h3>
+        <div className={Q_HINT}>
           <strong>к договору №</strong> {contract.number.trim() || '—'} <strong>от</strong>{' '}
           {formatContractDateRuLong(contract.date)}
-        </p>
+        </div>
       </div>
 
-      <div className={`${PACKAGE_SECTION_CARD} ${cdEstimateTab.fieldSpanAll}`}>
+      <div className={Q_PANEL}>
         <RatingRow
           name="pw2_company"
           label="1. Оцените пожалуйста работу нашей компании:"
@@ -126,17 +121,7 @@ export function PackagePostWorkQuestionnaire2Tab({
           />
         ) : (
           <>
-            <p
-              className={cdInteractiveEstimate.postWorkQ2RatingQuestion}
-              style={{
-                marginTop: 12,
-                marginBottom: 4,
-                borderTop: '1px solid var(--admin-border)',
-                paddingTop: 12,
-              }}
-            >
-              4. {MASTERS_RATING_QUESTION}
-            </p>
+            <p className={styles.ratingGroupTitle}>4. {MASTERS_RATING_QUESTION}</p>
             {POST_WORK_QUESTIONNAIRE2_TRADE_ROWS.map(({ key, label }) => (
               <RatingRow
                 key={key}
@@ -154,26 +139,28 @@ export function PackagePostWorkQuestionnaire2Tab({
         )}
       </div>
 
-      <div className={`${PACKAGE_SECTION_CARD} ${cdEstimateTab.fieldSpanAll}`}>
-        <h4 className={PACKAGE_SECTION_TITLE}>5. Ваши пожелания</h4>
-        <div className={PACKAGE_SECTION_FIELDS}>
-          <div className={`${PACKAGE_FIELD} ${cdEstimateTab.fieldSpanAll}`}>
-            <label htmlFor="pw2_wishes">Текст</label>
-            <textarea
-              id="pw2_wishes"
-              rows={6}
-              value={q.wishes}
-              onChange={(e) => onPatch({ wishes: e.target.value })}
-              placeholder="Пожелания заказчика"
-            />
-          </div>
+      <div className={Q_PANEL}>
+        <div className={Q_PANEL_HEAD}>
+          <h4 className={Q_PANEL_TITLE}>5. Ваши пожелания</h4>
+        </div>
+        <div className={Q_FIELD}>
+          <label htmlFor="pw2_wishes">Текст</label>
+          <textarea
+            id="pw2_wishes"
+            rows={6}
+            value={q.wishes}
+            onChange={(e) => onPatch({ wishes: e.target.value })}
+            placeholder="Пожелания заказчика"
+          />
         </div>
       </div>
 
-      <div className={`${PACKAGE_SECTION_CARD} ${cdEstimateTab.fieldSpanAll}`}>
-        <h4 className={PACKAGE_SECTION_TITLE}>Дата и подпись</h4>
-        <div className={PACKAGE_SECTION_FIELDS}>
-          <div className={PACKAGE_FIELD}>
+      <div className={Q_PANEL}>
+        <div className={Q_PANEL_HEAD}>
+          <h4 className={Q_PANEL_TITLE}>Дата и подпись</h4>
+        </div>
+        <div className={styles.signFieldsRow}>
+          <div className={Q_FIELD}>
             <label htmlFor="pw2_filled">Дата заполнения (дд.мм.гггг)</label>
             <input
               id="pw2_filled"
@@ -184,7 +171,7 @@ export function PackagePostWorkQuestionnaire2Tab({
               autoComplete="off"
             />
           </div>
-          <div className={PACKAGE_FIELD}>
+          <div className={Q_FIELD}>
             <label htmlFor="pw2_sign">Ваша подпись (ФИО заказчика)</label>
             <input
               id="pw2_sign"
@@ -197,6 +184,6 @@ export function PackagePostWorkQuestionnaire2Tab({
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

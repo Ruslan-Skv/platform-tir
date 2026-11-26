@@ -10,10 +10,7 @@ import {
 import { INSTALLER_ADVANCE_PAYMENT_METHOD_LABELS } from '@/shared/constants/installerAdvancePaymentMethod';
 import { Modal } from '@/shared/ui/Modal';
 
-import cdBase from '../../../../styles/base.module.css';
-import cdEstimateTab from '../../../../styles/estimate-tab.module.css';
-import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
-import cdProduct from '../../../../styles/product-package.module.css';
+import cdHubModals from '../../../../styles/hub-modals.module.css';
 
 export type PackageInstallerAdvanceEditModalOption = {
   installerId: string;
@@ -105,14 +102,15 @@ export function PackageInstallerAdvancesEditModal({
       title="Изменить аванс"
       size="md"
       showCloseButton
+      compactOnMobile
     >
-      <div className={cdBase.paymentsEditModal}>
-        <p className={cdProduct.hint}>
+      <div className={cdHubModals.neutralFormShell} data-modal-form data-modal-density="compact">
+        <p data-modal-form-hint style={{ marginTop: 0 }}>
           Менять и удалять записи авансов может только супер-админ — для исправления ошибок. Итоги
           по мастерам пересчитаются автоматически.
         </p>
-        <div className={cdBase.paymentsFormGrid}>
-          <div className={cdBase.field}>
+        <div data-modal-form-grid>
+          <div data-modal-form-group>
             <label htmlFor="advance_edit_installer">Мастер</label>
             <select
               id="advance_edit_installer"
@@ -133,7 +131,7 @@ export function PackageInstallerAdvancesEditModal({
               ))}
             </select>
           </div>
-          <div className={cdBase.field}>
+          <div data-modal-form-group>
             <label htmlFor="advance_edit_date">Дата выдачи</label>
             <input
               id="advance_edit_date"
@@ -143,7 +141,7 @@ export function PackageInstallerAdvancesEditModal({
               onChange={(e) => setDraft((d) => ({ ...d, paidAt: e.target.value }))}
             />
           </div>
-          <div className={`${cdBase.field} ${cdBase.paymentsAmountField}`}>
+          <div data-modal-form-group>
             <label htmlFor="advance_edit_amount">Сумма, ₽</label>
             <input
               id="advance_edit_amount"
@@ -155,10 +153,12 @@ export function PackageInstallerAdvancesEditModal({
               onChange={(e) => setDraft((d) => ({ ...d, amount: e.target.value }))}
             />
             {draft.amount.trim() !== '' && !amountValid ? (
-              <p className={cdBase.paymentsEditModalFieldError}>Укажите число больше нуля</p>
+              <p data-modal-form-error role="alert">
+                Укажите число больше нуля
+              </p>
             ) : null}
           </div>
-          <div className={cdBase.field}>
+          <div data-modal-form-group>
             <label htmlFor="advance_edit_payment_method">Способ оплаты</label>
             <select
               id="advance_edit_payment_method"
@@ -181,35 +181,30 @@ export function PackageInstallerAdvancesEditModal({
               ))}
             </select>
           </div>
-          <div className={`${cdBase.field} ${cdEstimateTab.fieldSpanAll}`}>
-            <label htmlFor="advance_edit_note">Комментарий</label>
-            <input
-              id="advance_edit_note"
-              type="text"
-              value={draft.note}
-              disabled={saving}
-              placeholder="Напр. Аванс за электрику"
-              onChange={(e) => setDraft((d) => ({ ...d, note: e.target.value }))}
-            />
-          </div>
         </div>
-        <div className={cdBase.paymentsFormActions}>
+        <div data-modal-form-group>
+          <label htmlFor="advance_edit_note">Комментарий</label>
+          <input
+            id="advance_edit_note"
+            type="text"
+            value={draft.note}
+            disabled={saving}
+            placeholder="Напр. Аванс за электрику"
+            onChange={(e) => setDraft((d) => ({ ...d, note: e.target.value }))}
+          />
+        </div>
+        <div data-modal-form-actions>
+          <button type="button" data-modal-btn="secondary" disabled={saving} onClick={onClose}>
+            Отмена
+          </button>
           <button
             data-admin-mutation
             type="button"
-            className={cdWorkspace.primaryBtn}
+            data-modal-btn="primary"
             disabled={saving || !formComplete}
             onClick={handleSave}
           >
             {saving ? 'Сохранение…' : 'Сохранить изменения'}
-          </button>
-          <button
-            type="button"
-            className={cdWorkspace.secondaryBtn}
-            disabled={saving}
-            onClick={onClose}
-          >
-            Отмена
           </button>
         </div>
       </div>

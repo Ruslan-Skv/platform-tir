@@ -1,3 +1,18 @@
+/* Нейтральный бланк модалок пакета документов: вместо голубого градианта [data-modal-form]
+   (Modal.module.css) — светло-серая подложка с белыми карточками, как у карточек вкладок
+   (packageTabCard + packageTabPanel в editor-chrome). Тройной класс перебивает
+   .content :where([data-modal-form]) (0,2,0) и его тёмный вариант при любом порядке стилей. */
+.neutralFormShell.neutralFormShell.neutralFormShell {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .neutralFormShell.neutralFormShell.neutralFormShell {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-border-strong);
+}
+
 /* Модалка «В работе»: две колонки (дата | файл); min-width для ellipsis в узкой ячейке */
 .packageWorkStartModalTopGrid [data-modal-form-group] {
   min-width: 0;

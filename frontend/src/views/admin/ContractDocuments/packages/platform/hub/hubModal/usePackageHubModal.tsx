@@ -34,7 +34,7 @@ export function usePackageHubModal({
   const [contractCloseFilePreview, setContractCloseFilePreview] = useState<string | null>(null);
   const [paymentsJournalOpen, setPaymentsJournalOpen] = useState(false);
   const [journalReloadToken, setJournalReloadToken] = useState(0);
-  const conductPanelRef = useRef<HTMLElement>(null);
+  const conductPanelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isOpen) {

@@ -1,0 +1,103 @@
+/* Co-located: выбор мастеров на объекте (панель «Интерактивная итоговая смета» модалки «Заказ-наряды»). */
+
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+}
+
+.addField {
+  max-width: 26rem;
+}
+
+@media (max-width: 767px) {
+  .addField {
+    max-width: none;
+  }
+}
+
+.installerList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-xs);
+}
+
+/* Мастер: кнопка из набора вкладок (активный — синяя, остальные — белые) и слитная с ней
+   квадратная кнопка «убрать». */
+.installerChip {
+  display: inline-flex;
+  align-items: stretch;
+  max-width: 100%;
+}
+
+.installerChipName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.installerChipBtn {
+  min-width: 0;
+}
+
+/* Счётчик назначенных позиций: зелёный, если мастер назначен хотя бы на одну позицию. */
+.assignedCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.125rem;
+  height: 1.125rem;
+  padding: 0 5px;
+  border-radius: var(--admin-radius-pill);
+  font-size: var(--admin-font-size-2xs);
+  font-weight: 700;
+  line-height: var(--admin-line-height-flat);
+  background: color-mix(in srgb, currentColor 16%, transparent);
+  color: inherit;
+}
+
+.assignedCountZero {
+  opacity: 0.55;
+}
+
+.removeBtn {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: var(--package-tab-control-h, 28px);
+  height: var(--package-tab-control-h, 28px);
+  /* Нахлёст на правую рамку кнопки мастера — рамки сливаются в одну. */
+  margin-left: -1px;
+  padding: 0;
+  border: 1px solid var(--admin-border-strong);
+  border-radius: 0 var(--admin-radius-sm) var(--admin-radius-sm) 0;
+  background: var(--admin-surface);
+  color: var(--admin-text-muted);
+  cursor: pointer;
+}
+
+.removeBtn:hover:not(:disabled) {
+  border-color: var(--admin-danger-border-strong);
+  background: var(--admin-error-bg);
+  color: var(--admin-error-text);
+}
+
+.removeBtn:focus {
+  outline: none;
+}
+
+.removeBtn:focus-visible {
+  border-color: var(--admin-focus-ring, #3b82f6);
+  box-shadow: 0 0 0 1px var(--admin-focus-ring, #3b82f6);
+}
+
+.removeBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.removeIcon {
+  width: 0.875rem;
+  height: 0.875rem;
+}

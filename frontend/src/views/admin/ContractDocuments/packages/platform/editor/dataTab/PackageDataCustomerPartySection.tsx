@@ -2,16 +2,14 @@
 
 import { crmCustomerFillPercentHint } from '@/views/admin/CRM/Customers/shared/crmCustomerFillPercent';
 
-import cdDataTab from '../../../../styles/data-tab.module.css';
-import cdEstimateTab from '../../../../styles/estimate-tab.module.css';
 import type { PackageDataTabProps } from './PackageDataTab';
 import styles from './PackageDataTab.module.css';
 import {
-  DATA_BLANK_SHEET,
-  DATA_HINT,
-  DATA_PARTY_FIELD,
-  DATA_SECTION_CARD,
-  DATA_SECTION_FIELDS,
+  DATA_FIELD,
+  DATA_SECTION,
+  DATA_SECTION_ACTIONS,
+  DATA_SECTION_HEAD,
+  DATA_SECTION_HINT,
   DATA_SECTION_TITLE,
 } from './packageDataTabStyles';
 import {
@@ -45,15 +43,15 @@ export function PackageDataCustomerPartySection({
   const fillHint = crmCustomerFillPercentHint(form.customer.type);
 
   return (
-    <div className={`${DATA_SECTION_CARD} ${DATA_BLANK_SHEET} ${styles.packageDataPartySection}`}>
-      <div className={styles.packageDataPartySectionHeader}>
-        <div className={styles.packageDataPartySectionTitleRow}>
+    <div className={DATA_SECTION}>
+      <div className={DATA_SECTION_HEAD}>
+        <div className={styles.sectionTitleCluster}>
           <h3 className={DATA_SECTION_TITLE}>Заказчик</h3>
           {signedDocsLocked ? (
             <PackageDataSectionLockInline title="Договор подписан: блок «Заказчик» только для просмотра" />
           ) : null}
         </div>
-        <div className={styles.packageDataPartySectionHeaderActions}>
+        <div className={DATA_SECTION_ACTIONS}>
           <span
             className={styles.packageDataPartySectionCompletion}
             title={fillHint}
@@ -82,18 +80,16 @@ export function PackageDataCustomerPartySection({
       ) : null}
       {customerDataSectionExpanded ? (
         <>
-          <p className={`${DATA_HINT} ${styles.packageDataPartySectionIntroHint}`}>
+          <p className={DATA_SECTION_HINT}>
             {linkedCrmCustomerId?.trim()
               ? 'Данные подставляются из карточки заказчика в блоке «Поиск заказчика в базе». Редактировать здесь нельзя. Чтобы завести карточку и указать телефоны, нажмите «Добавить нового заказчика» в блоке поиска.'
               : 'Карточка CRM не выбрана. Если поля ниже всё ещё заполнены, нажмите «Снять выбор» в блоке «Поиск заказчика в базе», затем выберите карточку заново. Редактировать поля здесь нельзя.'}
           </p>
-          <div id="repair-data-customer-section-body" className={DATA_SECTION_FIELDS}>
+          <div id="repair-data-customer-section-body" className={styles.partyFields}>
             {form.customer.type === 'PERSON' ? (
               <>
-                <div
-                  className={`${styles.packageCustomerPrimaryRow} ${cdEstimateTab.fieldSpanAll}`}
-                >
-                  <div className={DATA_PARTY_FIELD}>
+                <div className={styles.partyFieldsRow}>
+                  <div className={DATA_FIELD}>
                     <label htmlFor="c_type">Тип заказчика</label>
                     <select id="c_type" value={form.customer.type} disabled>
                       <option value="PERSON">Физлицо</option>
@@ -101,15 +97,15 @@ export function PackageDataCustomerPartySection({
                       <option value="ENTREPRENEUR">ИП</option>
                     </select>
                   </div>
-                  <div className={DATA_PARTY_FIELD}>
+                  <div className={DATA_FIELD}>
                     <label htmlFor="c_fullName">ФИО</label>
                     <input id="c_fullName" value={form.customer.fullName} readOnly />
                   </div>
-                  <div className={DATA_PARTY_FIELD}>
+                  <div className={DATA_FIELD}>
                     <label htmlFor="c_address">Адрес</label>
                     <input id="c_address" value={form.customer.address} readOnly />
                   </div>
-                  <div className={DATA_PARTY_FIELD}>
+                  <div className={DATA_FIELD}>
                     <label htmlFor="c_email">E-mail</label>
                     <input
                       id="c_email"
@@ -120,10 +116,8 @@ export function PackageDataCustomerPartySection({
                     />
                   </div>
                 </div>
-                <div
-                  className={`${styles.packageCustomerSecondaryRow} ${cdEstimateTab.fieldSpanAll}`}
-                >
-                  <div className={DATA_PARTY_FIELD}>
+                <div className={styles.partyFieldsRow}>
+                  <div className={DATA_FIELD}>
                     <label htmlFor="c_phones_ro">Телефоны</label>
                     <input
                       id="c_phones_ro"
@@ -132,27 +126,21 @@ export function PackageDataCustomerPartySection({
                       value={customerPhonesReadonlyDisplay}
                       title={customerPhonesReadonlyDisplay}
                     />
-                    {/* <p className={`${cdTemplates.hint} ${styles.packageDataPartySectionFieldHint}`}>
-                        Несколько номеров — только в карточке CRM через «Добавить нового заказчика»; в
-                        шаблоне основной номер — <code>{'{{customer.phone}}'}</code>.
-                      </p> */}
                   </div>
-                  <div className={DATA_PARTY_FIELD}>
+                  <div className={DATA_FIELD}>
                     <label htmlFor="c_passport">Паспорт (серия и номер)</label>
                     <input id="c_passport" value={form.customer.passportSeriesNumber} readOnly />
                   </div>
-                  <div className={DATA_PARTY_FIELD}>
+                  <div className={DATA_FIELD}>
                     <label htmlFor="c_passportBy">Кем выдан</label>
                     <input id="c_passportBy" value={form.customer.passportIssuedBy} readOnly />
                   </div>
-                  <div className={DATA_PARTY_FIELD}>
+                  <div className={DATA_FIELD}>
                     <label htmlFor="c_passportDate">Дата выдачи</label>
                     <input id="c_passportDate" value={form.customer.passportIssueDate} readOnly />
                   </div>
                 </div>
-                <div
-                  className={`${DATA_PARTY_FIELD} ${cdEstimateTab.fieldSpanAll} ${cdDataTab.customerBankDetailsField}`}
-                >
+                <div className={`${DATA_FIELD} ${styles.partyFieldWide}`}>
                   <label htmlFor="c_bank_details">Банковские реквизиты</label>
                   <textarea
                     id="c_bank_details"
@@ -164,7 +152,7 @@ export function PackageDataCustomerPartySection({
               </>
             ) : (
               <>
-                <div className={DATA_PARTY_FIELD}>
+                <div className={DATA_FIELD}>
                   <label htmlFor="c_type">Тип заказчика</label>
                   <select id="c_type" value={form.customer.type} disabled>
                     <option value="PERSON">Физлицо</option>
@@ -172,7 +160,7 @@ export function PackageDataCustomerPartySection({
                     <option value="ENTREPRENEUR">ИП</option>
                   </select>
                 </div>
-                <div className={DATA_PARTY_FIELD}>
+                <div className={DATA_FIELD}>
                   <label htmlFor="c_repFullNameNom">ФИО представителя (именит.)</label>
                   <input
                     id="c_repFullNameNom"
@@ -180,7 +168,7 @@ export function PackageDataCustomerPartySection({
                     readOnly
                   />
                 </div>
-                <div className={DATA_PARTY_FIELD}>
+                <div className={DATA_FIELD}>
                   <label htmlFor="c_repFullNameGen">ФИО представителя (родит.)</label>
                   <input
                     id="c_repFullNameGen"
@@ -188,11 +176,11 @@ export function PackageDataCustomerPartySection({
                     readOnly
                   />
                 </div>
-                <div className={DATA_PARTY_FIELD}>
+                <div className={DATA_FIELD}>
                   <label htmlFor="c_orgName">Наименование организации</label>
                   <input id="c_orgName" value={form.customer.organizationName} readOnly />
                 </div>
-                <div className={DATA_PARTY_FIELD}>
+                <div className={DATA_FIELD}>
                   <label htmlFor="c_posNom">Должность представ. (именит.)</label>
                   <input
                     id="c_posNom"
@@ -200,7 +188,7 @@ export function PackageDataCustomerPartySection({
                     readOnly
                   />
                 </div>
-                <div className={DATA_PARTY_FIELD}>
+                <div className={DATA_FIELD}>
                   <label htmlFor="c_posGen">Должность представ. (родит.)</label>
                   <input
                     id="c_posGen"
@@ -208,19 +196,19 @@ export function PackageDataCustomerPartySection({
                     readOnly
                   />
                 </div>
-                <div className={DATA_PARTY_FIELD}>
+                <div className={DATA_FIELD}>
                   <label htmlFor="c_inn">ИНН</label>
                   <input id="c_inn" value={form.customer.inn} readOnly />
                 </div>
-                <div className={DATA_PARTY_FIELD}>
+                <div className={DATA_FIELD}>
                   <label htmlFor="c_ogrn">ОГРН</label>
                   <input id="c_ogrn" value={form.customer.ogrn} readOnly />
                 </div>
-                <div className={DATA_PARTY_FIELD}>
+                <div className={DATA_FIELD}>
                   <label htmlFor="c_address">Адрес</label>
                   <input id="c_address" value={form.customer.address} readOnly />
                 </div>
-                <div className={`${DATA_PARTY_FIELD} ${cdEstimateTab.customerEmailInRow}`}>
+                <div className={DATA_FIELD}>
                   <label htmlFor="c_email">E-mail</label>
                   <input
                     id="c_email"
@@ -230,7 +218,7 @@ export function PackageDataCustomerPartySection({
                     readOnly
                   />
                 </div>
-                <div className={`${DATA_PARTY_FIELD} ${cdEstimateTab.fieldSpanAll}`}>
+                <div className={`${DATA_FIELD} ${styles.partyFieldWide}`}>
                   <label htmlFor="c_phones_ro">Телефоны</label>
                   <input
                     id="c_phones_ro"
@@ -239,14 +227,8 @@ export function PackageDataCustomerPartySection({
                     value={customerPhonesReadonlyDisplay}
                     title={customerPhonesReadonlyDisplay}
                   />
-                  {/* <p className={`${cdTemplates.hint} ${styles.packageDataPartySectionFieldHint}`}>
-                        Несколько номеров — только в карточке CRM через «Добавить нового заказчика»; в
-                        шаблоне основной номер — <code>{'{{customer.phone}}'}</code>.
-                      </p> */}
                 </div>
-                <div
-                  className={`${DATA_PARTY_FIELD} ${cdEstimateTab.fieldSpanAll} ${cdDataTab.customerBankDetailsField}`}
-                >
+                <div className={`${DATA_FIELD} ${styles.partyFieldWide}`}>
                   <label htmlFor="c_bank_details">Банковские реквизиты</label>
                   <textarea
                     id="c_bank_details"

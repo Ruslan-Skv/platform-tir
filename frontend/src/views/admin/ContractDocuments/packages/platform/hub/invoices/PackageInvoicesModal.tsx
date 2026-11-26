@@ -20,6 +20,7 @@ import crmFormStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModa
 import crmDetailStyles from '@/views/admin/CRM/Customers/modals/CrmCustomerDetailModal.module.css';
 import { buildDocumentPdfBlob } from '@/views/admin/ContractDocuments/core/printDocument';
 
+import cdHubModals from '../../../../styles/hub-modals.module.css';
 import type { PackageDocumentTemplateTabId } from '../../form/formDataTemplateStorage';
 import { getPackageContractNumberDisplayForForm } from '../../form/packageContractDisplay';
 import type { PackageFormData } from '../../form/packageForm';
@@ -325,6 +326,7 @@ export function PackageInvoicesModal({
         compactOnMobile
       >
         <div
+          className={cdHubModals.neutralFormShell}
           data-modal-form
           data-modal-density="compact"
           style={{ minHeight: 'min(60vh, 28rem)', position: 'relative' }}

@@ -10,7 +10,6 @@ import {
 } from '@/shared/api/admin-contract-document-packages';
 import { type CrmUser, getCrmUsers } from '@/shared/api/admin-crm';
 
-import cdDataTab from '../../../../styles/data-tab.module.css';
 import { isFurnitureLikePackageKind } from '../../../config/packageDirectionRegistry';
 import {
   DEFAULT_PACKAGE_CONTRACT_WORK_PERIOD_DAYS,
@@ -25,12 +24,15 @@ import styles from './PackageDataTab.module.css';
 import { formatHoldDate, summarizeHolds } from './contractNumberHoldUi';
 import {
   DATA_AUTO_FILLED,
-  DATA_BLANK_SHEET,
-  DATA_CONTRACT_COMPACT,
+  DATA_BTN,
+  DATA_BTN_DANGER,
+  DATA_BTN_SECONDARY,
   DATA_FIELD,
-  DATA_SECTION_CARD,
+  DATA_FIELD_DISCOUNT,
+  DATA_SECTION,
+  DATA_SECTION_ACTIONS,
+  DATA_SECTION_HEAD,
   DATA_SECTION_TITLE,
-  DATA_TOP_BLOCK,
 } from './packageDataTabStyles';
 import { PackageDataSectionLockInline } from './packageDataTabUi';
 
@@ -177,230 +179,222 @@ export function PackageDataContractObjectSection({
   }, [crmUsers]);
 
   return (
-    <div className={DATA_TOP_BLOCK}>
-      <div className={`${DATA_SECTION_CARD} ${DATA_BLANK_SHEET}`}>
-        <div className={styles.packageDataPartySectionTitleRow}>
+    <div className={DATA_SECTION}>
+      <div className={DATA_SECTION_HEAD}>
+        <div className={styles.sectionTitleCluster}>
           <h3 className={DATA_SECTION_TITLE}>Договор и объект</h3>
-          {canReserve ? (
-            <>
-              <button
-                type="button"
-                className={styles.reserveNumberBtn}
-                disabled={reserveBusy || !contractNumber}
-                onClick={() => void reserveNumber()}
-                title={
-                  holdInfo
-                    ? `Номер ${holdInfo.numbers.join(', ')} забронирован за этим договором. Бронь снимется автоматически, если договор не будет подписан до ${formatHoldDate(holdInfo.expiresAt)}. Клик — продлить бронь.`
-                    : 'Закрепить выбранный номер за этим договором на 5 суток'
-                }
-              >
-                {reserveBusy
-                  ? 'Бронируем…'
-                  : holdInfo
-                    ? `Бронь до ${formatHoldDate(holdInfo.expiresAt)}`
-                    : 'Забронировать номер'}
-              </button>
-              {isSuperAdminRole && holdInfo ? (
-                <button
-                  type="button"
-                  className={styles.releaseNumberBtn}
-                  disabled={releaseBusy || reserveBusy}
-                  onClick={() => void releaseNumberHold()}
-                  title="Супер-админ: снять бронь и освободить номер этого договора — номер в форме очистится, и его можно будет забронировать другим договором"
-                >
-                  {releaseBusy ? 'Снимаем…' : 'Снять бронь'}
-                </button>
-              ) : null}
-              {reserveError ? (
-                <span className={styles.reserveNumberError} title={reserveError}>
-                  {reserveError}
-                </span>
-              ) : null}
-            </>
-          ) : null}
           {signedDocsLocked ? (
             <PackageDataSectionLockInline title="Договор подписан: блок «Договор и объект» закрыт для правок, кроме полей «Краткое описание работ» и «Примечание»" />
           ) : null}
         </div>
-        <div className={DATA_CONTRACT_COMPACT}>
-          <PackageContractNumberField
-            form={form}
-            packageKind={packageKind}
-            locked={signedDocsLocked}
-            fieldClassName={contractObjectBlockFieldClassName('contract.number')}
-            updateContract={updateContract}
-            omitNumberField={isFurnitureLikePackageKind(packageKind)}
-            packageId={packageId}
-          />
-          <div className={`${cdDataTab.contractInlineRow} ${cdDataTab.contractHeaderMetaRow}`}>
-            <ContractDocumentsHelpTooltip
-              title={contractDateFieldHelp.title}
-              steps={contractDateFieldHelp.steps}
-              note={contractDateFieldHelp.note}
-              align="end"
+        {canReserve ? (
+          <div className={DATA_SECTION_ACTIONS}>
+            <button
+              type="button"
+              className={`${DATA_BTN} ${DATA_BTN_SECONDARY}`}
+              disabled={reserveBusy || !contractNumber}
+              onClick={() => void reserveNumber()}
+              title={
+                holdInfo
+                  ? `Номер ${holdInfo.numbers.join(', ')} забронирован за этим договором. Бронь снимется автоматически, если договор не будет подписан до ${formatHoldDate(holdInfo.expiresAt)}. Клик — продлить бронь.`
+                  : 'Закрепить выбранный номер за этим договором на 5 суток'
+              }
             >
-              <div className={`${DATA_FIELD} ${cdDataTab.contractInlineField}`}>
-                <label htmlFor="cd">Дата закл.</label>
-                <input
-                  id="cd"
-                  value={form.contract.date}
-                  onChange={(e) => updateContract('date', e.target.value)}
-                  placeholder="дд.мм.гггг"
-                  autoComplete="off"
-                  disabled={signedDocsLocked}
-                  readOnly={signedDocsLocked}
-                  className={
-                    signedDocsLocked
-                      ? DATA_AUTO_FILLED
-                      : contractObjectBlockFieldClassName('contract.date')
-                  }
-                />
-              </div>
-            </ContractDocumentsHelpTooltip>
-            <ContractDocumentsHelpTooltip
-              title={workPeriodFieldHelp.title}
-              steps={workPeriodFieldHelp.steps}
-              note={workPeriodFieldHelp.note}
-              align="end"
-            >
-              <div className={`${DATA_FIELD} ${cdDataTab.contractInlineField}`}>
-                <label htmlFor="wp">Срок дог.</label>
-                <input
-                  id="wp"
-                  inputMode="numeric"
-                  value={form.contract.workPeriod}
-                  onChange={(e) => updateContract('workPeriod', e.target.value)}
-                  placeholder={
-                    isProductDirectionPackage
-                      ? String(DEFAULT_PRODUCT_CONTRACT_WORK_PERIOD_DAYS)
-                      : String(DEFAULT_PACKAGE_CONTRACT_WORK_PERIOD_DAYS)
-                  }
-                  autoComplete="off"
-                  readOnly={!isSuperAdmin || signedDocsLocked}
-                  disabled={signedDocsLocked || !isSuperAdmin}
-                  className={
-                    !isSuperAdmin || signedDocsLocked
-                      ? DATA_AUTO_FILLED
-                      : contractObjectBlockFieldClassName('contract.workPeriod')
-                  }
-                />
-              </div>
-            </ContractDocumentsHelpTooltip>
-            <div
-              className={`${DATA_FIELD} ${cdDataTab.contractInlineField} ${cdDataTab.contractDiscountFieldCell}`}
-            >
-              <label htmlFor="contract_discount_value">Скидка на работы</label>
-              <PackageDiscountControls
-                idPrefix="contract_discount"
-                mode={form.contract.discountType}
-                percent={form.contract.discountPercent}
-                amount={form.contract.discountAmount ?? ''}
-                disabled={signedDocsLocked}
-                amountModeAvailable={!isFurnitureLikePackageKind(packageKind)}
-                selectClassName={contractObjectBlockFieldClassName('contract.discountType')}
-                inputClassName={contractObjectBlockFieldClassName(
-                  form.contract.discountType === 'AMOUNT'
-                    ? 'contract.discountAmount'
-                    : 'contract.discountPercent'
-                )}
-                onModeChange={(v) => updateContract('discountType', v)}
-                onPercentChange={(v) => updateContract('discountPercent', v)}
-                onAmountChange={(v) => updateContract('discountAmount', v)}
-              />
-              <PackageDiscountHint>{contractDiscountHint(form)}</PackageDiscountHint>
-            </div>
-          </div>
-          <div className={`${cdDataTab.contractInlineRow} ${cdDataTab.contractObjectAddressRow}`}>
-            <div className={`${DATA_FIELD} ${cdDataTab.contractInlineField}`}>
-              <label htmlFor="o_addr">Адрес объекта</label>
-              <input
-                id="o_addr"
-                value={form.object.objectAddress}
-                onChange={(e) => updateObject('objectAddress', e.target.value)}
-                autoComplete="off"
-                disabled={signedDocsLocked}
-                className={contractObjectBlockFieldClassName('object.objectAddress')}
-              />
-            </div>
-            <div className={`${DATA_FIELD} ${cdDataTab.contractInlineField}`}>
-              <label htmlFor="o_floor">Этаж</label>
-              <input
-                id="o_floor"
-                value={form.object.objectFloor}
-                onChange={(e) => updateObject('objectFloor', e.target.value)}
-                autoComplete="off"
-                disabled={signedDocsLocked}
-                className={contractObjectBlockFieldClassName('object.objectFloor')}
-              />
-            </div>
-          </div>
-          <div
-            className={`${cdDataTab.contractInlineRow} ${cdDataTab.contractObjectDescDiscountRow}`}
-          >
-            <div className={`${DATA_FIELD} ${cdDataTab.contractInlineField}`}>
-              <label htmlFor="o_desc">Краткое описание работ</label>
-              <textarea
-                id="o_desc"
-                value={form.object.objectDescription}
-                onChange={(e) => updateObject('objectDescription', e.target.value)}
-                className={contractObjectBlockFieldClassName('object.objectDescription')}
-              />
-            </div>
-            <div className={`${DATA_FIELD} ${cdDataTab.contractInlineField}`}>
-              <label htmlFor="o_note">Примечание</label>
-              <textarea
-                id="o_note"
-                value={form.object.managerNote}
-                onChange={(e) => updateObject('managerNote', e.target.value)}
-                placeholder="Планируемый срок начала работ, пометки по договору"
-                className={contractObjectBlockFieldClassName('object.managerNote')}
-              />
-            </div>
-          </div>
-          <div className={`${cdDataTab.contractInlineRow} ${cdDataTab.contractProfilesRow}`}>
-            {isFurnitureLikePackageKind(packageKind) ? null : (
-              <div className={`${DATA_FIELD} ${cdDataTab.contractInlineField}`}>
-                <label htmlFor="e_profile">Исполнители (из справочника)</label>
-                <select
-                  id="e_profile"
-                  value={form.executor.selectedProfileTitle}
-                  onChange={(e) => applyExecutorProfile(e.target.value)}
-                  disabled={signedDocsLocked}
-                  className={contractObjectBlockFieldClassName('executor.selectedProfileTitle')}
-                >
-                  <option value="">— выбрать набор —</option>
-                  {executorProfiles.map((profile) => (
-                    <option key={profile.title} value={profile.title}>
-                      {profile.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-            <div className={`${DATA_FIELD} ${cdDataTab.contractInlineField}`}>
-              <label htmlFor="s_profile">Карточка менеджера (из справочника)</label>
-              <select
-                id="s_profile"
-                value={form.executor.selectedSignatoryProfileTitle}
-                onChange={(e) => applySignatoryProfile(e.target.value)}
-                disabled={signedDocsLocked}
-                className={contractObjectBlockFieldClassName(
-                  'executor.selectedSignatoryProfileTitle'
-                )}
+              {reserveBusy
+                ? 'Бронируем…'
+                : holdInfo
+                  ? `Бронь до ${formatHoldDate(holdInfo.expiresAt)}`
+                  : 'Забронировать номер'}
+            </button>
+            {isSuperAdminRole && holdInfo ? (
+              <button
+                type="button"
+                className={`${DATA_BTN} ${DATA_BTN_DANGER}`}
+                disabled={releaseBusy || reserveBusy}
+                onClick={() => void releaseNumberHold()}
+                title="Супер-админ: снять бронь и освободить номер этого договора — номер в форме очистится, и его можно будет забронировать другим договором"
               >
-                <option value="">— выбрать карточку —</option>
-                {signatoryProfiles.map((profile) => (
-                  <option key={profile.title} value={profile.title}>
-                    {formatSignatoryProfileLabel(
-                      profile.title,
-                      profile.crmUserId,
-                      employeeCodeByUserId
-                    )}
-                  </option>
-                ))}
-              </select>
-            </div>
+                {releaseBusy ? 'Снимаем…' : 'Снять бронь'}
+              </button>
+            ) : null}
+            {reserveError ? (
+              <span className={styles.reserveNumberError} title={reserveError}>
+                {reserveError}
+              </span>
+            ) : null}
           </div>
+        ) : null}
+      </div>
+      <PackageContractNumberField
+        form={form}
+        packageKind={packageKind}
+        locked={signedDocsLocked}
+        fieldClassName={contractObjectBlockFieldClassName('contract.number')}
+        updateContract={updateContract}
+        omitNumberField={isFurnitureLikePackageKind(packageKind)}
+        packageId={packageId}
+      />
+      <div className={styles.dataFieldRow}>
+        <ContractDocumentsHelpTooltip
+          title={contractDateFieldHelp.title}
+          steps={contractDateFieldHelp.steps}
+          note={contractDateFieldHelp.note}
+          align="end"
+        >
+          <div className={DATA_FIELD}>
+            <label htmlFor="cd">Дата закл.</label>
+            <input
+              id="cd"
+              value={form.contract.date}
+              onChange={(e) => updateContract('date', e.target.value)}
+              placeholder="дд.мм.гггг"
+              autoComplete="off"
+              disabled={signedDocsLocked}
+              readOnly={signedDocsLocked}
+              className={
+                signedDocsLocked
+                  ? DATA_AUTO_FILLED
+                  : contractObjectBlockFieldClassName('contract.date')
+              }
+            />
+          </div>
+        </ContractDocumentsHelpTooltip>
+        <ContractDocumentsHelpTooltip
+          title={workPeriodFieldHelp.title}
+          steps={workPeriodFieldHelp.steps}
+          note={workPeriodFieldHelp.note}
+          align="end"
+        >
+          <div className={DATA_FIELD}>
+            <label htmlFor="wp">Срок дог.</label>
+            <input
+              id="wp"
+              inputMode="numeric"
+              value={form.contract.workPeriod}
+              onChange={(e) => updateContract('workPeriod', e.target.value)}
+              placeholder={
+                isProductDirectionPackage
+                  ? String(DEFAULT_PRODUCT_CONTRACT_WORK_PERIOD_DAYS)
+                  : String(DEFAULT_PACKAGE_CONTRACT_WORK_PERIOD_DAYS)
+              }
+              autoComplete="off"
+              readOnly={!isSuperAdmin || signedDocsLocked}
+              disabled={signedDocsLocked || !isSuperAdmin}
+              className={
+                !isSuperAdmin || signedDocsLocked
+                  ? DATA_AUTO_FILLED
+                  : contractObjectBlockFieldClassName('contract.workPeriod')
+              }
+            />
+          </div>
+        </ContractDocumentsHelpTooltip>
+        <div className={DATA_FIELD_DISCOUNT}>
+          <label htmlFor="contract_discount_value">Скидка на работы</label>
+          <PackageDiscountControls
+            idPrefix="contract_discount"
+            mode={form.contract.discountType}
+            percent={form.contract.discountPercent}
+            amount={form.contract.discountAmount ?? ''}
+            disabled={signedDocsLocked}
+            amountModeAvailable={!isFurnitureLikePackageKind(packageKind)}
+            selectClassName={contractObjectBlockFieldClassName('contract.discountType')}
+            inputClassName={contractObjectBlockFieldClassName(
+              form.contract.discountType === 'AMOUNT'
+                ? 'contract.discountAmount'
+                : 'contract.discountPercent'
+            )}
+            onModeChange={(v) => updateContract('discountType', v)}
+            onPercentChange={(v) => updateContract('discountPercent', v)}
+            onAmountChange={(v) => updateContract('discountAmount', v)}
+          />
+          <PackageDiscountHint>{contractDiscountHint(form)}</PackageDiscountHint>
+        </div>
+      </div>
+      <div className={`${styles.dataFieldRow} ${styles.dataFieldRowAddress}`}>
+        <div className={DATA_FIELD}>
+          <label htmlFor="o_addr">Адрес объекта</label>
+          <input
+            id="o_addr"
+            value={form.object.objectAddress}
+            onChange={(e) => updateObject('objectAddress', e.target.value)}
+            autoComplete="off"
+            disabled={signedDocsLocked}
+            className={contractObjectBlockFieldClassName('object.objectAddress')}
+          />
+        </div>
+        <div className={DATA_FIELD}>
+          <label htmlFor="o_floor">Этаж</label>
+          <input
+            id="o_floor"
+            value={form.object.objectFloor}
+            onChange={(e) => updateObject('objectFloor', e.target.value)}
+            autoComplete="off"
+            disabled={signedDocsLocked}
+            className={contractObjectBlockFieldClassName('object.objectFloor')}
+          />
+        </div>
+      </div>
+      <div className={styles.dataFieldRow}>
+        <div className={DATA_FIELD}>
+          <label htmlFor="o_desc">Краткое описание работ</label>
+          <textarea
+            id="o_desc"
+            value={form.object.objectDescription}
+            onChange={(e) => updateObject('objectDescription', e.target.value)}
+            className={contractObjectBlockFieldClassName('object.objectDescription')}
+          />
+        </div>
+        <div className={DATA_FIELD}>
+          <label htmlFor="o_note">Примечание</label>
+          <textarea
+            id="o_note"
+            value={form.object.managerNote}
+            onChange={(e) => updateObject('managerNote', e.target.value)}
+            placeholder="Планируемый срок начала работ, пометки по договору"
+            className={contractObjectBlockFieldClassName('object.managerNote')}
+          />
+        </div>
+      </div>
+      <div className={styles.dataFieldRow}>
+        {isFurnitureLikePackageKind(packageKind) ? null : (
+          <div className={DATA_FIELD}>
+            <label htmlFor="e_profile">Исполнители (из справочника)</label>
+            <select
+              id="e_profile"
+              value={form.executor.selectedProfileTitle}
+              onChange={(e) => applyExecutorProfile(e.target.value)}
+              disabled={signedDocsLocked}
+              className={contractObjectBlockFieldClassName('executor.selectedProfileTitle')}
+            >
+              <option value="">— выбрать набор —</option>
+              {executorProfiles.map((profile) => (
+                <option key={profile.title} value={profile.title}>
+                  {profile.title}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        <div className={DATA_FIELD}>
+          <label htmlFor="s_profile">Карточка менеджера (из справочника)</label>
+          <select
+            id="s_profile"
+            value={form.executor.selectedSignatoryProfileTitle}
+            onChange={(e) => applySignatoryProfile(e.target.value)}
+            disabled={signedDocsLocked}
+            className={contractObjectBlockFieldClassName('executor.selectedSignatoryProfileTitle')}
+          >
+            <option value="">— выбрать карточку —</option>
+            {signatoryProfiles.map((profile) => (
+              <option key={profile.title} value={profile.title}>
+                {formatSignatoryProfileLabel(
+                  profile.title,
+                  profile.crmUserId,
+                  employeeCodeByUserId
+                )}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
     </div>

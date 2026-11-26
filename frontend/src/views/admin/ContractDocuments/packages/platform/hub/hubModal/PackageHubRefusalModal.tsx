@@ -4,6 +4,7 @@ import { Modal } from '@/shared/ui/Modal';
 import crmFormStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
 
 import cdChrome from '../../../../styles/editor-chrome.module.css';
+import cdHubModals from '../../../../styles/hub-modals.module.css';
 import type { PackageHubModalModel } from './usePackageHubModal';
 
 type PackageHubRefusalModalProps = Pick<PackageHubModalModel, 'hub'>;
@@ -23,7 +24,7 @@ export function PackageHubRefusalModal({ hub }: PackageHubRefusalModalProps) {
       showCloseButton
       compactOnMobile
     >
-      <div data-modal-form data-modal-density="compact">
+      <div className={cdHubModals.neutralFormShell} data-modal-form data-modal-density="compact">
         <p data-modal-form-hint style={{ marginTop: 0 }}>
           Укажите причину отказа — она сохранится вместе со статусом «Отказ».
         </p>

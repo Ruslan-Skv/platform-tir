@@ -13,6 +13,7 @@ import type { MessengerShareChannel } from '@/views/admin/CRM/InstallationSchedu
 import type { PackageDocumentTemplateTabId } from '@/views/admin/ContractDocuments/packages/platform/form/formDataTemplateStorage';
 import type { PackageFormData } from '@/views/admin/ContractDocuments/packages/platform/form/packageForm';
 import hubStyles from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/PackageWorkOrdersHubModal.module.css';
+import cdHubModals from '@/views/admin/ContractDocuments/styles/hub-modals.module.css';
 
 import {
   buildPackageCustomerShareMailtoUrl,
@@ -183,7 +184,11 @@ export function PackageInvoiceShareModal({ isOpen, onClose, invoice, liveInput =
       compactOnMobile
       alignTop
     >
-      <div className={panelStyles.formShell} data-modal-form data-modal-density="compact">
+      <div
+        className={`${panelStyles.formShell} ${cdHubModals.neutralFormShell}`}
+        data-modal-form
+        data-modal-density="compact"
+      >
         <p data-modal-form-hint className={hubStyles.shareHintDesktop} style={{ marginTop: 0 }}>
           Скачайте PDF счёта и отправьте вместе с текстом в мессенджер или на почту. На телефоне
           удобнее «Поделиться».

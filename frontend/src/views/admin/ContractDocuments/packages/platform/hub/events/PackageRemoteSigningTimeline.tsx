@@ -11,9 +11,9 @@ import {
   remoteSigningStatusLabel,
 } from '@/shared/api/contract-documents/admin-contract-document-signing';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
-import crmDetailStyles from '@/views/admin/CRM/Customers/modals/CrmCustomerDetailModal.module.css';
 
 import { remoteSigningStageLabel, remoteSigningStageOf } from '../../share/remoteSigningStage';
+import { HUB_BTN, HUB_BTN_ICON, HUB_BTN_SECONDARY } from '../hubModal/packageHubModalStyles';
 import styles from './PackageRemoteSigningTimeline.module.css';
 
 function formatDateTime(iso: string | null): string {
@@ -147,21 +147,18 @@ export function PackageRemoteSigningTimeline({
   );
 
   return (
-    <div>
+    <div className={styles.block}>
       <div className={styles.sectionHead}>
-        <h4 className={crmDetailStyles.linkedSectionTitle}>Электронное подписание</h4>
+        <h4 className={styles.sectionTitle}>Электронное подписание</h4>
         <button
           type="button"
-          className={styles.refreshBtn}
+          className={`${HUB_BTN} ${HUB_BTN_SECONDARY} ${HUB_BTN_ICON}`}
           title="Обновить события подписания"
           aria-label="Обновить события подписания"
           disabled={busy}
           onClick={() => void load()}
         >
-          <ArrowPathIcon
-            className={`${styles.refreshIcon} ${busy ? styles.refreshSpinning : ''}`}
-            aria-hidden
-          />
+          <ArrowPathIcon className={busy ? styles.refreshSpinning : undefined} aria-hidden />
         </button>
       </div>
 
@@ -191,7 +188,7 @@ export function PackageRemoteSigningTimeline({
                   {s.status === 'SIGNED' ? (
                     <button
                       type="button"
-                      className={styles.packageBtn}
+                      className={`${HUB_BTN} ${HUB_BTN_SECONDARY} ${styles.packageBtn}`}
                       disabled={finalizingId === s.id}
                       title="Сформировать заново и открыть единый PDF: документы с отметками ЭП и протокол подписания (письмо заказчику не отправляется)"
                       onClick={() => void openSignedPackage(s)}
