@@ -36,6 +36,12 @@ export const TopBar: React.FC<TopBarProps> = ({ catalogSearch, showSearch = true
   const { isDarkTheme, toggleTheme } = useTheme();
   const router = useRouter();
   const [avatarLoadError, setAvatarLoadError] = useState(false);
+  // Иконка темы зависит от localStorage, которого нет на сервере: до монтирования
+  // рендерим SSR-дефолт (луна), чтобы гидратация совпадала (шапка гидратируется
+  // в Suspense-границе позже применения темы из ThemeInitializer).
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => setIsMounted(true), []);
+  const showDarkThemeToggle = isMounted && isDarkTheme;
   const { isAuthenticated, user } = useUserAuth();
   const { rolesShowAdminLinkDesktop } = useSitePublicConfig();
   const isAdmin =
@@ -179,10 +185,10 @@ export const TopBar: React.FC<TopBarProps> = ({ catalogSearch, showSearch = true
             onClick={toggleTheme}
             className={styles.utilityButton}
             type="button"
-            aria-label={isDarkTheme ? 'Светлая тема' : 'Тёмная тема'}
-            data-tooltip={isDarkTheme ? 'Светлая тема' : 'Тёмная тема'}
+            aria-label={showDarkThemeToggle ? 'Светлая тема' : 'Тёмная тема'}
+            data-tooltip={showDarkThemeToggle ? 'Светлая тема' : 'Тёмная тема'}
           >
-            {isDarkTheme ? (
+            {showDarkThemeToggle ? (
               <SunIcon className={styles.icon} />
             ) : (
               <MoonIcon className={styles.icon} />
