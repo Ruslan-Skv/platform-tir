@@ -13,6 +13,7 @@ import dataTableStyles from '@/shared/ui/admin/DataTable/DataTable.module.css';
 import { CollapsibleFiltersPanel } from '@/views/admin/CRM/shared/CollapsibleFiltersPanel';
 import { PaidPercentBadge } from '@/views/admin/CRM/shared/PaidPercentBadge';
 import { SalaryAdvancesHoverTooltip } from '@/views/admin/CRM/shared/SalaryAdvancesHoverTooltip';
+import { SalaryOverpayBadge } from '@/views/admin/CRM/shared/SalaryOverpayBadge';
 import {
   ADMIN_LIST_PAGE_LIMIT_OPTIONS,
   type AdminListPageLimit,
@@ -139,6 +140,7 @@ function StatusBadge({ item }: { item: OdpzhScheduleRow }) {
 /**
  * Колонка «З/п»: полная з/п мастеров договора (итог заказ-нарядов после
  * прикрепления мастеров); в скобках — выдано авансов (₽ и % от полной з/п).
+ * Если выдано больше 100% — бейдж «переплата».
  * При наведении — всплывающий журнал авансов (как в модалке «Заказ-наряды»),
  * поэтому родные title-подсказки внутри не нужны.
  */
@@ -172,6 +174,7 @@ function SalaryCellValue({ salary }: { salary: OdpzhScheduleRow['salary'] }) {
       <div>{formatSum(salary.total)}</div>
       <span className={styles.subline}>
         ({formatSum(salary.paid)} · {salary.paidPercent ?? 0}%)
+        <SalaryOverpayBadge salary={salary} />
       </span>
     </div>
   );

@@ -1,6 +1,10 @@
 import type { RepairScheduleProject } from '@/shared/api/crm/admin-repair-schedules';
 
-import { buildRepairObjectGroups, repairObjectGroupStatus } from './repairObjectGroups';
+import {
+  buildRepairObjectGroups,
+  compareRepairProjectsOverpaidFirst,
+  repairObjectGroupStatus,
+} from './repairObjectGroups';
 
 function makeProject(overrides: Partial<RepairScheduleProject>): RepairScheduleProject {
   return {
@@ -117,5 +121,63 @@ describe('repairObjectGroupStatus: раздел блока', () => {
         makeProject({ status: 'CLOSED' }),
       ])
     ).toBe('CLOSED');
+  });
+});
+
+describe('compareRepairProjectsOverpaidFirst: верх раздела «Закрытые»', () => {
+  const overpaid = (overrides: Partial<RepairScheduleProject>): RepairScheduleProject =>
+    makeProject({
+      status: 'CLOSED',
+      salary: { total: 10_000, paid: 15_000, paidPercent: 150, advances: [] },
+      ...overrides,
+    });
+
+  it('закрытый с переплатой — выше закрытого без переплаты', () => {
+    const a = overpaid({ id: 'a' });
+    const b = makeProject({ id: 'b', status: 'CLOSED' });
+    expect(compareRepairProjectsOverpaidFirst(a, b)).toBeLessThan(0);
+    expect(compareRepairProjectsOverpaidFirst(b, a)).toBeGreaterThan(0);
+  });
+
+  it('два без переплаты (в т.ч. два с переплатой) — поровну', () => {
+    expect(
+      compareRepairProjectsOverpaidFirst(
+        makeProject({ id: 'a', status: 'CLOSED' }),
+        makeProject({ id: 'b', status: 'NEW' })
+      )
+    ).toBe(0);
+    expect(compareRepairProjectsOverpaidFirst(overpaid({ id: 'a' }), overpaid({ id: 'b' }))).toBe(
+      0
+    );
+  });
+
+  it('переплата в незакрытом договоре не поднимает его', () => {
+    expect(
+      compareRepairProjectsOverpaidFirst(
+        overpaid({ id: 'a', status: 'IN_PROGRESS' }),
+        makeProject({ id: 'b', status: 'CLOSED' })
+      )
+    ).toBe(0);
+  });
+
+  it('процент ≤ 100 и неизвестная полная з/п — не переплата', () => {
+    expect(
+      compareRepairProjectsOverpaidFirst(
+        overpaid({
+          id: 'a',
+          salary: { total: 10_000, paid: 10_000, paidPercent: 100, advances: [] },
+        }),
+        makeProject({ id: 'b', status: 'CLOSED' })
+      )
+    ).toBe(0);
+    expect(
+      compareRepairProjectsOverpaidFirst(
+        overpaid({
+          id: 'a',
+          salary: { total: null, paid: 5_000, paidPercent: null, advances: [] },
+        }),
+        makeProject({ id: 'b', status: 'CLOSED' })
+      )
+    ).toBe(0);
   });
 });

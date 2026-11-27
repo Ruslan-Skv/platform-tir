@@ -33,6 +33,7 @@ import {
   buildRepairObjectGroups,
   compareRepairProjectsByAge,
   compareRepairProjectsByClosedAt,
+  compareRepairProjectsOverpaidFirst,
   repairObjectGroupStatus,
 } from '../../shared/repairObjectGroups';
 
@@ -253,10 +254,14 @@ export function useRepairSchedulesPage() {
     if (statusFilter === 'ALL') {
       // «Все»: блоки объектов раскладываем по секциям агрегатным статусом блока
       // (в работе → новые → закрытые), внутри секции блоки — старые сверху, как в списке.
+      // В «Закрытых» блоки закрытых договоров с переплатой по з/п — в самом верху.
       // Пагинация нарезает страницы по этому порядку, поэтому секции и блоки объектов
       // не перемешиваются между страницами.
       const blocks = buildRepairObjectGroups(
-        [...rows].sort((a, b) => compareRepairProjectsByAge(a, b, false))
+        [...rows].sort(
+          (a, b) =>
+            compareRepairProjectsOverpaidFirst(a, b) || compareRepairProjectsByAge(a, b, false)
+        )
       );
       const bySection = new Map<RepairScheduleProjectStatus, RepairScheduleProject[]>();
       for (const status of REPAIR_STATUS_SECTION_ORDER) bySection.set(status, []);
@@ -274,8 +279,11 @@ export function useRepairSchedulesPage() {
           : compareRepairProjectsByAge(a, b, false);
       });
     } else if (statusFilter === 'CLOSED') {
-      // Закрытые: сверху закрытые позднее всего.
-      rows = [...rows].sort((a, b) => compareRepairProjectsByClosedAt(a, b, true));
+      // Закрытые: сверху договоры с переплатой по з/п, затем закрытые позднее всего.
+      rows = [...rows].sort(
+        (a, b) =>
+          compareRepairProjectsOverpaidFirst(a, b) || compareRepairProjectsByClosedAt(a, b, true)
+      );
     } else {
       // Новые / В работе — старые сверху.
       // Группировка по объекту потом держит договоры вместе по первому появлению.

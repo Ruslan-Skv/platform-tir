@@ -14,6 +14,7 @@ import dataTableStyles from '@/shared/ui/admin/DataTable/DataTable.module.css';
 import { DeleteIcon, EditIcon, PublishIcon } from '@/shared/ui/icons';
 import { PaidPercentBadge } from '@/views/admin/CRM/shared/PaidPercentBadge';
 import { SalaryAdvancesHoverTooltip } from '@/views/admin/CRM/shared/SalaryAdvancesHoverTooltip';
+import { SalaryOverpayBadge } from '@/views/admin/CRM/shared/SalaryOverpayBadge';
 import { PackageWorkOrdersHubIcon } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/PackageWorkOrdersHubIcon';
 import {
   getPackageWorkOrderDistributionInfo,
@@ -37,6 +38,7 @@ import {
 import {
   buildRepairObjectGroups,
   compareRepairProjectsByAge,
+  compareRepairProjectsOverpaidFirst,
   repairObjectGroupStatus,
   repairObjectGroupSumLabel,
 } from '../shared/repairObjectGroups';
@@ -66,6 +68,7 @@ const COL_SPAN = 11;
 /**
  * Колонка «З/п»: полная з/п мастеров договора (итог заказ-нарядов после
  * прикрепления мастеров); в скобках — выдано авансов (₽ и % от полной з/п).
+ * Если выдано больше 100% — бейдж «переплата».
  * При наведении — всплывающий журнал авансов (как в модалке «Заказ-наряды»),
  * поэтому родные title-подсказки внутри не нужны.
  */
@@ -99,6 +102,7 @@ function SalaryCellValue({ salary }: { salary: RepairScheduleSalarySummary | nul
       <div>{formatMoney(salary.total)}</div>
       <span className={styles.subline}>
         ({formatMoney(salary.paid)} · {salary.paidPercent ?? 0}%)
+        <SalaryOverpayBadge salary={salary} />
       </span>
     </div>
   );
@@ -197,7 +201,10 @@ export function RepairSchedulesGroupedList({
     }
     // Блоки объектов сортируем по дате подписания (старые сверху) и раскладываем
     // по секциям агрегатным статусом блока: весь блок объекта — в одном разделе.
-    const sorted = [...items].sort((a, b) => compareRepairProjectsByAge(a, b, false));
+    // В «Закрытых» блоки закрытых договоров с переплатой по з/п — в самом верху.
+    const sorted = [...items].sort(
+      (a, b) => compareRepairProjectsOverpaidFirst(a, b) || compareRepairProjectsByAge(a, b, false)
+    );
     const blocks = buildRepairObjectGroups(sorted);
     return STATUS_SECTIONS.map(({ status, label }) => {
       const sectionGroups = blocks.filter((g) => repairObjectGroupStatus(g.projects) === status);
@@ -458,6 +465,7 @@ export function RepairSchedulesGroupedList({
                   : `${formatMoney(item.salary.total)} (${formatMoney(item.salary.paid)} · ${
                       item.salary.paidPercent ?? 0
                     }%)`}
+                <SalaryOverpayBadge salary={item.salary} />
               </div>
             ) : null}
           </div>

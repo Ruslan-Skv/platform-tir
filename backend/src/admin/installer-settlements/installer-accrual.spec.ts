@@ -1,6 +1,10 @@
 import { ContractDocumentPackageKind } from '@prisma/client';
 
-import { computeInstallerAccrual, parseInstallerGradePercent } from './installer-accrual';
+import {
+  computeInstallerAccrual,
+  installerSalaryOverpaid,
+  parseInstallerGradePercent,
+} from './installer-accrual';
 
 const ROOM_LINE = (name: string, unit: string, quantity: number, amount: number) => ({
   name,
@@ -16,6 +20,27 @@ describe('parseInstallerGradePercent', () => {
     expect(parseInstallerGradePercent('5')).toBe(5);
     expect(parseInstallerGradePercent('4 разряд')).toBe(0);
     expect(parseInstallerGradePercent('без разряда')).toBe(0);
+  });
+});
+
+describe('installerSalaryOverpaid', () => {
+  it('переплата — только при проценте выдачи больше 100', () => {
+    expect(
+      installerSalaryOverpaid({ total: 10_000, paid: 15_000, paidPercent: 150, advances: [] }),
+    ).toBe(true);
+    expect(
+      installerSalaryOverpaid({ total: 10_000, paid: 10_500, paidPercent: 105, advances: [] }),
+    ).toBe(true);
+    expect(
+      installerSalaryOverpaid({ total: 10_000, paid: 10_000, paidPercent: 100, advances: [] }),
+    ).toBe(false);
+  });
+
+  it('неизвестная полная з/п и пустая сводка — не переплата', () => {
+    expect(
+      installerSalaryOverpaid({ total: null, paid: 5_000, paidPercent: null, advances: [] }),
+    ).toBe(false);
+    expect(installerSalaryOverpaid(null)).toBe(false);
   });
 });
 

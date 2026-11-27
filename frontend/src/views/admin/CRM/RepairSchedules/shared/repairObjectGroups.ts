@@ -2,6 +2,7 @@ import type {
   RepairScheduleProject,
   RepairScheduleProjectStatus,
 } from '@/shared/api/crm/admin-repair-schedules';
+import { isSalaryOverpaid } from '@/views/admin/CRM/shared/salaryOverpay';
 
 import { formatMoney } from './repair-schedules';
 
@@ -224,6 +225,21 @@ export function compareRepairProjectsByClosedAt(
   if (ta !== tb) return newestFirst ? tb - ta : ta - tb;
   if (a.id === b.id) return 0;
   return a.id < b.id ? -1 : 1;
+}
+
+/**
+ * Ключ старшинства «сначала закрытые с переплатой по з/п»: такие договоры
+ * после закрытия поднимаются в самый верх раздела «Закрытые». Незакрытые
+ * (даже с переплатой) и обычные закрытые сравниваются поровну (0) —
+ * используется как первый ключ перед возрастом/датой закрытия.
+ */
+export function compareRepairProjectsOverpaidFirst(
+  a: RepairScheduleProject,
+  b: RepairScheduleProject
+): number {
+  const rank = (p: RepairScheduleProject) =>
+    p.status === 'CLOSED' && isSalaryOverpaid(p.salary) ? 0 : 1;
+  return rank(a) - rank(b);
 }
 
 export function repairObjectGroupSumLabel(projects: RepairScheduleProject[]): string {

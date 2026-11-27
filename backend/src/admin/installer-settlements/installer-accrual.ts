@@ -226,6 +226,13 @@ export function summarizeInstallerSalary(
   };
 }
 
+/** Переплата по з/п: выдано авансов больше полной з/п (процент выдачи > 100%). */
+export function installerSalaryOverpaid(
+  salary: InstallerSalarySummary | null | undefined,
+): boolean {
+  return (salary?.paidPercent ?? 0) > 100;
+}
+
 function toFiniteNumber(value: unknown): number {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;

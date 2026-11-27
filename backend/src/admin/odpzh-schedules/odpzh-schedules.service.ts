@@ -8,7 +8,10 @@ import {
   type PackageListPaymentRow,
 } from '../contract-document-packages/list-pipeline/package-list-pipeline-status';
 import { resolveRepairWorkStartMinPayPct } from '../contract-document-packages/contract-document-package-kind-settings.service';
-import { type InstallerSalarySummary } from '../installer-settlements/installer-accrual';
+import {
+  type InstallerSalarySummary,
+  installerSalaryOverpaid,
+} from '../installer-settlements/installer-accrual';
 import { InstallerSalarySummariesService } from '../installer-settlements/installer-salary-summaries.service';
 import {
   asFormDataRecord,
@@ -453,7 +456,12 @@ export class OdpzhSchedulesService {
         const rank = { NEW: 0, IN_PROGRESS: 1, INSTALLATIONS_DONE: 2, CLOSED: 3 } as const;
         return rank[a.status] - rank[b.status];
       }
-      if (a.status === 'CLOSED') return b.updatedAt.getTime() - a.updatedAt.getTime();
+      if (a.status === 'CLOSED') {
+        // Закрытые с переплатой по з/п — в самом верху раздела, затем позднее закрытые.
+        const rank = (row: OdpzhScheduleRow) => (installerSalaryOverpaid(row.salary) ? 0 : 1);
+        if (rank(a) !== rank(b)) return rank(a) - rank(b);
+        return b.updatedAt.getTime() - a.updatedAt.getTime();
+      }
       const da = a.nearestInstallationDate ?? a.createdAt.toISOString();
       const db = b.nearestInstallationDate ?? b.createdAt.toISOString();
       return da.localeCompare(db);

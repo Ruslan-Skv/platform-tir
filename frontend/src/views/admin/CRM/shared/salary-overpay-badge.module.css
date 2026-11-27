@@ -1,0 +1,19 @@
+/* Бейдж «переплата» (колонка «З/п» план-графиков): выдано авансов больше полной з/п. */
+.badge {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: var(--admin-error, #b91c1c);
+  font-size: var(--admin-font-size-xs, 12px);
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .badge {
+  background: rgb(185 28 28 / 0.3);
+  color: #fecaca;
+}
