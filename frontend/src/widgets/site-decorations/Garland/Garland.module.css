@@ -1,0 +1,35 @@
+.garland {
+  /* Живёт внутри пилюли меню навигации: верх — вплотную к её нижней кромке,
+   * ширина — ровно по ширине пилюли. Гирлянда свисает ниже шапки. */
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 50px;
+  background: url('/decorations/garland.png') left top / auto 100% repeat-x;
+  pointer-events: none;
+  z-index: 6;
+}
+
+/* Вариант «шары и шишки»: одна ветка у правого края пилюли —
+ * левая перекрывала хлебные крошки. Пропорции картинки 520×160. */
+.baubles {
+  top: calc(100% - 2px);
+  width: 290px;
+  height: auto;
+  aspect-ratio: 520 / 160;
+  background: url('/decorations/garland-baubles.png') center top / 100% 100% no-repeat;
+}
+
+.baublesRight {
+  left: auto;
+  right: 40px;
+  transform: scaleX(-1);
+}
+
+/* На мобильных навигация другая — гирлянды не вешаем */
+@media (max-width: 768px) {
+  .garland {
+    display: none;
+  }
+}

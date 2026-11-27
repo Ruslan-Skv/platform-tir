@@ -18,6 +18,7 @@ import { Background } from '@/widgets/background';
 import { ChatSupportOpenProvider, ChatSupportWidget } from '@/widgets/chat-support';
 import { Footer } from '@/widgets/footer';
 import { Header, StickyHeader } from '@/widgets/header';
+import { SiteDecorations } from '@/widgets/site-decorations';
 
 import { MobileBottomNav } from '../MobileBottomNav/MobileBottomNav';
 
@@ -58,6 +59,7 @@ export const SiteLayout: React.FC<SiteLayoutProps> = ({ children }) => {
                   <SitePlatformFeedbackButton />
                   <FormModals />
                   <PWAUpdatePrompt />
+                  <SiteDecorations />
                 </div>
               </ChatSupportOpenProvider>
             </FormProvider>

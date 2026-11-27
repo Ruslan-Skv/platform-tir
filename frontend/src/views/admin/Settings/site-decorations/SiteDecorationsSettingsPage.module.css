@@ -1,0 +1,211 @@
+.page {
+  max-width: 720px;
+}
+
+.header {
+  margin-bottom: var(--admin-space-4xl);
+}
+
+.title {
+  font-size: var(--admin-font-size-3xl);
+  font-weight: 700;
+  color: var(--admin-text-primary);
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xs);
+}
+
+.subtitle {
+  font-size: var(--admin-font-size-base);
+  color: var(--admin-text-muted);
+  margin: 0;
+}
+
+.loading,
+.accessDenied {
+  color: var(--admin-text-muted);
+  margin: 0;
+}
+
+.accessDenied {
+  color: var(--admin-danger-text);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-3xl);
+}
+
+.card {
+  padding: var(--admin-space-2xl);
+  background: var(--admin-surface-muted);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--admin-space-2xl);
+  margin-bottom: var(--admin-space-2xl);
+}
+
+.cardText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xs);
+}
+
+.cardTitle {
+  font-size: var(--admin-font-size-lg);
+  font-weight: 600;
+  color: var(--admin-text-primary);
+  margin: 0;
+}
+
+.cardDescription {
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  margin: 0;
+  line-height: var(--admin-line-height-lg);
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-md);
+  font-size: var(--admin-font-size-base);
+  font-weight: 500;
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--admin-accent);
+}
+
+.variants {
+  border: none;
+  margin: 0 0 var(--admin-space-2xl);
+  padding: 0;
+}
+
+.variantsLabel {
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  margin-bottom: var(--admin-space-xs);
+  padding: 0;
+}
+
+.variantList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xs);
+}
+
+.variantLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-md);
+  font-size: var(--admin-font-size-base);
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+}
+
+.variantLabel input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--admin-accent);
+  flex-shrink: 0;
+}
+
+.periodRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-2xl);
+}
+
+.periodField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xs);
+}
+
+.periodLabel {
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+}
+
+.periodField input {
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  font-size: var(--admin-font-size-base);
+  color: var(--admin-text-primary);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+}
+
+.hint {
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  margin: var(--admin-space-2xl) 0 0;
+  line-height: var(--admin-line-height-lg);
+}
+
+.toastSuccess,
+.toastError {
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-base);
+}
+
+.toastSuccess {
+  background: rgb(34 197 94 / 20%);
+  color: var(--admin-success-strong);
+}
+
+.toastError {
+  background: rgb(var(--color-accent-rgb) / 20%);
+  color: var(--admin-danger-text);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-2xl);
+}
+
+.saveButton {
+  padding: var(--admin-space-md) var(--admin-space-3xl);
+  font-size: var(--admin-font-size-base);
+  font-weight: 500;
+  color: var(--admin-text-inverse);
+  background: var(--admin-accent);
+  border: none;
+  border-radius: var(--admin-radius-md);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.saveButton:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+}
+
+.saveButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.previewLink {
+  font-size: var(--admin-font-size-base);
+  color: var(--admin-accent);
+  text-decoration: none;
+}
+
+.previewLink:hover {
+  text-decoration: underline;
+}

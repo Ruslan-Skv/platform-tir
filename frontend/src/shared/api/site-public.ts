@@ -2,6 +2,15 @@ import { apiFetch } from '@/shared/lib/api-fetch';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
+/** Украшение из публичной конфигурации: период показа проверяется на клиенте. */
+export interface SitePublicDecoration {
+  code: string;
+  startsAt: string | null;
+  endsAt: string | null;
+  /** Вариант украшения (например, вид гирлянды); null — у украшения нет вариантов. */
+  variant: string | null;
+}
+
 export interface SitePublicConfig {
   rolesShowAdminLinkDesktop: string[];
   rolesShowAdminLinkMobile: string[];
@@ -9,6 +18,8 @@ export interface SitePublicConfig {
   rolesShowAdminLink?: string[];
   /** Вариант шапки публичного сайта: classic | sticky. */
   headerVariant?: 'classic' | 'sticky';
+  /** Активные украшения публичного сайта (снег и т.п.). */
+  decorations?: SitePublicDecoration[];
 }
 
 /** Публичная конфигурация сайта (без авторизации). */

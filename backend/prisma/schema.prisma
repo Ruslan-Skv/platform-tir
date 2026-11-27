@@ -3250,6 +3250,20 @@ model SitePublicConfig {
   @@map("site_public_config")
 }
 
+/// Украшения публичного сайта (снег, гирлянды и т.п.).
+/// Строки создаются автоматически из реестра кодов в backend/src/site-public/site-decorations.registry.ts.
+model SiteDecoration {
+  id        String    @id @default(cuid())
+  code      String    @unique // Код украшения из реестра, например 'new-year-snow'
+  isActive  Boolean   @default(false)
+  startsAt  DateTime? // Необязательное начало периода показа
+  endsAt    DateTime? // Необязательный конец периода показа
+  variant   String? // Вариант украшения из реестра (например, вид гирлянды); null = первый вариант реестра
+  updatedAt DateTime  @updatedAt
+
+  @@map("site_decorations")
+}
+
 /// Настройки авторизации на сайте (singleton-строка id='main').
 model AuthSettings {
   id              String   @id @default("main")

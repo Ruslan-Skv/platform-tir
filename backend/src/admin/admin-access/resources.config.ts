@@ -421,6 +421,11 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     path: '/admin/settings/public-header',
   },
   {
+    id: 'admin.settings.site-decorations',
+    label: 'Украшения сайта',
+    path: '/admin/settings/site-decorations',
+  },
+  {
     id: 'admin.settings.quote-form',
     label: 'Рассчитать стоимость (виды работ)',
     path: '/admin/settings/quote-form',

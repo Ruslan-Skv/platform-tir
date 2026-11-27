@@ -1,0 +1,6 @@
+.canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 9990; /* ниже чата поддержки (9998) и PWA-промпта (9999) */
+  pointer-events: none;
+}

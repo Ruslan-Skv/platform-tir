@@ -8,6 +8,7 @@ import {
   useDynamicServiceCategories,
   useNavigationItems,
 } from '@/shared/lib/hooks';
+import { Garland } from '@/widgets/site-decorations';
 
 import { NavigationItem } from '../NavigationItem';
 import styles from './DesktopNavigation.module.css';
@@ -61,6 +62,8 @@ export const DesktopNavigation: React.FC<DesktopNavigationProps> = ({
             </React.Fragment>
           ))}
         </div>
+        {/* Украшение: гирлянда по нижней кромке пилюли меню — вплотную и ровно по её ширине */}
+        <Garland />
       </div>
     </div>
   );
