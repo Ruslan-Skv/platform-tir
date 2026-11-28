@@ -309,6 +309,9 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
       const revealSelector = `.${styles.headerReveal}`;
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         root.querySelectorAll<HTMLElement>(revealSelector).forEach((node) => {
+          // Только тем, у кого ещё нет headerRevealDone: даже повторное добавление класса
+          // снова вызывает syncRevealOrder через MutationObserver — без проверки бесконечный цикл.
+          if (node.classList.contains(styles.headerRevealDone)) return;
           node.classList.add(styles.headerRevealPlay);
           node.classList.add(styles.headerRevealDone);
           node.style.setProperty('--header-reveal-delay', '0ms');
