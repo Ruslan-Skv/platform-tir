@@ -10,6 +10,7 @@ export { usePublicSiteEditMode } from './usePublicSiteEditMode';
 export { useCanEditCatalogOnPublic } from './useCanEditCatalogOnPublic';
 export { useBrowserHistoryNavigation } from './useBrowserHistoryNavigation';
 export { useFaviconBadge } from './useFaviconBadge';
+export { useAdminMobileLayout } from './useAdminMobileLayout';
 export {
   ADMIN_MOBILE_PAGE_LIMIT,
   ADMIN_NARROW_VIEWPORT_MEDIA,

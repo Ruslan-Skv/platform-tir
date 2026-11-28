@@ -5,6 +5,7 @@ import type { ContractDocumentPackage } from '@/shared/api/admin-contract-docume
 import type { CrmUser } from '@/shared/api/admin-crm';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { ShareIcon } from '@/shared/ui/icons';
+import { RevertSigningIcon } from '@/shared/ui/icons/admin/RevertSigningIcon';
 import { CallCustomerIcon } from '@/shared/ui/icons/crm/CallCustomerIcon';
 import {
   crmPhoneToTelHref,
@@ -26,6 +27,7 @@ import {
 import { formatPackageWorkOrderHubModalTitle } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/packageWorkOrderHubTabs';
 import { useWorkStartMinPayPct } from '@/views/admin/ContractDocuments/packages/platform/settings/workStartMinPayPctStore';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
+import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.module.css';
 
 import {
   formatContractsListMoney,
@@ -93,6 +95,9 @@ type ContractsListMobileCardsProps = {
   onOpenWorkOrdersHub: (packageId: string) => void;
   onOpenCustomerShare: (packageId: string) => void;
   onOpenRemoteSigning: (packageId: string) => void;
+  /** Супер-админ: отмена подписания; кнопка видна только для подписанных договоров. */
+  onRevertSigning?: (pkg: ContractDocumentPackage) => void;
+  revertSigningPackageId?: string | null;
 };
 
 function PackageMobileCard({
@@ -106,6 +111,8 @@ function PackageMobileCard({
   onOpenWorkOrdersHub,
   onOpenCustomerShare,
   onOpenRemoteSigning,
+  onRevertSigning,
+  revertSigningBusy,
 }: {
   pkg: ContractDocumentPackage;
   addendumColumnCount: number;
@@ -117,6 +124,8 @@ function PackageMobileCard({
   onOpenWorkOrdersHub: (packageId: string) => void;
   onOpenCustomerShare: (packageId: string) => void;
   onOpenRemoteSigning: (packageId: string) => void;
+  onRevertSigning?: (pkg: ContractDocumentPackage) => void;
+  revertSigningBusy?: boolean;
 }) {
   const fd = pkg.formData ?? {};
   const form = mergePackageFormData(fd);
@@ -139,7 +148,8 @@ function PackageMobileCard({
   const kind = contractsListPackageKindLabel(pkg.kind);
   const dateLabel = formatSigningDateOnly(pkg) || '—';
   const customerPhone = contractsListCustomerPhone(fd);
-  const actionsDisabled = creating;
+  // Пока идёт отмена подписания — все действия карточки заблокированы (как в строке на десктопе).
+  const actionsDisabled = creating || (revertSigningBusy ?? false);
   const workOrderDistribution = getPackageWorkOrderDistributionInfo(fd);
 
   return (
@@ -243,6 +253,23 @@ function PackageMobileCard({
         >
           <span style={{ fontSize: 11, fontWeight: 700, lineHeight: 1 }}>ЭП</span>
         </AdminTableIconButton>
+        {onRevertSigning && pkg.status === 'CONTRACT_CONCLUDED' ? (
+          <AdminTableIconButton
+            disabled={actionsDisabled}
+            aria-busy={revertSigningBusy}
+            aria-label={
+              revertSigningBusy
+                ? 'Отмена подписания…'
+                : `Отменить подписание договора ${num} и вернуть на доработку`
+            }
+            title="Отменить подписание и вернуть на доработку (только супер-админ)"
+            onClick={() => onRevertSigning(pkg)}
+          >
+            <RevertSigningIcon
+              className={revertSigningBusy ? cdChrome.estimatesRefreshIconSpinning : undefined}
+            />
+          </AdminTableIconButton>
+        ) : null}
         <AdminTableIconButton
           disabled={actionsDisabled}
           title={PACKAGE_HUB_MODAL_TITLE}
@@ -273,6 +300,8 @@ export function ContractsListMobileCards({
   onOpenWorkOrdersHub,
   onOpenCustomerShare,
   onOpenRemoteSigning,
+  onRevertSigning,
+  revertSigningPackageId,
 }: ContractsListMobileCardsProps) {
   if (loading && rowsCount === 0) {
     return <p className={cdHub.contractsMobileEmpty}>Загрузка…</p>;
@@ -363,6 +392,8 @@ export function ContractsListMobileCards({
                       onOpenWorkOrdersHub={onOpenWorkOrdersHub}
                       onOpenCustomerShare={onOpenCustomerShare}
                       onOpenRemoteSigning={onOpenRemoteSigning}
+                      onRevertSigning={onRevertSigning}
+                      revertSigningBusy={revertSigningPackageId === pkg.id}
                     />
                   ))
                 : null}
@@ -387,6 +418,8 @@ export function ContractsListMobileCards({
             onOpenWorkOrdersHub={onOpenWorkOrdersHub}
             onOpenCustomerShare={onOpenCustomerShare}
             onOpenRemoteSigning={onOpenRemoteSigning}
+            onRevertSigning={onRevertSigning}
+            revertSigningBusy={revertSigningPackageId === item.package.id}
           />
         );
       })}

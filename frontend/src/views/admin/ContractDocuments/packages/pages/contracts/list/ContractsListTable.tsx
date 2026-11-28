@@ -291,6 +291,8 @@ export function ContractsListTable({
         onOpenWorkOrdersHub={onOpenWorkOrdersHub}
         onOpenCustomerShare={onOpenCustomerShare}
         onOpenRemoteSigning={onOpenRemoteSigning}
+        onRevertSigning={onRevertSigning}
+        revertSigningPackageId={revertSigningPackageId}
       />
 
       {!loading && totalVisible > 0 ? (

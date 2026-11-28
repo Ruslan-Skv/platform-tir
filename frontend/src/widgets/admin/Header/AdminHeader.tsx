@@ -90,7 +90,11 @@ import {
 import { ensureFreshAccessToken } from '@/shared/lib/auth-session';
 import { getAvatarUrl } from '@/shared/lib/avatar';
 import { canRunBackgroundNetwork, whenOnlineSettled } from '@/shared/lib/browser-network';
-import { useBrowserHistoryNavigation, useFaviconBadge } from '@/shared/lib/hooks';
+import {
+  useAdminMobileLayout,
+  useBrowserHistoryNavigation,
+  useFaviconBadge,
+} from '@/shared/lib/hooks';
 import { type NotificationSoundType, playNotificationSound } from '@/shared/lib/notification-sound';
 import { getSafeHref } from '@/shared/lib/sanitize';
 import { AdminPlatformBrand } from '@/shared/ui/AdminPlatformBrand';
@@ -182,6 +186,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
   const canOpenNotificationSettings = !accessLoading && hasAccess(ADMIN_NOTIFICATIONS_RESOURCE_ID);
   const { isDarkTheme, toggleTheme } = useTheme();
   const { canGoBack, canGoForward, goBack, goForward } = useBrowserHistoryNavigation();
+  const isMobileLayout = useAdminMobileLayout();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMyNotificationsModal, setShowMyNotificationsModal] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -1144,10 +1149,13 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
             </button>
           </span>
         )}
-        <ScreenshotCaptureButton
-          className={`${styles.iconButton} ${styles.headerReveal}`}
-          iconClassName={styles.themeIcon}
-        />
+        {/* В мобильной вёрстке кнопки скриншота нет */}
+        {!isMobileLayout && (
+          <ScreenshotCaptureButton
+            className={`${styles.iconButton} ${styles.headerReveal}`}
+            iconClassName={styles.themeIcon}
+          />
+        )}
 
         <button
           type="button"

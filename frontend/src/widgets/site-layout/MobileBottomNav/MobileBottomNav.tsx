@@ -25,6 +25,7 @@ import { resolveAdminHomePathForRole } from '@/shared/config/admin-resources';
 import { useSitePublicConfig } from '@/shared/lib/contexts/SitePublicConfigContext';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
 import { useChatSupportOpen } from '@/widgets/chat-support';
+import { MobileGarland } from '@/widgets/site-decorations';
 
 import styles from './MobileBottomNav.module.css';
 import { OurWorksNavIcon, UsefulArticlesNavIcon } from './mobileBottomNavIcons';
@@ -301,6 +302,9 @@ export function MobileBottomNav() {
           </button>
         </div>
       </div>
+
+      {/* Украшение: новогодняя ветка над меню, в правом нижнем углу экрана */}
+      <MobileGarland />
     </nav>
   );
 }
