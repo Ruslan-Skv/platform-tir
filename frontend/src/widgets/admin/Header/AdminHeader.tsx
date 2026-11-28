@@ -354,7 +354,21 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
       attributes: true,
       attributeFilter: ['class'],
     });
-    return () => observer.disconnect();
+
+    // Медиа-запросы меняют display без изменений в DOM (узкое окно ←→ широкое):
+    // после смены размера окна элементы, ставшие видимыми, тоже нужно «появить».
+    let resizeFrame = 0;
+    const scheduleRevealSync = () => {
+      cancelAnimationFrame(resizeFrame);
+      resizeFrame = requestAnimationFrame(syncRevealOrder);
+    };
+    window.addEventListener('resize', scheduleRevealSync);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', scheduleRevealSync);
+      cancelAnimationFrame(resizeFrame);
+    };
   }, []);
 
   useEffect(() => {
